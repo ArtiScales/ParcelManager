@@ -73,8 +73,6 @@ public class ParcelTotRecomp {
 		// parcel schema for all
 		SimpleFeatureType schema = parcels.getSchema();
 
-		// parcels to save for after
-		DefaultFeatureCollection savedParcels = new DefaultFeatureCollection();
 		// import of the zoning file
 		ShapefileDataStore shpDSZone = new ShapefileDataStore(zoningFile.toURI().toURL());
 		SimpleFeatureCollection featuresZones = shpDSZone.getFeatureSource().getFeatures();
@@ -101,12 +99,18 @@ public class ParcelTotRecomp {
 		pInsee.close();
 
 		// all the AU zones
-		Geometry geomAU = Vectors.unionSFC(zoneAU);
+		final Geometry geomAU = Vectors.unionSFC(zoneAU);
 		DefaultFeatureCollection parcelsInAU = new DefaultFeatureCollection();
-		SimpleFeatureIterator parcIt = parcels.features();
+		// parcels to save for after
+		DefaultFeatureCollection savedParcels = new DefaultFeatureCollection();
+		// List<SimpleFeature> parcelsInAU = Arrays.stream(parcels.toArray(new SimpleFeature[0]))
+		// .filter(feat -> ((Geometry) feat.getDefaultGeometry()).intersects(geomAU)).collect(Collectors.toList());
+		//
+		// List<SimpleFeature> savedParcels = Arrays.stream(parcels.toArray(new SimpleFeature[0]))
+		// .filter(feat -> !((Geometry) feat.getDefaultGeometry()).intersects(geomAU)).collect(Collectors.toList());
 
-		// sort in two different collections, the ones that matters and the ones that
-		// doesnt
+		// sort in two different collections, the ones that matters and the ones that doesnt
+		SimpleFeatureIterator parcIt = parcels.features();
 		try {
 			while (parcIt.hasNext()) {
 				SimpleFeature feat = parcIt.next();
@@ -160,13 +164,13 @@ public class ParcelTotRecomp {
 		} finally {
 			zoneAUIt.close();
 		}
-		SimpleFeatureCollection gOOdAU = goOdAu.collection();
-		if (gOOdAU.isEmpty()) {
+		SimpleFeatureCollection selectedAU = goOdAu.collection();
+		if (selectedAU.isEmpty()) {
 			System.out.println("parcelGenZone : no " + splitZone + " zones");
 			return parcels;
 		}
 		// if the zone is a leftover (this could be done as a stream. When I'll have time I'll get used to it
-		SimpleFeatureIterator itGoOD = gOOdAU.features();
+		SimpleFeatureIterator itGoOD = selectedAU.features();
 		double totAireGoOD = 0.0;
 		try {
 			while (itGoOD.hasNext()) {
@@ -186,8 +190,8 @@ public class ParcelTotRecomp {
 		// their attributes
 		// temporary shapefiles that serves to do polygons
 		File fParcelsInAU = Vectors.exportSFC(parcelsInAU, new File(tmpFile, "parcelCible.shp"));
-		File fZoneAU = Vectors.exportSFC(gOOdAU, new File(tmpFile, "oneAU.shp"));
-		geomAU = Vectors.unionSFC(gOOdAU);
+		File fZoneAU = Vectors.exportSFC(selectedAU, new File(tmpFile, "oneAU.shp"));
+		Geometry geomSelectedAU = Vectors.unionSFC(selectedAU);
 		File[] polyFiles = { fParcelsInAU, fZoneAU };
 		List<Polygon> polygons = FeaturePolygonizer.getPolygons(polyFiles);
 
@@ -196,7 +200,7 @@ public class ParcelTotRecomp {
 
 		geoms: for (Geometry poly : polygons) {
 			// if the polygons are not included on the AU zone
-			if (!geomAU.buffer(0.01).contains(poly)) {
+			if (!geomSelectedAU.buffer(0.01).contains(poly)) {
 				sfBuilder.set("the_geom", poly);
 				SimpleFeatureIterator parcelIt = parcelsInAU.features();
 				boolean isCode = false;
@@ -242,7 +246,7 @@ public class ParcelTotRecomp {
 			// with the most used one
 			geometryOutputName = "the_geom";
 		}
-		SimpleFeatureIterator it = gOOdAU.features();
+		SimpleFeatureIterator it = selectedAU.features();
 		int numZone = 0;
 
 		// mark and add the AU zones to the collection
@@ -308,7 +312,7 @@ public class ParcelTotRecomp {
 					// set if the parcel is simulable or not
 					if (allOrCell) {
 						// must be contained into the AU zones
-						if (geomAU.buffer(1).contains((Geometry) feat.getDefaultGeometry())) {
+						if (geomSelectedAU.buffer(1).contains((Geometry) feat.getDefaultGeometry())) {
 							double eval = ParcelState.getEvalInParcel(feat, mupSFC);
 							if (eval == 0.0) {
 								eval = ParcelState.getCloseEvalInParcel(feat, mupSFC);
@@ -331,7 +335,7 @@ public class ParcelTotRecomp {
 					}
 
 					// if the parcel is already build, no simulation
-					boolean iPB = ParcelState.isParcelBuilt(batiFile, feat, unionParcel);
+					boolean iPB = ParcelState.isAlreadyBuilt(batiFile, feat, unionParcel);
 					if (iPB) {
 						feat.setAttribute("DoWeSimul", "false");
 						feat.setAttribute("IsBuild", "true");

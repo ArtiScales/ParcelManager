@@ -43,7 +43,7 @@ public class ParcelPartRecomp {
 	// shpDSZone.dispose();
 	//
 
-	public static SimpleFeatureCollection parcelPartRecomp(String typeZone, SimpleFeatureCollection parcels, File tmpFile, File zoningFile,
+	public static SimpleFeatureCollection parcelPartRecomp(String typeZone, SimpleFeatureCollection parcels, File tmpFile, File zoningFile, File buildingFile,
 			File regulFile, File mupOutput, double maximalArea, double maximalWidth, double roadWidth, int decompositionLevelWithoutRoad,
 			boolean dontTouchUZones) throws Exception {
 		Geometry emprise = Vectors.unionSFC(parcels);
@@ -232,7 +232,7 @@ public class ParcelPartRecomp {
 				featureBuilder.set("CODE", insee + "000" + section + i);
 				featureBuilder.set("COM_ABS", "000");
 
-				boolean iPB = ParcelState.isParcelBuilt(zoningFile, parcel, emprise);
+				boolean iPB = ParcelState.isAlreadyBuilt(buildingFile, parcel, emprise);
 				featureBuilder.set("IsBuild", iPB);
 
 				featureBuilder.set("U", false);
