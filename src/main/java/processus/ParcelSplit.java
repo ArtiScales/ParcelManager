@@ -29,9 +29,33 @@ import fr.ign.cogit.parcelFunction.ParcelSchema;
 
 public class ParcelSplit {
 
-	public static SimpleFeatureCollection generateSplitParcels(SimpleFeature parcelIn, File tmpFile, double maximalArea, double maximalWidth,
-			double epsilon, IMultiCurve<IOrientableCurve> extBlock, double roadWidth, int decompositionLevelWithoutRoad, boolean forceRoadAccess)
-			throws Exception {
+	/**
+	 * Splitting parcel processus. It get the usual parcel schema and add the "split" field in order to determine in the parcel will be splited or not. All the parcels are then
+	 * split.
+	 * 
+	 * @param parcelIn
+	 *            : collection of parcels
+	 * @param tmpFolder
+	 *            : a folder to store temporary files
+	 * @param maximalArea
+	 *            : area of the parcel under which the parcel won't be anymore cut
+	 * @param maximalWidth
+	 *            : width of the parcel under which the parcel won't be anymore cut
+	 * @param epsilon
+	 *            :
+	 * @param extBlock
+	 * @param streetWidth
+	 *            : with of the street composing the street network
+	 * @param decompositionLevelWithoutStreet
+	 *            : number of last iteration row for which no street network is generated
+	 * @param forceStreetAccess
+	 *            : force the access to the road for each parcel. Not working good yet.
+	 * @return a collection of subdivised parcels
+	 * @throws Exception
+	 */
+	public static SimpleFeatureCollection generateSplitAllParcels(SimpleFeature parcelIn, File tmpFolder, double maximalArea, double maximalWidth,
+			double epsilon, IMultiCurve<IOrientableCurve> extBlock, double streetWidth, int decompositionLevelWithoutStreet,
+			boolean forceStreetAccess) throws Exception {
 
 		// putting the need of splitting into attribute
 
@@ -55,14 +79,38 @@ public class ParcelSplit {
 		sfBuilder.add(parcelIn.getDefaultGeometry());
 		toSplit.add(sfBuilder.buildFeature(null, attr));
 
-		return splitParcels(toSplit, maximalArea, maximalWidth, epsilon, 0, extBlock, roadWidth, forceRoadAccess, decompositionLevelWithoutRoad,
-				tmpFile);
+		return splitParcels(toSplit, maximalArea, maximalWidth, epsilon, 0, extBlock, streetWidth, forceStreetAccess, decompositionLevelWithoutStreet,
+				tmpFolder);
 
 	}
 
-	public static SimpleFeatureCollection generateSplitedParcels(SimpleFeatureCollection parcelsIn, File tmpFile, double maximalArea,
-			double maximalWidth, double epsilon, IMultiCurve<IOrientableCurve> extBlock, int decompositionLevelWithoutRoad, double roadWidth,
-			boolean forceRoadAccess) throws Exception {
+	/**
+	 * Splitting parcel processus. It get the usual parcel schema and add the "split" field in order to determine in the parcel will be splited or not. All the parcels bigger than
+	 * the maximal area are split.
+	 * 
+	 * @param parcelIn
+	 *            : collection of parcels
+	 * @param tmpFolder
+	 *            : a folder to store temporary files
+	 * @param maximalArea
+	 *            : area of the parcel under which the parcel won't be anymore cut
+	 * @param maximalWidth
+	 *            : width of the parcel under which the parcel won't be anymore cut
+	 * @param epsilon
+	 *            :
+	 * @param extBlock
+	 * @param decompositionLevelWithoutStreet
+	 *            : number of last iteration row for which no street network is generated
+	 * @param streetWidth
+	 *            : with of the street composing the street network
+	 * @param forceStreetAccess
+	 *            : force the access to the road for each parcel. Not working good yet.
+	 * @return a collection of subdivised parcels
+	 * @throws Exception
+	 */
+	public static SimpleFeatureCollection generateSplitParcelsIfBigger(SimpleFeatureCollection parcelsIn, File tmpFolder, double maximalArea,
+			double maximalWidth, double epsilon, IMultiCurve<IOrientableCurve> extBlock, int decompositionLevelWithoutStreet, double streetWidth,
+			boolean forceStreetAccess) throws Exception {
 
 		///////
 		// putting the need of splitting into attribute
@@ -72,7 +120,7 @@ public class ParcelSplit {
 		SimpleFeatureBuilder sfBuilder = ParcelSchema.getParcelSplitSFBuilder();
 		DefaultFeatureCollection toSplit = new DefaultFeatureCollection();
 
-		// iterate to get all the concerned parcels
+		// iterate on the parcels
 		int i = 0;
 		SimpleFeatureIterator parcelIt = parcelsIn.features();
 		try {
@@ -103,45 +151,110 @@ public class ParcelSplit {
 		} finally {
 			parcelIt.close();
 		}
-		return splitParcels(toSplit, maximalArea, maximalWidth, epsilon, 0.0, extBlock, roadWidth, forceRoadAccess, decompositionLevelWithoutRoad,
-				tmpFile);
-	}
-
-	public static SimpleFeatureCollection splitParcels(SimpleFeature toSplit, double maximalArea, double maximalWidth, double roadEpsilon,
-			double noise, IMultiCurve<IOrientableCurve> extBlock, double roadWidth, boolean forceRoadAccess, int decompositionLevelWithoutRoad,
-			File tmpFile, boolean addArg) throws Exception {
-		DefaultFeatureCollection in = new DefaultFeatureCollection();
-		in.add(toSplit);
-		return splitParcels(in.collection(), maximalArea, maximalWidth, roadEpsilon, noise, extBlock, roadWidth, forceRoadAccess,
-				decompositionLevelWithoutRoad, tmpFile, addArg);
-
-	}
-
-	public static SimpleFeatureCollection splitParcels(SimpleFeatureCollection toSplit, double maximalArea, double maximalWidth, double roadEpsilon,
-			double noise, IMultiCurve<IOrientableCurve> extBlock, double roadWidth, boolean forceRoadAccess, int decompositionLevelWithoutRoad,
-			File tmpFile) throws Exception {
-
-		return splitParcels(toSplit, maximalArea, maximalWidth, roadEpsilon, noise, extBlock, roadWidth, forceRoadAccess,
-				decompositionLevelWithoutRoad, tmpFile, true);
+		return splitParcels(toSplit, maximalArea, maximalWidth, epsilon, 0.0, extBlock, streetWidth, forceStreetAccess,
+				decompositionLevelWithoutStreet, tmpFolder);
 	}
 
 	/**
-	 * largely inspired from the simPLU. ParcelSplitting class but rewrote to work with geotools SimpleFeatureCollection objects
+	 * Overload to split a single parcel
 	 * 
 	 * @param toSplit
+	 *            : collection of parcels
 	 * @param maximalArea
+	 *            : area of the parcel under which the parcel won't be anymore cut
 	 * @param maximalWidth
-	 * @param roadEpsilon
-	 * @param noise
-	 * @return
-	 * @thro)ws Exception
+	 *            : width of the parcel under which the parcel won't be anymore cut
+	 * @param epsilon
+	 *            :
+	 * @param extBlock
+	 * @param streetWidth
+	 *            : with of the street composing the street network
+	 * @param decompositionLevelWithoutStreet
+	 *            : number of last iteration row for which no street network is generated
+	 * @param forceStreetAccess
+	 *            : force the access to the road for each parcel. Not working good yet.
+	 * @param tmpFolder
+	 *            : a folder to store temporary files
+	 * @param addArg
+	 *            : add the parent parcels attributes to the new cuted parcels by re-working them
+	 * @return a collection of subdivised parcels
+	 * @throws Exception
+	 */
+	public static SimpleFeatureCollection splitParcels(SimpleFeature toSplit, double maximalArea, double maximalWidth, double streetEpsilon,
+			double noise, IMultiCurve<IOrientableCurve> extBlock, double streetWidth, boolean forceStreetAccess, int decompositionLevelWithoutStreet,
+			File tmpFolder, boolean addArg) throws Exception {
+		DefaultFeatureCollection in = new DefaultFeatureCollection();
+		in.add(toSplit);
+		return splitParcels(in.collection(), maximalArea, maximalWidth, streetEpsilon, noise, extBlock, streetWidth, forceStreetAccess,
+				decompositionLevelWithoutStreet, tmpFolder, addArg);
+
+	}
+
+	/**
+	 * overload to automaticaly add the existing attributes
+	 * 
+	 * @param toSplit
+	 *            : collection of parcels
+	 * @param maximalArea
+	 *            : area of the parcel under which the parcel won't be anymore cut
+	 * @param maximalWidth
+	 *            : width of the parcel under which the parcel won't be anymore cut
+	 * @param epsilon
+	 *            :
+	 * @param extBlock
+	 * @param streetWidth
+	 *            : with of the street composing the street network
+	 * @param decompositionLevelWithoutStreet
+	 *            : number of last iteration row for which no street network is generated
+	 * @param forceStreetAccess
+	 *            : force the access to the road for each parcel. Not working good yet.
+	 * @param tmpFolder
+	 *            : a folder to store temporary files
+	 * @param addArg
+	 *            : add the parent parcels attributes to the new cuted parcels by re-working them
+	 * @return a collection of subdivised parcels
+	 * @throws Exception
+	 */
+	public static SimpleFeatureCollection splitParcels(SimpleFeatureCollection toSplit, double maximalArea, double maximalWidth, double streetEpsilon,
+			double noise, IMultiCurve<IOrientableCurve> extBlock, double streetWidth, boolean forceStreetAccess, int decompositionLevelWithoutStreet,
+			File tmpFolder) throws Exception {
+
+		return splitParcels(toSplit, maximalArea, maximalWidth, streetEpsilon, noise, extBlock, streetWidth, forceStreetAccess,
+				decompositionLevelWithoutStreet, tmpFolder, true);
+	}
+
+	/**
+	 * Split the parcels into sub parcels. The parcel that are going to be cut must have a field "SPLIT" with the value of 1. A dirty conversion is made from GeoTools format to
+	 * GeOxygene format because the functions that must translate them doesn't work yet.
+	 * 
+	 * @param toSplit
+	 *            : collection of parcels
+	 * @param maximalArea
+	 *            : area of the parcel under which the parcel won't be anymore cut
+	 * @param maximalWidth
+	 *            : width of the parcel under which the parcel won't be anymore cut
+	 * @param epsilon
+	 *            :
+	 * @param extBlock
+	 * @param streetWidth
+	 *            : with of the street composing the street network
+	 * @param decompositionLevelWithoutStreet
+	 *            : number of last iteration row for which no street network is generated
+	 * @param forceStreetAccess
+	 *            : force the access to the road for each parcel. Not working good yet.
+	 * @param tmpFolder
+	 *            : a folder to store temporary files
+	 * @param addArg
+	 *            : add the parent parcels attributes to the new cuted parcels by re-working them
+	 * @return a collection of subdivised parcels
+	 * @throws Exception
 	 */
 	public static SimpleFeatureCollection splitParcels(SimpleFeatureCollection toSplit, double maximalArea, double maximalWidth, double roadEpsilon,
 			double noise, IMultiCurve<IOrientableCurve> extBlock, double roadWidth, boolean forceRoadAccess, int decompositionLevelWithoutRoad,
 			File tmpFile, boolean addArg) throws Exception {
 
 		String attNameToTransform = "SPLIT";
-		// TODO po belle conversion
+		// TODO work on that conversion
 		File shpIn = new File(tmpFile, "temp-In.shp");
 		Vectors.exportSFC(toSplit, shpIn);
 		IFeatureCollection<?> ifeatColl = ShapefileReader.read(shpIn.toString());
@@ -149,11 +262,8 @@ public class ParcelSplit {
 		IFeatureCollection<IFeature> ifeatCollOut = new FT_FeatureCollection<IFeature>();
 		for (IFeature feat : ifeatColl) {
 			Object o = feat.getAttribute(attNameToTransform);
-			if (o == null) {
-				ifeatCollOut.add(feat);
-				continue;
-			}
-			if (Integer.parseInt(o.toString()) != 1) {
+			// if the parcel is not to be split, we add it on the final result and continue to iterate through the parcels.
+			if (o == null || Integer.parseInt(o.toString()) != 1) {
 				ifeatCollOut.add(feat);
 				continue;
 			}
