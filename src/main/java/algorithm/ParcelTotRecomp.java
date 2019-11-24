@@ -25,35 +25,19 @@ import org.opengis.filter.FilterFactory2;
 import fr.ign.cogit.FeaturePolygonizer;
 import fr.ign.cogit.Schema;
 import fr.ign.cogit.GTFunctions.Vectors;
+import fr.ign.cogit.parcelFunction.ParcelAttribute;
 import fr.ign.cogit.parcelFunction.ParcelSchema;
 import fr.ign.cogit.parcelFunction.ParcelState;
 import processus.ParcelSplit;
 
 public class ParcelTotRecomp {
 
-	// /////////////////////////
-	// //////// try the parcelGenZone method
-	// /////////////////////////
-	//
-	// ShapefileDataStore shpDSZone = new ShapefileDataStore(new File("/tmp/toTest.shp").toURI().toURL());
-	// SimpleFeatureCollection featuresZones = shpDSZone.getFeatureSource().getFeatures();
-	//
-	// // Vectors.exportSFC(generateSplitedParcels(waiting, tmpFile, p), new
-	// // File("/tmp/tmp2.shp"));
-	// SimpleFeatureCollection salut = parcelTotRecomp("AU", featuresZones, new File("/tmp/"),
-	// new File("/home/mcolomb/informatique/ArtiScalesTest/"),
-	// new File("/home/mcolomb/informatique/ArtiScalesTest/MupCityDepot/DDense/variante0/DDense-yager-evalAnal.shp"), 4000, 12, 5, 2, true);
-	//
-	// Vectors.exportSFC(salut, new File("/tmp/parcelDensification.shp"));
-	// shpDSZone.dispose();
-	// }
-
 	/**
 	 * Merge and recut the to urbanised (AU) zones Cut first the U parcels to keep them unsplited, then split the AU parcel and remerge them all into the original parcel file
 	 * 
 	 * @param splitZone
 	 * @param parcels
-	 * @param tmpFile
+	 * @param tmpFolder
 	 * @param zoningFile
 	 * @param maximalArea
 	 * @param maximalWidth
@@ -66,7 +50,7 @@ public class ParcelTotRecomp {
 	 * @return
 	 * @throws Exception
 	 */
-	public static SimpleFeatureCollection parcelTotRecomp(String splitZone, SimpleFeatureCollection parcels, File tmpFile, File zoningFile,
+	public static SimpleFeatureCollection parcelTotRecomp(String splitZone, SimpleFeatureCollection parcels, File tmpFolder, File zoningFile,
 			File batiFile, File regulFile, File mupOutput, double maximalArea, double maximalWidth, double lenRoad, int decompositionLevelWithoutRoad,
 			boolean allOrCell) throws Exception {
 
@@ -80,60 +64,68 @@ public class ParcelTotRecomp {
 		Geometry unionParcel = Vectors.unionSFC(parcels);
 		String geometryParcelPropertyName = schema.getGeometryDescriptor().getLocalName();
 
-		// get the AU zones from the zoning file
+		// get the wanted zones from the zoning file
 		FilterFactory2 ff = CommonFactoryFinder.getFilterFactory2(GeoTools.getDefaultHints());
 		Filter filterTypeZone = ff.like(ff.property("TYPEZONE"), splitZone);
 
 		Filter filterEmprise = ff.intersects(ff.property(geometryParcelPropertyName), ff.literal(unionParcel));
-		SimpleFeatureCollection zoneAU = featuresZones.subCollection(filterTypeZone).subCollection(filterEmprise);
+		SimpleFeatureCollection initialZone = featuresZones.subCollection(filterTypeZone).subCollection(filterEmprise);
 
 		// If no AU zones, we won't bother
-		if (zoneAU.isEmpty()) {
+		if (initialZone.isEmpty()) {
 			System.out.println("parcelGenZone : no " + splitZone + " zones");
 			return parcels;
 		}
 
 		// get the insee number
-		SimpleFeatureIterator pInsee = parcels.features();
-		String insee = (String) pInsee.next().getAttribute("INSEE");
-		pInsee.close();
+		List<String> insees = ParcelAttribute.getInseeParcels(parcels);
+		String insee = insees.get(0);
+		if (insees.size() > 1) {
+			System.out.println("Warning: more than one insee number in the parcel collection ");
+		}
+//		SimpleFeatureIterator pInsee = parcels.features();
+//		(String) pInsee.next().getAttribute("INSEE");
+//		pInsee.close();
 
 		// all the AU zones
-		final Geometry geomAU = Vectors.unionSFC(zoneAU);
-		DefaultFeatureCollection parcelsInAU = new DefaultFeatureCollection();
+		final Geometry geomAU = Vectors.unionSFC(initialZone);
+		DefaultFeatureCollection parcelsInzone = new DefaultFeatureCollection();
 		// parcels to save for after
 		DefaultFeatureCollection savedParcels = new DefaultFeatureCollection();
-		// List<SimpleFeature> parcelsInAU = Arrays.stream(parcels.toArray(new SimpleFeature[0]))
-		// .filter(feat -> ((Geometry) feat.getDefaultGeometry()).intersects(geomAU)).collect(Collectors.toList());
-		//
-		// List<SimpleFeature> savedParcels = Arrays.stream(parcels.toArray(new SimpleFeature[0]))
-		// .filter(feat -> !((Geometry) feat.getDefaultGeometry()).intersects(geomAU)).collect(Collectors.toList());
+		// sort in two different collections, the ones that matters and the ones that will besaved for future purposes
+		Arrays.stream(parcels.toArray(new SimpleFeature[0])).forEach(parcel -> {
+			if (((Geometry) parcel.getDefaultGeometry()).intersects(geomAU)) {
+				parcelsInzone.add(parcel);
+			} else {
+				savedParcels.add(parcel);
+			}});
 
-		// sort in two different collections, the ones that matters and the ones that doesnt
-		SimpleFeatureIterator parcIt = parcels.features();
-		try {
-			while (parcIt.hasNext()) {
-				SimpleFeature feat = parcIt.next();
-				if (((Geometry) feat.getDefaultGeometry()).intersects(geomAU)) {
-					parcelsInAU.add(feat);
-				} else {
-					savedParcels.add(feat);
-				}
-			}
-		} catch (Exception problem) {
-			problem.printStackTrace();
-		} finally {
-			parcIt.close();
-		}
+		
+//		SimpleFeatureIterator parcIt = parcels.features();
+//		try {
+//			while (parcIt.hasNext()) {
+//				SimpleFeature feat = parcIt.next();
+//				if (((Geometry) feat.getDefaultGeometry()).intersects(geomAU)) {
+//					parcelsInAU.add(feat);
+//				} else {
+//					savedParcels.add(feat);
+//				}
+//			}
+//		} catch (Exception problem) {
+//			problem.printStackTrace();
+//		} finally {
+//			parcIt.close();
+//		}
 
 		// delete the existing roads from the AU zones
-		SimpleFeatureBuilder simpleSFB = new SimpleFeatureBuilder(zoneAU.getSchema());
+		//tricky operations to avoid geometry problems
+		SimpleFeatureBuilder simpleSFB = new SimpleFeatureBuilder(initialZone.getSchema());
 
-		DefaultFeatureCollection goOdAu = new DefaultFeatureCollection();
-		SimpleFeatureIterator zoneAUIt = zoneAU.features();
+		DefaultFeatureCollection goOdZone = new DefaultFeatureCollection();
+		SimpleFeatureIterator zoneIt = initialZone.features();
 		try {
-			while (zoneAUIt.hasNext()) {
-				SimpleFeature feat = zoneAUIt.next();
+			while (zoneIt.hasNext()) {
+				SimpleFeature feat = zoneIt.next();
 				Geometry intersection = Vectors
 						.scaledGeometryReductionIntersection(Arrays.asList(((Geometry) feat.getDefaultGeometry()), unionParcel));
 				if (!intersection.isEmpty() && intersection.getArea() > 5.0) {
@@ -141,7 +133,7 @@ public class ParcelTotRecomp {
 						for (int i = 0; i < intersection.getNumGeometries(); i++) {
 							simpleSFB.set("the_geom", GeometryPrecisionReducer.reduce(intersection.getGeometryN(i), new PrecisionModel(100)));
 							simpleSFB.set("INSEE", insee);
-							goOdAu.add(simpleSFB.buildFeature(null));
+							goOdZone.add(simpleSFB.buildFeature(null));
 						}
 					} else if (intersection instanceof GeometryCollection) {
 						for (int i = 0; i < intersection.getNumGeometries(); i++) {
@@ -149,28 +141,28 @@ public class ParcelTotRecomp {
 							if (g instanceof Polygon) {
 								simpleSFB.set("the_geom", g.buffer(1).buffer(-1));
 								simpleSFB.set("INSEE", insee);
-								goOdAu.add(simpleSFB.buildFeature(null));
+								goOdZone.add(simpleSFB.buildFeature(null));
 							}
 						}
 					} else {
 						simpleSFB.set("the_geom", intersection.buffer(1).buffer(-1));
 						simpleSFB.set("INSEE", insee);
-						goOdAu.add(simpleSFB.buildFeature(null));
+						goOdZone.add(simpleSFB.buildFeature(null));
 					}
 				}
 			}
 		} catch (Exception problem) {
 			problem.printStackTrace();
 		} finally {
-			zoneAUIt.close();
+			zoneIt.close();
 		}
-		SimpleFeatureCollection selectedAU = goOdAu.collection();
-		if (selectedAU.isEmpty()) {
+		SimpleFeatureCollection selectedZone = goOdZone.collection();
+		if (selectedZone.isEmpty()) {
 			System.out.println("parcelGenZone : no " + splitZone + " zones");
 			return parcels;
 		}
 		// if the zone is a leftover (this could be done as a stream. When I'll have time I'll get used to it
-		SimpleFeatureIterator itGoOD = selectedAU.features();
+		SimpleFeatureIterator itGoOD = selectedZone.features();
 		double totAireGoOD = 0.0;
 		try {
 			while (itGoOD.hasNext()) {
@@ -189,10 +181,10 @@ public class ParcelTotRecomp {
 		// parts of parcel outside the zone must not be cut by the algorithm and keep
 		// their attributes
 		// temporary shapefiles that serves to do polygons
-		File fParcelsInAU = Vectors.exportSFC(parcelsInAU, new File(tmpFile, "parcelCible.shp"));
-		File fZoneAU = Vectors.exportSFC(selectedAU, new File(tmpFile, "oneAU.shp"));
-		Geometry geomSelectedAU = Vectors.unionSFC(selectedAU);
-		File[] polyFiles = { fParcelsInAU, fZoneAU };
+		File fParcelsInAU = Vectors.exportSFC(parcelsInzone, new File(tmpFolder, "parcelCible.shp"));
+		File fZone = Vectors.exportSFC(selectedZone, new File(tmpFolder, "oneAU.shp"));
+		Geometry geomSelectedZone = Vectors.unionSFC(selectedZone);
+		File[] polyFiles = { fParcelsInAU, fZone };
 		List<Polygon> polygons = FeaturePolygonizer.getPolygons(polyFiles);
 
 		SimpleFeatureBuilder sfBuilder = ParcelSchema.getParcelSplitSFBuilder();
@@ -200,9 +192,9 @@ public class ParcelTotRecomp {
 
 		geoms: for (Geometry poly : polygons) {
 			// if the polygons are not included on the AU zone
-			if (!geomSelectedAU.buffer(0.01).contains(poly)) {
+			if (!geomSelectedZone.buffer(0.01).contains(poly)) {
 				sfBuilder.set("the_geom", poly);
-				SimpleFeatureIterator parcelIt = parcelsInAU.features();
+				SimpleFeatureIterator parcelIt = parcelsInzone.features();
 				boolean isCode = false;
 				try {
 					while (parcelIt.hasNext()) {
@@ -246,10 +238,10 @@ public class ParcelTotRecomp {
 			// with the most used one
 			geometryOutputName = "the_geom";
 		}
-		SimpleFeatureIterator it = selectedAU.features();
+		SimpleFeatureIterator it = selectedZone.features();
 		int numZone = 0;
 
-		// mark and add the AU zones to the collection
+		// mark and add the zones to the collection
 		try {
 			while (it.hasNext()) {
 				SimpleFeature zone = it.next();
@@ -294,15 +286,16 @@ public class ParcelTotRecomp {
 		double roadEpsilon = 00;
 		double noise = 0;
 		// Sometimes it bugs (like on Sector NV in Besançon)
-		SimpleFeatureCollection splitedAUParcels = ParcelSplit.splitParcels(toSplit, maximalArea, maximalWidth, roadEpsilon, noise, null, lenRoad,
-				false, decompositionLevelWithoutRoad, tmpFile);
+		SimpleFeatureCollection splitedZoneParcels = ParcelSplit.splitParcels(toSplit, maximalArea, maximalWidth, roadEpsilon, noise, null, lenRoad,
+				false, decompositionLevelWithoutRoad, tmpFolder);
 
+		// Finally, put them all features in a same collec
 		// mup output
 		ShapefileDataStore mupSDS = new ShapefileDataStore(mupOutput.toURI().toURL());
 		SimpleFeatureCollection mupSFC = mupSDS.getFeatureSource().getFeatures();
 
-		// Finally, put them all features in a same collec
-		SimpleFeatureIterator finalIt = splitedAUParcels.features();
+		
+		SimpleFeatureIterator finalIt = splitedZoneParcels.features();
 		try {
 			while (finalIt.hasNext()) {
 				SimpleFeature feat = finalIt.next();
@@ -311,8 +304,8 @@ public class ParcelTotRecomp {
 				if (((Geometry) feat.getDefaultGeometry()).getArea() > 5.0) {
 					// set if the parcel is simulable or not
 					if (allOrCell) {
-						// must be contained into the AU zones
-						if (geomSelectedAU.buffer(1).contains((Geometry) feat.getDefaultGeometry())) {
+						// must be contained into the zones
+						if (geomSelectedZone.buffer(1).contains((Geometry) feat.getDefaultGeometry())) {
 							double eval = ParcelState.getEvalInParcel(feat, mupSFC);
 							if (eval == 0.0) {
 								eval = ParcelState.getCloseEvalInParcel(feat, mupSFC);
@@ -360,7 +353,7 @@ public class ParcelTotRecomp {
 		mupSDS.dispose();
 		SimpleFeatureCollection result = Vectors.delTinyParcels(savedParcels.collection(), 5.0);
 
-		Vectors.exportSFC(result, new File(tmpFile, "parcelFinal.shp"));
+		Vectors.exportSFC(result, new File(tmpFolder, "parcelFinal.shp"));
 
 		return result;
 

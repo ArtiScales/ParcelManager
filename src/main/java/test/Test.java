@@ -27,12 +27,14 @@ public class Test {
 
 		File mupOutput = new File(rootFolder, "/MupCityDepot/DDense/base/DDense--N7_Ba_Yag_ahpS_seed_42-evalAnal-20.0.shp");
 
-		SimpleFeatureCollection testmp = ParcelConsolidRecomp.markParcelIntersectMUPOutput(parcel, mupOutput);
-		SimpleFeatureCollection test = ParcelConsolidRecomp.markParcelIntersectZoningType(testmp, "NC", zoningFile);
-
-		SimpleFeatureCollection cuted = ParcelConsolidRecomp.parcelConsolidRecomp(test, tmpFolder, 400.0, 7.0, 3.0, 4);
-
-		SimpleFeatureCollection finaux = ParcelConsolidRecomp.fixParcelAttributes(cuted, tmpFolder, buildingFile, cityFile, mupOutput);
+		//zoneTotRecomp
+		
+		
+//		//consolidRecomp
+//		SimpleFeatureCollection testmp = ParcelConsolidRecomp.markParcelIntersectMUPOutput(parcel, mupOutput);
+//		SimpleFeatureCollection test = ParcelConsolidRecomp.markParcelIntersectZoningType(testmp, "NC", zoningFile);
+//		SimpleFeatureCollection cuted = ParcelConsolidRecomp.parcelConsolidRecomp(test, tmpFolder, 400.0, 100.0, 7.0, 3.0, 4);
+//		SimpleFeatureCollection finaux = ParcelConsolidRecomp.fixParcelAttributes(cuted, tmpFolder, buildingFile, cityFile, mupOutput);
 
 		Vectors.exportSFC(finaux, new File("/tmp/parcelDensification.shp"));
 		shpDSZone.dispose();

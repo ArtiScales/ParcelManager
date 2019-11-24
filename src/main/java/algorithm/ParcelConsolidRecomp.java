@@ -3,6 +3,8 @@ package algorithm;
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Stream;
 
 import org.geotools.data.shapefile.ShapefileDataStore;
 import org.geotools.data.simple.SimpleFeatureCollection;
@@ -26,18 +28,19 @@ import processus.ParcelSplit;
 public class ParcelConsolidRecomp {
 
 	/**
-	 * 
-	cd  * @param parcels
-	 * @param tmpFolder
-	 * @param maximalArea
-	 * @param maximalWidth
-	 * @param roadWidth
-	 * @param decompositionLevelWithoutRoad
-	 * @return
+	 * Methods that merge the contiguous indicated zones and the split them with the geoxygene block-subdiviser algorithm
+	* @param parcels The parcels to be merged and cut. Must be marked with the SPLIT filed (see markParcelIntersectMUPOutput for example, with the method concerning MUP-City's output)
+	 * @param tmpFolder : A temporary folder where will be saved intermediate results
+	 * @param maximalArea : Area under which a parcel won"t be anymore cut 
+	 * @param minimalArea : Area under which a polygon won't be kept as a parcel
+	 * @param maximalWidth : The width of parcel connection to street network under which the parcel won"t be anymore cut 
+	 * @param streetWidth : the width of generated street network
+	 * @param decompositionLevelWithoutStreet : Number of the final row on which street generation doesn't apply
+	 * @return the set of parcel with decomposition
 	 * @throws Exception
 	 */
-	public static SimpleFeatureCollection parcelConsolidRecomp(SimpleFeatureCollection parcels, File tmpFolder, double maximalArea,
-			double maximalWidth, double roadWidth, int decompositionLevelWithoutRoad) throws Exception {
+	public static SimpleFeatureCollection parcelConsolidRecomp(SimpleFeatureCollection parcels, File tmpFolder, double maximalArea, double minimalArea , 
+			double maximalWidth, double streetWidth, int decompositionLevelWithoutStreet) throws Exception {
 
 		DefaultFeatureCollection parcelResult = new DefaultFeatureCollection();
 		parcelResult.addAll(parcels);
@@ -52,7 +55,7 @@ public class ParcelConsolidRecomp {
 		////////////////
 
 		Arrays.stream(parcels.toArray(new SimpleFeature[0])).forEach(parcel -> {
-			if (parcel.getAttribute("MERGE").equals(1)) {
+			if (parcel.getAttribute("SPLIT").equals(1)) {
 				parcelToMerge.add(parcel);
 				parcelResult.remove(parcel);
 			}
@@ -101,14 +104,15 @@ public class ParcelConsolidRecomp {
 				// Parcel big enough, we cut it
 				feat.setAttribute("SPLIT", 1);
 				try {
-					SimpleFeatureCollection freshCutParcel = ParcelSplit.splitParcels(feat, maximalArea, maximalWidth, 0, 0, null, roadWidth, false,
-							decompositionLevelWithoutRoad, tmpFolder, false);
+					SimpleFeatureCollection freshCutParcel = ParcelSplit.splitParcels(feat, maximalArea, maximalWidth, 0, 0, null, streetWidth, false,
+							decompositionLevelWithoutStreet, tmpFolder, false);
 					SimpleFeatureIterator it = freshCutParcel.features();
 					// every single parcel goes into new collection
 					while (it.hasNext()) {
 						SimpleFeature f = it.next();
 						// that takes time but it's the best way I've found to set a correct section
 						// number (to look at the step 2 polygons)
+						if (((Geometry)feat.getDefaultGeometry()).getArea()>minimalArea){
 						String sec = "Default";
 						SimpleFeatureIterator ilotIt = mergedParcels.features();
 						try {
@@ -130,6 +134,7 @@ public class ParcelConsolidRecomp {
 						sfBuilderFinalParcel.set("SECTION", section);
 						cutParcels.add(sfBuilderFinalParcel.buildFeature(null));
 					}
+					}
 					it.close();
 				} catch (Exception e) {
 					e.printStackTrace();
@@ -140,7 +145,7 @@ public class ParcelConsolidRecomp {
 			}
 		});
 
-		// add initial non cut parcel to final parcels
+		// add initial non cut parcel to final parcels only if they are bigger than the limit
 		Arrays.stream(parcelResult.toArray(new SimpleFeature[0])).forEach(feat -> {
 			SimpleFeatureBuilder SFBParcel = ParcelSchema.setSFBParcelWithFeat(feat);
 			cutParcels.add(SFBParcel.buildFeature(null));
@@ -154,8 +159,17 @@ public class ParcelConsolidRecomp {
 
 		return result;
 	}
-
-	public static SimpleFeatureCollection fixParcelAttributes(SimpleFeatureCollection parcels, File tmpFolder, File buildingFile, File cityFile,
+/**
+ * Set the parcel's attribute after a parcel recomposition processus based on the French model. Won't change parcel's information if they are already set 
+ * @param parcels : Whole set of parcels
+ * @param tmpFolder : A temporary folder where will be saved intermediate results
+ * @param buildingFile : A shapefile containing the builings of the zone
+ * @param communityFile : A shapefile containing the communities of the zone
+ * @param mupOutputFile : A shapefile containing outputs of MUP-City. Can be empty
+ * @return The parcel set with the right attributes
+ * @throws Exception
+ */
+	public static SimpleFeatureCollection fixParcelAttributes(SimpleFeatureCollection parcels, File tmpFolder, File buildingFile, File communityFile,
 			File mupOutputFile) throws Exception {
 
 		////////////////
@@ -169,7 +183,7 @@ public class ParcelConsolidRecomp {
 		SimpleFeatureBuilder featureBuilder = new SimpleFeatureBuilder(parcels.getSchema());
 
 		// city information
-		ShapefileDataStore shpDSCities = new ShapefileDataStore(cityFile.toURI().toURL());
+		ShapefileDataStore shpDSCities = new ShapefileDataStore(communityFile.toURI().toURL());
 		SimpleFeatureCollection citiesSFS = shpDSCities.getFeatureSource().getFeatures();
 
 		ShapefileDataStore shpDSCells = new ShapefileDataStore(mupOutputFile.toURI().toURL());
@@ -241,10 +255,10 @@ public class ParcelConsolidRecomp {
 	}
 
 	/**
-	 * mark parcels that intersects mupCity's output on the "MERGE" field.
+	 * mark parcels that intersects mupCity's output on the "SPLIT" field.
 	 * 
-	 * @param parcels
-	 * @param mUPOutputFile
+	 * @param parcels : The collection of parcels to mark
+	 * @param mupOutputFile : A shapefile containing outputs of MUP-City
 	 * @return
 	 * @throws IOException
 	 * @throws Exception
@@ -255,36 +269,58 @@ public class ParcelConsolidRecomp {
 		ShapefileDataStore sds = new ShapefileDataStore(mUPOutputFile.toURI().toURL());
 		Geometry sfcMUP = Vectors.unionSFC(Vectors.snapDatas(sds.getFeatureSource().getFeatures(), parcels));
 
-		final SimpleFeatureType featureSchema = ParcelSchema.getParcelMergeSFBuilder().getFeatureType();
+		final SimpleFeatureType featureSchema = ParcelSchema.getParcelSplitSFBuilder().getFeatureType();
 		DefaultFeatureCollection result = new DefaultFeatureCollection();
 
 		Arrays.stream(parcels.toArray(new SimpleFeature[0])).forEach(feat -> {
 			SimpleFeatureBuilder featureBuilder = ParcelSchema.setSFBParcelWithFeat(feat, featureSchema);
 			if (((Geometry) feat.getDefaultGeometry()).intersects(sfcMUP)) {
-				featureBuilder.set("MERGE", 1);
+				featureBuilder.set("SPLIT", 1);
 			} else {
-				featureBuilder.set("MERGE", 0);
+				featureBuilder.set("SPLIT", 0);
 			}
 			result.add(featureBuilder.buildFeature(null));
 		});
 		sds.dispose();
 		return result.collection();
-
 	}
-
-	public static SimpleFeatureCollection markParcelIntersectZoningType(SimpleFeatureCollection parcels, String type, File zoningFile)
+/**
+ * To test !! 	
+ * @param parcels
+ * @param minimalParcelSize
+ * @return
+ */
+//	public static SimpleFeatureCollection mergeTooSmallParcels(SimpleFeatureCollection parcels, int minimalParcelSize) {
+//		final SimpleFeatureType featureSchema = ParcelSchema.getParcelSFBuilder().getFeatureType();
+//		DefaultFeatureCollection result = new DefaultFeatureCollection();
+////		List<SimpleFeature> smallParcels = Arrays.stream(parcels.toArray(new SimpleFeature[0])).filter(feat -> ((Geometry)feat.getDefaultGeometry()).getArea()<minimalParcelSize).collect(Collector(ToList()));
+//		//TODO not implemented yet
+//		return null;
+//	}	
+	
+/**
+ * mark parcels that intersects a certain type of zoning. 
+ * 
+ * @param parcels
+ * @param zoningType : The big kind of the zoning (either not constructible (NC), urbanizable (U) or to be urbanize (TBU). Other keywords can be tolerate
+ * @param zoningFile : A shapefile containing the zoning plan
+ * @return The same collection of parcels with the SPLIT field 
+ * @throws IOException
+ * @throws Exception
+ */
+	public static SimpleFeatureCollection markParcelIntersectZoningType(SimpleFeatureCollection parcels, String zoningType, File zoningFile)
 			throws IOException, Exception {
-		final SimpleFeatureType featureSchema = ParcelSchema.getParcelMergeSFBuilder().getFeatureType();
+		final SimpleFeatureType featureSchema = ParcelSchema.getParcelSplitSFBuilder().getFeatureType();
 		DefaultFeatureCollection result = new DefaultFeatureCollection();
 
 		Arrays.stream(parcels.toArray(new SimpleFeature[0])).forEach(feat -> {
 			SimpleFeatureBuilder featureBuilder = ParcelSchema.setSFBParcelWithFeat(feat, featureSchema);
 			try {
-				if (ParcelState.parcelInBigZone(zoningFile, feat).equals(type)
-						&& (feat.getFeatureType().getDescriptor("MERGE") == null || feat.getAttribute("MERGE").equals(1))) {
-					featureBuilder.set("MERGE", 1);
+				if (ParcelState.parcelInBigZone(zoningFile, feat).equals(zoningType)
+						&& (feat.getFeatureType().getDescriptor("SPLIT") == null || feat.getAttribute("SPLIT").equals(1))) {
+					featureBuilder.set("SPLIT", 1);
 				} else {
-					featureBuilder.set("MERGE", 0);
+					featureBuilder.set("SPLIT", 0);
 				}
 			} catch (Exception e) {
 				e.printStackTrace();
