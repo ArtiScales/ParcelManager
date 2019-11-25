@@ -11,7 +11,6 @@ import org.geotools.feature.simple.SimpleFeatureBuilder;
 import org.locationtech.jts.geom.Geometry;
 import org.opengis.feature.simple.SimpleFeature;
 
-import fr.ign.cogit.GTFunctions.Vectors;
 import fr.ign.cogit.parcelFunction.ParcelAttribute;
 import fr.ign.cogit.parcelFunction.ParcelSchema;
 import fr.ign.cogit.parcelFunction.ParcelState;
@@ -40,7 +39,7 @@ public class ArtiScalesFields {
 
 		int i = 0;
 		SimpleFeatureIterator parcelIt = parcels.features();
-		SimpleFeatureBuilder featureBuilder = ParcelSchema.getParcelSFBuilder();
+		SimpleFeatureBuilder featureBuilder = ParcelSchema.getSFBParcelAsAS();
 
 		// city information
 		ShapefileDataStore shpDSCities = new ShapefileDataStore(communityFile.toURI().toURL());
@@ -51,7 +50,7 @@ public class ArtiScalesFields {
 
 		try {
 			while (parcelIt.hasNext()) {
-				boolean newlyGenerate =false;
+				boolean newlyGenerate = false;
 				i++;
 				SimpleFeature parcel = parcelIt.next();
 				featureBuilder.set("the_geom", parcel.getDefaultGeometry());
@@ -67,7 +66,7 @@ public class ArtiScalesFields {
 					featureBuilder.set("CODE", ParcelAttribute.makeParcelCode(parcel));
 					featureBuilder.set("COM_ABS", "000");
 				} else {
-					newlyGenerate= true;
+					newlyGenerate = true;
 					// we get the city info
 					String insee = ParcelAttribute.getInseeFromParcel(citiesSFS, parcel);
 
@@ -122,7 +121,6 @@ public class ArtiScalesFields {
 					}
 				}
 				SimpleFeature feat = featureBuilder.buildFeature(Integer.toString(i));
-				// System.out.println(feat.getID());
 				parcelFinal.add(feat);
 			}
 		} catch (Exception problem) {
@@ -130,8 +128,6 @@ public class ArtiScalesFields {
 		} finally {
 			parcelIt.close();
 		}
-
-		Vectors.exportSFC(parcelFinal.collection(), new File(tmpFolder, "step4.shp"));
 
 		shpDSCells.dispose();
 		shpDSCities.dispose();

@@ -9,13 +9,9 @@ import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.data.simple.SimpleFeatureIterator;
 import org.geotools.feature.DefaultFeatureCollection;
 import org.geotools.feature.simple.SimpleFeatureBuilder;
-import org.geotools.feature.simple.SimpleFeatureTypeBuilder;
-import org.geotools.referencing.CRS;
 import org.locationtech.jts.geom.Geometry;
-import org.locationtech.jts.geom.Polygon;
 import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.feature.simple.SimpleFeatureType;
-import org.opengis.referencing.crs.CoordinateReferenceSystem;
 
 import fr.ign.cogit.GTFunctions.Vectors;
 import fr.ign.cogit.parcelFunction.ParcelSchema;
@@ -74,23 +70,13 @@ public class ParcelConsolidRecomp {
 		////////////////
 
 		DefaultFeatureCollection mergedParcels = new DefaultFeatureCollection();
-		SimpleFeatureTypeBuilder sfTypeBuilder = new SimpleFeatureTypeBuilder();
 
-		CoordinateReferenceSystem sourceCRS = CRS.decode("EPSG:2154");
-
-		sfTypeBuilder.setName("toSplit");
-		sfTypeBuilder.setCRS(sourceCRS);
-		sfTypeBuilder.add("the_geom", Polygon.class);
-		sfTypeBuilder.add("SPLIT", Integer.class);
-		sfTypeBuilder.add("Section", Integer.class);
-		sfTypeBuilder.setDefaultGeometry("the_geom");
-
-		SimpleFeatureBuilder sfBuilder = new SimpleFeatureBuilder(sfTypeBuilder.buildFeatureType());
+		SimpleFeatureBuilder sfBuilder = ParcelSchema.getSFBFrenchParcelSplit();
 
 		Geometry multiGeom = Vectors.unionSFC(parcelToMerge);
 		for (int i = 0; i < multiGeom.getNumGeometries(); i++) {
 			sfBuilder.add(multiGeom.getGeometryN(i));
-			sfBuilder.set("Section", i);
+			sfBuilder.set("SECTION", Integer.toString(i));
 			mergedParcels.add(sfBuilder.buildFeature(null));
 		}
 
@@ -101,7 +87,7 @@ public class ParcelConsolidRecomp {
 		// third step : cuting of the parcels
 		////////////////
 
-		SimpleFeatureBuilder sfBuilderFinalParcel = ParcelSchema.getParcelSFBuilder();
+		SimpleFeatureBuilder sfBuilderFinalParcel = ParcelSchema.getSFBParcelAsAS();
 		DefaultFeatureCollection cutParcels = new DefaultFeatureCollection();
 
 		Arrays.stream(mergedParcels.toArray(new SimpleFeature[0])).forEach(feat -> {
@@ -124,7 +110,7 @@ public class ParcelConsolidRecomp {
 								while (ilotIt.hasNext()) {
 									SimpleFeature ilot = ilotIt.next();
 									if (((Geometry) ilot.getDefaultGeometry()).intersects((Geometry) f.getDefaultGeometry())) {
-										sec = String.valueOf(ilot.getAttribute("Section"));
+										sec = (String) ilot.getAttribute("SECTION");
 										break;
 									}
 								}
@@ -152,11 +138,11 @@ public class ParcelConsolidRecomp {
 
 		// add initial non cut parcel to final parcels only if they are bigger than the limit
 		Arrays.stream(parcelResult.toArray(new SimpleFeature[0])).forEach(feat -> {
-			SimpleFeatureBuilder SFBParcel = ParcelSchema.setSFBParcelWithFeat(feat);
+			SimpleFeatureBuilder SFBParcel = ParcelSchema.setSFBParcelAsASWithFeat(feat);
 			cutParcels.add(SFBParcel.buildFeature(null));
 		});
 
-		SimpleFeatureCollection result = Vectors.delTinyParcels(cutParcels, 10.0);
+		SimpleFeatureCollection result = Vectors.delTinyParcels(cutParcels, 5.0);
 
 		Vectors.exportSFC(result, new File(tmpFolder, "step3.shp"));
 
@@ -164,8 +150,6 @@ public class ParcelConsolidRecomp {
 
 		return result;
 	}
-
-
 
 	/**
 	 * mark parcels that intersects mupCity's output on the "SPLIT" field.
@@ -184,11 +168,11 @@ public class ParcelConsolidRecomp {
 		ShapefileDataStore sds = new ShapefileDataStore(mUPOutputFile.toURI().toURL());
 		Geometry sfcMUP = Vectors.unionSFC(Vectors.snapDatas(sds.getFeatureSource().getFeatures(), parcels));
 
-		final SimpleFeatureType featureSchema = ParcelSchema.getParcelSplitSFBuilder().getFeatureType();
+		final SimpleFeatureType featureSchema = ParcelSchema.getSFBParcelAsASSplit().getFeatureType();
 		DefaultFeatureCollection result = new DefaultFeatureCollection();
 
 		Arrays.stream(parcels.toArray(new SimpleFeature[0])).forEach(feat -> {
-			SimpleFeatureBuilder featureBuilder = ParcelSchema.setSFBParcelWithFeatAsAS(feat, featureSchema);
+			SimpleFeatureBuilder featureBuilder = ParcelSchema.setSFBParcelAsASWithFeat(feat, featureSchema);
 			if (((Geometry) feat.getDefaultGeometry()).intersects(sfcMUP)) {
 				featureBuilder.set("SPLIT", 1);
 			} else {
@@ -228,11 +212,11 @@ public class ParcelConsolidRecomp {
 	 */
 	public static SimpleFeatureCollection markParcelIntersectZoningType(SimpleFeatureCollection parcels, String zoningType, File zoningFile)
 			throws IOException, Exception {
-		final SimpleFeatureType featureSchema = ParcelSchema.getParcelSplitSFBuilder().getFeatureType();
+		final SimpleFeatureType featureSchema = ParcelSchema.getSFBParcelAsASSplit().getFeatureType();
 		DefaultFeatureCollection result = new DefaultFeatureCollection();
 
 		Arrays.stream(parcels.toArray(new SimpleFeature[0])).forEach(feat -> {
-			SimpleFeatureBuilder featureBuilder = ParcelSchema.setSFBParcelWithFeatAsAS(feat, featureSchema);
+			SimpleFeatureBuilder featureBuilder = ParcelSchema.setSFBParcelAsASWithFeat(feat, featureSchema);
 			try {
 				if (ParcelState.parcelInBigZone(zoningFile, feat).equals(zoningType)
 						&& (feat.getFeatureType().getDescriptor("SPLIT") == null || feat.getAttribute("SPLIT").equals(1))) {

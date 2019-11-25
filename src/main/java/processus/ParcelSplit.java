@@ -59,7 +59,7 @@ public class ParcelSplit {
 
 		// putting the need of splitting into attribute
 
-		SimpleFeatureBuilder sfBuilder = ParcelSchema.getParcelSplitSFBuilder();
+		SimpleFeatureBuilder sfBuilder = ParcelSchema.getSFBParcelAsASSplit();
 
 		DefaultFeatureCollection toSplit = new DefaultFeatureCollection();
 
@@ -117,7 +117,7 @@ public class ParcelSplit {
 		///////
 
 		// create a new collection
-		SimpleFeatureBuilder sfBuilder = ParcelSchema.getParcelSplitSFBuilder();
+		SimpleFeatureBuilder sfBuilder = ParcelSchema.getSFBParcelAsASSplit();
 		DefaultFeatureCollection toSplit = new DefaultFeatureCollection();
 
 		// iterate on the parcels
