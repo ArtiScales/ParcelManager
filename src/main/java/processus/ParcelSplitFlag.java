@@ -135,7 +135,6 @@ public class ParcelSplitFlag {
 		FlagParcelDecomposition fpd = new FlagParcelDecomposition((IPolygon) surfaces.get(0), buildingCollec, maximalAreaSplitParcel,
 				maximalWidthSplitParcel, lenDriveway, iMultiCurve);
 		IFeatureCollection<IFeature> decomp = fpd.decompParcel(0);
-		IFeatureCollection<IFeature> ifeatCollOut = new FT_FeatureCollection<>();
 
 		// if the size of the collection is 1, no flag cut has been done. We check if we can normal cut it, if allowed
 		if (decomp.size() == 1 && isArt3AllowsIsolatedParcel) {
@@ -143,7 +142,9 @@ public class ParcelSplitFlag {
 			return ParcelSplit.splitParcels(GeOxygeneGeoToolsTypes.convert2SimpleFeature(ifeat, CRS.decode("EPSG:2154")), maximalAreaSplitParcel,
 					maximalWidthSplitParcel, 0, 0, iMultiCurve, 0, false, 8, tmpFile, false);
 		}
-
+		
+		IFeatureCollection<IFeature> ifeatCollOut = new FT_FeatureCollection<>();
+		ifeatCollOut.addAll(decomp);
 		// dirty translation from geox to geotools TODO clean that one day
 		File fileOut = new File(tmpFile, "tmp_split.shp");
 		ShapefileWriter.write(ifeatCollOut, fileOut.toString(), CRS.decode("EPSG:2154"));

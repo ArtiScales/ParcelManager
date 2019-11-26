@@ -54,7 +54,7 @@ public class ParcelDensification {
 		DefaultFeatureCollection cutedAll = new DefaultFeatureCollection();
 		for (IFeature iFeat : parcelCollec) {
 			// if the parcel is selected for the simulation and bigger than the limit size
-			if (iFeat.getAttribute("SPLIT").equals("true") && iFeat.getGeom().area() > maximalAreaSplitParcel) {
+			if (iFeat.getAttribute("SPLIT").equals(1) && iFeat.getGeom().area() > maximalAreaSplitParcel) {
 				// we falg cut the parcel
 				SimpleFeatureCollection tmp = ParcelSplitFlag.generateFlagSplitedParcels(iFeat, iMultiCurve, tmpFolder, buildingFile,
 						maximalAreaSplitParcel, maximalWidthSplitParcel, lenDriveway, isArt3AllowsIsolatedParcel);
@@ -64,7 +64,9 @@ public class ParcelDensification {
 				try {
 					while (parcelIt.hasNext()) {
 						if (((Geometry) parcelIt.next().getDefaultGeometry()).getArea() < minimalAreaSplitParcel) {
+							System.out.println("densifyed parcel is too small");
 							add = false;
+							break;
 						}
 					}
 				} catch (Exception problem) {
@@ -73,8 +75,10 @@ public class ParcelDensification {
 					parcelIt.close();
 				}
 				if (add) {
+					System.out.println("add "+ tmp.size() +" densyfied parcels");
 					cutedAll.addAll(tmp);
 				} else {
+					System.out.println("add former parcel");
 					cutedAll.add(GeOxygeneGeoToolsTypes.convert2SimpleFeature(iFeat, CRS.decode("EPSG:2154")));
 				}
 			}
