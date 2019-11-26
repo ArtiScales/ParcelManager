@@ -133,6 +133,5 @@ public class ArtiScalesFields {
 		shpDSCities.dispose();
 
 		return parcelFinal.collection();
-
 	}
 }

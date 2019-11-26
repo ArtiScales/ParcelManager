@@ -3,9 +3,11 @@ package processus;
 import java.io.File;
 import java.util.List;
 
+import org.geotools.data.DataUtilities;
+import org.geotools.data.shapefile.ShapefileDataStore;
+import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.referencing.CRS;
 
-import fr.ign.cogit.GTFunctions.Vectors;
 import fr.ign.cogit.geoxygene.api.feature.IFeature;
 import fr.ign.cogit.geoxygene.api.feature.IFeatureCollection;
 import fr.ign.cogit.geoxygene.api.spatial.coordgeom.IDirectPosition;
@@ -18,10 +20,9 @@ import fr.ign.cogit.geoxygene.convert.FromGeomToSurface;
 import fr.ign.cogit.geoxygene.feature.FT_FeatureCollection;
 import fr.ign.cogit.geoxygene.sig3d.calculation.parcelDecomposition.FlagParcelDecomposition;
 import fr.ign.cogit.geoxygene.spatial.coordgeom.DirectPosition;
-import fr.ign.cogit.geoxygene.util.attribute.AttributeManager;
 import fr.ign.cogit.geoxygene.util.conversion.GeOxygeneGeoToolsTypes;
 import fr.ign.cogit.geoxygene.util.conversion.ShapefileReader;
-import fr.ign.cogit.parcelFunction.ParcelState;
+import fr.ign.cogit.geoxygene.util.conversion.ShapefileWriter;
 
 public class ParcelSplitFlag {
 
@@ -116,13 +117,13 @@ public class ParcelSplitFlag {
 	//
 	// }
 
-	public static IFeatureCollection<IFeature> generateFlagSplitedParcels(IFeature ifeat, IMultiCurve<IOrientableCurve> iMultiCurve, File tmpFile,
-			File zoningFile, File regulFile, File outMupFile, Double maximalAreaSplitParcel, Double maximalWidthSplitParcel, Double lenDriveway)
+	public static SimpleFeatureCollection generateFlagSplitedParcels(IFeature ifeat, IMultiCurve<IOrientableCurve> iMultiCurve, File tmpFile,
+			File buildingFile, Double maximalAreaSplitParcel, Double maximalWidthSplitParcel, Double lenDriveway, boolean isArt3AllowsIsolatedParcel)
 			throws Exception {
 		DirectPosition.PRECISION = 3;
-		IFeatureCollection<IFeature> batiLargeCollec = ShapefileReader.read(zoningFile.getAbsolutePath());
-		IFeatureCollection<IFeature> batiCollec = new FT_FeatureCollection<>();
-		batiCollec.addAll(batiLargeCollec.select(ifeat.getGeom()));
+		IFeatureCollection<IFeature> buildingLargeCollec = ShapefileReader.read(buildingFile.getAbsolutePath());
+		IFeatureCollection<IFeature> buildingCollec = new FT_FeatureCollection<>();
+		buildingCollec.addAll(buildingLargeCollec.select(ifeat.getGeom().buffer(10.0)));
 
 		IGeometry geom = ifeat.getGeom();
 
@@ -131,98 +132,26 @@ public class ParcelSplitFlag {
 		geom = geom.translate(-dp.getX(), -dp.getY(), 0);
 
 		List<IOrientableSurface> surfaces = FromGeomToSurface.convertGeom(geom);
-		FlagParcelDecomposition fpd = new FlagParcelDecomposition((IPolygon) surfaces.get(0), batiCollec, maximalAreaSplitParcel,
+		FlagParcelDecomposition fpd = new FlagParcelDecomposition((IPolygon) surfaces.get(0), buildingCollec, maximalAreaSplitParcel,
 				maximalWidthSplitParcel, lenDriveway, iMultiCurve);
 		IFeatureCollection<IFeature> decomp = fpd.decompParcel(0);
 		IFeatureCollection<IFeature> ifeatCollOut = new FT_FeatureCollection<>();
-		long numParcelle = Math.round(Math.random() * 10000);
 
-		// may we need to normal cut it?
-		if (decomp.size() == 1 && ParcelState.isArt3AllowsIsolatedParcel(decomp.get(0), regulFile)) {
+		// if the size of the collection is 1, no flag cut has been done. We check if we can normal cut it, if allowed
+		if (decomp.size() == 1 && isArt3AllowsIsolatedParcel) {
 			System.out.println("normal decomp instead of flagg decomp allowed");
-			File superTemp = Vectors
-					.exportSFC(
-							ParcelSplit.splitParcels(GeOxygeneGeoToolsTypes.convert2SimpleFeature(ifeat, CRS.decode("EPSG:2154")),
-									maximalAreaSplitParcel, maximalWidthSplitParcel, 0, 0, iMultiCurve, 0, false, 5, tmpFile, false),
-							new File(tmpFile, "normalCutedParcel.shp"));
-			decomp = ShapefileReader.read(superTemp.getAbsolutePath());
+			return ParcelSplit.splitParcels(GeOxygeneGeoToolsTypes.convert2SimpleFeature(ifeat, CRS.decode("EPSG:2154")), maximalAreaSplitParcel,
+					maximalWidthSplitParcel, 0, 0, iMultiCurve, 0, false, 8, tmpFile, false);
 		}
 
-		for (IFeature newFeat : decomp) {
-			// impeach irregularities
-			newFeat.setGeom(newFeat.getGeom().buffer(0.5).buffer(-0.5));
+		// dirty translation from geox to geotools TODO clean that one day
+		File fileOut = new File(tmpFile, "tmp_split.shp");
+		ShapefileWriter.write(ifeatCollOut, fileOut.toString(), CRS.decode("EPSG:2154"));
 
-			String newCodeDep = (String) ifeat.getAttribute("CODE_DEP");
-			String newCodeCom = (String) ifeat.getAttribute("CODE_COM");
-			String newSection = (String) ifeat.getAttribute("SECTION") + "div";
-			String newNumero = String.valueOf(numParcelle++);
-			String newCode = newCodeDep + newCodeCom + "000" + newSection + newNumero;
-			AttributeManager.addAttribute(newFeat, "CODE", newCode, "String");
-			AttributeManager.addAttribute(newFeat, "CODE_DEP", newCodeDep, "String");
-			AttributeManager.addAttribute(newFeat, "CODE_COM", newCodeCom, "String");
-			AttributeManager.addAttribute(newFeat, "COM_ABS", "000", "String");
-			AttributeManager.addAttribute(newFeat, "SECTION", newSection, "String");
-			AttributeManager.addAttribute(newFeat, "NUMERO", newNumero, "String");
-			AttributeManager.addAttribute(newFeat, "INSEE", newCodeDep + newCodeCom, "String");
-
-			double eval = 0.0;
-			boolean bati = false;
-			boolean simul = false;
-			boolean u = false;
-			boolean au = false;
-			boolean nc = false;
-
-			// we put a small buffer because a lot of houses are just biting neighborhood
-			// parcels
-			for (IFeature batiIFeat : batiCollec) {
-				if (newFeat.getGeom().buffer(-1.5).intersects(batiIFeat.getGeom())) {
-					bati = true;
-				}
-			}
-
-			// we decide here if we want to simul that parcel
-			if (!bati) {
-				// if the parcels hasn't been decomposed
-				if (decomp.size() == 1) {
-					// has access to road, we put it whole to simul
-					if (fpd.hasRoadAccess((IPolygon) surfaces.get(0))) {
-						simul = true;
-					}
-					// doesn't has to be connected to the road to be urbanized
-					else if (ParcelState.isArt3AllowsIsolatedParcel(newFeat, regulFile)) {
-						simul = true;
-					}
-				} else {
-					simul = true;
-				}
-			}
-
-			List<String> zones = ParcelState.parcelInBigZone(newFeat, zoningFile);
-
-			if (zones.contains("U")) {
-				u = true;
-			}
-			if (zones.contains("AU")) {
-				au = true;
-			}
-			if (zones.contains("NC")) {
-				nc = true;
-			}
-
-			if (simul) {
-				eval = ParcelState.getEvalInParcel(newFeat, outMupFile);
-			}
-
-			AttributeManager.addAttribute(newFeat, "eval", eval, "String");
-			AttributeManager.addAttribute(newFeat, "DoWeSimul", simul, "String");
-			AttributeManager.addAttribute(newFeat, "IsBuild", bati, "String");
-			AttributeManager.addAttribute(newFeat, "U", u, "String");
-			AttributeManager.addAttribute(newFeat, "AU", au, "String");
-			AttributeManager.addAttribute(newFeat, "NC", nc, "String");
-
-			ifeatCollOut.add(newFeat);
-		}
-		return decomp;
+		ShapefileDataStore sds = new ShapefileDataStore(fileOut.toURI().toURL());
+		SimpleFeatureCollection parcelOut = DataUtilities.collection(sds.getFeatureSource().getFeatures());
+		sds.dispose();
+		return parcelOut;
 
 	}
 }
