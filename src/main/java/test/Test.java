@@ -2,6 +2,7 @@ package test;
 
 import java.io.File;
 
+import org.apache.commons.logging.impl.Log4JLogger;
 import org.geotools.data.shapefile.ShapefileDataStore;
 import org.geotools.data.simple.SimpleFeatureCollection;
 
@@ -21,19 +22,24 @@ public class Test {
 	// //////// try the parcelGenMotif method
 	/////////////////////////
 	public static void main(String[] args) throws Exception {
-
+		
 		File tmpFolder = new File("/tmp/");
-		File rootFolder = new File("/home/ubuntu/boulot/these/ArtiScales/ArtiScales/");
+		File rootFolder = new File("/home/mcolomb/informatique/ArtiScales/");
 		File zoningFile = new File(rootFolder, "dataRegulation/zoning.shp");
 		File buildingFile = new File(rootFolder, "dataGeo/building.shp");
 		File communityFile = new File(rootFolder, "dataGeo/communities.shp");
 		File predicateFile = new File(rootFolder, "dataRegulation/predicate.csv");
 
-		ShapefileDataStore shpDSParcel = new ShapefileDataStore(new File(rootFolder, "dataGeo/parcel.shp").toURI().toURL());
-		SimpleFeatureCollection parcels = shpDSParcel.getFeatureSource().getFeatures();
-		SimpleFeatureCollection parcel = ParcelGetter.getParcelByZip(parcels, "25381");
+//		ShapefileDataStore shpDSParcel = new ShapefileDataStore(new File(rootFolder, "dataGeo/parcel.shp").toURI().toURL());
+//		SimpleFeatureCollection parcels = shpDSParcel.getFeatureSource().getFeatures();
+//		SimpleFeatureCollection parcel = ParcelGetter.getParcelByZip(parcels, "25381");
+		
+		ShapefileDataStore shpDSParcel = new ShapefileDataStore(new File("/tmp/parcelInTemp.shp").toURI().toURL());
+		SimpleFeatureCollection parcel = shpDSParcel.getFeatureSource().getFeatures();
+		
 
-		File mupOutput = new File(rootFolder, "/MupCityDepot/DDense/variante0/DDense-yager-evalAnal.shp");
+//		File mupOutput = new File(rootFolder, "/MupCityDepot/DDense/variante0/DDense-yager-evalAnal.shp");
+		File mupOutput = new File(rootFolder, "MupCityDepot/DDense/base/DDense--N7_Ba_Yag_ahpS_seed_42-evalAnal-20.0.shp");
 
 		double maximalArea = 400.0;
 		double minimalArea = 100.0;
@@ -78,9 +84,10 @@ public class Test {
 
 		SimpleFeatureCollection parcMUPMarked = AttributeFromPosition.markParcelIntersectMUPOutput(parcel, mupOutput);
 		SimpleFeatureCollection toDensify = AttributeFromPosition.markParcelIntersectZoningType(parcMUPMarked, "U", zoningFile);
+		System.out.println("cut");
 		SimpleFeatureCollection salut = ParcelDensification.parcelDensification(toDensify, ilot, tmpFolder, buildingFile, 800.0, 200.0, 15.0, 5.0,
-				ParcelState.isArt3AllowsIsolatedParcel(ParcelAttribute.getCityCodeFromParcels(toDensify).get(0), predicateFile));
-
+//				ParcelState.isArt3AllowsIsolatedParcel(ParcelAttribute.getCityCodeFromParcels(toDensify).get(0), predicateFile));
+				ParcelState.isArt3AllowsIsolatedParcel(parcMUPMarked.features().next(), predicateFile));
 		Vectors.exportSFC(salut, new File("/tmp/parcelDensification.shp"));
 		shpDSIlot.dispose();
 		

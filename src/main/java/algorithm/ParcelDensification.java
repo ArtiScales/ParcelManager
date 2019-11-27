@@ -7,8 +7,10 @@ import java.util.List;
 import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.data.simple.SimpleFeatureIterator;
 import org.geotools.feature.DefaultFeatureCollection;
+import org.geotools.feature.simple.SimpleFeatureBuilder;
 import org.geotools.referencing.CRS;
 import org.locationtech.jts.geom.Geometry;
+import org.opengis.feature.simple.SimpleFeature;
 
 import fr.ign.cogit.GTFunctions.Vectors;
 import fr.ign.cogit.geoxygene.api.feature.IFeature;
@@ -19,6 +21,7 @@ import fr.ign.cogit.geoxygene.convert.FromGeomToLineString;
 import fr.ign.cogit.geoxygene.spatial.geomaggr.GM_MultiCurve;
 import fr.ign.cogit.geoxygene.util.conversion.GeOxygeneGeoToolsTypes;
 import fr.ign.cogit.geoxygene.util.conversion.ShapefileReader;
+import fr.ign.cogit.parcelFunction.ParcelSchema;
 import processus.ParcelSplitFlag;
 
 public class ParcelDensification {
@@ -42,6 +45,9 @@ public class ParcelDensification {
 		Vectors.exportSFC(parcelCollection, pivotFile);
 		IFeatureCollection<IFeature> parcelCollec = ShapefileReader.read(pivotFile.getAbsolutePath());
 
+		final String geomName = parcelCollection.getSchema().getGeometryDescriptor().getLocalName();
+		;
+
 		// the little islands (ilots)
 		File ilotReduced = new File(tmpFolder, "ilotTmp.shp");
 		Vectors.exportSFC(ilotCollection, ilotReduced);
@@ -52,6 +58,7 @@ public class ParcelDensification {
 		IMultiCurve<IOrientableCurve> iMultiCurve = new GM_MultiCurve<>(lOC);
 
 		DefaultFeatureCollection cutedAll = new DefaultFeatureCollection();
+		SimpleFeatureBuilder SFBFrenchParcel = ParcelSchema.getSFBFrenchParcel();
 		for (IFeature iFeat : parcelCollec) {
 			// if the parcel is selected for the simulation and bigger than the limit size
 			if (iFeat.getAttribute("SPLIT").equals(1) && iFeat.getGeom().area() > maximalAreaSplitParcel) {
@@ -70,24 +77,54 @@ public class ParcelDensification {
 						}
 					}
 				} catch (Exception problem) {
+					System.out.println("problem" + problem + "for " + iFeat + " feature densification");
 					problem.printStackTrace();
 				} finally {
 					parcelIt.close();
 				}
 				if (add) {
-					System.out.println("add "+ tmp.size() +" densyfied parcels");
-					cutedAll.addAll(tmp);
+					// construct the new parcels
+					// could have been cleaner with a stream but still don't know how to have an external counter to set parcels number
+					// Arrays.stream(tmp.toArray(new SimpleFeature[0])).forEach(parcelCuted -> {
+
+					int i = 1;
+					SimpleFeatureIterator parcelCutedIt = tmp.features();
+					try {
+						while (parcelCutedIt.hasNext()) {
+							SimpleFeature parcelCuted = parcelCutedIt.next();
+							String newCodeDep = (String) iFeat.getAttribute("CODE_DEP");
+							String newCodeCom = (String) iFeat.getAttribute("CODE_COM");
+							String newSection = (String) iFeat.getAttribute("SECTION") + "-Densifyed";
+							String newNumero = String.valueOf(i++);
+							String newCode = newCodeDep + newCodeCom + "000" + newSection + newNumero;
+							SFBFrenchParcel.set(geomName, parcelCuted.getDefaultGeometry());
+							SFBFrenchParcel.set("CODE", newCode);
+							SFBFrenchParcel.set("CODE_DEP", newCodeDep);
+							SFBFrenchParcel.set("CODE_COM", newCodeCom);
+							SFBFrenchParcel.set("COM_ABS", "000");
+							SFBFrenchParcel.set("SECTION", newSection);
+							SFBFrenchParcel.set("NUMERO", newNumero);
+							cutedAll.add(SFBFrenchParcel.buildFeature(null));
+						}
+					} catch (Exception problem) {
+						problem.printStackTrace();
+					} finally {
+						parcelCutedIt.close();
+					}
+					// });
 				} else {
-					System.out.println("add former parcel");
-					cutedAll.add(GeOxygeneGeoToolsTypes.convert2SimpleFeature(iFeat, CRS.decode("EPSG:2154")));
+					SFBFrenchParcel = ParcelSchema.setSFBFrenchParcelWithFeat(
+							GeOxygeneGeoToolsTypes.convert2SimpleFeature(iFeat, CRS.decode("EPSG:2154")), SFBFrenchParcel.getFeatureType());
+					cutedAll.add(SFBFrenchParcel.buildFeature(null));
 				}
 			}
 			// if no simulation needed, we ad the normal parcel
 			else {
-				cutedAll.add(GeOxygeneGeoToolsTypes.convert2SimpleFeature(iFeat, CRS.decode("EPSG:2154")));
+				SFBFrenchParcel = ParcelSchema.setSFBFrenchParcelWithFeat(
+						GeOxygeneGeoToolsTypes.convert2SimpleFeature(iFeat, CRS.decode("EPSG:2154")), SFBFrenchParcel.getFeatureType());
+				cutedAll.add(SFBFrenchParcel.buildFeature(null));
 			}
 		}
-
 		return cutedAll.collection();
 	}
 

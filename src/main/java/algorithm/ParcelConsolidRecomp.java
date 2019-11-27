@@ -1,21 +1,17 @@
 package algorithm;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.Arrays;
 
-import org.geotools.data.shapefile.ShapefileDataStore;
 import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.data.simple.SimpleFeatureIterator;
 import org.geotools.feature.DefaultFeatureCollection;
 import org.geotools.feature.simple.SimpleFeatureBuilder;
 import org.locationtech.jts.geom.Geometry;
 import org.opengis.feature.simple.SimpleFeature;
-import org.opengis.feature.simple.SimpleFeatureType;
 
 import fr.ign.cogit.GTFunctions.Vectors;
 import fr.ign.cogit.parcelFunction.ParcelSchema;
-import fr.ign.cogit.parcelFunction.ParcelState;
 import processus.ParcelSplit;
 
 public class ParcelConsolidRecomp {
