@@ -22,7 +22,6 @@ import fr.ign.cogit.geoxygene.convert.FromGeomToSurface;
 import fr.ign.cogit.geoxygene.feature.DefaultFeature;
 import fr.ign.cogit.geoxygene.feature.FT_FeatureCollection;
 import fr.ign.cogit.geoxygene.sig3d.calculation.parcelDecomposition.OBBBlockDecomposition;
-import fr.ign.cogit.geoxygene.util.attribute.AttributeManager;
 import fr.ign.cogit.geoxygene.util.conversion.ShapefileReader;
 import fr.ign.cogit.geoxygene.util.conversion.ShapefileWriter;
 import fr.ign.cogit.parcelFunction.ParcelSchema;
@@ -182,45 +181,12 @@ public class ParcelSplit {
 	 */
 	public static SimpleFeatureCollection splitParcels(SimpleFeature toSplit, double maximalArea, double maximalWidth, double streetEpsilon,
 			double noise, IMultiCurve<IOrientableCurve> extBlock, double streetWidth, boolean forceStreetAccess, int decompositionLevelWithoutStreet,
-			File tmpFolder, boolean addArg) throws Exception {
+			File tmpFolder) throws Exception {
 		DefaultFeatureCollection in = new DefaultFeatureCollection();
 		in.add(toSplit);
 		return splitParcels(in.collection(), maximalArea, maximalWidth, streetEpsilon, noise, extBlock, streetWidth, forceStreetAccess,
-				decompositionLevelWithoutStreet, tmpFolder, addArg);
+				decompositionLevelWithoutStreet, tmpFolder);
 
-	}
-
-	/**
-	 * overload to automaticaly add the existing attributes
-	 * 
-	 * @param toSplit
-	 *            : collection of parcels
-	 * @param maximalArea
-	 *            : area of the parcel under which the parcel won't be anymore cut
-	 * @param maximalWidth
-	 *            : width of the parcel under which the parcel won't be anymore cut
-	 * @param epsilon
-	 *            :
-	 * @param extBlock
-	 * @param streetWidth
-	 *            : with of the street composing the street network
-	 * @param decompositionLevelWithoutStreet
-	 *            : number of last iteration row for which no street network is generated
-	 * @param forceStreetAccess
-	 *            : force the access to the road for each parcel. Not working good yet.
-	 * @param tmpFolder
-	 *            : a folder to store temporary files
-	 * @param addArg
-	 *            : add the parent parcels attributes to the new cuted parcels by re-working them
-	 * @return a collection of subdivised parcels
-	 * @throws Exception
-	 */
-	public static SimpleFeatureCollection splitParcels(SimpleFeatureCollection toSplit, double maximalArea, double maximalWidth, double streetEpsilon,
-			double noise, IMultiCurve<IOrientableCurve> extBlock, double streetWidth, boolean forceStreetAccess, int decompositionLevelWithoutStreet,
-			File tmpFolder) throws Exception {
-
-		return splitParcels(toSplit, maximalArea, maximalWidth, streetEpsilon, noise, extBlock, streetWidth, forceStreetAccess,
-				decompositionLevelWithoutStreet, tmpFolder, true);
 	}
 
 	/**
@@ -251,7 +217,7 @@ public class ParcelSplit {
 	 */
 	public static SimpleFeatureCollection splitParcels(SimpleFeatureCollection toSplit, double maximalArea, double maximalWidth, double roadEpsilon,
 			double noise, IMultiCurve<IOrientableCurve> extBlock, double roadWidth, boolean forceRoadAccess, int decompositionLevelWithoutRoad,
-			File tmpFile, boolean addArg) throws Exception {
+			File tmpFile) throws Exception {
 
 		String attNameToTransform = "SPLIT";
 		// TODO work on that conversion
@@ -269,7 +235,6 @@ public class ParcelSplit {
 			}
 			IPolygon pol = (IPolygon) FromGeomToSurface.convertGeom(feat.getGeom()).get(0);
 
-			int numParcelle = 1;
 			int decompositionLevelWithRoad = OBBBlockDecomposition.howManyIt(pol, noise, forceRoadAccess, maximalArea, maximalWidth)
 					- decompositionLevelWithoutRoad;
 			if (decompositionLevelWithRoad < 0) {
@@ -280,28 +245,7 @@ public class ParcelSplit {
 			try {
 				IFeatureCollection<IFeature> featCollDecomp = obb.decompParcel(noise);
 				for (IFeature featDecomp : featCollDecomp) {
-					// MAJ du numéro de la parcelle
 					IFeature newFeat = new DefaultFeature(featDecomp.getGeom());
-					if (addArg) {
-						String newCodeDep = (String) feat.getAttribute("CODE_DEP");
-						String newCodeCom = (String) feat.getAttribute("CODE_COM");
-						String newSection = (String) feat.getAttribute("SECTION");
-						String newNumero = String.valueOf(numParcelle++);
-						String newCode = newCodeDep + newCodeCom + "000" + newSection + newNumero;
-						AttributeManager.addAttribute(newFeat, "CODE", newCode, "String");
-						AttributeManager.addAttribute(newFeat, "CODE_DEP", newCodeDep, "String");
-						AttributeManager.addAttribute(newFeat, "CODE_COM", newCodeCom, "String");
-						AttributeManager.addAttribute(newFeat, "COM_ABS", "000", "String");
-						AttributeManager.addAttribute(newFeat, "SECTION", newSection, "String");
-						AttributeManager.addAttribute(newFeat, "NUMERO", newNumero, "String");
-						AttributeManager.addAttribute(newFeat, "INSEE", newCodeDep + newCodeCom, "String");
-						AttributeManager.addAttribute(newFeat, "eval", "0", "String");
-						AttributeManager.addAttribute(newFeat, "DoWeSimul", false, "String");
-						AttributeManager.addAttribute(newFeat, "IsBuild", feat.getAttribute("IsBuild"), "String");
-						AttributeManager.addAttribute(newFeat, "U", feat.getAttribute("U"), "String");
-						AttributeManager.addAttribute(newFeat, "AU", feat.getAttribute("AU"), "String");
-						AttributeManager.addAttribute(newFeat, "NC", feat.getAttribute("NC"), "String");
-					}
 					ifeatCollOut.add(newFeat);
 				}
 			} catch (NullPointerException n) {
@@ -316,7 +260,6 @@ public class ParcelSplit {
 		}
 		File fileOut = new File(tmpFile, "tmp_split.shp");
 		ShapefileWriter.write(ifeatCollOut, fileOut.toString(), CRS.decode("EPSG:2154"));
-
 		// TODO that's an ugly thing, i thought i could go without it, but apparently it
 		// seems like my only option to get it done
 		// return GeOxygeneGeoToolsTypes.convert2FeatureCollection(ifeatCollOut,
@@ -325,6 +268,7 @@ public class ParcelSplit {
 		ShapefileDataStore sds = new ShapefileDataStore(fileOut.toURI().toURL());
 		SimpleFeatureCollection parcelOut = DataUtilities.collection(sds.getFeatureSource().getFeatures());
 		sds.dispose();
+		System.out.println("beuda");
 		return parcelOut;
 	}
 }

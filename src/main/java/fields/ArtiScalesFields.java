@@ -50,23 +50,25 @@ public class ArtiScalesFields {
 
 		try {
 			while (parcelIt.hasNext()) {
-				boolean newlyGenerate = false;
+				boolean newlyGenerate = true;
 				i++;
 				SimpleFeature parcel = parcelIt.next();
 				featureBuilder.set("the_geom", parcel.getDefaultGeometry());
 
 				// if the parcel already have informations, we just copy them
 				if (parcel.getAttribute("NUMERO") != null) {
+					String section = (String) parcel.getAttribute("SECTION");
 					featureBuilder.set("INSEE", ParcelAttribute.makeINSEECode(parcel));
 					featureBuilder.set("CODE_DEP", parcel.getAttribute("CODE_DEP"));
 					featureBuilder.set("CODE_COM", parcel.getAttribute("CODE_COM"));
-
-					featureBuilder.set("SECTION", parcel.getAttribute("SECTION"));
+					featureBuilder.set("SECTION", section);
 					featureBuilder.set("NUMERO", parcel.getAttribute("NUMERO"));
 					featureBuilder.set("CODE", ParcelAttribute.makeParcelCode(parcel));
 					featureBuilder.set("COM_ABS", "000");
+					if ( section.length() <= 2 ) {
+						newlyGenerate = false;
+					}
 				} else {
-					newlyGenerate = true;
 					// we get the city info
 					String insee = ParcelAttribute.getInseeFromParcel(citiesSFS, parcel);
 

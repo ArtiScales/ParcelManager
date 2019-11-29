@@ -58,7 +58,7 @@ public class ParcelConsolidRecomp {
 			}
 		});
 
-		Vectors.exportSFC(parcelToMerge.collection(), new File(tmpFolder, "step1.shp"));
+//		Vectors.exportSFC(parcelToMerge.collection(), new File(tmpFolder, "step1.shp"));
 		System.out.println("done step 1");
 
 		////////////////
@@ -76,14 +76,14 @@ public class ParcelConsolidRecomp {
 			mergedParcels.add(sfBuilder.buildFeature(null));
 		}
 
-		Vectors.exportSFC(mergedParcels.collection(), new File(tmpFolder, "step2.shp"));
+//		Vectors.exportSFC(mergedParcels.collection(), new File(tmpFolder, "step2.shp"));
 		System.out.println("done step 2");
 
 		////////////////
 		// third step : cuting of the parcels
 		////////////////
 
-		SimpleFeatureBuilder sfBuilderFinalParcel = ParcelSchema.getSFBParcelAsAS();
+		SimpleFeatureBuilder sfBuilderFinalParcel = ParcelSchema.getSFBFrenchParcel();
 		DefaultFeatureCollection cutParcels = new DefaultFeatureCollection();
 
 		Arrays.stream(mergedParcels.toArray(new SimpleFeature[0])).forEach(feat -> {
@@ -92,7 +92,7 @@ public class ParcelConsolidRecomp {
 				feat.setAttribute("SPLIT", 1);
 				try {
 					SimpleFeatureCollection freshCutParcel = ParcelSplit.splitParcels(feat, maximalArea, maximalWidth, 0, 0, null, streetWidth, false,
-							decompositionLevelWithoutStreet, tmpFolder, false);
+							decompositionLevelWithoutStreet, tmpFolder);
 					SimpleFeatureIterator it = freshCutParcel.features();
 					// every single parcel goes into new collection
 					while (it.hasNext()) {

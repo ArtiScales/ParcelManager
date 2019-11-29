@@ -140,7 +140,7 @@ public class ParcelSplitFlag {
 		if (decomp.size() == 1 && isArt3AllowsIsolatedParcel) {
 			System.out.println("normal decomp instead of flagg decomp allowed and done");
 			return ParcelSplit.splitParcels(GeOxygeneGeoToolsTypes.convert2SimpleFeature(ifeat, CRS.decode("EPSG:2154")), maximalAreaSplitParcel,
-					maximalWidthSplitParcel, 0, 0, iMultiCurve, 0, false, 8, tmpFile, false);
+					maximalWidthSplitParcel, 0, 0, iMultiCurve, 0, false, 8, tmpFile);
 		}
 		
 		IFeatureCollection<IFeature> ifeatCollOut = new FT_FeatureCollection<>();

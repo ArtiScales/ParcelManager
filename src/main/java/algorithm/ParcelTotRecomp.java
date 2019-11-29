@@ -69,7 +69,6 @@ public class ParcelTotRecomp {
 				savedParcels.add(parcel);
 			}
 		});
-
 		// complete the void left by the existing roads from the zones
 		// Also assess a section number
 		// tricky operations to avoid geometry problems
@@ -183,7 +182,7 @@ public class ParcelTotRecomp {
 		// Sometimes it bugs (like on Sector NV in Besançon)
 		SimpleFeatureCollection splitedZoneParcels = ParcelSplit.splitParcels(goOdZone, maximalArea, maximalWidth, roadEpsilon, noise, null, lenRoad,
 				false, decompositionLevelWithoutRoad, tmpFolder);
-
+		
 		int i = 0;
 		DefaultFeatureCollection result = new DefaultFeatureCollection();
 		SimpleFeatureIterator itZoneParcel = splitedZoneParcels.features();
