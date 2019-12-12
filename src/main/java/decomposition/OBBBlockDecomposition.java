@@ -13,6 +13,8 @@ import org.locationtech.jts.geom.LineString;
 import org.locationtech.jts.geom.MultiLineString;
 import org.locationtech.jts.geom.Polygon;
 
+import decomposition.MinimalBoundingRectangle;
+
 public class OBBBlockDecomposition {
   /**
    * Determine the width of the parcel on road.
