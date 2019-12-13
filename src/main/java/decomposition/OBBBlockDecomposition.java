@@ -6,6 +6,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
+import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.geotools.geometry.jts.WKTReader2;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.Geometry;
@@ -115,7 +118,7 @@ public class OBBBlockDecomposition {
     return poly.intersects(poly.getFactory().createMultiLineString(ext.toArray(new LineString[ext.size()])).buffer(0.5));
   }
 
-  public static List<Polygon> decompose(Polygon polygon, List<LineString> ext, double maximalArea, double maximalWidth, double noise, double epsilon, double roadWidth,
+  public static Tree<Pair<Polygon, Integer>> decompose(Polygon polygon, List<LineString> ext, double maximalArea, double maximalWidth, double noise, double epsilon, double roadWidth,
       boolean forceRoadAccess, int decompositionLevelWithRoad, int decompositionLevel) {
     double area = polygon.getArea();
     double frontSideWidth = frontSideWidth(polygon, ext);
@@ -123,7 +126,7 @@ public class OBBBlockDecomposition {
         "endCondition for " + area + " - " + frontSideWidth + " - " + maximalArea + " - " + maximalWidth + " => " + endCondition(area, frontSideWidth, maximalArea, maximalWidth));
     if (endCondition(area, frontSideWidth, maximalArea, maximalWidth)) {
       // System.out.println("endCondition for " + area + " - " + frontSideWidth + " - " + maximalArea + " - " + maximalWidth);
-      return Collections.singletonList(polygon);
+      return new Tree<>(new ImmutablePair<>(polygon, decompositionLevel));
     }
     // Determination of splitting polygon (it is a splitting line in the article)
     List<Polygon> splittingPolygon = computeSplittingPolygon(polygon, ext, true, noise, roadWidth, decompositionLevelWithRoad, decompositionLevel);
@@ -140,10 +143,12 @@ public class OBBBlockDecomposition {
       splitPolygons = split(polygon, splittingPolygon);
     }
     // All split polygons are split and results added to the output
-    return splitPolygons.stream()
-        .flatMap(pol -> decompose(pol, ext, maximalArea, maximalWidth, noise, epsilon, roadWidth, forceRoadAccess, decompositionLevelWithRoad, decompositionLevel + 1).stream())
-        .collect(Collectors.toList());
+//    return splitPolygons.stream()
+//        .flatMap(pol -> decompose(pol, ext, maximalArea, maximalWidth, noise, epsilon, roadWidth, forceRoadAccess, decompositionLevelWithRoad, decompositionLevel + 1).stream())
+//        .collect(Collectors.toList());
+    return new Tree<>(new ImmutablePair<>(polygon, decompositionLevel), splitPolygons.stream().map(pol -> decompose(pol, ext, maximalArea, maximalWidth, noise, epsilon, roadWidth, forceRoadAccess, decompositionLevelWithRoad, decompositionLevel + 1)).collect(Collectors.toList()));
   }
+  
 
   public static void main(String[] args) throws Exception {
     WKTReader2 reader = new WKTReader2();
@@ -212,6 +217,11 @@ public class OBBBlockDecomposition {
     // true,
     // 0.5);
     // split(polygon, splittingPolygon).stream().forEach(p->System.out.println(p));
-    decompose(polygon, list, 10000, 7, 0, 0, 5, false, 2, 0).stream().forEach(p -> System.out.println(p));
+    Tree<Pair<Polygon, Integer>> tree = decompose(polygon, list, 10000, 7, 0, 0, 5, false, 2, 0);
+    DescriptiveStatistics dS = new DescriptiveStatistics();
+    tree.childrenStream().forEach(c->dS.addValue(c.getValue()));
+    int depth = (int) dS.getPercentile(50);
+    System.out.println("DEPTH = " + depth);
+    tree.childrenStream().forEach(p -> System.out.println(p.getValue() + " " + p.getKey()));
   }
 }
