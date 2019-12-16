@@ -1,7 +1,6 @@
 package processus;
 
 import java.io.File;
-import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
@@ -12,7 +11,6 @@ import org.geotools.feature.DefaultFeatureCollection;
 import org.geotools.feature.simple.SimpleFeatureBuilder;
 import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.geom.LineString;
-import org.locationtech.jts.geom.MultiLineString;
 import org.locationtech.jts.geom.Polygon;
 import org.opengis.feature.Feature;
 import org.opengis.feature.FeatureVisitor;
@@ -48,7 +46,7 @@ public class ParcelSplit {
    * @throws Exception
    */
   public static SimpleFeatureCollection generateSplitAllParcels(SimpleFeature parcelIn, File tmpFolder, double maximalArea, double maximalWidth, double epsilon,
-      MultiLineString extBlock, double streetWidth, int decompositionLevelWithoutStreet, boolean forceStreetAccess) throws Exception {
+      List<LineString> extBlock, double streetWidth, int decompositionLevelWithoutStreet, boolean forceStreetAccess) throws Exception {
 
     // putting the need of splitting into attribute
 
@@ -100,7 +98,7 @@ public class ParcelSplit {
    * @throws Exception
    */
   public static SimpleFeatureCollection generateSplitParcelsIfBigger(SimpleFeatureCollection parcelsIn, File tmpFolder, double maximalArea, double maximalWidth, double epsilon,
-      MultiLineString extBlock, int decompositionLevelWithoutStreet, double streetWidth, boolean forceStreetAccess) throws Exception {
+      List<LineString> extBlock, int decompositionLevelWithoutStreet, double streetWidth, boolean forceStreetAccess) throws Exception {
 
     ///////
     // putting the need of splitting into attribute
@@ -168,7 +166,7 @@ public class ParcelSplit {
    * @return a collection of subdivised parcels
    * @throws Exception
    */
-  public static SimpleFeatureCollection splitParcels(SimpleFeature toSplit, double maximalArea, double maximalWidth, double streetEpsilon, double noise, MultiLineString extBlock,
+  public static SimpleFeatureCollection splitParcels(SimpleFeature toSplit, double maximalArea, double maximalWidth, double streetEpsilon, double noise, List<LineString> extBlock,
       double streetWidth, boolean forceStreetAccess, int decompositionLevelWithoutStreet, File tmpFolder) throws Exception {
     DefaultFeatureCollection in = new DefaultFeatureCollection();
     in.add(toSplit);
@@ -203,7 +201,7 @@ public class ParcelSplit {
    * @throws Exception
    */
   public static SimpleFeatureCollection splitParcels(SimpleFeatureCollection toSplit, double maximalArea, double maximalWidth, double roadEpsilon, double noise,
-      MultiLineString extBlock, double roadWidth, boolean forceRoadAccess, int decompositionLevelWithoutRoad, File tmpFile) throws Exception {
+      List<LineString> extBlock, double roadWidth, boolean forceRoadAccess, int decompositionLevelWithoutRoad, File tmpFile) throws Exception {
     String attNameToTransform = "SPLIT";
     // Configure memory datastore
     final MemoryDataStore memory = new MemoryDataStore();
@@ -220,13 +218,13 @@ public class ParcelSplit {
           memory.addFeature(newFeature);
         } else {
           Polygon polygon = (Polygon) feature.getDefaultGeometry();
-          List<LineString> list = new ArrayList<>(extBlock.getNumGeometries());
-          for (int i = 0; i < extBlock.getNumGeometries(); i++) list.add((LineString) extBlock.getGeometryN(i));
+//          List<LineString> list = new ArrayList<>(extBlock.getNumGeometries());
+//          for (int i = 0; i < extBlock.getNumGeometries(); i++) list.add((LineString) extBlock.getGeometryN(i));
           DescriptiveStatistics dS = new DescriptiveStatistics();
-          OBBBlockDecomposition.decompose(polygon, list, maximalArea, maximalWidth, noise, roadEpsilon, roadWidth, forceRoadAccess, 0, decompositionLevelWithoutRoad)
+          OBBBlockDecomposition.decompose(polygon, extBlock, maximalArea, maximalWidth, noise, roadEpsilon, roadWidth, forceRoadAccess, 0, decompositionLevelWithoutRoad)
           .stream().forEach(c->dS.addValue(c.getValue()));
           int decompositionLevelWithRoad = (int) dS.getPercentile(50);
-          OBBBlockDecomposition.decompose(polygon, list, maximalArea, maximalWidth, noise, roadEpsilon, roadWidth, forceRoadAccess, decompositionLevelWithRoad, decompositionLevelWithoutRoad)
+          OBBBlockDecomposition.decompose(polygon, extBlock, maximalArea, maximalWidth, noise, roadEpsilon, roadWidth, forceRoadAccess, decompositionLevelWithRoad, decompositionLevelWithoutRoad)
           .childrenStream().forEach(p-> {
             SimpleFeature newFeature = builder.buildFeature(null);
             newFeature.setDefaultGeometry(p.getKey());

@@ -6,23 +6,13 @@ import java.util.List;
 import org.geotools.data.DataUtilities;
 import org.geotools.data.shapefile.ShapefileDataStore;
 import org.geotools.data.simple.SimpleFeatureCollection;
-import org.geotools.referencing.CRS;
+import org.locationtech.jts.geom.Geometry;
+import org.locationtech.jts.geom.LineString;
+import org.locationtech.jts.geom.Polygon;
+import org.opengis.feature.simple.SimpleFeature;
 
-import fr.ign.cogit.geoxygene.api.feature.IFeature;
-import fr.ign.cogit.geoxygene.api.feature.IFeatureCollection;
-import fr.ign.cogit.geoxygene.api.spatial.coordgeom.IDirectPosition;
-import fr.ign.cogit.geoxygene.api.spatial.coordgeom.IPolygon;
-import fr.ign.cogit.geoxygene.api.spatial.geomaggr.IMultiCurve;
-import fr.ign.cogit.geoxygene.api.spatial.geomprim.IOrientableCurve;
-import fr.ign.cogit.geoxygene.api.spatial.geomprim.IOrientableSurface;
-import fr.ign.cogit.geoxygene.api.spatial.geomroot.IGeometry;
-import fr.ign.cogit.geoxygene.convert.FromGeomToSurface;
-import fr.ign.cogit.geoxygene.feature.FT_FeatureCollection;
-import fr.ign.cogit.geoxygene.sig3d.calculation.parcelDecomposition.FlagParcelDecomposition;
-import fr.ign.cogit.geoxygene.spatial.coordgeom.DirectPosition;
-import fr.ign.cogit.geoxygene.util.conversion.GeOxygeneGeoToolsTypes;
-import fr.ign.cogit.geoxygene.util.conversion.ShapefileReader;
-import fr.ign.cogit.geoxygene.util.conversion.ShapefileWriter;
+import decomposition.FlagParcelDecomposition;
+import fr.ign.cogit.FeaturePolygonizer;
 
 public class ParcelSplitFlag {
 
@@ -117,42 +107,44 @@ public class ParcelSplitFlag {
 	//
 	// }
 
-	public static SimpleFeatureCollection generateFlagSplitedParcels(IFeature ifeat, IMultiCurve<IOrientableCurve> iMultiCurve, File tmpFile,
+	public static SimpleFeatureCollection generateFlagSplitedParcels(SimpleFeature ifeat, List<LineString> iMultiCurve, File tmpFile,
 			File buildingFile, Double maximalAreaSplitParcel, Double maximalWidthSplitParcel, Double lenDriveway, boolean isArt3AllowsIsolatedParcel)
 			throws Exception {
-		DirectPosition.PRECISION = 3;
-		IFeatureCollection<IFeature> buildingLargeCollec = ShapefileReader.read(buildingFile.getAbsolutePath());
-		IFeatureCollection<IFeature> buildingCollec = new FT_FeatureCollection<>();
-		buildingCollec.addAll(buildingLargeCollec.select(ifeat.getGeom().buffer(10.0)));
+//		DirectPosition.PRECISION = 3;
+//		SimpleFeatureCollection buildingLargeCollec = ShapefileReader.read(buildingFile.getAbsolutePath());
+//		IFeatureCollection<IFeature> buildingCollec = new FT_FeatureCollection<>();
+//		buildingCollec.addAll(buildingLargeCollec.select(ifeat.getGeom().buffer(10.0)));
+    ShapefileDataStore buildingDS = new ShapefileDataStore(buildingFile.toURI().toURL());
+    SimpleFeatureCollection buildingCollec = buildingDS.getFeatureSource().getFeatures();
 
-		IGeometry geom = ifeat.getGeom();
+		Geometry geom = (Geometry) ifeat.getDefaultGeometry();
 
 		// what would that be for?
-		IDirectPosition dp = new DirectPosition(0, 0, 0); // geom.centroid();
-		geom = geom.translate(-dp.getX(), -dp.getY(), 0);
+//		IDirectPosition dp = new DirectPosition(0, 0, 0); // geom.centroid();
+//		geom = geom.translate(-dp.getX(), -dp.getY(), 0);
 
-		List<IOrientableSurface> surfaces = FromGeomToSurface.convertGeom(geom);
-		FlagParcelDecomposition fpd = new FlagParcelDecomposition((IPolygon) surfaces.get(0), buildingCollec, maximalAreaSplitParcel,
+		List<Polygon> surfaces = decomposition.FlagParcelDecomposition.getPolygons(geom);
+//		List<IOrientableSurface> surfaces = FromGeomToSurface.convertGeom(geom);
+		FlagParcelDecomposition fpd = new FlagParcelDecomposition(surfaces.get(0), buildingCollec, maximalAreaSplitParcel,
 				maximalWidthSplitParcel, lenDriveway, iMultiCurve);
-		IFeatureCollection<IFeature> decomp = fpd.decompParcel(0);
+		List<Polygon> decomp = fpd.decompParcel(0);
 
 		// if the size of the collection is 1, no flag cut has been done. We check if we can normal cut it, if allowed
 		if (decomp.size() == 1 && isArt3AllowsIsolatedParcel) {
 			System.out.println("normal decomp instead of flagg decomp allowed and done");
-			return ParcelSplit.splitParcels(GeOxygeneGeoToolsTypes.convert2SimpleFeature(ifeat, CRS.decode("EPSG:2154")), maximalAreaSplitParcel,
-					maximalWidthSplitParcel, 0, 0, iMultiCurve, 0, false, 8, tmpFile);
+			return ParcelSplit.splitParcels(ifeat, maximalAreaSplitParcel, maximalWidthSplitParcel, 0, 0, iMultiCurve, 0, false, 8, tmpFile);
 		}
 		
-		IFeatureCollection<IFeature> ifeatCollOut = new FT_FeatureCollection<>();
-		ifeatCollOut.addAll(decomp);
+//		IFeatureCollection<IFeature> ifeatCollOut = new FT_FeatureCollection<>();
+//		ifeatCollOut.addAll(decomp);
 		// dirty translation from geox to geotools TODO clean that one day
 		File fileOut = new File(tmpFile, "tmp_split.shp");
-		ShapefileWriter.write(ifeatCollOut, fileOut.toString(), CRS.decode("EPSG:2154"));
+//		ShapefileWriter.write(ifeatCollOut, fileOut.toString(), CRS.decode("EPSG:2154"));
+    FeaturePolygonizer.saveGeometries(decomp, fileOut, "Polygon");
 
 		ShapefileDataStore sds = new ShapefileDataStore(fileOut.toURI().toURL());
 		SimpleFeatureCollection parcelOut = DataUtilities.collection(sds.getFeatureSource().getFeatures());
 		sds.dispose();
 		return parcelOut;
-
 	}
 }
