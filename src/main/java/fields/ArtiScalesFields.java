@@ -65,7 +65,7 @@ public class ArtiScalesFields {
 					featureBuilder.set("NUMERO", parcel.getAttribute("NUMERO"));
 					featureBuilder.set("CODE", ParcelAttribute.makeParcelCode(parcel));
 					featureBuilder.set("COM_ABS", "000");
-					if ( section.length() <= 2 ) {
+					if (section != null && section.length() <= 2) {
 						newlyGenerate = false;
 					}
 				} else {
@@ -89,38 +89,44 @@ public class ArtiScalesFields {
 				featureBuilder.set("IsBuild", iPB);
 
 				// BigZoneAttribute
-				List<String> listBigZone = ParcelState.parcelInBigZone(parcel, zoningFile);
-				if (listBigZone.contains("U")) {
-					featureBuilder.set("U", true);
-				} else {
-					featureBuilder.set("U", false);
+				// if those attributes are already set, it means we can switch this step and the parcel is not new
+				if (parcel.getAttribute("U") != null) {
+					featureBuilder.set("U", parcel.getAttribute("U"));
+					featureBuilder.set("AU", parcel.getAttribute("AU"));
+					featureBuilder.set("NC", parcel.getAttribute("NC"));
+					newlyGenerate = false;
 				}
-				if (listBigZone.contains("AU")) {
-					featureBuilder.set("AU", true);
-				} else {
-					featureBuilder.set("AU", false);
-				}
-				if (listBigZone.contains("NC")) {
-					featureBuilder.set("NC", true);
-				} else {
-					featureBuilder.set("NC", false);
+				// else, we search for every zones that are intersecting the parcel
+				else {
+					List<String> listBigZone = ParcelState.parcelInBigZone(parcel, zoningFile);
+					if (listBigZone.contains("U")) {
+						featureBuilder.set("U", true);
+					} else {
+						featureBuilder.set("U", false);
+					}
+					if (listBigZone.contains("AU")) {
+						featureBuilder.set("AU", true);
+					} else {
+						featureBuilder.set("AU", false);
+					}
+					if (listBigZone.contains("NC")) {
+						featureBuilder.set("NC", true);
+					} else {
+						featureBuilder.set("NC", false);
+					}
 				}
 
 				// Simulation information
 				// if already set from the parcel file
-				if (parcel.getAttribute("DoWeSimul") != null) {
+				if (!newlyGenerate && parcel.getAttribute("DoWeSimul") != null) {
 					featureBuilder.set("DoWeSimul", parcel.getAttribute("DoWeSimul"));
 					featureBuilder.set("eval", parcel.getAttribute("eval"));
-				}
-				// if not, we generate it
-				else {
-					if ((allOrCell && newlyGenerate) || (ParcelState.isParcelInCell(parcel, cellsSFS) && !iPB)) {
-						featureBuilder.set("DoWeSimul", "true");
-						featureBuilder.set("eval", ParcelState.getEvalInParcel(parcel, mupOutputFile));
-					} else {
-						featureBuilder.set("DoWeSimul", "false");
-						featureBuilder.set("eval", 0);
-					}
+				} else if ((allOrCell && newlyGenerate) || (ParcelState.isParcelInCell(parcel, cellsSFS) && !iPB)) {
+					featureBuilder.set("DoWeSimul", "true");
+					featureBuilder.set("eval", ParcelState.getEvalInParcel(parcel, mupOutputFile));
+				} else {
+					featureBuilder.set("DoWeSimul", "false");
+					featureBuilder.set("eval", 0);
 				}
 				SimpleFeature feat = featureBuilder.buildFeature(Integer.toString(i));
 				parcelFinal.add(feat);

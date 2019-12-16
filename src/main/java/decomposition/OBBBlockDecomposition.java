@@ -24,8 +24,9 @@ public class OBBBlockDecomposition {
    * @return
    */
   private static double frontSideWidth(Polygon p, List<LineString> ext) {
-    MultiLineString l = p.getFactory().createMultiLineString(ext.toArray(new LineString[ext.size()]));
-    try {
+	MultiLineString l = null;
+	try {
+      l = p.getFactory().createMultiLineString(ext.toArray(new LineString[ext.size()]));
       return (p.buffer(0.2)).intersection(l).getLength();
     } catch (Exception e) {
       try {
@@ -37,7 +38,7 @@ public class OBBBlockDecomposition {
   }
 
   private static boolean endCondition(double area, double frontSideWidth, double maximalArea, double maximalWidth) {
-    return (area <= maximalArea) || (frontSideWidth <= maximalWidth);
+    return (area <= maximalArea) || ((frontSideWidth <= maximalWidth) && (frontSideWidth != 0.0));
   }
 
   /**
@@ -75,7 +76,13 @@ public class OBBBlockDecomposition {
       Coordinate p5 = new Coordinate(p3.x + (alpha - roadAlpha) * (p2.x - p3.x), p3.y + (alpha - roadAlpha) * (p2.y - p3.y));
       Coordinate p6 = new Coordinate(p0.x + (alpha + roadAlpha) * (p1.x - p0.x), p0.y + (alpha + roadAlpha) * (p1.y - p0.y));
       Coordinate p7 = new Coordinate(p3.x + (alpha + roadAlpha) * (p2.x - p3.x), p3.y + (alpha + roadAlpha) * (p2.y - p3.y));
-      ext.add(pol.getFactory().createLineString(new Coordinate[] { p4, p5, p7, p6, p4 }));
+      try {
+        ext.add(pol.getFactory().createLineString(new Coordinate[] { p4, p5, p7, p6, p4 }));
+      }
+      catch (NullPointerException np) {
+    	  ext = new ArrayList<>();
+    	  ext.add(pol.getFactory().createLineString(new Coordinate[] { p4, p5, p7, p6, p4 }));   
+      }
       return Arrays.asList(pol.getFactory().createPolygon(new Coordinate[] { p0, p4, p5, p3, p0 }), pol.getFactory().createPolygon(new Coordinate[] { p6, p1, p2, p7, p6 }));
     }
     Coordinate p4 = new Coordinate(p0.x + alpha * (p1.x - p0.x), p0.y + alpha * (p1.y - p0.y));
@@ -121,18 +128,18 @@ public class OBBBlockDecomposition {
   public static Tree<Pair<Polygon, Integer>> decompose(Polygon polygon, List<LineString> ext, double maximalArea, double maximalWidth, double noise, double epsilon, double roadWidth,
       boolean forceRoadAccess, int decompositionLevelWithRoad, int decompositionLevel) {
     double area = polygon.getArea();
+ 
     double frontSideWidth = frontSideWidth(polygon, ext);
-    System.out.println(
-        "endCondition for " + area + " - " + frontSideWidth + " - " + maximalArea + " - " + maximalWidth + " => " + endCondition(area, frontSideWidth, maximalArea, maximalWidth));
+//    System.out.println("endCondition for " + area + " - " + frontSideWidth + " - " + maximalArea + " - " + maximalWidth + " => " + endCondition(area, frontSideWidth, maximalArea, maximalWidth));
     if (endCondition(area, frontSideWidth, maximalArea, maximalWidth)) {
       // System.out.println("endCondition for " + area + " - " + frontSideWidth + " - " + maximalArea + " - " + maximalWidth);
       return new Tree<>(new ImmutablePair<>(polygon, decompositionLevel));
     }
     // Determination of splitting polygon (it is a splitting line in the article)
     List<Polygon> splittingPolygon = computeSplittingPolygon(polygon, ext, true, noise, roadWidth, decompositionLevelWithRoad, decompositionLevel);
-    System.out.println(polygon);
-    for (Polygon sp : splittingPolygon)
-      System.out.println(sp);
+//    System.out.println(polygon);
+//    for (Polygon sp : splittingPolygon)
+//      System.out.println(sp);
     // Split into polygon
     List<Polygon> splitPolygons = split(polygon, splittingPolygon);
     // If a parcel has no road access, there is a probability to make a perpendicular split
