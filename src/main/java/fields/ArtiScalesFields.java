@@ -70,7 +70,7 @@ public class ArtiScalesFields {
 					}
 				} else {
 					// we get the city info
-					String insee = ParcelAttribute.getInseeFromParcel(citiesSFS, parcel);
+					String insee = ParcelAttribute.getCommunityCodeFromSFC(citiesSFS, parcel);
 
 					featureBuilder.set("INSEE", insee);
 					featureBuilder.set("CODE_DEP", insee.substring(0, 2));
