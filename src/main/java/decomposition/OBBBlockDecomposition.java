@@ -90,7 +90,7 @@ public class OBBBlockDecomposition {
    * @param poly2
    * @return
    */
-  private static List<Polygon> split(Polygon poly1, Polygon poly2) {
+  public static List<Polygon> split(Polygon poly1, Polygon poly2) {
     Geometry intersection = poly1.intersection(poly2);
     if (intersection instanceof Polygon)
       return Arrays.asList((Polygon) intersection);
@@ -110,11 +110,11 @@ public class OBBBlockDecomposition {
    * @param polygones
    * @return
    */
-  private static List<Polygon> split(Polygon poly, List<Polygon> polygons) {
+  public static List<Polygon> split(Polygon poly, List<Polygon> polygons) {
     return polygons.stream().flatMap(p -> split(poly, p).stream()).collect(Collectors.toList());
   }
 
-  private static boolean hasRoadAccess(Polygon poly, List<LineString> ext) {
+  public static boolean hasRoadAccess(Polygon poly, List<LineString> ext) {
     return poly.intersects(poly.getFactory().createMultiLineString(ext.toArray(new LineString[ext.size()])).buffer(0.5));
   }
 
