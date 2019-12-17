@@ -16,7 +16,6 @@ import org.geotools.data.simple.SimpleFeatureIterator;
 import org.geotools.geometry.jts.JTS;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.Geometry;
-import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.LineString;
 import org.locationtech.jts.geom.MultiLineString;
 import org.locationtech.jts.geom.Polygon;
@@ -95,11 +94,9 @@ public class FlagParcelDecomposition {
     //
     List<Polygon> finalResult = new ArrayList<>();
     iterator = featColl.features();
-    int i = 0;
     // For each shape
     while (iterator.hasNext()) {
       SimpleFeature feat = iterator.next();
-      System.out.println(i + " / " + featColl.size());
 //      if (feat.getAttribute("NUMERO").toString().equalsIgnoreCase("0024") && feat.getAttribute("FEUILLE").toString().equalsIgnoreCase("2")
 //          && feat.getAttribute("SECTION").toString().equalsIgnoreCase("0A")) {
 
@@ -129,7 +126,6 @@ public class FlagParcelDecomposition {
         // featCollOut.addAll(results);
         finalResult.addAll(results);
       }
-      i++;
     }
     iterator.close();
     buildingsDS.dispose();
@@ -267,8 +263,8 @@ public class FlagParcelDecomposition {
    * @return
    */
   private Pair<List<Polygon>, List<Polygon>> generateFlagParcel(List<Polygon> splittedPolygon) {
-    System.out.println("generateFlagParcel");
-    splittedPolygon.stream().forEach(p -> System.out.println(p));
+//    System.out.println("generateFlagParcel");
+//    splittedPolygon.stream().forEach(p -> System.out.println(p));
 
     List<Polygon> left = new ArrayList<>();
     List<Polygon> right = new ArrayList<>();
@@ -281,7 +277,7 @@ public class FlagParcelDecomposition {
     List<Polygon> lPolygonWithRoadAccess = splittedPolygon.stream().filter(x -> hasRoadAccess(x)).collect(Collectors.toList());
     List<Polygon> lPolygonWithNoRoadAccess = splittedPolygon.stream().filter(x -> !hasRoadAccess(x)).collect(Collectors.toList());
     System.out.println("lPolygonWithNoRoadAccess");
-    lPolygonWithNoRoadAccess.stream().forEach(p -> System.out.println(p));
+//    lPolygonWithNoRoadAccess.stream().forEach(p -> System.out.println(p));
 
     bouclepoly: for (Polygon currentPoly : lPolygonWithNoRoadAccess) {
       List<Pair<MultiLineString, Polygon>> listMap = generateCandidateForCreatingRoad(currentPoly, lPolygonWithRoadAccess);
@@ -402,7 +398,7 @@ public class FlagParcelDecomposition {
     try {
       return a.intersection(b);
     } catch (Exception e) {
-      GeometryFactory fact = new GeometryFactory();
+//      GeometryFactory fact = new GeometryFactory();
       PrecisionModel pm = new PrecisionModel(100);
       Geometry jtsGeomA = GeometryPrecisionReducer.reduce(a, pm);
       Geometry jtsGeomB = GeometryPrecisionReducer.reduce(b, pm);

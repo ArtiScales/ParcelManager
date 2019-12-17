@@ -223,7 +223,7 @@ public class ParcelSplit {
           DescriptiveStatistics dS = new DescriptiveStatistics();
           OBBBlockDecomposition.decompose(polygon, extBlock, maximalArea, maximalWidth, noise, roadEpsilon, roadWidth, forceRoadAccess, 0, decompositionLevelWithoutRoad)
           .stream().forEach(c->dS.addValue(c.getValue()));
-          int decompositionLevelWithRoad = (int) dS.getPercentile(50);
+          int decompositionLevelWithRoad = (int) dS.getPercentile(50)-decompositionLevelWithoutRoad;
           OBBBlockDecomposition.decompose(polygon, extBlock, maximalArea, maximalWidth, noise, roadEpsilon, roadWidth, forceRoadAccess, decompositionLevelWithRoad, decompositionLevelWithoutRoad)
           .childrenStream().forEach(p-> {
             SimpleFeature newFeature = builder.buildFeature(null);

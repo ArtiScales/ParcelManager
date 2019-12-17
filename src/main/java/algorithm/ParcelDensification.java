@@ -11,11 +11,11 @@ import org.geotools.feature.DefaultFeatureCollection;
 import org.geotools.feature.simple.SimpleFeatureBuilder;
 import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.geom.LineString;
+import org.locationtech.jts.geom.MultiPolygon;
 import org.locationtech.jts.geom.Polygon;
 import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.filter.FilterFactory2;
 
-import fr.ign.cogit.GTFunctions.Vectors;
 import fr.ign.cogit.parcelFunction.ParcelSchema;
 import processus.ParcelSplitFlag;
 
@@ -55,7 +55,15 @@ public class ParcelDensification {
 		try {
 			while (iterator.hasNext()) {
 				SimpleFeature feature = iterator.next();
-				lines.add(((Polygon) feature.getDefaultGeometry()).getExteriorRing());
+				if(feature.getDefaultGeometry() instanceof MultiPolygon){
+					MultiPolygon mp = (MultiPolygon) feature.getDefaultGeometry();
+					for (int i = 0 ; i < mp.getNumGeometries();i++) {
+						lines.add(((Polygon) mp.getGeometryN(i)).getExteriorRing());
+					}
+				}
+				else {
+					lines.add(((Polygon) feature.getDefaultGeometry()).getExteriorRing());
+				}
 			}
 		} finally {
 			iterator.close();
@@ -66,11 +74,11 @@ public class ParcelDensification {
 		iterator = parcelCollection.features();
 		try {
 			while (iterator.hasNext()) {
-				SimpleFeature iFeat = iterator.next();
+				SimpleFeature feat = iterator.next();
 				// if the parcel is selected for the simulation and bigger than the limit size
-				if (iFeat.getAttribute("SPLIT").equals(1) && ((Geometry) iFeat.getDefaultGeometry()).getArea() > maximalAreaSplitParcel) {
+				if (feat.getAttribute("SPLIT").equals(1) && ((Geometry) feat.getDefaultGeometry()).getArea() > maximalAreaSplitParcel) {
 					// we falg cut the parcel
-					SimpleFeatureCollection tmp = ParcelSplitFlag.generateFlagSplitedParcels(iFeat, lines, tmpFolder, buildingFile,
+					SimpleFeatureCollection tmp = ParcelSplitFlag.generateFlagSplitedParcels(feat, lines, tmpFolder, buildingFile,
 							maximalAreaSplitParcel, maximalWidthSplitParcel, lenDriveway, isArt3AllowsIsolatedParcel);
 					// if the cut parcels are inferior to the minimal size, we cancel all and add the initial parcel
 					boolean add = true;
@@ -84,7 +92,7 @@ public class ParcelDensification {
 							}
 						}
 					} catch (Exception problem) {
-						System.out.println("problem" + problem + "for " + iFeat + " feature densification");
+						System.out.println("problem" + problem + "for " + feat + " feature densification");
 						problem.printStackTrace();
 					} finally {
 						parcelIt.close();
@@ -99,9 +107,9 @@ public class ParcelDensification {
 						try {
 							while (parcelCutedIt.hasNext()) {
 								SimpleFeature parcelCuted = parcelCutedIt.next();
-								String newCodeDep = (String) iFeat.getAttribute("CODE_DEP");
-								String newCodeCom = (String) iFeat.getAttribute("CODE_COM");
-								String newSection = (String) iFeat.getAttribute("SECTION") + "-Densifyed";
+								String newCodeDep = (String) feat.getAttribute("CODE_DEP");
+								String newCodeCom = (String) feat.getAttribute("CODE_COM");
+								String newSection = (String) feat.getAttribute("SECTION") + "-Densifyed";
 								String newNumero = String.valueOf(i++);
 								String newCode = newCodeDep + newCodeCom + "000" + newSection + newNumero;
 								SFBFrenchParcel.set(geomName, parcelCuted.getDefaultGeometry());
@@ -120,16 +128,14 @@ public class ParcelDensification {
 						}
 						// });
 					} else {
-						// SFBFrenchParcel = ParcelSchema.setSFBFrenchParcelWithFeat(
-						// GeOxygeneGeoToolsTypes.convert2SimpleFeature(iFeat, CRS.decode("EPSG:2154")), SFBFrenchParcel.getFeatureType());
-						// cutedAll.add(SFBFrenchParcel.buildFeature(null));
+						 SFBFrenchParcel = ParcelSchema.setSFBFrenchParcelWithFeat(feat, SFBFrenchParcel.getFeatureType());
+						 cutedAll.add(SFBFrenchParcel.buildFeature(null));
 					}
 				}
 				// if no simulation needed, we ad the normal parcel
 				else {
-					// SFBFrenchParcel = ParcelSchema.setSFBFrenchParcelWithFeat(
-					// GeOxygeneGeoToolsTypes.convert2SimpleFeature(iFeat, CRS.decode("EPSG:2154")), SFBFrenchParcel.getFeatureType());
-					// cutedAll.add(SFBFrenchParcel.buildFeature(null));
+					 SFBFrenchParcel = ParcelSchema.setSFBFrenchParcelWithFeat(feat, SFBFrenchParcel.getFeatureType());
+					 cutedAll.add(SFBFrenchParcel.buildFeature(null));
 				}
 			}
 		} finally {
