@@ -157,41 +157,11 @@
 			<artifactId>commons-math3</artifactId>
 			<version>3.6</version>
 		</dependency>
-		<!-- <dependency> -->
-		<!-- <groupId>${project.groupId}</groupId> -->
-		<!-- <artifactId>geoxygene-api</artifactId> -->
-		<!-- <version>${geoxygene.version}</version> -->
-		<!-- </dependency> -->
-		<!-- <dependency> -->
-		<!-- <groupId>${project.groupId}</groupId> -->
-		<!-- <artifactId>geoxygene-spatial</artifactId> -->
-		<!-- <version>${geoxygene.version}</version> -->
-		<!-- </dependency> -->
-		<!-- <dependency> -->
-		<!-- <groupId>${project.groupId}</groupId> -->
-		<!-- <artifactId>geoxygene-feature</artifactId> -->
-		<!-- <version>${geoxygene.version}</version> -->
-		<!-- </dependency> -->
-		<!-- <dependency> -->
-		<!-- <groupId>${project.groupId}</groupId> -->
-		<!-- <artifactId>geoxygene-style</artifactId> -->
-		<!-- <version>${geoxygene.version}</version> -->
-		<!-- </dependency> -->
-		<!-- <dependency> -->
-		<!-- <groupId>${project.groupId}</groupId> -->
-		<!-- <artifactId>geoxygene-io</artifactId> -->
-		<!-- <version>${geoxygene.version}</version> -->
-		<!-- </dependency> -->
-		<!-- <dependency> -->
-		<!-- <groupId>${project.groupId}</groupId> -->
-		<!-- <artifactId>geoxygene-contrib</artifactId> -->
-		<!-- <version>${geoxygene.version}</version> -->
-		<!-- </dependency> -->
-		<!-- <dependency> -->
-		<!-- <groupId>fr.ign.cogit</groupId> -->
-		<!-- <artifactId>geoxygene-sig3d</artifactId> -->
-		<!-- <version>${geoxygene.version}</version> -->
-		<!-- </dependency> -->
+		<dependency>
+			<groupId>twak</groupId>
+			<artifactId>campskeleton</artifactId>
+			<version>1.0</version>
+		</dependency>
 	</dependencies>
 	<repositories>
 		<repository>

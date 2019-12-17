@@ -13,11 +13,9 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.geotools.data.shapefile.ShapefileDataStore;
 import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.data.simple.SimpleFeatureIterator;
-import org.geotools.factory.CommonFactoryFinder;
 import org.geotools.geometry.jts.JTS;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.Geometry;
-import org.locationtech.jts.geom.GeometryCollection;
 import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.LineString;
 import org.locationtech.jts.geom.MultiLineString;
@@ -26,7 +24,6 @@ import org.locationtech.jts.geom.PrecisionModel;
 import org.locationtech.jts.operation.union.CascadedPolygonUnion;
 import org.locationtech.jts.precision.GeometryPrecisionReducer;
 import org.opengis.feature.simple.SimpleFeature;
-import org.opengis.filter.FilterFactory2;
 
 import fr.ign.cogit.FeaturePolygonizer;
 
@@ -75,10 +72,10 @@ public class FlagParcelDecomposition {
     // List<IOrientableCurve> lOC = featC.select(featColl.envelope()).parallelStream().map(x -> FromGeomToLineString.convert(x.getGeom())).collect(ArrayList::new, List::addAll,
     // List::addAll);
     List<LineString> list = new ArrayList<>();
-    SimpleFeatureIterator iterator = FlagParcelDecomposition.select(featC, JTS.toGeometry(featColl.getBounds())).features();
+    SimpleFeatureIterator iterator = Util.select(featC, JTS.toGeometry(featColl.getBounds())).features();
     while (iterator.hasNext()) {
       SimpleFeature f = iterator.next();
-      getPolygons((Geometry) f.getDefaultGeometry()).stream().forEach(p -> list.add(p.getExteriorRing()));
+      Util.getPolygons((Geometry) f.getDefaultGeometry()).stream().forEach(p -> list.add(p.getExteriorRing()));
     }
     iterator.close();
     blockDS.dispose();
@@ -103,15 +100,16 @@ public class FlagParcelDecomposition {
     while (iterator.hasNext()) {
       SimpleFeature feat = iterator.next();
       System.out.println(i + " / " + featColl.size());
-      if (feat.getAttribute("NUMERO").toString().equalsIgnoreCase("0024") && feat.getAttribute("FEUILLE").toString().equalsIgnoreCase("2")
-          && feat.getAttribute("SECTION").toString().equalsIgnoreCase("0A")) {
+//      if (feat.getAttribute("NUMERO").toString().equalsIgnoreCase("0024") && feat.getAttribute("FEUILLE").toString().equalsIgnoreCase("2")
+//          && feat.getAttribute("SECTION").toString().equalsIgnoreCase("0A")) {
 
+      if (true) {
         Geometry geom = (Geometry) feat.getDefaultGeometry();
         // IDirectPosition dp = new DirectPosition(0, 0, 0); // geom.centroid();
         // geom = geom.translate(-dp.getX(), -dp.getY(), 0);
 
         // List<IOrientableSurface> surfaces = FromGeomToSurface.convertGeom(geom);
-        List<Polygon> surfaces = getPolygons(geom);
+        List<Polygon> surfaces = Util.getPolygons(geom);
 
         if (surfaces.size() != 1) {
           System.out.println("Not simple geometry : " + feat.toString());
@@ -262,26 +260,6 @@ public class FlagParcelDecomposition {
     return curvesOutput;
   }
 
-  private static SimpleFeatureCollection select(SimpleFeatureCollection collection, Geometry geom) {
-    FilterFactory2 ff = CommonFactoryFinder.getFilterFactory2();
-    return collection.subCollection(ff.intersects(ff.property(collection.getSchema().getGeometryDescriptor().getLocalName()), ff.literal(geom)));
-  }
-
-  public static List<Polygon> getPolygons(Geometry geom) {
-    if (geom instanceof Polygon) {
-      return Collections.singletonList((Polygon) geom);
-    }
-    if (geom instanceof GeometryCollection) {
-      List<Polygon> result = new ArrayList<>();
-      for (int i = 0; i < geom.getNumGeometries(); i++) {
-        Geometry g = geom.getGeometryN(i);
-        result.addAll(getPolygons(g));
-      }
-      return result;
-    }
-    return Collections.emptyList();
-  }
-
   /**
    * The output is a list of two elements : 1/ the first one contains parcel with road access initially 2/ the second contains parcel with added road access
    * 
@@ -323,7 +301,7 @@ public class FlagParcelDecomposition {
         System.out.println(road);
 
         // The road intersects a building, we do not keep it
-        if (!select(this.buildings, road).isEmpty()) {
+        if (!Util.select(this.buildings, road).isEmpty()) {
           // System.out.println("Building case : " + this.polygonInit);
           continue;
         }
@@ -349,10 +327,10 @@ public class FlagParcelDecomposition {
 //        }
 
         // It might be a multi polygon so we remove the small area <
-        List<Polygon> lPolygonsOut1 = getPolygons(geomPol1);
+        List<Polygon> lPolygonsOut1 = Util.getPolygons(geomPol1);
         lPolygonsOut1 = lPolygonsOut1.stream().filter(x -> x.getArea() > TOO_SMALL_PARCEL_AREA).collect(Collectors.toList());
 
-        List<Polygon> lPolygonsOut2 = getPolygons(geomPol2);
+        List<Polygon> lPolygonsOut2 = Util.getPolygons(geomPol2);
         lPolygonsOut2 = lPolygonsOut2.stream().filter(x -> x.getArea() > TOO_SMALL_PARCEL_AREA).collect(Collectors.toList());
         System.out.println("lPolygonsOut1");
         lPolygonsOut1.stream().forEach(p -> System.out.println(p));

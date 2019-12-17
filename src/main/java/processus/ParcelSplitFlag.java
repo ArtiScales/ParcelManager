@@ -12,6 +12,7 @@ import org.locationtech.jts.geom.Polygon;
 import org.opengis.feature.simple.SimpleFeature;
 
 import decomposition.FlagParcelDecomposition;
+import decomposition.Util;
 import fr.ign.cogit.FeaturePolygonizer;
 
 public class ParcelSplitFlag {
@@ -123,7 +124,7 @@ public class ParcelSplitFlag {
 //		IDirectPosition dp = new DirectPosition(0, 0, 0); // geom.centroid();
 //		geom = geom.translate(-dp.getX(), -dp.getY(), 0);
 
-		List<Polygon> surfaces = decomposition.FlagParcelDecomposition.getPolygons(geom);
+		List<Polygon> surfaces = Util.getPolygons(geom);
 //		List<IOrientableSurface> surfaces = FromGeomToSurface.convertGeom(geom);
 		FlagParcelDecomposition fpd = new FlagParcelDecomposition(surfaces.get(0), buildingCollec, maximalAreaSplitParcel,
 				maximalWidthSplitParcel, lenDriveway, iMultiCurve);
