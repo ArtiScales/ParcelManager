@@ -694,8 +694,7 @@ public class StraightSkeletonParcelDecomposition {
     List<List<Face>> correspondanceMapID = new ArrayList<>();
     // For edge face
     for (Face f : popFaces) {
-      // Determining whose that belongs to the same roads and group them
-      // according to roads name
+      // Determining whose that belongs to the same roads and group them according to roads name
       for (Edge a : f.getEdges()) {
         if (!exteriorArc.contains(a)) {
           continue;

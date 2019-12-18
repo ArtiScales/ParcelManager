@@ -1,40 +1,42 @@
 package decomposition;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 import javax.vecmath.Point3d;
 
+import org.apache.commons.lang3.ArrayUtils;
+import org.locationtech.jts.algorithm.Orientation;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.LineString;
 import org.locationtech.jts.geom.LinearRing;
 import org.locationtech.jts.geom.Polygon;
+import org.twak.camp.Corner;
+import org.twak.camp.Edge;
+import org.twak.camp.Machine;
+import org.twak.camp.OffsetSkeleton;
+import org.twak.camp.Output;
+import org.twak.camp.Output.Face;
+import org.twak.camp.Output.SharedEdge;
+import org.twak.camp.Skeleton;
+import org.twak.utils.collections.Loop;
+import org.twak.utils.collections.LoopL;
 
 import decomposition.graph.Node;
 import decomposition.graph.TopologicalGraph;
-import straightskeleton.Corner;
-import straightskeleton.Edge;
-import straightskeleton.Machine;
-import straightskeleton.Output;
-import straightskeleton.Output.Face;
-import straightskeleton.Output.SharedEdge;
-import straightskeleton.Skeleton;
-import utils.Loop;
-import utils.LoopL;
 
 /**
  * Squelette droit pondéré calculé d'après la librairie campskeleton. Possibilité de pondérer ce squelette. Le résultat est présenté sous la forme d'une carte topo. Les faces les
- * arcs et les noeuds sont renseignés ainsi que la position des arcs par rapport aux différentes faces. Possibilité d'obtenir seulement les arcs intérieurs
+ * arcs et les noeuds sont renseignés ainsi que la position des arcs par rapport aux différentes faces. Possibilité d'obtenir seulement les arcs intérieurs.
  * 
  * @author MBrasebin
  * 
  */
 public class CampSkeleton {
-
   private Polygon p;
 
   /**
@@ -43,7 +45,6 @@ public class CampSkeleton {
    * @param p
    */
   public CampSkeleton(Polygon p) {
-
     this(p, null, 0);
   }
 
@@ -69,71 +70,59 @@ public class CampSkeleton {
    *          : la pondération appliquée pour le calcul de squelette droit. Le nombre d'élément du tableaux doit être au moins égal au nombre de côté (intérieurs inclus du
    *          polygone)
    */
-  public CampSkeleton(Polygon p, double[] angles, double cap) {
+  public CampSkeleton(Polygon inputPolygon, double[] angles, double cap) {
+    this.p = inputPolygon;// (Polygon) TopologyPreservingSimplifier.simplify(inputPolygon, 0.1);
+    Skeleton s = buildSkeleton(this.p, angles);
+    if (cap != 0) {
+      s.capAt(cap);
+    }
+    s.skeleton();
+    this.graph = convertOutPut(s.output);
+  }
 
-    this.p = p;
+  public static Skeleton buildSkeleton(Polygon p, double[] angles) {
+    return new Skeleton(buildEdgeLoops(p, angles), true);
+  }
 
+  private static int setMachine(Edge e, double[] angles, int countAngle, Machine machine) {
+    if (angles == null) {
+      e.machine = machine;
+    } else {
+      e.machine = new Machine(angles[countAngle]);
+    }
+    return countAngle + 1;
+  }
+
+  public static LoopL<Edge> buildEdgeLoops(Polygon p, double[] angles) {
     int countAngle = 0;
-
-    Coordinate[] dpl = p.getCoordinates();
-
-    for (Coordinate dp : dpl) {
-      dp.setZ(0);
-    }
-
-    // PlanEquation pe = new ApproximatedPlanEquation(p);
-    //
-    // if (pe.getNormale().getZ() < 0) {
-    //
-    // p = (Polygon) p.reverse();
-    //
-    // }
-
     Machine directionMachine = new Machine();
-
     LoopL<Edge> input = new LoopL<Edge>();
-
-    LineString rExt = p.getExteriorRing();
-
     Loop<Edge> loop = new Loop<Edge>();
-
-    List<Edge> lEExt = fromDPLToEdges(rExt.getCoordinates());
-
-    for (Edge e : lEExt) {
+    for (Edge e : convertLineString(p.getExteriorRing(),false)) {
       loop.append(e);
-      if (angles == null) {
-        e.machine = directionMachine;
-      } else {
-        e.machine = new Machine(angles[countAngle++]);
-      }
+      countAngle = setMachine(e, angles, countAngle, directionMachine);
     }
-
     input.add(loop);
-
     for (int i = 0; i < p.getNumInteriorRing(); i++) {
-      LineString rInt = p.getInteriorRingN(i);
       Loop<Edge> loopIn = new Loop<Edge>();
       input.add(loopIn);
-      List<Edge> lInt = fromDPLToEdges(rInt.getCoordinates());
-      for (Edge e : lInt) {
-        loop.append(e);
-        if (angles == null) {
-          e.machine = directionMachine;
-        } else {
-          e.machine = new Machine(angles[countAngle++]);
-        }
+      for (Edge e : convertLineString(p.getInteriorRingN(i),true)) {
+        loopIn.append(e);
+        countAngle = setMachine(e, angles, countAngle, directionMachine);
       }
     }
+    return input;
+  }
 
-    Skeleton s = new Skeleton(input, cap);
-
-    s.skeleton();
-    Output out = s.output;
-    this.graph = convertOutPut(out);
+  private static List<Edge> convertLineString(LineString ring, boolean reverse) {
+    Coordinate[] coordinates = ring.getCoordinates();
+    if (!Orientation.isCCW(coordinates)^reverse)
+      ArrayUtils.reverse(coordinates);
+    return fromDPLToEdges(coordinates);
   }
 
   /**
-   * Convertit la sortie de l'algorithme de squelette droit
+   * Convertit la sortie de l'algorithme de squelette droit.
    * 
    * @TODO : il subsite un problème, parfois, 2 arrêtes de 2 faces sont équivalentes à 1 arrête d'une autre face.
    * @param out
@@ -143,58 +132,14 @@ public class CampSkeleton {
     GeometryFactory factory = new GeometryFactory();
     // On créer la carte Toppo
     TopologicalGraph graph = new TopologicalGraph();
-    // On récupère les faces
-    Map<Corner, Face> faces = out.faces;
-
-    List<Face> collFaces = new ArrayList<>();
-    collFaces.addAll(faces.values());
-
-    /*
-     * bouclei: for(int i=0;i < collFaces.size(); i++){ for(int j=i+1;j < collFaces.size(); j++){ if(collFaces.get(i).equals(collFaces.get(j))){ collFaces.remove(i); i--;
-     * logger.warn("Duplicate faces found : auto-remove applied : " + CampSkeleton.class); continue bouclei; }
-     * 
-     * } }
-     */
-
     // Liste des arrêtes rencontrées
     List<SharedEdge> lSharedEdges = new ArrayList<SharedEdge>();
-    List<decomposition.graph.Edge> lArcs = new ArrayList<>();
-
-    // Liste des noeuds rencontres
-
-    List<Node> lNoeuds = new ArrayList<Node>();
     List<Point3d> lPoints = new ArrayList<Point3d>();
-
     // Pour chaque face du squelette
-    for (Face f : collFaces) {
-
+    for (Face f : new HashSet<>(out.faces.values())) {
       // On créer une face de la carte topo
       decomposition.graph.Face fTopo = new decomposition.graph.Face();
-
-      // On génère la géométrie de la face
-      LoopL<Point3d> loopLPoint = f.points;
-
-      // On récupère la géométrie du polygone
-      // Polygon poly = new GM_Polygon();
-      LinearRing exterior = null;
-      List<LinearRing> interior = new ArrayList<>();
-      for (Loop<Point3d> lP : loopLPoint) {
-
-        List<Coordinate> dpl = convertLoopCorner(lP);
-
-        // Il ne ferme pas ses faces
-        dpl.add(dpl.get(0));
-
-        if (exterior == null) {
-          exterior = factory.createLinearRing(dpl.toArray(new Coordinate[dpl.size()]));
-        } else {
-          interior.add(factory.createLinearRing(dpl.toArray(new Coordinate[dpl.size()])));
-        }
-
-      }
-      Polygon poly = factory.createPolygon(exterior, interior.toArray(new LinearRing[interior.size()]));
-      // On affecte la géomégtrie
-      fTopo.setPolygon(poly);
+      fTopo.setPolygon(convertFace(f.points, factory));
       // On récupère les arrête de la face
       LoopL<SharedEdge> lSE = f.edges;
       // On parcourt les arrêtes
@@ -224,47 +169,35 @@ public class CampSkeleton {
                 // On met à jour le sommet considéré
                 indexP1 = lPoints.size() - 1;
                 // On génère un noeud
-                Node n = new Node(fromCornerToPosition(p));
-                // On l'ajoute à la liste des noeuds et à la
-                // carte topo
-                lNoeuds.add(n);
+                Node n = new Node(toCoordinate(p));
+                // On l'ajoute à la liste des noeuds et à la carte topo
+                // lNoeuds.add(n);
                 graph.getNodes().add(n);
               }
               // idem avec le second sommet
               if (indexP2 == -1) {
                 lPoints.add(p2);
                 indexP2 = lPoints.size() - 1;
-                Node n = new Node(fromCornerToPosition(p2));
-                lNoeuds.add(n);
+                Node n = new Node(toCoordinate(p2));
+                // lNoeuds.add(n);
                 graph.getNodes().add(n);
               }
               // On génère l'arc
-
-              // On génère sa géométrie
-              List<Coordinate> dpl = new ArrayList<>();
-              dpl.add(lNoeuds.get(indexP1).getCoordinate());
-              dpl.add(lNoeuds.get(indexP2).getCoordinate());
-
-              decomposition.graph.Edge a = new decomposition.graph.Edge(lNoeuds.get(indexP1), lNoeuds.get(indexP2),
-                  factory.createLineString(dpl.toArray(new Coordinate[dpl.size()])));
-
+              decomposition.graph.Edge a = new decomposition.graph.Edge(graph.getNodes().get(indexP1), graph.getNodes().get(indexP2),
+                  factory.createLineString(new Coordinate[] { graph.getNodes().get(indexP1).getCoordinate(), graph.getNodes().get(indexP2).getCoordinate() }));
               // On ajoute l'arc
               graph.getEdges().add(a);
               // cT.addArc(a);
               indexArc = lSharedEdges.size() - 1;
             }
             // On affecte le côté d'où se trouve la face
-            // Normalement la carte topo met ça à jour du côté de la
-            // face
-            decomposition.graph.Edge a = lArcs.get(indexArc);
-
+            // Normalement la carte topo met ça à jour du côté de la face
+            decomposition.graph.Edge a = graph.getEdges().get(indexArc);
             boolean isOnRight = (f.equals(se.right));
             boolean isOnLeft = (f.equals(se.left));
-
             if (isOnRight) {
               a.setRight(fTopo);
             } else if (isOnLeft) {
-
               a.setLeft(fTopo);
             } else {
               System.out.println("QUICK FIX APPLIED: face is neither at the right or the left of a polygon");
@@ -275,24 +208,30 @@ public class CampSkeleton {
               } else {
                 System.out.println("Null both side");
               }
-
             }
-
           }
         }
-
       }
       // On ajoute la faces à la carte topo
       graph.getFaces().add(fTopo);
-
     }
-
     // cT.fusionNoeuds(0.2);
-
     // cT.rendPlanaire(0.5);
-
     return graph;
+  }
 
+  public static Polygon convertFace(LoopL<Point3d> points, GeometryFactory factory) {
+    LinearRing exterior = null;
+    List<LinearRing> interior = new ArrayList<>();
+    for (Loop<Point3d> lP : points) {
+      LinearRing ring = convertPoint3dLoop(lP, factory);
+      if (exterior == null) {
+        exterior = ring;
+      } else {
+        interior.add(ring);
+      }
+    }
+    return factory.createPolygon(exterior, interior.toArray(new LinearRing[interior.size()]));
   }
 
   public static Point3d getStart(SharedEdge se, Face ref) {
@@ -302,9 +241,6 @@ public class CampSkeleton {
   public static Point3d getEnd(SharedEdge se, Face ref) {
     return se.getEnd(se.right);
   }
-  /*
-   * Conversion Geoxygene => format de la lib
-   */
 
   /**
    * Convertit une liste de sommets formant un cycle en arrêtes
@@ -319,7 +255,6 @@ public class CampSkeleton {
     for (int i = 0; i < nbPoints - 1; i++) {
       lC.add(fromPositionToCorner(dpl[i]));
     }
-    // lC.add(lC.get(0));
     for (int i = 0; i < nbPoints - 2; i++) {
       lEOut.add(new Edge(lC.get(i), lC.get(i + 1)));
     }
@@ -328,7 +263,7 @@ public class CampSkeleton {
   }
 
   /**
-   * Convertit un positon en corner
+   * Convertit un positon en corner.
    * 
    * @param dp
    * @return
@@ -337,24 +272,23 @@ public class CampSkeleton {
     // if (dp.getDimension() == 2) {
     // return new Corner(dp.getX(), dp.getY(), 0);
     // }
-    return new Corner(dp.getX(), dp.getY(), dp.getZ());
+    return new Corner(dp.getX(), dp.getY(), 0);
   }
 
   /**
    * 
    */
-  private static List<Coordinate> convertLoopCorner(Loop<Point3d> lC) {
+  private static LinearRing convertPoint3dLoop(Loop<Point3d> lC, GeometryFactory factory) {
     List<Coordinate> dpl = new ArrayList<>(lC.count());
     for (Point3d c : lC) {
-      dpl.add(fromCornerToPosition(c));
+      dpl.add(toCoordinate(c));
     }
-    return dpl;
+    dpl.add(dpl.get(0));// close the ring
+    return factory.createLinearRing(dpl.toArray(new Coordinate[dpl.size()]));
   }
 
-  private static Coordinate fromCornerToPosition(Point3d c) {
-
+  private static Coordinate toCoordinate(Point3d c) {
     return new Coordinate(c.x, c.y, c.z);
-
   }
 
   private TopologicalGraph graph = null;
@@ -390,5 +324,32 @@ public class CampSkeleton {
   public List<decomposition.graph.Edge> getIncludedEdges() {
     Geometry geom = p.buffer(-0.5);
     return this.graph.getEdges().stream().filter(p -> geom.contains(p.getGeometry())).collect(Collectors.toList());
+  }
+
+  private static LinearRing convertCornerLoop(Loop<Corner> lC, GeometryFactory factory) {
+    List<Coordinate> dpl = new ArrayList<>(lC.count());
+    for (Corner c : lC) {
+      dpl.add(new Coordinate(c.x, c.y, c.z));
+    }
+    dpl.add(dpl.get(0));// close the ring
+    return factory.createLinearRing(dpl.toArray(new Coordinate[dpl.size()]));
+  }
+
+  public static Polygon convertCornerLoops(LoopL<Corner> points, GeometryFactory factory) {
+    LinearRing exterior = null;
+    List<LinearRing> interior = new ArrayList<>();
+    for (Loop<Corner> lP : points) {
+      LinearRing ring = convertCornerLoop(lP, factory);
+      if (exterior == null) {
+        exterior = ring;
+      } else {
+        interior.add(ring);
+      }
+    }
+    return factory.createPolygon(exterior, interior.toArray(new LinearRing[interior.size()]));
+  }
+
+  public static Polygon shrink(Polygon p, double value) {
+    return convertCornerLoops(OffsetSkeleton.shrink(buildEdgeLoops(p, null), value), p.getFactory());
   }
 }

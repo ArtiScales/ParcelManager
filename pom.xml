@@ -158,12 +158,16 @@
 			<version>3.6</version>
 		</dependency>
 		<dependency>
-			<groupId>twak</groupId>
+			<groupId>org.twak.campskeleton</groupId>
 			<artifactId>campskeleton</artifactId>
-			<version>1.0</version>
+			<version>0.0.1</version>
 		</dependency>
 	</dependencies>
 	<repositories>
+		<repository>
+			<id>jitpack.io</id>
+			<url>https://jitpack.io</url>
+		</repository>
 		<repository>
 			<id>maven2-repository.dev.java.net</id>
 			<name>Java.net repository</name>
