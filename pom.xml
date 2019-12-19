@@ -158,11 +158,17 @@
 			<version>3.6</version>
 		</dependency>
 		<dependency>
-			<groupId>org.twak.campskeleton</groupId>
+			<groupId>com.github.twak</groupId>
 			<artifactId>campskeleton</artifactId>
-			<version>0.0.1</version>
+			<version>master-SNAPSHOT</version>
 		</dependency>
 	</dependencies>
+	<pluginRepositories>
+		<pluginRepository>
+			<id>jitpack.io</id>
+			<url>https://jitpack.io</url>
+		</pluginRepository>
+	</pluginRepositories>
 	<repositories>
 		<repository>
 			<id>jitpack.io</id>
