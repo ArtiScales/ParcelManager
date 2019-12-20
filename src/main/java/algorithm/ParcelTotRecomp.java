@@ -35,7 +35,7 @@ public class ParcelTotRecomp {
 	 * 
 	 * @param initialZone
 	 *            : Zone wich will be used to cut parcels. Will cut parcels that intersects them and keep their infos. Will then fill the empty spaces in between the zones and feed
-	 *            it to the OBB algorithm. 
+	 *            it to the OBB algorithm.
 	 * @param parcels
 	 *            : Parcel plan
 	 * @param tmpFolder
@@ -174,7 +174,6 @@ public class ParcelTotRecomp {
 				}
 			}
 		}
-
 		double roadEpsilon = 0;
 		double noise = 0;
 
@@ -182,7 +181,6 @@ public class ParcelTotRecomp {
 		// Sometimes it bugs (like on Sector NV in Besançon)
 		SimpleFeatureCollection splitedZoneParcels = ParcelSplit.splitParcels(goOdZone, maximalArea, maximalWidth, roadEpsilon, noise, null, lenRoad,
 				false, decompositionLevelWithoutRoad, tmpFolder);
-		
 		int i = 0;
 		DefaultFeatureCollection result = new DefaultFeatureCollection();
 		SimpleFeatureIterator itZoneParcel = splitedZoneParcels.features();
@@ -191,9 +189,26 @@ public class ParcelTotRecomp {
 		try {
 			while (itZoneParcel.hasNext()) {
 				SimpleFeature parcel = itZoneParcel.next();
-				if (((Geometry) parcel.getDefaultGeometry()).getArea() > minimalArea) {
+				Geometry parcelGeom = (Geometry) parcel.getDefaultGeometry();
+				if (parcelGeom.getArea() > minimalArea) {
 					finalParcelBuilder.set(geomName, parcel.getDefaultGeometry());
-					finalParcelBuilder.set("SECTION", parcel.getAttribute("SECTION"));
+					// get the section name
+					String section = "";
+					SimpleFeatureIterator goOdZoneIt = goOdZone.features();
+					try {
+						while (goOdZoneIt.hasNext()) {
+							SimpleFeature zone = goOdZoneIt.next();
+							if (((Geometry) zone.getDefaultGeometry()).buffer(2).contains(parcelGeom)) {
+								section = (String) zone.getAttribute("SECTION");
+								break;
+							}
+						}
+					} catch (Exception problem) {
+						problem.printStackTrace();
+					} finally {
+						goOdZoneIt.close();
+					}
+					finalParcelBuilder.set("SECTION", section);
 					result.add(finalParcelBuilder.buildFeature(null));
 				}
 			}
