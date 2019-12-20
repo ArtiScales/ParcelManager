@@ -55,31 +55,24 @@ public class FlagParcelDecomposition {
     String inputUrbanBlock = "src/main/resources/testData/ilot.shp";
     // IFeatureCollection<IFeature> featC = ShapefileReader.read(inputUrbanBlock);
     ShapefileDataStore blockDS = new ShapefileDataStore(new File(inputUrbanBlock).toURI().toURL());
-    SimpleFeatureCollection featC = blockDS.getFeatureSource().getFeatures();
+    SimpleFeatureCollection blocks = blockDS.getFeatureSource().getFeatures();
     String folderOut = "data/";
     // The output file that will contain all the decompositions
     String shapeFileOut = folderOut + "outflag.shp";
     (new File(folderOut)).mkdirs();
     // Reading collection
     ShapefileDataStore parcelDS = new ShapefileDataStore(new File(inputShapeFile).toURI().toURL());
-    SimpleFeatureCollection featColl = parcelDS.getFeatureSource().getFeatures();
-    // IFeatureCollection<IFeature> featColl = ShapefileReader.read(inputShapeFile);
+    SimpleFeatureCollection parcels = parcelDS.getFeatureSource().getFeatures();
     ShapefileDataStore buildingsDS = new ShapefileDataStore(new File(inputBuildingFile).toURI().toURL());
-    SimpleFeatureCollection featCollBuildings = buildingsDS.getFeatureSource().getFeatures();
-    // IFeatureCollection<IFeature> featCollBuildings = ShapefileReader.read(inputBuildingFile);
-
-    // List<IOrientableCurve> lOC = featC.select(featColl.envelope()).parallelStream().map(x -> FromGeomToLineString.convert(x.getGeom())).collect(ArrayList::new, List::addAll,
-    // List::addAll);
+    SimpleFeatureCollection buildings = buildingsDS.getFeatureSource().getFeatures();
     List<LineString> list = new ArrayList<>();
-    SimpleFeatureIterator iterator = Util.select(featC, JTS.toGeometry(featColl.getBounds())).features();
+    SimpleFeatureIterator iterator = Util.select(blocks, JTS.toGeometry(parcels.getBounds())).features();
     while (iterator.hasNext()) {
       SimpleFeature f = iterator.next();
       Util.getPolygons((Geometry) f.getDefaultGeometry()).stream().forEach(p -> list.add(p.getExteriorRing()));
     }
     iterator.close();
     blockDS.dispose();
-
-    // IMultiCurve<IOrientableCurve> iMultiCurve = new GM_MultiCurve<>(lOC);
 
     // Maxmimal area for a parcel
     double maximalArea = 800;
@@ -93,7 +86,7 @@ public class FlagParcelDecomposition {
     // IFeatureCollection<IFeature> featCollOut = new FT_FeatureCollection<>();
     //
     List<Polygon> finalResult = new ArrayList<>();
-    iterator = featColl.features();
+    iterator = parcels.features();
     // For each shape
     while (iterator.hasNext()) {
       SimpleFeature feat = iterator.next();
@@ -114,7 +107,7 @@ public class FlagParcelDecomposition {
         }
 
         // We run the algorithm of decomposition
-        FlagParcelDecomposition ffd = new FlagParcelDecomposition(surfaces.get(0), featCollBuildings, maximalArea, maximalWidth, roadWidth, list);
+        FlagParcelDecomposition ffd = new FlagParcelDecomposition(surfaces.get(0), buildings, maximalArea, maximalWidth, roadWidth, list);
         System.out.println("EXT");
         System.out.println(ffd.getExtAsGeom());
         List<Polygon> results = ffd.decompParcel(noise);

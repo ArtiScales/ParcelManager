@@ -15,6 +15,8 @@ import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.LineString;
 import org.locationtech.jts.geom.LinearRing;
 import org.locationtech.jts.geom.Polygon;
+import org.locationtech.jts.geom.PrecisionModel;
+import org.locationtech.jts.precision.GeometryPrecisionReducer;
 import org.twak.camp.Corner;
 import org.twak.camp.Edge;
 import org.twak.camp.Machine;
@@ -169,7 +171,7 @@ public class CampSkeleton {
                 // On met à jour le sommet considéré
                 indexP1 = lPoints.size() - 1;
                 // On génère un noeud
-                Node n = new Node(toCoordinate(p));
+                Node n = new Node(pointToCoordinate(p));
                 // On l'ajoute à la liste des noeuds et à la carte topo
                 // lNoeuds.add(n);
                 graph.getNodes().add(n);
@@ -178,7 +180,7 @@ public class CampSkeleton {
               if (indexP2 == -1) {
                 lPoints.add(p2);
                 indexP2 = lPoints.size() - 1;
-                Node n = new Node(toCoordinate(p2));
+                Node n = new Node(pointToCoordinate(p2));
                 // lNoeuds.add(n);
                 graph.getNodes().add(n);
               }
@@ -281,16 +283,24 @@ public class CampSkeleton {
   private static LinearRing convertPoint3dLoop(Loop<Point3d> lC, GeometryFactory factory) {
     List<Coordinate> dpl = new ArrayList<>(lC.count());
     for (Point3d c : lC) {
-      dpl.add(toCoordinate(c));
+      dpl.add(pointToCoordinate(c));
     }
     dpl.add(dpl.get(0));// close the ring
     return factory.createLinearRing(dpl.toArray(new Coordinate[dpl.size()]));
   }
 
-  private static Coordinate toCoordinate(Point3d c) {
-    return new Coordinate(c.x, c.y, c.z);
+  private static Coordinate pointToCoordinate(Point3d c) {
+//    return new Coordinate(precModel.makePrecise(c.x), precModel.makePrecise(c.y), precModel.makePrecise(c.z));
+    return new Coordinate(c.x, c.y);
   }
 
+  private static Coordinate cornerToCoordinate(Corner c) {
+//    return new Coordinate(precModel.makePrecise(c.x), precModel.makePrecise(c.y), precModel.makePrecise(c.z));
+    return new Coordinate(c.x, c.y);
+  }
+
+//  private static PrecisionModel precModel = new PrecisionModel(100);
+  
   private TopologicalGraph graph = null;
 
   /**
@@ -329,7 +339,7 @@ public class CampSkeleton {
   private static LinearRing convertCornerLoop(Loop<Corner> lC, GeometryFactory factory) {
     List<Coordinate> dpl = new ArrayList<>(lC.count());
     for (Corner c : lC) {
-      dpl.add(new Coordinate(c.x, c.y, c.z));
+      dpl.add(cornerToCoordinate(c));
     }
     dpl.add(dpl.get(0));// close the ring
     return factory.createLinearRing(dpl.toArray(new Coordinate[dpl.size()]));

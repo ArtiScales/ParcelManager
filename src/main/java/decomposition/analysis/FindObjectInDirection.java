@@ -1,5 +1,7 @@
 package decomposition.analysis;
 
+import java.util.Optional;
+
 import org.geotools.data.DataUtilities;
 import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.data.simple.SimpleFeatureIterator;
@@ -44,8 +46,8 @@ public class FindObjectInDirection {
 			Coordinate dpPred = dpl[i];
 			Coordinate dpActu = dpl[i+1];
 			LineString lS = polygon.getFactory().createLineString(new Coordinate[] {dpPred,dpActu});
-			SimpleFeature f = FindObjectInDirection.find(SimpleFeatureBuilder.build( EDGETYPE, new Object[]{lS}, null), parcelle, fT, maximumDistance);
-			System.out.println((f != null)?f.getDefaultGeometry():"NULL");
+			Optional<SimpleFeature> f = FindObjectInDirection.find(SimpleFeatureBuilder.build( EDGETYPE, new Object[]{lS}, null), parcelle, fT, maximumDistance);
+			System.out.println(f.isPresent()?f.get().getDefaultGeometry():"NULL");
 		}
 	}
 
@@ -60,18 +62,22 @@ public class FindObjectInDirection {
 	 * @param maximumDistance
 	 * @return
 	 */
-	public static SimpleFeature find(SimpleFeature linestringFeature, SimpleFeature oppositeDirectionFeature,
+	public static Optional<SimpleFeature> find(SimpleFeature linestringFeature, SimpleFeature oppositeDirectionFeature,
 	    SimpleFeatureCollection collectionToSelect, double maximumDistance) {
 		return find((LineString) linestringFeature.getDefaultGeometry(), (Geometry) oppositeDirectionFeature.getDefaultGeometry(), collectionToSelect,
 				maximumDistance);
 	}
 
-	public static SimpleFeature find(LineString linestring, Geometry oppositeDirection,
+	public static Optional<SimpleFeature> find(LineString linestring, Geometry oppositeDirection,
 	    SimpleFeatureCollection collectionToSelect, double maximumDistance) {
+//    System.out.println("find " + linestring);
+//    System.out.println("oppositeDirection " + oppositeDirection);
 		if (collectionToSelect.isEmpty()) {
-			return null;
+	    System.out.println("NO ROAD");
+			return Optional.empty();
 		}
 		LineString ls = generateLineofSight(linestring, oppositeDirection, maximumDistance);
+//		System.out.println("generateLineofSight = " + ls);
 		if (ls == null) {
 			return null;
 		}
@@ -80,6 +86,7 @@ public class FindObjectInDirection {
 		SimpleFeatureIterator iterator = Util.select(collectionToSelect, ls).features();
 		while (iterator.hasNext()) {
 		  SimpleFeature boundaryTemp = iterator.next();
+//		  System.out.println("candidate " + boundaryTemp.getDefaultGeometry());
 			double distTemp = ((Geometry)boundaryTemp.getDefaultGeometry()).distance(oppositeDirection);
 			if (oppositeDirection.buffer(0.5).contains((Geometry)boundaryTemp.getDefaultGeometry())) {
 				continue;
@@ -89,7 +96,8 @@ public class FindObjectInDirection {
 				bestcandidateParcel = boundaryTemp;
 			}
 		}
-		return bestcandidateParcel;
+		iterator.close();
+		return Optional.ofNullable(bestcandidateParcel);
 	}
 
 	private static LineString generateLineofSight(LineString geom, Geometry oppositeDirection,

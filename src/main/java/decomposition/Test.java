@@ -1,14 +1,15 @@
 package decomposition;
 
+import java.io.File;
+import java.io.IOException;
+import java.net.MalformedURLException;
+
+import org.geotools.data.shapefile.ShapefileDataStore;
+import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.geometry.jts.WKTReader2;
-import org.locationtech.jts.geom.Coordinate;
+import org.locationtech.jts.geom.LineString;
 import org.locationtech.jts.geom.Polygon;
 import org.locationtech.jts.io.ParseException;
-import org.twak.camp.Corner;
-import org.twak.camp.Machine;
-import org.twak.camp.OffsetSkeleton;
-import org.twak.utils.collections.Loop;
-import org.twak.utils.collections.LoopL;
 
 import decomposition.graph.Edge;
 import decomposition.graph.Face;
@@ -17,7 +18,7 @@ import decomposition.graph.TopologicalGraph;
 
 public class Test {
 
-  public static void main(String[] args) throws ParseException {
+  public static void main(String[] args) throws ParseException, IOException {
     WKTReader2 reader = new WKTReader2();
     // String string = "Polygon ((931791.39347010478377342 6702751.51166855916380882, 931667.39000000001396984 6702822.55999999959021807, 931573.58005860995035619
     // 6702875.74996676854789257, 931573.58007097674999386 6702875.75020194333046675, 931628.17000000004190952 6703031.07000000029802322, 931630.99042630556505173
@@ -44,60 +45,14 @@ public class Test {
       System.out.println(e.getGeometry());
     }
     //
-    Loop<org.twak.camp.Edge> loop1 = new Loop<>();
-    Corner c1 = new Corner(0, 0), c2 = new Corner(100, 0), c3 = new Corner(100, 100);
-
-    Machine directionMachine = new Machine();
-
-    loop1.append(new org.twak.camp.Edge(c1, c2));
-    loop1.append(new org.twak.camp.Edge(c2, c3));
-    loop1.append(new org.twak.camp.Edge(c3, c1));
-    for (org.twak.camp.Edge e : loop1)
-      e.machine = directionMachine;
-
-    LoopL<org.twak.camp.Edge> a = new LoopL<>(loop1);
-    LoopL<Corner> output = OffsetSkeleton.shrink(a, 5);
-    System.out.println(
-        polygon.getFactory().createPolygon(new Coordinate[] { new Coordinate(c1.x, c1.y), new Coordinate(c2.x, c2.y), new Coordinate(c3.x, c3.y), new Coordinate(c1.x, c1.y) }));
-    System.out.println(CampSkeleton.convertCornerLoops(output, polygon.getFactory()));
-    // Skeleton s = new Skeleton(a, 5);
-    // s.skeleton();
-    //
-    // for (org.twak.camp.Output.Face f: s.output.faces.values()) {
-    // System.out.println( "face:" );
-    // System.out.println(CampSkeleton.convertFace(f.points, polygon.getFactory()));
-    // }
-    // Corner c1 = new Corner( 0, 0 ),
-    // c2 = new Corner( 100, -100 ),
-    // c3 = new Corner( 100, 0 );
-    //
-    // Machine speed1 = new Machine(Math.PI/4),
-    // speed2 = new Machine(Math.PI/3);
-    // Machine machine = new Machine();
-    // Loop<org.twak.camp.Edge> loop1 = new Loop<org.twak.camp.Edge>();
-    //
-    //
-    // org.twak.camp.Edge e1 = new org.twak.camp.Edge( c1, c2 ),
-    // e2 = new org.twak.camp.Edge( c2, c3 ),
-    // e3 = new org.twak.camp.Edge( c3, c1 );
-    //
-    // loop1.append( e1 );
-    // loop1.append( e2 );
-    // loop1.append( e3 );
-    //
-    // e1.machine = machine;//speed1;
-    // e2.machine = machine;//speed1;
-    // e3.machine = machine;//speed2;
-    //
-    // Skeleton skel = new Skeleton( loop1.singleton(), true );
-    // skel.skeleton();
-    //
-    // for ( org.twak.camp.Output.Face face : skel.output.faces.values() ) {
-    // System.out.println( "face:" );
-    // for ( Loop<Point3d> lp3 : face.points )
-    // for ( Point3d pt : lp3 )
-    // System.out.println( pt );
-    // }
     System.out.println(CampSkeleton.shrink(polygon, 2));
+    
+    String inputRoadShapeFile = "/home/julien/data/PLU_PARIS/voie/voie_l93.shp";
+    ShapefileDataStore roadDS = new ShapefileDataStore(new File(inputRoadShapeFile).toURI().toURL());
+    SimpleFeatureCollection roads = roadDS.getFeatureSource().getFeatures();
+    LineString line = (LineString) reader.read("LineString (653608.67376999428961426 6859509.79754020832479, 653622.56625000014901161 6859524.18500000052154064)");
+    SimpleFeatureCollection selection = Util.select(roads, line);
+    System.out.println("selection = " + selection.size());
+    roadDS.dispose();
   }
 }

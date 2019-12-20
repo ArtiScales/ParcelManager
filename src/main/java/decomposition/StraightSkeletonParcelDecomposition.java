@@ -5,31 +5,59 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Calendar;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Optional;
+import java.util.Random;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.math3.random.GaussianRandomGenerator;
+import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
+import org.geotools.data.DataUtilities;
+import org.geotools.data.FeatureWriter;
+import org.geotools.data.FileDataStore;
+import org.geotools.data.Transaction;
+import org.geotools.data.shapefile.ShapefileDataStore;
+import org.geotools.data.shapefile.ShapefileDataStoreFactory;
 import org.geotools.data.simple.SimpleFeatureCollection;
+import org.geotools.data.simple.SimpleFeatureIterator;
+import org.geotools.feature.DefaultFeatureCollection;
 import org.geotools.feature.SchemaException;
+import org.geotools.feature.simple.SimpleFeatureBuilder;
+import org.locationtech.jts.algorithm.Orientation;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.Geometry;
+import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.LineSegment;
 import org.locationtech.jts.geom.LineString;
 import org.locationtech.jts.geom.Point;
 import org.locationtech.jts.geom.Polygon;
+import org.locationtech.jts.geom.PrecisionModel;
+import org.locationtech.jts.geom.util.LineStringExtracter;
 import org.locationtech.jts.linearref.LengthIndexedLine;
 import org.locationtech.jts.operation.linemerge.LineMerger;
+import org.locationtech.jts.operation.overlay.snap.GeometrySnapper;
+import org.locationtech.jts.operation.polygonize.Polygonizer;
+import org.locationtech.jts.operation.union.CascadedPolygonUnion;
+import org.locationtech.jts.precision.GeometryPrecisionReducer;
 import org.opengis.feature.simple.SimpleFeature;
+import org.opengis.feature.simple.SimpleFeatureType;
 
 import decomposition.analysis.FindObjectInDirection;
 import decomposition.geom.Strip;
 import decomposition.graph.Edge;
 import decomposition.graph.Face;
 import decomposition.graph.GraphElement;
+import decomposition.graph.Node;
 import fr.ign.cogit.FeaturePolygonizer;
 
 /**
@@ -47,8 +75,9 @@ public class StraightSkeletonParcelDecomposition {
   //////////////////////////////////////////////////////
   // Input data parameters
   // Must be a double attribute
-  public static String NAME_ATT_IMPORTANCE = "LARGEUR";
-  public final static String NAME_ATT_ROAD = "NOM_VOIE_G";
+  public final static String NAME_ATT_IMPORTANCE = "length";
+  // public final static String NAME_ATT_ROAD = "NOM_VOIE_G";
+  public final static String NAME_ATT_ROAD = "n_sq_vo";
 
   //////////////////////////////////////////////////////
 
@@ -65,8 +94,8 @@ public class StraightSkeletonParcelDecomposition {
   // Indicate the importance of the neighbour road
   public static String ATT_IMPORTANCE = "IMPORTANCE";
 
-  public static boolean DEBUG = false;
-  public static String FOLDER_OUT_DEBUG = "/home/mickael/Bureau/Parcel_div/test/test1/debug/";
+  public static boolean DEBUG = true;
+  public static String FOLDER_OUT_DEBUG = "/tmp/";
 
   /**
    * Main algorithm to process the algorithm
@@ -90,51 +119,49 @@ public class StraightSkeletonParcelDecomposition {
    * @param rng
    *          : Random generator
    * @return
+   * @throws SchemaException
    */
   public static SimpleFeatureCollection runStraightSkeleton2(Polygon pol, SimpleFeatureCollection roads, double maxDepth, double maxDistanceForNearestRoad, double minimalArea,
-      double minWidth, double maxWidth, double noiseParameter, RandomGenerator rng) {
-
+      double minWidth, double maxWidth, double noiseParameter, RandomGenerator rng) throws SchemaException {
     System.out.println("------Begin decomposition with runStraightSkeleton method-----");
     System.out.println("------Partial skelton application-----");
     // Partial skeleton
     CampSkeleton cs = new CampSkeleton(pol, maxDepth);
-
     // Information is stored in getPoids method
     detectAndAnnotateRoadEdges(pol, cs.getGraph().getEdges());
     detectNeighbourdRoad(pol, cs.getGraph().getEdges(), roads, maxDistanceForNearestRoad);
-
     if (DEBUG) {
       System.out.println("------Saving for debug  ...-----");
-      // for (Arc a : cs.getCarteTopo().getListeArcs()) {
-      //
-      // Face f1 = a.getFaceDroite();
-      //
-      // String str = "";
-      // if (f1 != null) {
-      // str = f1.toString();
-      // }
-      //
-      // Face f2 = a.getFaceGauche();
-      //
-      // String str2 = "";
-      // if (f2 != null) {
-      // str2 = f2.toString();
-      // }
-      //
-      // AttributeManager.addAttribute(a, "FD", str, "String");
-      // AttributeManager.addAttribute(a, "FG", str2, "String");
-      // }
-      //
-      // debugExport(cs.getCarteTopo().getListeFaces(), "initialFaces");
-      //
-      // debugExport(cs.getCarteTopo().getListeArcs(), "exteriorArcs");
+      for (Edge a : cs.getGraph().getEdges()) {
+        Face f1 = a.getRight();
+        String str = "";
+        if (f1 != null) {
+          str = f1.toString();
+        }
+        Face f2 = a.getLeft();
+        String str2 = "";
+        if (f2 != null) {
+          str2 = f2.toString();
+        }
+        // AttributeManager.addAttribute(a, "FD", str, "String");
+        a.setAttribute("FD", str);
+        // AttributeManager.addAttribute(a, "FG", str2, "String");
+        a.setAttribute("FG", str2);
+      }
+      debugExport(cs.getGraph().getFaces(), "initialFaces", "Polygon");
+      debugExport(cs.getGraph().getEdges(), "allArcs", "LineString");
+      debugExport(cs.getInteriorEdges(), "interiorArcs", "LineString");
+      debugExport(cs.getExteriorEdges(), "exteriorArcs", "LineString");
+      debugExport(cs.getIncludedEdges(), "includedArcs", "LineString");
     }
     System.out.println("------Annotation of external edges-----");
     // Information is stored in getPoids method
     HashMap<String, List<Face>> llFace = detectStrip(cs.getGraph().getFaces(), pol, roads, maxDistanceForNearestRoad);
     if (DEBUG) {
       System.out.println("------Saving for debug  ...-----");
-      // debugExport(cs.getGraph().getFaces(), "striproad");
+      System.out.println("llFace = " + llFace.size());
+      llFace.keySet().stream().forEach(key -> System.out.println("\t" + key + " with " + llFace.get(key).size()));
+      debugExport(cs.getGraph().getFaces(), "striproad", "Polygon");
     }
     List<List<Face>> stripFace = splittingInAdjacentStrip(llFace);
     if (DEBUG) {
@@ -147,46 +174,41 @@ public class StraightSkeletonParcelDecomposition {
         }
         count++;
       }
-      System.out.println(count);
-      // debugExport(lf, "striproadCorrected");
+      System.out.println("striproadCorrected " + count);
+      debugExport(lf, "striproadCorrected", "Polygon");
     }
     System.out.println("------Fast strip cleaning...-----");
     stripFace = fastStripCleaning(stripFace, minimalArea);
     if (DEBUG) {
       System.out.println("------Saving for debug ...-----");
-      // debugExport(cs.getGraph().getFaces(), "fastStripCleaning");
+      debugExport(cs.getGraph().getFaces(), "fastStripCleaning", "Polygon");
     }
     List<LineString> interiorEdgesByStrip = detectInteriorEdges(stripFace);
     if (DEBUG) {
       System.out.println("------Saving for debug  ...-----");
-      // List<SimpleFeature> lf = new ArrayList<>();
-      // int count = 0;
-      // for (LineString line : interiorEdgesByStrip) {
-      //
-      // SimpleFeature fTemp = new DefaultFeature(line);
-      // AttributeManager.addAttribute(fTemp, ATT_FACE_ID_STRIP, count, "Integer");
-      // lf.add(fTemp);
-      //
-      // count++;
-      // }
-      //
-      // System.out.println(count);
-      // debugExport(lf, "interiorEdgesByStrip");
+      List<Edge> lf = new ArrayList<>();
+      int count = 0;
+      for (LineString line : interiorEdgesByStrip) {
+        Edge temp = new Edge(null, null, line);
+        System.out.println("interiorEdgesByStrip = " + line);
+        temp.setAttribute(ATT_FACE_ID_STRIP, count);
+        lf.add(temp);
+        count++;
+      }
+      System.out.println("interiorEdgesByStrip = " + count);
+      debugExport(lf, "interiorEdgesByStrip", "LineString");
     }
     HashMap<String, Coordinate> limitsPoints = interiorLimitPointsBetweenStrip(stripFace, pol);
     if (DEBUG) {
       System.out.println("------Saving for debug ...-----");
-      // IFeatureCollection<IFeature> featColl = new FT_FeatureCollection<>();
-      //
-      // for(String str: limitsPoints.keySet()){
-      // IFeature feat = new DefaultFeature(new GM_Point(limitsPoints.get(str)));
-      //
-      // AttributeManager.addAttribute(feat, "inter", str, "String");
-      //
-      //
-      // featColl.add(feat);
-      // }
-      // debugExport(featColl, "interPoints");
+      List<Node> list = new ArrayList<>();
+      for (String str : limitsPoints.keySet()) {
+        Node temp = new Node(limitsPoints.get(str));
+        // AttributeManager.addAttribute(feat, "inter", str, "String");
+        temp.setAttribute("inter", str);
+        list.add(temp);
+      }
+      debugExport(list, "interPoints", "Point");
     }
     System.out.println("------Fixing diagonal edges...-----");
     // 3 group of edges : interior/exterior/side
@@ -194,15 +216,14 @@ public class StraightSkeletonParcelDecomposition {
     listOfLists.add(0, interiorEdgesByStrip);
     if (DEBUG) {
       System.out.println("------Saving for debug ...-----");
-      // IFeatureCollection<IFeature> featDebug = new FT_FeatureCollection<>();
-      // for (List<ILineString> ls : listOfLists) {
-      // for (ILineString lls : ls) {
-      // featDebug.add(new DefaultFeature(lls));
-      // }
-      // }
-      // debugExport(featDebug, "stepanotation5");
+      List<Edge> list = new ArrayList<>();
+      for (List<LineString> ls : listOfLists) {
+        for (LineString lls : ls) {
+          list.add(new Edge(null, null, lls));
+        }
+      }
+      debugExport(list, "stepanotation5", "LineString");
     }
-
     return generateParcel(listOfLists, minWidth, maxWidth, noiseParameter, rng);
   }
 
@@ -216,8 +237,7 @@ public class StraightSkeletonParcelDecomposition {
       List<Edge> currentList = new ArrayList<>();
       lLLArc.add(currentList);
       for (Face f : lFtemp) {
-        List<Edge> lArcTemp = f.getEdges();
-        for (Edge a : lArcTemp) {
+        for (Edge a : f.getEdges()) {
           if (Integer.parseInt(a.getAttribute(ATT_IS_INSIDE).toString()) == ARC_VALUE_OUTSIDE) {
             continue;
           }
@@ -249,21 +269,37 @@ public class StraightSkeletonParcelDecomposition {
     List<LineString> lsListOut = new ArrayList<>();
     // Merge intoLineString
     for (List<Edge> arcs : lLLArc) {
-      List<LineString> lsList = new ArrayList<>();
-      for (Edge a : arcs) {
-        lsList.add(a.getGeometry());
+      if (!arcs.isEmpty()) {
+        List<LineString> lsList = new ArrayList<>();
+        for (Edge a : arcs) {
+          lsList.add(a.getGeometry());
+        }
+        // LineString ls = Operateurs.union(lsList, 0.1);
+        LineString ls = union(lsList);
+        lsListOut.add(ls);
       }
-      // LineString ls = Operateurs.union(lsList, 0.1);
-      LineString ls = union(lsList);
-      lsListOut.add(ls);
     }
     return lsListOut;
   }
 
   private static LineString union(List<LineString> list) {
+    if (list.isEmpty())
+      return null;
     LineMerger merger = new LineMerger();
     list.forEach(l -> merger.add(l));
     return (LineString) merger.getMergedLineStrings().iterator().next();// FIXME we assume a lot here
+  }
+
+  private static Polygon polygonUnion(List<Polygon> list) {
+    if (list.isEmpty())
+      return null;
+    List<Geometry> reducedList = list.stream().map(g -> GeometryPrecisionReducer.reduce(g, new PrecisionModel(100))).collect(Collectors.toList());
+    return (Polygon) new CascadedPolygonUnion(reducedList).union();
+  }
+
+  private static Polygon polygonUnionWithoutHoles(List<Polygon> list) {
+    Polygon union = polygonUnion(list);
+    return union.getFactory().createPolygon(union.getExteriorRing().getCoordinates());
   }
 
   private static HashMap<String, Coordinate> interiorLimitPointsBetweenStrip(List<List<Face>> stripFace, Polygon pol) {
@@ -271,8 +307,10 @@ public class StraightSkeletonParcelDecomposition {
     HashMap<String, List<Edge>> mapLimitArcs = new HashMap<>();
     HashMap<String, Coordinate> mapInterPoint = new HashMap<>();
     for (List<Face> lFtemp : stripFace) {
+      System.out.println("interiorLimitPointsBetweenStrip with " + lFtemp.size() + " faces");
       for (Face f : lFtemp) {
         List<Edge> lArcTemp = f.getEdges();
+        System.out.println("interiorLimitPointsBetweenStrip Face " + f.getGeometry() + " with " + lArcTemp.size() + " edges");
         for (Edge a : lArcTemp) {
           if (Integer.parseInt(a.getAttribute(ATT_IS_INSIDE).toString()) == ARC_VALUE_OUTSIDE) {
             continue;
@@ -294,6 +332,7 @@ public class StraightSkeletonParcelDecomposition {
                 List<Edge> lA = mapLimitArcs.get(id);
                 if (lA == null) {
                   lA = new ArrayList<>();
+                  System.out.println("mapLimitArcs: " + id);
                   mapLimitArcs.put(id, lA);
                 }
                 if (!lA.contains(a)) {
@@ -310,6 +349,7 @@ public class StraightSkeletonParcelDecomposition {
     }
     List<LineString> lsListOut = new ArrayList<>();
     // Merge intoLineString
+    System.out.println("mapLimitArcs : " + mapLimitArcs.size());
     for (String str : mapLimitArcs.keySet()) {
       List<LineString> lsList = new ArrayList<>();
       List<Edge> lA = mapLimitArcs.get(str);
@@ -340,32 +380,42 @@ public class StraightSkeletonParcelDecomposition {
       List<Edge> arcs = f.getEdges();
       String bestRoadName = "";
       double importance = 0;
-      double maxLength = Double.NEGATIVE_INFINITY;
       // For each arc we determine the nearest road
-      for (Edge a : arcs) {
-        SimpleFeature feat = FindObjectInDirection.find(a.getGeometry(), pol, roads, thresholdRoad);
-        if (feat == null) {
-          continue;
-        }
-        Object o = feat.getAttribute(NAME_ATT_ROAD);
-        String roadName = "";
-        if (o != null) {
-          roadName = o.toString();
-        }
-        double lengthTemp = a.getGeometry().getLength();
-        if (lengthTemp > maxLength) {
-          maxLength = lengthTemp;
-          bestRoadName = roadName;
-          Object otemp = a.getAttribute(ATT_IMPORTANCE);
-          if (otemp != null) {
-            importance = Double.parseDouble(otemp.toString());
-          }
-        }
+      Optional<Pair<String, Double>> option = arcs.stream().map(e -> new ImmutablePair<>(e, FindObjectInDirection.find(e.getGeometry(), pol, roads, thresholdRoad)))
+          .filter(p -> p.right != null).max((p1, p2) -> new Double(p1.left.getGeometry().getLength()).compareTo(new Double(p2.left.getGeometry().getLength())))
+          .map(p -> new ImmutablePair<>(p.right.map(o -> o.getAttribute(NAME_ATT_ROAD)), Optional.ofNullable(p.left.getAttribute(ATT_IMPORTANCE))))
+          .map(p -> new ImmutablePair<>(p.left.orElse("").toString(), Double.parseDouble(p.right.orElse("0.0").toString())));
+      if (option.isPresent()) {
+        bestRoadName = option.get().getLeft();
+        importance = option.get().getRight();
       }
+      // double maxLength = Double.NEGATIVE_INFINITY;
+      // for (Edge a : arcs) {
+      // SimpleFeature feat = FindObjectInDirection.find(a.getGeometry(), pol, roads, thresholdRoad);
+      // System.out.println("FindObjectInDirection " + feat);
+      // if (feat == null) {
+      // continue;
+      // }
+      // Object o = feat.getAttribute(NAME_ATT_ROAD);
+      // String roadName = "";
+      // if (o != null) {
+      // roadName = o.toString();
+      // }
+      // double lengthTemp = a.getGeometry().getLength();
+      // if (lengthTemp > maxLength) {
+      // maxLength = lengthTemp;
+      // bestRoadName = roadName;
+      // Object otemp = a.getAttribute(ATT_IMPORTANCE);
+      // if (otemp != null) {
+      // importance = Double.parseDouble(otemp.toString());
+      // }
+      // }
+      // }
       // AttributeManager.addAttribute(f, ATT_IMPORTANCE, importance, "Double");
       f.setAttribute(ATT_IMPORTANCE, importance);
       // AttributeManager.addAttribute(f, ATT_FACE_ID_STRIP, bestRoadName, "String");
       f.setAttribute(ATT_FACE_ID_STRIP, bestRoadName);
+      System.out.println("bestRoadName = " + bestRoadName + " importance = " + importance);
       List<Face> lFaces = hashFaces.get(bestRoadName);
       if (lFaces == null) {
         lFaces = new ArrayList<>();
@@ -430,6 +480,12 @@ public class StraightSkeletonParcelDecomposition {
       LineString nextExterior = lExteriorLineString.get(nextIndex);
       // Determination of limit point on interior between two strips
       Coordinate pointToCast = interPoints.get(idPointInter);
+      if (pointToCast == null) {
+        System.out.println("NULL pointToCast for " + idPointInter);
+        for (Entry<String, Coordinate> entry : interPoints.entrySet()) {
+          System.out.println(entry.getKey() + " => " + entry.getValue());
+        }
+      }
       LineString lineStringToSplit;
       // Line to split is determined
       // according to the importance b
@@ -441,29 +497,29 @@ public class StraightSkeletonParcelDecomposition {
       }
       // Line is splitting by projecting the limit points and each part is
       // re-affected to relevant group
-//      List<Coordinate> dpl = new ArrayList<>();
-//      dpl.addAll(Arrays.asList(lineStringToSplit.getCoordinates()));
-//      int pointIndex = Operateurs.projectAndInsertWithPosition(pointToCast, dpl);
-//      Coordinate[] sidePoint = new Coordinate[] { pointToCast, dpl.get(pointIndex) };
-//      LineString ls = lineStringToSplit.getFactory().createLineString(sidePoint);
-//      lSide.add(ls);
-//      if (pointIndex == -1) {
-//        System.out.println("This case is not supposed to happen for point projection : " + StraightSkeletonParcelDecomposition.class);
-//      }
-//      List<Coordinate> dpl1 = new ArrayList<>();
-//      List<Coordinate> dpl2 = new ArrayList<>();
-//      for (int j = 0; j <= pointIndex; j++) {
-//        dpl1.add(dpl.get(j));
-//      }
-//      for (int j = pointIndex; j < dpl.size(); j++) {
-//        dpl2.add(dpl.get(j));
-//      }
-//      LineString ls1 = lineStringToSplit.getFactory().createLineString(dpl1.toArray(new Coordinate[dpl1.size()]));
-//      LineString ls2 = lineStringToSplit.getFactory().createLineString(dpl2.toArray(new Coordinate[dpl2.size()]));
+      // List<Coordinate> dpl = new ArrayList<>();
+      // dpl.addAll(Arrays.asList(lineStringToSplit.getCoordinates()));
+      // int pointIndex = Operateurs.projectAndInsertWithPosition(pointToCast, dpl);
+      // Coordinate[] sidePoint = new Coordinate[] { pointToCast, dpl.get(pointIndex) };
+      // LineString ls = lineStringToSplit.getFactory().createLineString(sidePoint);
+      // lSide.add(ls);
+      // if (pointIndex == -1) {
+      // System.out.println("This case is not supposed to happen for point projection : " + StraightSkeletonParcelDecomposition.class);
+      // }
+      // List<Coordinate> dpl1 = new ArrayList<>();
+      // List<Coordinate> dpl2 = new ArrayList<>();
+      // for (int j = 0; j <= pointIndex; j++) {
+      // dpl1.add(dpl.get(j));
+      // }
+      // for (int j = pointIndex; j < dpl.size(); j++) {
+      // dpl2.add(dpl.get(j));
+      // }
+      // LineString ls1 = lineStringToSplit.getFactory().createLineString(dpl1.toArray(new Coordinate[dpl1.size()]));
+      // LineString ls2 = lineStringToSplit.getFactory().createLineString(dpl2.toArray(new Coordinate[dpl2.size()]));
       Coordinate proj = project(pointToCast, lineStringToSplit);
       LineString ls = lineStringToSplit.getFactory().createLineString(new Coordinate[] { pointToCast, proj });
       lSide.add(ls);
-      Pair<LineString,LineString> split = splitLine(lineStringToSplit, proj);
+      Pair<LineString, LineString> split = splitLine(lineStringToSplit, proj);
       LineString ls1 = split.getLeft();
       LineString ls2 = split.getRight();
       List<LineString> lsList = new ArrayList<>();
@@ -545,7 +601,7 @@ public class StraightSkeletonParcelDecomposition {
    * @return
    */
   public static void runStraightSkeleton(Polygon pol, SimpleFeatureCollection roads, double maxDepth, double maxDistanceForNearestRoad, double minimalArea, double minWidth,
-      double maxWidth, double noiseParameter, RandomGenerator rng) {
+      double maxWidth, double noiseParameter, Random rng) {
     // IFeatureCollection<IFeature> featCollOut = new FT_FeatureCollection<>();
     System.out.println("------Begin decomposition with runStraightSkeleton method-----");
     System.out.println("------Partial skelton application-----");
@@ -650,17 +706,18 @@ public class StraightSkeletonParcelDecomposition {
         a.setAttribute(ATT_ROAD, "");
         continue;
       }
-      SimpleFeature feat = FindObjectInDirection.find(a.getGeometry(), pol, roads, thresholdRoad); // NearestRoadFinder.findNearest(roads,
+      Optional<SimpleFeature> feat = FindObjectInDirection.find(a.getGeometry(), pol, roads, thresholdRoad); // NearestRoadFinder.findNearest(roads,
+      System.out.println("FindObjectInDirection (detectNeighbourdRoad) = " + feat);
       // a.getGeom(),
       // thresholdRoad);
-      if (feat == null) {
+      if (!feat.isPresent()) {
         // AttributeManager.addAttribute(a, ATT_IMPORTANCE, 0.0, "Double");
         a.setAttribute(ATT_IMPORTANCE, 0.0);
         // AttributeManager.addAttribute(a, ATT_ROAD, "", "String");
         a.setAttribute(ATT_ROAD, "");
         continue;
       }
-      Object o = feat.getAttribute(NAME_ATT_IMPORTANCE);
+      Object o = feat.get().getAttribute(NAME_ATT_IMPORTANCE);
       double value = 0;
       if (o == null || !(o instanceof Double)) {
         System.out.println("Attribute : " + NAME_ATT_IMPORTANCE + "  not found or null ");
@@ -669,7 +726,7 @@ public class StraightSkeletonParcelDecomposition {
       }
       // AttributeManager.addAttribute(a, ATT_IMPORTANCE, value, "Double");
       a.setAttribute(ATT_IMPORTANCE, value);
-      o = feat.getAttribute(NAME_ATT_ROAD);
+      o = feat.get().getAttribute(NAME_ATT_ROAD);
       String valuestr = "";
       if (o == null || !(o instanceof String)) {
         System.out.println("Attribute : " + NAME_ATT_ROAD + "  not found or null ");
@@ -757,7 +814,7 @@ public class StraightSkeletonParcelDecomposition {
   }
 
   /**
-   * Make a fast clean by removing small strips and affect them according to most important adjacent road
+   * Make a fast clean by removing small strips and affect them according to most important adjacent road.
    * 
    * @TODO
    * @param initStripping
@@ -833,7 +890,7 @@ public class StraightSkeletonParcelDecomposition {
     // For each group (it is not necessary to treat the last one as we consider the previous and next strip
     int nbGroup = stripFace.size();
     for (int i = 0; i < nbGroup; i++) {
-      System.out.println(lInteriorLineString.get(i));
+      System.out.println("lInteriorLineString (" + i + ") = " + lInteriorLineString.get(i));
     }
     for (int i = 0; i < nbGroup - 1; i++) {
       List<Face> currentGroup = stripFace.get(i);
@@ -868,28 +925,28 @@ public class StraightSkeletonParcelDecomposition {
       }
       // Line is splitting by projecting the limit points and each part is
       // re-affected to relevant group
-//      List<Coordinate> dpl = new ArrayList<>(Arrays.asList(lineStringToSplit.getCoordinates()));
-//      int pointIndex = Operateurs.projectAndInsertWithPosition(pointToCast, dpl);
-//      List<Coordinate> sidePoint = new ArrayList<>();
-//      sidePoint.add(pointToCast);
-//      sidePoint.add(dpl.get(pointIndex));
-//      lSideIni.add(lineStringToSplit.getFactory().createLineString(sidePoint.toArray(new Coordinate[sidePoint.size()])));
-//      if (pointIndex == -1) {
-//        System.out.println("This case is not supposed to happen for point projection : " + StraightSkeletonParcelDecomposition.class);
-//      }
-//      List<Coordinate> dpl1 = new ArrayList<>();
-//      List<Coordinate> dpl2 = new ArrayList<>();
-//      for (int j = 0; j <= pointIndex; j++) {
-//        dpl1.add(dpl.get(j));
-//      }
-//      for (int j = pointIndex; j < dpl.size(); j++) {
-//        dpl2.add(dpl.get(j));
-//      }
-//      LineString ls1 = lineStringToSplit.getFactory().createLineString(dpl1.toArray(new Coordinate[dpl1.size()]));
-//      LineString ls2 = lineStringToSplit.getFactory().createLineString(dpl2.toArray(new Coordinate[dpl2.size()]));
+      // List<Coordinate> dpl = new ArrayList<>(Arrays.asList(lineStringToSplit.getCoordinates()));
+      // int pointIndex = Operateurs.projectAndInsertWithPosition(pointToCast, dpl);
+      // List<Coordinate> sidePoint = new ArrayList<>();
+      // sidePoint.add(pointToCast);
+      // sidePoint.add(dpl.get(pointIndex));
+      // lSideIni.add(lineStringToSplit.getFactory().createLineString(sidePoint.toArray(new Coordinate[sidePoint.size()])));
+      // if (pointIndex == -1) {
+      // System.out.println("This case is not supposed to happen for point projection : " + StraightSkeletonParcelDecomposition.class);
+      // }
+      // List<Coordinate> dpl1 = new ArrayList<>();
+      // List<Coordinate> dpl2 = new ArrayList<>();
+      // for (int j = 0; j <= pointIndex; j++) {
+      // dpl1.add(dpl.get(j));
+      // }
+      // for (int j = pointIndex; j < dpl.size(); j++) {
+      // dpl2.add(dpl.get(j));
+      // }
+      // LineString ls1 = lineStringToSplit.getFactory().createLineString(dpl1.toArray(new Coordinate[dpl1.size()]));
+      // LineString ls2 = lineStringToSplit.getFactory().createLineString(dpl2.toArray(new Coordinate[dpl2.size()]));
       Coordinate proj = project(pointToCast, lineStringToSplit);
       lSideIni.add(lineStringToSplit.getFactory().createLineString(new Coordinate[] { pointToCast, proj }));
-      Pair<LineString,LineString> split = splitLine(lineStringToSplit, proj);
+      Pair<LineString, LineString> split = splitLine(lineStringToSplit, proj);
       LineString ls1 = split.getLeft();
       LineString ls2 = split.getRight();
 
@@ -941,8 +998,10 @@ public class StraightSkeletonParcelDecomposition {
    * @param noiseParameter
    * @param rng
    * @return
+   * @throws SchemaException
    */
-  private static SimpleFeatureCollection generateParcel(List<List<LineString>> listOfLists, double minWidth, double maxWidth, double noiseParameter, RandomGenerator rng) {
+  private static SimpleFeatureCollection generateParcel(List<List<LineString>> listOfLists, double minWidth, double maxWidth, double noiseParameter, RandomGenerator rng)
+      throws SchemaException {
     // Exterior and interior linstering for each groups
     List<LineString> lInteriorLineString = listOfLists.get(0);
     List<LineString> lExteriorLineString = listOfLists.get(1);
@@ -951,7 +1010,8 @@ public class StraightSkeletonParcelDecomposition {
     // Random parameters
     GaussianRandomGenerator rawGenerator = new GaussianRandomGenerator(rng);
     double gaussianCenter = (minWidth + maxWidth) / 2;
-    // IFeatureCollection<IFeature> featCollOut = new FT_FeatureCollection<>();
+    DefaultFeatureCollection result = new DefaultFeatureCollection();
+    SimpleFeatureType PARCELTYPE = DataUtilities.createType("location", "geom:Polygon,ID:Integer");
     int count = 0;
     // Nettoyage des strip
     for (int i = 0; i < nbStrip; i++) {
@@ -998,46 +1058,54 @@ public class StraightSkeletonParcelDecomposition {
       while (!endFlag) {
         // Take a random abscissa
         double s = rawGenerator.nextNormalizedDouble() * noiseParameter * 3 + gaussianCenter;
+        // double s = rng.nextGaussian() * noiseParameter * 3 * gaussianCenter;
         // Clamping limits
         s = Math.min(maxWidth, s);
         s = Math.max(s, minWidth);
-        System.out.println(s);
-        // This value is the par of exterior lines from which the parcel
-        // is produced
+        System.out.println("s = " + s + " with " + noiseParameter + " and " + gaussianCenter + " between " + minWidth + " and " + maxWidth);
+        System.out.println("currentExterior length = " + currentExterior.getLength());
+        // This value is the par of exterior lines from which the parcel is produced
         LineString lsTokeep = null;
-        // the value is longer than the length of remining line, a
-        // parcel is produced with the rest of the line
+        // the value is longer than the length of remining line, a parcel is produced with the rest of the line
         if (s > currentExterior.getLength()) {
+          System.out.println("C1");
           lsTokeep = currentExterior;
           endFlag = true;
         } else {
           // Line is splitting
           Pair<LineString, LineString> ls = splitLine(currentExterior, s);
+          System.out.println("SPLITTING\n" + currentExterior);
           LineString ls1 = ls.getLeft();
           LineString ls2 = ls.getRight();
-          // Determining what part of the splitted lines is the interesting cut
-          // If the remaining length for the rest of the line is too small
-          // it is also merged
+          System.out.println(ls1);
+          System.out.println(ls2);
+          // Determining what part of the split lines is the interesting cut
+          // If the remaining length for the rest of the line is too small, it is also merged
           if (Math.abs(s - ls1.getLength()) < 0.01) {
             if (ls2.getLength() < minWidth) {
+              System.out.println("C2");
               lsTokeep = currentExterior;
               endFlag = true;
             } else {
+              System.out.println("C3");
               lsTokeep = ls1;
               currentExterior = ls2;
             }
           } else {
             if (ls1.getLength() < minWidth) {
+              System.out.println("C4");
               lsTokeep = currentExterior;
               endFlag = true;
             } else {
+              System.out.println("C5");
               currentExterior = ls1;
               lsTokeep = ls2;
             }
           }
         }
-        // Lateral lines are generated by projected extremities of
-        // exterior parts of the block on interior line
+        // Lateral lines are generated by projected extremities of exterior parts of the block on interior line
+        System.out.println("lsTokeep\n" + lsTokeep);
+        System.out.println("currentInterior\n" + currentInterior);
         Coordinate dpExt1 = lsTokeep.getCoordinateN(0);
         Coordinate dpExt2 = lsTokeep.getCoordinateN(lsTokeep.getNumPoints() - 1);
         Coordinate dpCast1 = project(dpExt1, currentInterior);
@@ -1045,12 +1113,14 @@ public class StraightSkeletonParcelDecomposition {
         Coordinate[] dplLat = new Coordinate[] { dpCast1, dpExt1 };
         Coordinate[] dplLat2 = new Coordinate[] { dpCast2, dpExt2 };
         LineString lsLat = (firstLimit) ? previousLimitSide : lsTokeep.getFactory().createLineString(dplLat);
+        System.out.println("lsLat\n" + lsLat);
         LineString lsLat2 = (endFlag) ? nextLimitSide : lsTokeep.getFactory().createLineString(dplLat2);
+        System.out.println("lsLat2\n" + lsLat2);
         List<LineString> lsOut = new ArrayList<>();
         lsOut.add(lsTokeep);
         lsOut.add(lsTokeep.getFactory().createLineString(dplLat));
-        // If lateral lines are interesecting the parcel is not composed
-        // by a part of interior line
+        System.out.println("HUM\n" + lsTokeep.getFactory().createLineString(dplLat));
+        // If lateral lines are interesecting the parcel is not composed by a part of interior line
         if (!lsLat.intersects(lsLat2.buffer(0.05))) {
           // Determining part of interior line between lateral lines
           LineString ls = cutBetweentLats(lsLat, lsLat2, currentInterior);
@@ -1059,24 +1129,26 @@ public class StraightSkeletonParcelDecomposition {
           lsOut.add(null);
         }
         lsOut.add(lsTokeep.getFactory().createLineString(dplLat2));
+        System.out.println("HUM\n" + lsTokeep.getFactory().createLineString(dplLat2));
         // IFeature featOut = new DefaultFeature(calculateSurface(lsOut));
         // AttributeManager.addAttribute(featOut, "ID", count++, "Integer");
         // featCollOut.add(featOut);
+        SimpleFeature parcelle = SimpleFeatureBuilder.build(PARCELTYPE, new Object[] { calculateSurface(lsOut), count++ }, null);
+        result.add(parcelle);
         firstLimit = false;
       }
     }
-    return null;
+    return result;
   }
-  
+
   public static Coordinate project(Coordinate p, LineString l) {
     List<Pair<Coordinate, Double>> list = new ArrayList<>();
     for (int i = 0; i < l.getNumPoints() - 1; i++) {
-      LineSegment segment = new LineSegment(l.getCoordinateN(i),l.getCoordinateN(i+1));
-      Coordinate proj = segment.project(p);
-      double dist = proj.distance(p);
-      list.add(new ImmutablePair<>(proj,dist));
+      LineSegment segment = new LineSegment(l.getCoordinateN(i), l.getCoordinateN(i + 1));
+      Coordinate proj = segment.closestPoint(p);
+      list.add(new ImmutablePair<>(proj, proj.distance(p)));
     }
-    return list.stream().min((a,b)->a.getRight().compareTo(b.getRight())).get().getLeft();
+    return list.stream().min((a, b) -> a.getRight().compareTo(b.getRight())).get().getLeft();
   }
 
   /**
@@ -1089,8 +1161,10 @@ public class StraightSkeletonParcelDecomposition {
     List<LineString> lineStringToMerge = new ArrayList<>();
     List<Edge> encounterdEdges = new ArrayList<>();
     for (Face f : currentGroup) {
+      System.out.println("FACE " + f.getGeometry() + " EDGES = " + f.getEdges().size());
       for (Edge a : f.getEdges()) {
         Object o = a.getAttribute(ATT_IS_INSIDE);
+        System.out.println("ATT_IS_INSIDE = " + o);
         if (o == null) {
           continue;
         }
@@ -1152,7 +1226,7 @@ public class StraightSkeletonParcelDecomposition {
     } else {
       idtemp2 = dp4;
     }
-    Pair<LineString,LineString> lsSpli = splitLine((LineString) interiorCurve, idtemp);
+    Pair<LineString, LineString> lsSpli = splitLine((LineString) interiorCurve, idtemp);
     LineString goodLineString = null;
     if (lsSpli.getRight().getLength() == 0) {
       goodLineString = lsSpli.getLeft();
@@ -1196,7 +1270,10 @@ public class StraightSkeletonParcelDecomposition {
     }
     dpl.addAll(Arrays.asList(ls.get(3).getCoordinates()));
     dpl.addAll(Arrays.asList(ls.get(0).reverse().getCoordinates()));
-    return ls.get(0).getFactory().createPolygon(dpl.toArray(new Coordinate[dpl.size()]));
+    System.out.println("calculateSurface");
+    ls.stream().forEach(l -> System.out.println(l));
+    System.out.println(ls.get(0).getFactory().createPolygon(dpl.toArray(new Coordinate[dpl.size()])).union());
+    return (Polygon) ls.get(0).getFactory().createPolygon(dpl.toArray(new Coordinate[dpl.size()])).union();
   }
 
   private static Pair<LineString, LineString> splitLine(LineString line, double s) {
@@ -1204,7 +1281,7 @@ public class StraightSkeletonParcelDecomposition {
     // Coordinate dpInter = LengthLocationMap.getLocation(line, s * line.getLength()).getCoordinate(line);
     LengthIndexedLine lil = new LengthIndexedLine(line);
     // return splitLine(line, dpInter);
-    return new ImmutablePair<LineString, LineString>((LineString) lil.extractLine(0, s * line.getLength()), (LineString) lil.extractLine(s * line.getLength(), line.getLength()));
+    return new ImmutablePair<LineString, LineString>((LineString) lil.extractLine(0, s), (LineString) lil.extractLine(s, line.getLength()));
   }
 
   private static Pair<LineString, LineString> splitLine(LineString line, Coordinate c) {
@@ -1233,8 +1310,40 @@ public class StraightSkeletonParcelDecomposition {
   // ///////////////////////
   //
   private static <G extends Geometry, E extends GraphElement<G>> void debugExport(List<E> feats, String name, String geomType) {
+    System.out.println("save " + feats.size() + " to " + (FOLDER_OUT_DEBUG + name));
+    if (feats.isEmpty())
+      return;
     try {
-      FeaturePolygonizer.saveGeometries(feats.stream().map(e -> e.getGeometry()).collect(Collectors.toList()), new File(FOLDER_OUT_DEBUG + name), geomType);
+      String specs = "geom:" + geomType + ":srid=2154";
+      List<String> attributes = feats.get(0).getAttributes();
+      for (String attribute : attributes) {
+        specs += "," + attribute + ":String";
+      }
+      ShapefileDataStoreFactory factory = new ShapefileDataStoreFactory();
+      FileDataStore dataStore = factory.createDataStore(new File(FOLDER_OUT_DEBUG + name + ".shp").toURI().toURL());
+      String featureTypeName = "Object";
+      SimpleFeatureType featureType = DataUtilities.createType(featureTypeName, specs);
+      dataStore.createSchema(featureType);
+      String typeName = dataStore.getTypeNames()[0];
+      FeatureWriter<SimpleFeatureType, SimpleFeature> writer = dataStore.getFeatureWriterAppend(typeName, Transaction.AUTO_COMMIT);
+      System.setProperty("org.geotools.referencing.forceXY", "true");
+      if (DEBUG)
+        System.out.println(Calendar.getInstance().getTime() + " write shapefile");
+      for (E element : feats) {
+        SimpleFeature feature = writer.next();
+        Object[] att = new Object[attributes.size() + 1];
+        att[0] = element.getGeometry();
+        for (int i = 0; i < attributes.size(); i++) {
+          att[i + 1] = element.getAttribute(attributes.get(i));
+        }
+        feature.setAttributes(att);
+        writer.write();
+      }
+      if (DEBUG)
+        System.out.println(Calendar.getInstance().getTime() + " done");
+      writer.close();
+      dataStore.dispose();
+      // FeaturePolygonizer.saveGeometries(feats.stream().map(e -> e.getGeometry()).collect(Collectors.toList()), new File(FOLDER_OUT_DEBUG + name + ".shp"), geomType);
     } catch (MalformedURLException e) {
       e.printStackTrace();
     } catch (IOException e) {
@@ -1243,6 +1352,224 @@ public class StraightSkeletonParcelDecomposition {
       e.printStackTrace();
     }
   }
+
+  private static boolean isReflex(Node node, Edge previous, Edge next) {
+    return isReflex(node.getCoordinate(), previous.getGeometry(), next.getGeometry());
+  }
+
+  private static Coordinate getNextCoordinate(Coordinate current, LineString line) {
+    return (line.getCoordinateN(0).equals2D(current)) ? line.getCoordinateN(1) : line.getCoordinateN(line.getNumPoints() - 2);
+  }
+
+  private static boolean isReflex(Coordinate current, LineString previous, LineString next) {
+    Coordinate previousCoordinate = getNextCoordinate(current, previous);
+    Coordinate nextCoordinate = getNextCoordinate(current, next);
+    return Orientation.index(previousCoordinate, current, nextCoordinate) == Orientation.CLOCKWISE;
+  }
+
+  public static final int NONE = 0;
+  public static final int PREVIOUS = 1;
+  public static final int NEXT = 2;
+
+  private static int classify(Node node, Pair<Edge, Optional<Pair<String, Double>>> previous, Pair<Edge, Optional<Pair<String, Double>>> next) {
+    if (isReflex(node, previous.getLeft(), next.getLeft()))
+      return NONE;
+    if (previous.getRight().map(a -> a.getRight()).orElse(0.0) > next.getRight().map(a -> a.getRight()).orElse(0.0)) {
+      return PREVIOUS;
+    }
+    return NEXT;
+  }
+
+  private static Pair<String, Double> attributes(SimpleFeature s) {
+    String name = s.getAttribute(NAME_ATT_ROAD).toString();
+    String impo = s.getAttribute(NAME_ATT_IMPORTANCE).toString();
+    return new ImmutablePair<>(name, Double.parseDouble(impo.replaceAll(",", ".")));
+  }
+
+  public static SimpleFeatureCollection decompose(Polygon pol, SimpleFeatureCollection roads, double offsetDistance, double maxDistanceForNearestRoad, double minimalArea,
+      double minWidth, double maxWidth, double noiseParameter, RandomGenerator rng) throws SchemaException {
+    // Partial skeleton
+    CampSkeleton cs = new CampSkeleton(pol, offsetDistance);
+    List<Edge> edges = cs.getExteriorEdges();
+    System.out.println("ExteriorEdges = " + edges.size());
+    List<Edge> orderedEdges = new ArrayList<>();
+    Edge first = edges.get(0);
+    orderedEdges.add(first);
+    Node currentNode = first.getTarget();
+    Edge current = cs.getGraph().next(currentNode, first, edges);
+    orderedEdges.add(current);
+    currentNode = (current.getOrigin() == currentNode) ? current.getTarget() : current.getOrigin();
+    while (current != first) {
+      current = cs.getGraph().next(currentNode, current, edges);
+      currentNode = (current.getOrigin() == currentNode) ? current.getTarget() : current.getOrigin();
+      if (current != first)
+        orderedEdges.add(current);
+    }
+    System.out.println("OrderedEdges = " + orderedEdges.size());
+    List<Pair<Edge, Optional<Pair<String, Double>>>> attributes = orderedEdges.stream()
+        // .map(e -> new ImmutablePair<>(e,Closest.find(e.getGeometry().getCentroid(), roads, maxDistanceForNearestRoad)))
+        .map(e -> new ImmutablePair<>(e, FindObjectInDirection.find(e.getGeometry(), pol, roads, maxDistanceForNearestRoad)))
+        .map(so -> new ImmutablePair<>(so.left, so.right.map(s -> attributes(s)))).collect(Collectors.toList());
+    System.out.println("Names = " + attributes.size());
+    for (Pair<Edge, Optional<Pair<String, Double>>> n : attributes) {
+      System.out.println(n.getLeft().getGeometry());
+      System.out.println(n.getRight());
+    }
+    Map<Pair<Edge, Optional<Pair<String, Double>>>, Integer> map = new HashMap<>();
+    Pair<Edge, Optional<Pair<String, Double>>> firstPair = attributes.get(0);
+    int stripId = 0;
+    map.put(firstPair, stripId++);
+    Map<Node, Pair<Edge, Edge>> supportingVertices = new HashMap<>();
+    for (int i = 0; i < attributes.size() - 1; i++) {
+      Pair<Edge, Optional<Pair<String, Double>>> p1 = attributes.get(i);
+      Pair<Edge, Optional<Pair<String, Double>>> p2 = attributes.get((i + 1) % attributes.size());
+      if (p1.getRight().map(p -> p.getLeft()).orElse("").equals(p2.getRight().map(p -> p.getLeft()).orElse(""))) {
+        map.put(p2, map.get(p1));
+      } else {
+        map.put(p2, stripId++);
+        supportingVertices.put(cs.getGraph().getCommonNode(p1.getLeft(), p2.getLeft()), new ImmutablePair<>(p1.getLeft(), p2.getLeft()));
+      }
+    }
+    Pair<Edge, Optional<Pair<String, Double>>> lastPair = attributes.get(attributes.size() - 1);
+    if (lastPair.getRight().map(p -> p.getLeft()).orElse("").equals(firstPair.getRight().map(p -> p.getLeft()).orElse(""))) {
+      // we merge the first and last strips
+      Integer firstStrip = map.get(firstPair);
+      Integer lastStrip = map.get(lastPair);
+      map.keySet().stream().filter(p -> map.get(p).equals(lastStrip)).forEach(p -> map.put(p, firstStrip));
+    } else {
+      supportingVertices.put(cs.getGraph().getCommonNode(lastPair.getLeft(), firstPair.getLeft()), new ImmutablePair<>(lastPair.getLeft(), firstPair.getLeft()));
+    }
+    Set<Integer> stripIds = new HashSet<>(map.values());
+    System.out.println("Strips = " + stripIds.size());
+    List<List<Edge>> alphaStrips = new ArrayList<>();
+    Map<Edge, Integer> alphaStripEdgeMap = new HashMap<>();
+    for (Integer index : stripIds) {
+      // find all edges with the corresponding index
+      List<Edge> stripEdges = map.entrySet().stream().filter(p -> p.getValue().equals(index)).map(p -> p.getKey()).map(p -> p.getLeft()).collect(Collectors.toList());
+      alphaStrips.add(stripEdges);
+      stripEdges.forEach(e -> alphaStripEdgeMap.put(e, index));
+    }
+    Map<Integer, LineString> psiMap = new HashMap<>();
+    for (List<Edge> strip : alphaStrips) {
+      Integer currentStripId = alphaStripEdgeMap.get(strip.get(0));
+      LineString l = union(strip.stream().map(e -> e.getGeometry()).collect(Collectors.toList()));
+      System.out.println(l);
+      psiMap.put(currentStripId, l);
+    }
+    Map<Face, Integer> alphaStripFaceMap = new HashMap<>();
+    for (List<Edge> strip : alphaStrips) {
+      Integer currentStripId = alphaStripEdgeMap.get(strip.get(0));
+      List<Face> stripFaces = strip.stream().map(e -> (e.getRight() == null) ? e.getLeft() : e.getRight()).collect(Collectors.toList());
+      stripFaces.forEach(p -> alphaStripFaceMap.put(p, currentStripId));
+      List<Polygon> polygons = stripFaces.stream().map(f -> f.getGeometry()).collect(Collectors.toList());
+      System.out.println(polygonUnionWithoutHoles(polygons));
+    }
+    System.out.println("Supporting vertices");
+    // classify supporting vertices
+    for (Node n : supportingVertices.keySet()) {
+      System.out.println(n.getGeometry());
+      Pair<Edge, Edge> pair = supportingVertices.get(n);
+      Pair<Edge, Optional<Pair<String, Double>>> previous = attributes.stream().filter(p -> p.getLeft() == pair.getLeft()).findFirst().get();
+      Pair<Edge, Optional<Pair<String, Double>>> next = attributes.stream().filter(p -> p.getLeft() == pair.getRight()).findFirst().get();
+      int supportingVertexClass = classify(n, previous, next);
+      System.out.println(supportingVertexClass);
+      Edge previousEdge = previous.getLeft();
+      Edge nextEdge = next.getLeft();
+      Face prevFace = (previousEdge.getLeft() == null) ? previousEdge.getRight() : previousEdge.getLeft();
+      Face nextFace = (nextEdge.getLeft() == null) ? nextEdge.getRight() : nextEdge.getLeft();
+      Integer prevFaceId = alphaStripFaceMap.get(prevFace);
+      Integer nextFaceId = alphaStripFaceMap.get(nextFace);
+      System.out.println("previousFace= " + prevFace.getGeometry());
+      System.out.println("nextFace= " + nextFace.getGeometry());
+      List<Edge> edgeList = cs.getGraph().getEdges().stream().filter(e -> (alphaStripFaceMap.get(e.getLeft()) == prevFaceId && alphaStripFaceMap.get(e.getRight()) == nextFaceId)
+          || (alphaStripFaceMap.get(e.getLeft()) == nextFaceId && alphaStripFaceMap.get(e.getRight()) == prevFaceId)).collect(Collectors.toList());
+      System.out.println("edgeList = " + edgeList.size());
+      List<Edge> diagonalEdge = new ArrayList<>();
+      Edge currEdge = cs.getGraph().next(n, null, edgeList);
+      // System.out.println("currEdge= " + currEdge.getGeometry());
+      Node currNode = n;
+      while (currEdge != null) {
+        currNode = (currEdge.getOrigin() == currNode) ? currEdge.getTarget() : currEdge.getOrigin();
+        // System.out.println("currNode =" + currNode.getGeometry());
+        diagonalEdge.add(currEdge);
+        currEdge = cs.getGraph().next(currNode, currEdge, edgeList);
+        // System.out.println("currEdge= " + currEdge.getGeometry());
+      }
+      System.out.println(currNode.getGeometry());
+      if (supportingVertexClass != NONE) {
+        final Integer removedId = (supportingVertexClass == PREVIOUS) ? nextFaceId : prevFaceId;
+        List<Face> facesToRemove = diagonalEdge.stream().map(e -> (alphaStripFaceMap.get(e.getLeft()) == removedId) ? e.getLeft() : e.getRight()).collect(Collectors.toList());
+        Coordinate projection = project(currNode.getCoordinate(), psiMap.get(removedId));
+        System.out.println(psiMap.get(removedId));
+        System.out.println(currNode.getGeometry().getFactory().createPoint(projection));
+        System.out.println(facesToRemove.get(facesToRemove.size() - 1).getGeometry());
+        Polygon toRemove = facesToRemove.get(facesToRemove.size() - 1).getGeometry();
+        Pair<Polygon, Polygon> split = splitPolygon(toRemove, toRemove.getFactory().createLineString(new Coordinate[] { currNode.getCoordinate(), projection }));
+//        System.out.println(split.getLeft());
+//        System.out.println(split.getRight());
+        final Face absorbingFace = (supportingVertexClass == PREVIOUS) ? prevFace : nextFace;
+        int leftShared = sharedPoints(split.getLeft(), absorbingFace.getGeometry());
+        int rightShared = sharedPoints(split.getRight(), absorbingFace.getGeometry());
+        System.out.println("SHARED " + leftShared + " - " + rightShared);
+        Polygon absorbedPolygon = (leftShared == 2) ? split.getLeft() : split.getRight(); 
+        System.out.println("ABSORBED:\n"  + absorbedPolygon);
+      }
+      System.out.println("DONE");
+    }
+
+    // System.out.println("FACES");
+    // for (Face f : cs.getGraph().getFaces()) {
+    // System.out.println(f.getGeometry());
+    // }
+    // System.out.println("EDGES");
+    // for (Edge e : cs.getGraph().getEdges()) {
+    // System.out.println(e.getGeometry());
+    // }
+    // System.out.println("NODES");
+    // for (Node n : cs.getGraph().getNodes()) {
+    // System.out.println(n.getGeometry());
+    // }
+    return null;
+  }
+
+  // private static Pair<Polygon, Polygon> splitPolygon(Polygon toRemove, LineString createLineString) {
+  //
+  // return null;
+  // }
+
+  @SuppressWarnings("rawtypes")
+  public static List<Geometry> polygonize(Geometry geometry) {
+    List lines = LineStringExtracter.getLines(geometry);
+    Polygonizer polygonizer = new Polygonizer();
+    polygonizer.add(lines);
+    Collection polys = polygonizer.getPolygons();
+    return Arrays.asList(GeometryFactory.toPolygonArray(polys));
+  }
+
+  public static Pair<Polygon, Polygon> splitPolygon(Polygon poly, LineString line) {
+    Geometry[] snapped = GeometrySnapper.snap(poly, line, 0.001);
+    Geometry nodedLinework = snapped[0].getBoundary().union(snapped[1]);
+    List<Geometry> polys = polygonize(nodedLinework);
+    // Only keep polygons which are inside the input
+    List<Polygon> output = polys.stream().map(g -> (Polygon) g).filter(g -> poly.contains(g.getInteriorPoint())).collect(Collectors.toList());
+    if (output.size() != 2) {
+      System.out.println("OUTPUT WITH " + output.size());
+      System.out.println("SPLIT WITH");
+      System.out.println(line);
+      System.out.println("NODED");
+      System.out.println(nodedLinework);
+      System.out.println("POLYGONIZED");
+      System.out.println(polys);
+    }
+    return new ImmutablePair<>(output.get(0), output.get(1));
+  }
+  public static int sharedPoints(Geometry a, Geometry b) {
+    Geometry[] snapped = GeometrySnapper.snap(a, b, 0.01);
+    List<Coordinate> ca = Arrays.asList(snapped[0].getCoordinates());
+    List<Coordinate> cb = Arrays.asList(snapped[1].getCoordinates());
+    return (int) ca.stream().filter(c->cb.contains(c)).count();
+  }
+
   //
   // if (feats != null) {
   // ShapefileWriter.write(feats, FOLDER_OUT_DEBUG + name);
@@ -1255,4 +1582,63 @@ public class StraightSkeletonParcelDecomposition {
   // featCollOut.addAll(feats);
   // ShapefileWriter.write(featCollOut, FOLDER_OUT_DEBUG + name);
   // }
+  public static void main(String[] args) throws IOException, SchemaException {
+    // Input 1/ the input parcelles to split
+    // String inputShapeFile = "src/main/resources/testData/parcelle.shp";
+    // Input 3 (facultative) : the exterior of the urban block (it serves to determiner the multicurve)
+    // String inputUrbanBlock = "src/main/resources/testData/ilot.shp";
+    // IFeatureCollection<IFeature> featC = ShapefileReader.read(inputUrbanBlock);
+    // ShapefileDataStore blockDS = new ShapefileDataStore(new File(inputUrbanBlock).toURI().toURL());
+    // SimpleFeatureCollection blocks = blockDS.getFeatureSource().getFeatures();
+    // String inputParcelShapeFile = "/home/julien/data/PLU_PARIS/PARCELLE_CADASTRALE/PARCELLE_13.shp";
+    String inputParcelShapeFile = "/home/julien/data/PLU_PARIS/ilots_13.shp";
+    String inputRoadShapeFile = "/home/julien/data/PLU_PARIS/voie/voie_l93.shp";
+    String folderOut = "data/";
+    // The output file that will contain all the decompositions
+    String shapeFileOut = folderOut + "outflag.shp";
+    (new File(folderOut)).mkdirs();
+    // Reading collection
+    ShapefileDataStore parcelDS = new ShapefileDataStore(new File(inputParcelShapeFile).toURI().toURL());
+    SimpleFeatureCollection parcels = parcelDS.getFeatureSource().getFeatures();
+    ShapefileDataStore roadDS = new ShapefileDataStore(new File(inputRoadShapeFile).toURI().toURL());
+    SimpleFeatureCollection roads = roadDS.getFeatureSource().getFeatures();
+    // SimpleFeatureIterator iterator = Util.select(blocks, JTS.toGeometry(parcels.getBounds())).features();
+    // DefaultFeatureCollection roads = new DefaultFeatureCollection();
+    // SimpleFeatureType ROADTYPE = DataUtilities.createType("road", "geom:LineString");
+    // while (iterator.hasNext()) {
+    // SimpleFeature f = iterator.next();
+    // Util.getPolygons((Geometry) f.getDefaultGeometry()).stream().forEach(p -> roads.add(SimpleFeatureBuilder.build(ROADTYPE, new Object[] { p.getExteriorRing() }, null)));
+    // }
+    // iterator.close();
+    SimpleFeatureIterator iterator = parcels.features();
+    SimpleFeature feature = iterator.next();
+    List<Polygon> polygons = Util.getPolygons((Geometry) feature.getDefaultGeometry());
+    double maxDepth = 10, maxDistanceForNearestRoad = 100, minimalArea = 20, minWidth = 5, maxWidth = 40, noiseParameter = 0.1;
+    // SimpleFeatureCollection result = runStraightSkeleton2(polygons.get(0), roads, maxDepth, maxDistanceForNearestRoad, minimalArea, minWidth, maxWidth, noiseParameter,
+    // new MersenneTwister(42));
+    //
+    // ShapefileDataStoreFactory factory = new ShapefileDataStoreFactory();
+    // FileDataStore dataStore = factory.createDataStore(new File(shapeFileOut).toURI().toURL());
+    // dataStore.createSchema(result.getSchema());
+    // String typeName = dataStore.getTypeNames()[0];
+    // SimpleFeatureSource featureSource = dataStore.getFeatureSource(typeName);
+    // Transaction transaction = new DefaultTransaction("create");
+    // SimpleFeatureStore featureStore = (SimpleFeatureStore) featureSource;
+    // featureStore.setTransaction(transaction);
+    // try {
+    // featureStore.addFeatures(result);
+    // transaction.commit();
+    // } catch (Exception problem) {
+    // problem.printStackTrace();
+    // transaction.rollback();
+    // } finally {
+    // transaction.close();
+    // }
+    // dataStore.dispose();
+    iterator.close();
+    decompose(polygons.get(0), roads, maxDepth, maxDistanceForNearestRoad, minimalArea, minWidth, maxWidth, noiseParameter, new MersenneTwister(42));
+    roadDS.dispose();
+    parcelDS.dispose();
+    // blockDS.dispose();
+  }
 }

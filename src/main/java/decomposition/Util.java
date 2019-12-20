@@ -13,11 +13,18 @@ import org.locationtech.jts.geom.MultiLineString;
 import org.locationtech.jts.geom.Polygon;
 import org.opengis.filter.FilterFactory2;
 
+import si.uom.SI;
+
 public class Util {
 
   public static SimpleFeatureCollection select(SimpleFeatureCollection collection, Geometry geom) {
     FilterFactory2 ff = CommonFactoryFinder.getFilterFactory2();
     return collection.subCollection(ff.intersects(ff.property(collection.getSchema().getGeometryDescriptor().getLocalName()), ff.literal(geom)));
+  }
+
+  public static SimpleFeatureCollection select(SimpleFeatureCollection collection, Geometry geom, double distance) {
+    FilterFactory2 ff = CommonFactoryFinder.getFilterFactory2();
+    return collection.subCollection(ff.dwithin(ff.property(collection.getSchema().getGeometryDescriptor().getLocalName()), ff.literal(geom), distance, SI.METRE.toString()));
   }
 
   public static List<Polygon> getPolygons(Geometry geom) {
