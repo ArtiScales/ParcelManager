@@ -9,12 +9,14 @@ import org.geotools.feature.DefaultFeatureCollection;
 import org.geotools.feature.simple.SimpleFeatureBuilder;
 import org.locationtech.jts.geom.Geometry;
 import org.opengis.feature.simple.SimpleFeature;
+import org.opengis.feature.simple.SimpleFeatureType;
 
 import fr.ign.cogit.GTFunctions.Vectors;
 import fr.ign.cogit.parcelFunction.ParcelSchema;
 import processus.ParcelSplit;
 
 public class ParcelConsolidRecomp {
+	static boolean DEBUG = false;
 
 	/**
 	 * Methods that merge the contiguous indicated zones and the split them with the geoxygene block-subdiviser algorithm
@@ -40,12 +42,15 @@ public class ParcelConsolidRecomp {
 			double minimalArea, double maximalWidth, double streetWidth, int decompositionLevelWithoutStreet) throws Exception {
 
 		DefaultFeatureCollection parcelResult = new DefaultFeatureCollection();
+
 		parcelResult.addAll(parcels);
 
 		DefaultFeatureCollection parcelToMerge = new DefaultFeatureCollection();
 
-		Vectors.exportSFC(parcels, new File(tmpFolder, "step0.shp"));
-		System.out.println("done step 0");
+		if (DEBUG) {
+			Vectors.exportSFC(parcels, new File(tmpFolder, "step0.shp"));
+			System.out.println("done step 0");
+		}
 
 		////////////////
 		// first step : round of selection of the intersected parcels
@@ -58,8 +63,10 @@ public class ParcelConsolidRecomp {
 			}
 		});
 
-//		Vectors.exportSFC(parcelToMerge.collection(), new File(tmpFolder, "step1.shp"));
-		System.out.println("done step 1");
+		if (DEBUG) {
+			Vectors.exportSFC(parcelToMerge.collection(), new File(tmpFolder, "step1.shp"));
+			System.out.println("done step 1");
+		}
 
 		////////////////
 		// second step : merge of the parcel that touches themselves by lil island
@@ -75,9 +82,10 @@ public class ParcelConsolidRecomp {
 			sfBuilder.set("SECTION", Integer.toString(i));
 			mergedParcels.add(sfBuilder.buildFeature(null));
 		}
-
-//		Vectors.exportSFC(mergedParcels.collection(), new File(tmpFolder, "step2.shp"));
-		System.out.println("done step 2");
+		if (DEBUG) {
+			Vectors.exportSFC(mergedParcels.collection(), new File(tmpFolder, "step2.shp"));
+			System.out.println("done step 2");
+		}
 
 		////////////////
 		// third step : cuting of the parcels
@@ -96,7 +104,7 @@ public class ParcelConsolidRecomp {
 					SimpleFeatureIterator it = freshCutParcel.features();
 					// every single parcel goes into new collection
 					while (it.hasNext()) {
-						SimpleFeature f = it.next();
+						SimpleFeature freshCut = it.next();
 						// that takes time but it's the best way I've found to set a correct section
 						// number (to look at the step 2 polygons)
 						if (((Geometry) feat.getDefaultGeometry()).getArea() > minimalArea) {
@@ -105,19 +113,18 @@ public class ParcelConsolidRecomp {
 							try {
 								while (ilotIt.hasNext()) {
 									SimpleFeature ilot = ilotIt.next();
-									if (((Geometry) ilot.getDefaultGeometry()).intersects((Geometry) f.getDefaultGeometry())) {
+									if (((Geometry) ilot.getDefaultGeometry()).intersects((Geometry) freshCut.getDefaultGeometry())) {
 										sec = (String) ilot.getAttribute("SECTION");
 										break;
 									}
 								}
-
 							} catch (Exception problem) {
 								problem.printStackTrace();
 							} finally {
 								ilotIt.close();
 							}
 							String section = "newSection" + sec + "ConsolidRecomp";
-							sfBuilderFinalParcel.set("the_geom", f.getDefaultGeometry());
+							sfBuilderFinalParcel.set("the_geom", freshCut.getDefaultGeometry());
 							sfBuilderFinalParcel.set("SECTION", section);
 							cutParcels.add(sfBuilderFinalParcel.buildFeature(null));
 						}
@@ -131,21 +138,22 @@ public class ParcelConsolidRecomp {
 				cutParcels.add(sfBuilderFinalParcel.buildFeature(null, new Object[] { feat.getDefaultGeometry() }));
 			}
 		});
-
 		// add initial non cut parcel to final parcels only if they are bigger than the limit
-		Arrays.stream(parcelResult.toArray(new SimpleFeature[0])).forEach(feat -> {
-			SimpleFeatureBuilder SFBParcel = ParcelSchema.setSFBParcelAsASWithFeat(feat);
-			cutParcels.add(SFBParcel.buildFeature(null));
+		SimpleFeatureType schema = cutParcels.getSchema();
+		DefaultFeatureCollection result = new DefaultFeatureCollection();
+		Arrays.stream(cutParcels.toArray(new SimpleFeature[0])).forEach(feat -> {
+			SimpleFeatureBuilder SFBParcel = ParcelSchema.setSFBFrenchParcelWithFeat(feat, schema);
+			result.add(SFBParcel.buildFeature(null));
 		});
-
-		SimpleFeatureCollection result = Vectors.delTinyParcels(cutParcels, 5.0);
-
-		Vectors.exportSFC(result, new File(tmpFolder, "step3.shp"));
-
-		System.out.println("done step 3");
-
+		Arrays.stream(parcelResult.toArray(new SimpleFeature[0])).forEach(feat -> {
+			SimpleFeatureBuilder SFBParcel = ParcelSchema.setSFBFrenchParcelWithFeat(feat, schema);
+			result.add(SFBParcel.buildFeature(null));
+		});
+		if (DEBUG) {
+			Vectors.exportSFC(result, new File(tmpFolder, "step3.shp"));
+			System.out.println("done step 3");
+		}
 		return result;
 	}
-
 
 }

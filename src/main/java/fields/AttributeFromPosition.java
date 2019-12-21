@@ -11,6 +11,8 @@ import org.geotools.feature.simple.SimpleFeatureBuilder;
 import org.locationtech.jts.geom.Geometry;
 import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.feature.simple.SimpleFeatureType;
+import org.opengis.referencing.FactoryException;
+import org.opengis.referencing.NoSuchAuthorityCodeException;
 
 import fr.ign.cogit.GTFunctions.Vectors;
 import fr.ign.cogit.parcelFunction.ParcelSchema;
@@ -77,7 +79,7 @@ public class AttributeFromPosition {
 	 * @throws Exception
 	 */
 	public static SimpleFeatureCollection markParcelIntersectZoningType(SimpleFeatureCollection parcels, String zoningType, File zoningFile)
-			throws IOException, Exception {
+			throws Exception {
 		final SimpleFeatureType featureSchema = ParcelSchema.getSFBParcelAsASSplit().getFeatureType();
 		DefaultFeatureCollection result = new DefaultFeatureCollection();
 
@@ -92,6 +94,32 @@ public class AttributeFromPosition {
 				}
 			} catch (Exception e) {
 				e.printStackTrace();
+			}
+			result.add(featureBuilder.buildFeature(null));
+		});
+		return result;
+	}
+
+	public static SimpleFeatureCollection markParcelOfCommunityType(SimpleFeatureCollection parcels, String attribute, File communityFile)
+			throws NoSuchAuthorityCodeException, FactoryException {
+		return markParcelOfCommunity(parcels, "armature", attribute, communityFile);
+	}
+
+	public static SimpleFeatureCollection markParcelOfCommunityNumber(SimpleFeatureCollection parcels, String attribute, File communityFile)
+			throws NoSuchAuthorityCodeException, FactoryException {
+		return markParcelOfCommunity(parcels, "INSEE", attribute, communityFile);
+	}
+
+	public static SimpleFeatureCollection markParcelOfCommunity(SimpleFeatureCollection parcels, String fieldName, String attribute,
+			File communityFile) throws NoSuchAuthorityCodeException, FactoryException {
+		final SimpleFeatureType featureSchema = ParcelSchema.getSFBParcelAsASSplit().getFeatureType();
+		DefaultFeatureCollection result = new DefaultFeatureCollection();
+		Arrays.stream(parcels.toArray(new SimpleFeature[0])).forEach(feat -> {
+			SimpleFeatureBuilder featureBuilder = ParcelSchema.setSFBParcelAsASWithFeat(feat, featureSchema);
+			if (feat.getAttribute(fieldName).equals(attribute)) {
+				featureBuilder.set("SPLIT", 1);
+			} else {
+				featureBuilder.set("SPLIT", 0);
 			}
 			result.add(featureBuilder.buildFeature(null));
 		});
