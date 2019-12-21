@@ -302,6 +302,18 @@ public class StraightSkeletonParcelDecomposition {
     return union.getFactory().createPolygon(union.getExteriorRing().getCoordinates());
   }
 
+  private static Polygon polygonDifference(List<Polygon> a, List<Polygon> b) {
+//    Geometry reducedA = GeometryPrecisionReducer.reduce(a, new PrecisionModel(100));
+//    Geometry reducedB = GeometryPrecisionReducer.reduce(a, new PrecisionModel(100));
+    Geometry difference = FeaturePolygonizer.getDifference(a, b);
+    List<Polygon> p = Util.getPolygons(difference);
+    if (p.size() != 1) {
+      System.out.println(p.size() + " polygons");
+      p.forEach(pp->System.out.println(pp));
+    }
+    return p.get(0);
+  }
+
   private static HashMap<String, Coordinate> interiorLimitPointsBetweenStrip(List<List<Face>> stripFace, Polygon pol) {
     LineString exterior = pol.getExteriorRing();
     HashMap<String, List<Edge>> mapLimitArcs = new HashMap<>();
@@ -1390,6 +1402,7 @@ public class StraightSkeletonParcelDecomposition {
       double minWidth, double maxWidth, double noiseParameter, RandomGenerator rng) throws SchemaException {
     // Partial skeleton
     CampSkeleton cs = new CampSkeleton(pol, offsetDistance);
+    cs.getGraph().getFaces().forEach(f->System.out.println(f.getGeometry()));
     List<Edge> edges = cs.getExteriorEdges();
     System.out.println("ExteriorEdges = " + edges.size());
     List<Edge> orderedEdges = new ArrayList<>();
@@ -1410,11 +1423,11 @@ public class StraightSkeletonParcelDecomposition {
         // .map(e -> new ImmutablePair<>(e,Closest.find(e.getGeometry().getCentroid(), roads, maxDistanceForNearestRoad)))
         .map(e -> new ImmutablePair<>(e, FindObjectInDirection.find(e.getGeometry(), pol, roads, maxDistanceForNearestRoad)))
         .map(so -> new ImmutablePair<>(so.left, so.right.map(s -> attributes(s)))).collect(Collectors.toList());
-    System.out.println("Names = " + attributes.size());
-    for (Pair<Edge, Optional<Pair<String, Double>>> n : attributes) {
-      System.out.println(n.getLeft().getGeometry());
-      System.out.println(n.getRight());
-    }
+//    System.out.println("Names = " + attributes.size());
+//    for (Pair<Edge, Optional<Pair<String, Double>>> n : attributes) {
+//      System.out.println(n.getLeft().getGeometry());
+//      System.out.println(n.getRight());
+//    }
     Map<Pair<Edge, Optional<Pair<String, Double>>>, Integer> map = new HashMap<>();
     Pair<Edge, Optional<Pair<String, Double>>> firstPair = attributes.get(0);
     int stripId = 0;
@@ -1457,14 +1470,17 @@ public class StraightSkeletonParcelDecomposition {
       psiMap.put(currentStripId, l);
     }
     Map<Face, Integer> alphaStripFaceMap = new HashMap<>();
+    Map<Integer, Polygon> alphaStripPolygonMap = new HashMap<>();
     for (List<Edge> strip : alphaStrips) {
       Integer currentStripId = alphaStripEdgeMap.get(strip.get(0));
       List<Face> stripFaces = strip.stream().map(e -> (e.getRight() == null) ? e.getLeft() : e.getRight()).collect(Collectors.toList());
       stripFaces.forEach(p -> alphaStripFaceMap.put(p, currentStripId));
       List<Polygon> polygons = stripFaces.stream().map(f -> f.getGeometry()).collect(Collectors.toList());
+      alphaStripPolygonMap.put(currentStripId, polygonUnionWithoutHoles(polygons));
       System.out.println(polygonUnionWithoutHoles(polygons));
     }
     System.out.println("Supporting vertices");
+    Map<Integer, Polygon> betaStripPolygonMap = new HashMap<>(alphaStripPolygonMap);
     // classify supporting vertices
     for (Node n : supportingVertices.keySet()) {
       System.out.println(n.getGeometry());
@@ -1472,50 +1488,56 @@ public class StraightSkeletonParcelDecomposition {
       Pair<Edge, Optional<Pair<String, Double>>> previous = attributes.stream().filter(p -> p.getLeft() == pair.getLeft()).findFirst().get();
       Pair<Edge, Optional<Pair<String, Double>>> next = attributes.stream().filter(p -> p.getLeft() == pair.getRight()).findFirst().get();
       int supportingVertexClass = classify(n, previous, next);
-      System.out.println(supportingVertexClass);
+//      System.out.println(supportingVertexClass);
       Edge previousEdge = previous.getLeft();
       Edge nextEdge = next.getLeft();
       Face prevFace = (previousEdge.getLeft() == null) ? previousEdge.getRight() : previousEdge.getLeft();
       Face nextFace = (nextEdge.getLeft() == null) ? nextEdge.getRight() : nextEdge.getLeft();
       Integer prevFaceId = alphaStripFaceMap.get(prevFace);
       Integer nextFaceId = alphaStripFaceMap.get(nextFace);
-      System.out.println("previousFace= " + prevFace.getGeometry());
-      System.out.println("nextFace= " + nextFace.getGeometry());
       List<Edge> edgeList = cs.getGraph().getEdges().stream().filter(e -> (alphaStripFaceMap.get(e.getLeft()) == prevFaceId && alphaStripFaceMap.get(e.getRight()) == nextFaceId)
           || (alphaStripFaceMap.get(e.getLeft()) == nextFaceId && alphaStripFaceMap.get(e.getRight()) == prevFaceId)).collect(Collectors.toList());
-      System.out.println("edgeList = " + edgeList.size());
-      List<Edge> diagonalEdge = new ArrayList<>();
+      List<Edge> diagonalEdgeList = new ArrayList<>();
       Edge currEdge = cs.getGraph().next(n, null, edgeList);
-      // System.out.println("currEdge= " + currEdge.getGeometry());
       Node currNode = n;
       while (currEdge != null) {
         currNode = (currEdge.getOrigin() == currNode) ? currEdge.getTarget() : currEdge.getOrigin();
-        // System.out.println("currNode =" + currNode.getGeometry());
-        diagonalEdge.add(currEdge);
+        diagonalEdgeList.add(currEdge);
         currEdge = cs.getGraph().next(currNode, currEdge, edgeList);
-        // System.out.println("currEdge= " + currEdge.getGeometry());
       }
-      System.out.println(currNode.getGeometry());
+//      System.out.println(currNode.getGeometry());
       if (supportingVertexClass != NONE) {
         final Integer removedId = (supportingVertexClass == PREVIOUS) ? nextFaceId : prevFaceId;
-        List<Face> facesToRemove = diagonalEdge.stream().map(e -> (alphaStripFaceMap.get(e.getLeft()) == removedId) ? e.getLeft() : e.getRight()).collect(Collectors.toList());
+        List<Face> facesToRemove = diagonalEdgeList.stream().map(e -> (alphaStripFaceMap.get(e.getLeft()) == removedId) ? e.getLeft() : e.getRight()).collect(Collectors.toList());
         Coordinate projection = project(currNode.getCoordinate(), psiMap.get(removedId));
-        System.out.println(psiMap.get(removedId));
-        System.out.println(currNode.getGeometry().getFactory().createPoint(projection));
-        System.out.println(facesToRemove.get(facesToRemove.size() - 1).getGeometry());
+//        System.out.println(psiMap.get(removedId));
+//        System.out.println(currNode.getGeometry().getFactory().createPoint(projection));
+//        System.out.println(facesToRemove.get(facesToRemove.size() - 1).getGeometry());
         Polygon toRemove = facesToRemove.get(facesToRemove.size() - 1).getGeometry();
         Pair<Polygon, Polygon> split = splitPolygon(toRemove, toRemove.getFactory().createLineString(new Coordinate[] { currNode.getCoordinate(), projection }));
 //        System.out.println(split.getLeft());
 //        System.out.println(split.getRight());
-        final Face absorbingFace = (supportingVertexClass == PREVIOUS) ? prevFace : nextFace;
-        int leftShared = sharedPoints(split.getLeft(), absorbingFace.getGeometry());
-        int rightShared = sharedPoints(split.getRight(), absorbingFace.getGeometry());
-        System.out.println("SHARED " + leftShared + " - " + rightShared);
-        Polygon absorbedPolygon = (leftShared == 2) ? split.getLeft() : split.getRight(); 
-        System.out.println("ABSORBED:\n"  + absorbedPolygon);
+        Integer absorbingBetaSplitId = (supportingVertexClass == PREVIOUS) ? prevFaceId : nextFaceId;
+        Integer absorbedBetaSplitId = (supportingVertexClass == PREVIOUS) ? nextFaceId : prevFaceId;
+        Polygon absorbingBetaSplit = betaStripPolygonMap.get(absorbingBetaSplitId);
+        Polygon absorbedBetaSplit = betaStripPolygonMap.get(absorbedBetaSplitId);
+        int leftShared = sharedPoints(split.getLeft(), absorbingBetaSplit);
+//        int rightShared = sharedPoints(split.getRight(), absorbingBetaSplit);
+//        System.out.println("SHARED " + leftShared + " - " + rightShared);
+        System.out.println(absorbingBetaSplit);
+        Polygon absorbedPolygonPart = (leftShared == 2) ? split.getLeft() : split.getRight(); 
+//        System.out.println("ABSORBED:\n"  + absorbedPolygonPart);
+        List<Polygon> absorbedPolygons = facesToRemove.subList(0, facesToRemove.size() - 1).stream().map(f->f.getGeometry()).collect(Collectors.toList());
+        absorbedPolygons.add(absorbedPolygonPart);
+        List<Polygon> newAbsorbing = new ArrayList<>(absorbedPolygons);
+        newAbsorbing.add(absorbingBetaSplit);
+        betaStripPolygonMap.put(absorbingBetaSplitId, polygonUnion(newAbsorbing));
+        betaStripPolygonMap.put(absorbedBetaSplitId, polygonDifference(Arrays.asList(absorbedBetaSplit), absorbedPolygons));
       }
       System.out.println("DONE");
     }
+    System.out.println("betaStripPolygonMap=");
+    betaStripPolygonMap.values().forEach(p->System.out.println(p)); 
 
     // System.out.println("FACES");
     // for (Face f : cs.getGraph().getFaces()) {
@@ -1564,9 +1586,9 @@ public class StraightSkeletonParcelDecomposition {
     return new ImmutablePair<>(output.get(0), output.get(1));
   }
   public static int sharedPoints(Geometry a, Geometry b) {
-    Geometry[] snapped = GeometrySnapper.snap(a, b, 0.01);
-    List<Coordinate> ca = Arrays.asList(snapped[0].getCoordinates());
-    List<Coordinate> cb = Arrays.asList(snapped[1].getCoordinates());
+    Geometry[] snapped = GeometrySnapper.snap(a, b, 0.1);
+    Set<Coordinate> ca = new HashSet<>(Arrays.asList(snapped[0].getCoordinates()));
+    Set<Coordinate> cb = new HashSet<>(Arrays.asList(snapped[1].getCoordinates()));
     return (int) ca.stream().filter(c->cb.contains(c)).count();
   }
 
