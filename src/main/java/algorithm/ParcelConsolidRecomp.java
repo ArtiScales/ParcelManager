@@ -17,6 +17,7 @@ import processus.ParcelSplit;
 
 public class ParcelConsolidRecomp {
 	static boolean DEBUG = false;
+	public static String PROCESS = "OBB";
 
 	/**
 	 * Methods that merge the contiguous indicated zones and the split them with the geoxygene block-subdiviser algorithm
@@ -99,8 +100,20 @@ public class ParcelConsolidRecomp {
 				// Parcel big enough, we cut it
 				feat.setAttribute("SPLIT", 1);
 				try {
-					SimpleFeatureCollection freshCutParcel = ParcelSplit.splitParcels(feat, maximalArea, maximalWidth, 0, 0, null, streetWidth, false,
-							decompositionLevelWithoutStreet, tmpFolder);
+					SimpleFeatureCollection freshCutParcel = new DefaultFeatureCollection();
+					switch (PROCESS) {
+					case "OBB":
+						freshCutParcel = ParcelSplit.splitParcels(feat, maximalArea, maximalWidth, 0, 0, null,
+								streetWidth, false, decompositionLevelWithoutStreet, tmpFolder);
+						break;
+					case "SS":
+						System.out.println("not implemented yet");
+						break;
+					case "MS":
+						System.out.println("not implemented yet");
+						break;
+					}
+
 					SimpleFeatureIterator it = freshCutParcel.features();
 					// every single parcel goes into new collection
 					while (it.hasNext()) {

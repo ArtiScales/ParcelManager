@@ -1,0 +1,229 @@
+package scenario;
+
+import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
+
+import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonToken;
+
+public class PMScenario {
+
+	private File zoningFile;
+	private File buildingFile;
+	private File polygonIntersection;
+	private File communityFile;
+	private File predicateFile;
+	private File parcelFile;
+	private File ilotFile;
+	private File profileFolder;
+
+	private File tmpFolder;
+	private File outFolder;
+
+	private List<PMStep> stepList = new ArrayList<PMStep>();
+
+	boolean fileSet = false;
+
+	public static void main(String[] args) throws Exception {
+		PMScenario pm = new PMScenario(
+				new File("/home/thema/Documents/MC/workspace/ParcelManager/src/main/resources/testData/jsonEx.json"),
+				new File("/tmp/"));
+		pm.executeStep();
+	}
+
+//	public PMScenario(File jSON) {
+//		return new PMScenario(jSON, new File("/tmp"));
+//	}
+
+	public PMScenario(File jSON, File tmpfolder) throws Exception {
+		tmpFolder = tmpfolder;
+
+		JsonFactory factory = new JsonFactory();
+		JsonParser parser = factory.createParser(jSON);
+		JsonToken token = parser.nextToken();
+
+		while (!parser.isClosed()) {
+			token = parser.nextToken();
+//			shortcut if every data is in the same folder
+			if (token == JsonToken.FIELD_NAME && "rootfile".equals(parser.getCurrentName()) && !fileSet) {
+				fileSet = true;
+				token = parser.nextToken();
+				if (token == JsonToken.VALUE_STRING) {
+					String rootFolder = parser.getText();
+					zoningFile = new File(rootFolder, "zoning.shp");
+					buildingFile = new File(rootFolder, "building.shp");
+					polygonIntersection = new File(rootFolder, "polygonIntersection.shp");
+					communityFile = new File(rootFolder, "communities.shp");
+					predicateFile = new File(rootFolder, "predicate.csv");
+					parcelFile = new File(rootFolder, "parcelle.shp");
+					ilotFile = new File(rootFolder, "ilot.shp");
+					profileFolder = new File(rootFolder, "ilot.shp");
+				}
+			}
+
+			if (token == JsonToken.FIELD_NAME && "steps".equals(parser.getCurrentName())) {
+				token = parser.nextToken();
+				// token = parser.nextToken(); // // Read left bracket i.e. [
+				// Loop to print array elements until right bracket i.e ]
+//				String jsonLine = 
+//				   ObjectMapper objectMapper = new ObjectMapper();
+//				    PMStep step = objectMapper.readValue(, PMStep.class);
+				String algo = "";
+				String parcelProcess = "";
+				String zone = "";
+				String communityNumber = "";
+				String communityType = "";
+				String buildingType1 = "";
+
+				while (token != JsonToken.END_ARRAY) {
+					token = parser.nextToken();
+
+					// must i recreate a json object ? or can I map this object directly into a new
+					// java object? Maybe, but tired of searching
+
+//					System.out.println(token + " - " + parser.getCurrentName());
+
+					if (token == JsonToken.FIELD_NAME && parser.getCurrentName().equals("algo")) {
+						token = parser.nextToken();
+						if (token == JsonToken.VALUE_STRING) {
+							algo = parser.getText();
+						}
+					}
+					if (token == JsonToken.FIELD_NAME && parser.getCurrentName().equals("parcelProcess")) {
+						token = parser.nextToken();
+						if (token == JsonToken.VALUE_STRING) {
+							parcelProcess = parser.getText();
+						}
+					}
+					if (token == JsonToken.FIELD_NAME && parser.getCurrentName().equals("zone")) {
+						token = parser.nextToken();
+						if (token == JsonToken.VALUE_STRING) {
+							zone = parser.getText();
+						}
+					}
+					if (token == JsonToken.FIELD_NAME && parser.getCurrentName().equals("communityNumber")) {
+						token = parser.nextToken();
+						if (token == JsonToken.VALUE_STRING) {
+							communityNumber = parser.getText();
+						}
+					}
+					if (token == JsonToken.FIELD_NAME && parser.getCurrentName().equals("communityType")) {
+						token = parser.nextToken();
+						if (token == JsonToken.VALUE_STRING) {
+							communityType = parser.getText();
+						}
+					}
+					if (token == JsonToken.FIELD_NAME && parser.getCurrentName().equals("buildingType1")) {
+						token = parser.nextToken();
+						if (token == JsonToken.VALUE_STRING) {
+							buildingType1 = parser.getText();
+						}
+					}
+					if (token == JsonToken.END_OBJECT) {
+						List<PMStep> list = getStepList();
+						PMStep step = new PMStep(algo, parcelProcess, zone, communityNumber, communityType,
+								buildingType1);
+						list.add(step);
+						setStepList(list);
+					}
+				}
+			}
+
+			if (token == JsonToken.FIELD_NAME && "zoningFile".equals(parser.getCurrentName())) {
+				token = parser.nextToken();
+				if (token == JsonToken.VALUE_STRING) {
+					zoningFile = new File(parser.getText());
+					fileSet = true;
+				}
+			}
+
+			if (token == JsonToken.FIELD_NAME && "buildingFile".equals(parser.getCurrentName())) {
+				token = parser.nextToken();
+				if (token == JsonToken.VALUE_STRING) {
+					buildingFile = new File(parser.getText());
+					fileSet = true;
+				}
+			}
+			if (token == JsonToken.FIELD_NAME && "polygonIntersection".equals(parser.getCurrentName())) {
+				token = parser.nextToken();
+				if (token == JsonToken.VALUE_STRING) {
+					polygonIntersection = new File(parser.getText());
+					fileSet = true;
+				}
+			}
+			if (token == JsonToken.FIELD_NAME && "communityFile".equals(parser.getCurrentName())) {
+				token = parser.nextToken();
+				if (token == JsonToken.VALUE_STRING) {
+					communityFile = new File(parser.getText());
+					fileSet = true;
+				}
+			}
+			if (token == JsonToken.FIELD_NAME && "predicateFile".equals(parser.getCurrentName())) {
+				token = parser.nextToken();
+				if (token == JsonToken.VALUE_STRING) {
+					predicateFile = new File(parser.getText());
+					fileSet = true;
+				}
+			}
+			if (token == JsonToken.FIELD_NAME && "parcelFile".equals(parser.getCurrentName())) {
+				token = parser.nextToken();
+				if (token == JsonToken.VALUE_STRING) {
+					parcelFile = new File(parser.getText());
+					fileSet = true;
+				}
+			}
+			if (token == JsonToken.FIELD_NAME && "ilotFile".equals(parser.getCurrentName())) {
+				token = parser.nextToken();
+				if (token == JsonToken.VALUE_STRING) {
+					ilotFile = new File(parser.getText());
+					fileSet = true;
+				}
+			}
+			if (token == JsonToken.FIELD_NAME && "profileFolder".equals(parser.getCurrentName())) {
+				token = parser.nextToken();
+				if (token == JsonToken.VALUE_STRING) {
+					profileFolder = new File(parser.getText());
+					fileSet = true;
+				}
+			}
+			if (token == JsonToken.FIELD_NAME && "outFolder".equals(parser.getCurrentName())) {
+				token = parser.nextToken();
+				if (token == JsonToken.VALUE_STRING) {
+					outFolder = new File(parser.getText());
+					fileSet = true;
+				}
+			}
+		}
+		parser.close();
+	}
+
+	public void executeStep() throws Exception {
+		PMStep.setFiles(parcelFile, ilotFile, zoningFile, tmpFolder, buildingFile, predicateFile, communityFile,
+				polygonIntersection, outFolder, profileFolder);
+		for (PMStep pmstep : getStepList()) {
+			System.out.println("try " + pmstep);
+
+			PMStep.setParcel(pmstep.execute());
+		}
+	}
+
+	public List<PMStep> getStepList() {
+		return stepList;
+	}
+
+	public void setStepList(List<PMStep> stepList) {
+		this.stepList = stepList;
+	}
+
+	@Override
+	public String toString() {
+		return "PMScenario [zoningFile=" + zoningFile + ", buildingFile=" + buildingFile + ", polygonIntersection="
+				+ polygonIntersection + ", communityFile=" + communityFile + ", predicateFile=" + predicateFile
+				+ ", parcelFile=" + parcelFile + ", ilotFile=" + ilotFile + ", tmpFolder=" + tmpFolder + ", outFolder="
+				+ outFolder + ", stepList=" + stepList + ", fileSet=" + fileSet + ", profileFolder=" + profileFolder
+				+ "]";
+	}
+
+}

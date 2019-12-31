@@ -20,28 +20,28 @@ import fr.ign.cogit.parcelFunction.ParcelState;
 
 public class AttributeFromPosition {
 	/**
-	 * mark parcels that intersects mupCity's output on the "SPLIT" field.
+	 * mark parcels that intersects a polygonIntersection output on the "SPLIT" field.
 	 * 
 	 * @param parcels
 	 *            : The collection of parcels to mark
-	 * @param mupOutputFile
+	 * @param polygonIntersectionFile
 	 *            : A shapefile containing outputs of MUP-City
 	 * @return
 	 * @throws IOException
 	 * @throws Exception
 	 */
-	public static SimpleFeatureCollection markParcelIntersectMUPOutput(SimpleFeatureCollection parcels, File mUPOutputFile)
+	public static SimpleFeatureCollection markParcelIntersectPolygonIntersection(SimpleFeatureCollection parcels, File polygonIntersectionFile)
 			throws IOException, Exception {
 
-		ShapefileDataStore sds = new ShapefileDataStore(mUPOutputFile.toURI().toURL());
-		Geometry sfcMUP = Vectors.unionSFC(Vectors.snapDatas(sds.getFeatureSource().getFeatures(), parcels));
+		ShapefileDataStore sds = new ShapefileDataStore(polygonIntersectionFile.toURI().toURL());
+		Geometry geomPolygonIntersection = Vectors.unionSFC(Vectors.snapDatas(sds.getFeatureSource().getFeatures(), parcels));
 
 		final SimpleFeatureType featureSchema = ParcelSchema.getSFBParcelAsASSplit().getFeatureType();
 		DefaultFeatureCollection result = new DefaultFeatureCollection();
 
 		Arrays.stream(parcels.toArray(new SimpleFeature[0])).forEach(feat -> {
 			SimpleFeatureBuilder featureBuilder = ParcelSchema.setSFBParcelAsASWithFeat(feat, featureSchema);
-			if (((Geometry) feat.getDefaultGeometry()).intersects(sfcMUP)) {
+			if (((Geometry) feat.getDefaultGeometry()).intersects(geomPolygonIntersection)) {
 				featureBuilder.set("SPLIT", 1);
 			} else {
 				featureBuilder.set("SPLIT", 0);

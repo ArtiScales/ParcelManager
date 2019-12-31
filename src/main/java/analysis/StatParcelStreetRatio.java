@@ -11,7 +11,6 @@ import org.locationtech.jts.geom.Geometry;
 import org.opengis.feature.simple.SimpleFeature;
 
 import fr.ign.cogit.GTFunctions.Csv;
-import fr.ign.cogit.GTFunctions.Vectors;
 
 public class StatParcelStreetRatio {
 
@@ -20,6 +19,7 @@ public class StatParcelStreetRatio {
 	}
 
 	public static double streetRatioParcelZone(SimpleFeatureCollection zone, SimpleFeatureCollection cutParcel, File fileOutStat) throws IOException {
+		System.out.println("++++++++++Road Ratios++++++++++");
 		Hashtable<String, String[]> stat = new Hashtable<String, String[]>();
 
 		Double ratio = areaParcelNew(cutParcel) / area(zone);
@@ -110,7 +110,6 @@ public class StatParcelStreetRatio {
 	}
 
 	private static double area(SimpleFeatureCollection markedParcels) throws IOException {
-		Vectors.exportSFC(markedParcels, new File("/tmp/batar.shp"));
 		SimpleFeatureIterator parcels = markedParcels.features();
 		double totArea = 0.0;
 		try {
