@@ -4,7 +4,7 @@
 	"outFolder": "/tmp/",	
 	
 	"steps": [ {
-		"algo":"totalZone",
+		"goal":"totalZone",
 		"parcelProcess":"OBB",
 		"zone":"AU",
 		"communityNumber":"25267",
@@ -12,7 +12,7 @@
 		"buildingType1":"smallHouse"
 		},
 		{
-		"algo":"consolid",
+		"goal":"consolid",
 		"parcelProcess":"OBB",
 		"zone":"NC",
 		"communityNumber":"25267",
@@ -20,7 +20,7 @@
 		"buildingType1":"midBlockFlat"
 		},
 		{
-		"algo":"dens",
+		"goal":"dens",
 		"zone":"U",
 		"communityNumber":"25267",
 		"communityType":"periUrbain",

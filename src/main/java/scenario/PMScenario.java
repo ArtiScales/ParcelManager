@@ -65,30 +65,23 @@ public class PMScenario {
 
 			if (token == JsonToken.FIELD_NAME && "steps".equals(parser.getCurrentName())) {
 				token = parser.nextToken();
-				// token = parser.nextToken(); // // Read left bracket i.e. [
-				// Loop to print array elements until right bracket i.e ]
-//				String jsonLine = 
-//				   ObjectMapper objectMapper = new ObjectMapper();
-//				    PMStep step = objectMapper.readValue(, PMStep.class);
-				String algo = "";
+				String goal = "";
 				String parcelProcess = "";
 				String zone = "";
 				String communityNumber = "";
 				String communityType = "";
-				String buildingType1 = "";
+				String buildingType = "";
 
 				while (token != JsonToken.END_ARRAY) {
 					token = parser.nextToken();
 
-					// must i recreate a json object ? or can I map this object directly into a new
-					// java object? Maybe, but tired of searching
-
+					// must i recreate a json object ? or can I map this object directly into a new java object? Maybe, but tired of searching
 //					System.out.println(token + " - " + parser.getCurrentName());
 
-					if (token == JsonToken.FIELD_NAME && parser.getCurrentName().equals("algo")) {
+					if (token == JsonToken.FIELD_NAME && parser.getCurrentName().equals("goal")) {
 						token = parser.nextToken();
 						if (token == JsonToken.VALUE_STRING) {
-							algo = parser.getText();
+							goal = parser.getText();
 						}
 					}
 					if (token == JsonToken.FIELD_NAME && parser.getCurrentName().equals("parcelProcess")) {
@@ -115,16 +108,16 @@ public class PMScenario {
 							communityType = parser.getText();
 						}
 					}
-					if (token == JsonToken.FIELD_NAME && parser.getCurrentName().equals("buildingType1")) {
+					if (token == JsonToken.FIELD_NAME && parser.getCurrentName().equals("buildingType")) {
 						token = parser.nextToken();
 						if (token == JsonToken.VALUE_STRING) {
-							buildingType1 = parser.getText();
+							buildingType = parser.getText();
 						}
 					}
 					if (token == JsonToken.END_OBJECT) {
 						List<PMStep> list = getStepList();
-						PMStep step = new PMStep(algo, parcelProcess, zone, communityNumber, communityType,
-								buildingType1);
+						PMStep step = new PMStep(goal, parcelProcess, zone, communityNumber, communityType,
+								buildingType);
 						list.add(step);
 						setStepList(list);
 					}

@@ -5,15 +5,15 @@ import java.io.File;
 import org.geotools.data.shapefile.ShapefileDataStore;
 import org.geotools.data.simple.SimpleFeatureCollection;
 
-import algorithm.ParcelConsolidRecomp;
-import algorithm.ParcelDensification;
-import algorithm.ParcelTotRecomp;
 import analysis.StatParcelStreetRatio;
 import fields.ArtiScalesFields;
 import fields.AttributeFromPosition;
 import fr.ign.cogit.GTFunctions.Vectors;
 import fr.ign.cogit.parcelFunction.ParcelGetter;
 import fr.ign.cogit.parcelFunction.ParcelState;
+import goal.ParcelConsolidRecomp;
+import goal.ParcelDensification;
+import goal.ParcelTotRecomp;
 
 public class Test {
 

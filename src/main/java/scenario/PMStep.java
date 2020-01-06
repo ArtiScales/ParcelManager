@@ -11,21 +11,20 @@ import org.geotools.feature.DefaultFeatureCollection;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import algorithm.ParcelConsolidRecomp;
-import algorithm.ParcelDensification;
-import algorithm.ParcelTotRecomp;
 import fields.AttributeFromPosition;
 import fields.FrenchParcelFields;
 import fr.ign.cogit.GTFunctions.Vectors;
 import fr.ign.cogit.parameter.ProfileBuilding;
 import fr.ign.cogit.parcelFunction.ParcelGetter;
 import fr.ign.cogit.parcelFunction.ParcelState;
+import goal.ParcelConsolidRecomp;
+import goal.ParcelDensification;
+import goal.ParcelTotRecomp;
 
 public class PMStep {
-	public PMStep(String algo, String parcelProcess, String zone, String communityNumber, String communityType,
-			String buildingType) {
+	public PMStep(String goal, String parcelProcess, String zone, String communityNumber, String communityType, String buildingType) {
 		super();
-		this.algo = algo;
+		this.goal = goal;
 		this.parcelProcess = parcelProcess;
 		this.zone = zone;
 		this.communityNumber = communityNumber;
@@ -33,8 +32,8 @@ public class PMStep {
 		this.buildingType = buildingType;
 	}
 
-	public static void setFiles(File parcelFile, File ilotFile, File zoningFile, File tmpFolder, File buildingFile,
-			File predicateFile, File communityFile, File polygonIntersection, File outFolder, File profileFolder) {
+	public static void setFiles(File parcelFile, File ilotFile, File zoningFile, File tmpFolder, File buildingFile, File predicateFile,
+			File communityFile, File polygonIntersection, File outFolder, File profileFolder) {
 		PARCELFILE = parcelFile;
 		ILOTFILE = ilotFile;
 		ZONINGFILE = zoningFile;
@@ -47,7 +46,7 @@ public class PMStep {
 		PROFILEFOLDER = profileFolder;
 	}
 
-	String algo;
+	String goal;
 	String parcelProcess;
 	String zone;
 	String communityNumber;
@@ -64,7 +63,7 @@ public class PMStep {
 	static File POLYGONINTERSECTION;
 	static File OUTFOLDER;
 	static File PROFILEFOLDER;
-	
+
 	public PMStep() {
 
 	}
@@ -86,43 +85,35 @@ public class PMStep {
 
 		ObjectMapper mapper = new ObjectMapper();
 		mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-		InputStream fileInputStream = new FileInputStream(
-				ProfileBuilding.getProfileFolder() + "/" + buildingType + ".json");
+		InputStream fileInputStream = new FileInputStream(ProfileBuilding.getProfileFolder() + "/" + buildingType + ".json");
 		ProfileBuilding profile = mapper.readValue(fileInputStream, ProfileBuilding.class);
 		SimpleFeatureCollection parcelCut = new DefaultFeatureCollection();
-		switch (algo) {
+		switch (goal) {
 		case "totalZone":
 			ParcelTotRecomp.PROCESS = parcelProcess;
 			ShapefileDataStore shpDSZone = new ShapefileDataStore(ZONINGFILE.toURI().toURL());
 			SimpleFeatureCollection featuresZones = shpDSZone.getFeatureSource().getFeatures();
 			SimpleFeatureCollection zoneCollection = ParcelTotRecomp.createZoneToCut(zone, featuresZones, parcel);
-			parcelCut = ParcelTotRecomp.parcelTotRecomp(zoneCollection, parcel, TMPFOLDER, ZONINGFILE,
-					profile.getMaximalArea(), profile.getMinimalArea(), profile.getMaximalWidth(),
-					profile.getStreetWidth(), profile.getDecompositionLevelWithoutStreet());
+			parcelCut = ParcelTotRecomp.parcelTotRecomp(zoneCollection, parcel, TMPFOLDER, ZONINGFILE, profile.getMaximalArea(),
+					profile.getMinimalArea(), profile.getMaximalWidth(), profile.getStreetWidth(), profile.getDecompositionLevelWithoutStreet());
 			shpDSZone.dispose();
 			break;
 		case "dens":
-			SimpleFeatureCollection parcelMarked = AttributeFromPosition.markParcelIntersectPolygonIntersection(parcel,
-					POLYGONINTERSECTION);
-			SimpleFeatureCollection toDensify = AttributeFromPosition.markParcelIntersectZoningType(parcelMarked, zone,
-					ZONINGFILE);
-			parcelCut = ParcelDensification.parcelDensification(toDensify, ilot, TMPFOLDER, BUILDINGFILE,
-					profile.getMaximalArea(), profile.getMinimalArea(), profile.getMaximalWidth(),
-					profile.getLenDriveway(),
+			SimpleFeatureCollection parcelMarked = AttributeFromPosition.markParcelIntersectPolygonIntersection(parcel, POLYGONINTERSECTION);
+			SimpleFeatureCollection toDensify = AttributeFromPosition.markParcelIntersectZoningType(parcelMarked, zone, ZONINGFILE);
+			parcelCut = ParcelDensification.parcelDensification(toDensify, ilot, TMPFOLDER, BUILDINGFILE, profile.getMaximalArea(),
+					profile.getMinimalArea(), profile.getMaximalWidth(), profile.getLenDriveway(),
 					ParcelState.isArt3AllowsIsolatedParcel(parcel.features().next(), PREDICATEFILE));
 			break;
 		case "consolid":
-			SimpleFeatureCollection parcelMarked2 = AttributeFromPosition.markParcelIntersectPolygonIntersection(parcel,
-					POLYGONINTERSECTION);
-			SimpleFeatureCollection toDensify2 = AttributeFromPosition.markParcelIntersectZoningType(parcelMarked2, zone,
-					ZONINGFILE);
+			SimpleFeatureCollection parcelMarked2 = AttributeFromPosition.markParcelIntersectPolygonIntersection(parcel, POLYGONINTERSECTION);
+			SimpleFeatureCollection toDensify2 = AttributeFromPosition.markParcelIntersectZoningType(parcelMarked2, zone, ZONINGFILE);
 			ParcelConsolidRecomp.PROCESS = parcelProcess;
-			parcelCut = ParcelConsolidRecomp.parcelConsolidRecomp(toDensify2, TMPFOLDER, profile.getMaximalArea(),
-					profile.getMinimalArea(), profile.getMaximalWidth(), profile.getStreetWidth(),
-					profile.getDecompositionLevelWithoutStreet());
+			parcelCut = ParcelConsolidRecomp.parcelConsolidRecomp(toDensify2, TMPFOLDER, profile.getMaximalArea(), profile.getMinimalArea(),
+					profile.getMaximalWidth(), profile.getStreetWidth(), profile.getDecompositionLevelWithoutStreet());
 			break;
 		}
-		File output = new File(OUTFOLDER, "parcelCuted-" + algo + ".shp");
+		File output = new File(OUTFOLDER, "parcelCuted-" + goal + ".shp");
 		parcelCut = FrenchParcelFields.fixParcelAttributes(parcelCut, TMPFOLDER, COMMUNITYFILE);
 		Vectors.exportSFC(parcelCut, output);
 		shpDSIlot.dispose();
@@ -137,7 +128,7 @@ public class PMStep {
 
 	@Override
 	public String toString() {
-		return "PMStep [algo=" + algo + ", parcelProcess=" + parcelProcess + ", zone=" + zone + ", communityNumber="
-				+ communityNumber + ", communityType=" + communityType + ", buildingType=" + buildingType + "]";
+		return "PMStep [goal=" + goal + ", parcelProcess=" + parcelProcess + ", zone=" + zone + ", communityNumber=" + communityNumber
+				+ ", communityType=" + communityType + ", buildingType=" + buildingType + "]";
 	}
 }
