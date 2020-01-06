@@ -84,7 +84,7 @@ public class Util {
   public static Polygon polygonUnion(List<Polygon> list) {
     if (list.isEmpty())
       return null;
-    List<Geometry> reducedList = list.stream().map(g -> GeometryPrecisionReducer.reduce(g, new PrecisionModel(100))).collect(Collectors.toList());
+    List<Geometry> reducedList = list.stream().filter(g->g!=null).map(g -> GeometryPrecisionReducer.reduce(g, new PrecisionModel(100))).collect(Collectors.toList());
     return (Polygon) new CascadedPolygonUnion(reducedList).union();
   }
 
@@ -99,6 +99,7 @@ public class Util {
     if (p.size() != 1) {
       System.out.println(p.size() + " polygons");
       p.forEach(pp -> System.out.println(pp));
+      return null;
     }
     return p.get(0);
   }

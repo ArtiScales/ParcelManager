@@ -191,14 +191,17 @@ public class TopologicalStraightSkeletonParcelDecomposition {
     // Partial skeleton
     StraightSkeleton straightSkeleton = new StraightSkeleton(pol, offsetDistance);
     TopologicalGraph graph = straightSkeleton.getGraph();
+    export(graph, new File("/tmp/init"));
     graph.getFaces().forEach(f -> System.out.println(f.getGeometry()));
     List<HalfEdge> orderedEdges = getOrderedExteriorEdges(straightSkeleton);
     // get the road attributes
     Map<HalfEdge, Optional<Pair<String, Double>>> attributes = new HashMap<>();
     orderedEdges.stream().forEach(e -> attributes.put(e, FindObjectInDirection.find(e.getGeometry(), pol, roads, maxDistanceForNearestRoad).map(s -> getAttributes(s))));
     TopologicalGraph alphaStrips = getAlphaStrips(graph, orderedEdges, attributes);
+    export(alphaStrips, new File("/tmp/alpha"));
     TopologicalGraph betaStrips = getBetaStrips(graph, orderedEdges, alphaStrips, attributes);
-    
+    export(betaStrips, new File("/tmp/beta"));
+
     // System.out.println("FACES");
     // for (Face f : cs.getGraph().getFaces()) {
     // System.out.println(f.getGeometry());
@@ -214,16 +217,9 @@ public class TopologicalStraightSkeletonParcelDecomposition {
     return null;
   }
 
-  // private static Pair<Polygon, Polygon> splitPolygon(Polygon toRemove, LineString createLineString) {
-  //
-  // return null;
-  // }
-
   private static TopologicalGraph getBetaStrips(TopologicalGraph graph, List<HalfEdge> orderedEdges, TopologicalGraph alphaStrips,
       Map<HalfEdge, Optional<Pair<String, Double>>> attributes) {
     System.out.println("Supporting vertices");
-//    TopologicalGraph betaStrips = new TopologicalGraph();
-//    alphaStrips.getFaces().forEach(f -> betaStrips.getFaces().add(new Face(f.getGeometry())));
     // classify supporting vertices
     for (Node n : alphaStrips.getNodes()) {
       System.out.println(n.getGeometry());
@@ -231,13 +227,7 @@ public class TopologicalStraightSkeletonParcelDecomposition {
       HalfEdge nextEdge = graph.outgoingEdgesOf(n, orderedEdges).get(0);
       Optional<Pair<String, Double>> previousAttributes = attributes.get(previousEdge);
       Optional<Pair<String, Double>> nextAttributes = attributes.get(nextEdge);
-      // Pair<HalfEdge, HalfEdge> pair = supportingVertices.get(n);
-      // Pair<HalfEdge, Optional<Pair<String, Double>>> previous = attributes.stream().filter(p -> p.getLeft() == pair.getLeft()).findFirst().get();
-      // Pair<HalfEdge, Optional<Pair<String, Double>>> next = attributes.stream().filter(p -> p.getLeft() == pair.getRight()).findFirst().get();
       int supportingVertexClass = classify(n, previousEdge, previousAttributes, nextEdge, nextAttributes);
-      // System.out.println(supportingVertexClass);
-      // HalfEdge previousEdge = previous.getLeft();
-      // HalfEdge nextEdge = next.getLeft();
       Face prevFace = previousEdge.getFace();
       Face nextFace = nextEdge.getFace();
       Face prevAlphaStrip = prevFace.getParent();
@@ -262,12 +252,8 @@ public class TopologicalStraightSkeletonParcelDecomposition {
         // FIXME always getFace()?
         List<Face> facesToRemove = diagonalEdgeList.stream().map(e -> (e.getFace().getParent() == removedAlphaStrip) ? e.getFace() : e.getTwin().getFace())
             .collect(Collectors.toList());
-        // Coordinate projection = Util.project(currNode.getCoordinate(), psiMap.get(removedId));
         // FIXME only one edge for alpha strips?
         Coordinate projection = Util.project(currNode.getCoordinate(), removedAlphaStrip.getEdges().get(0).getGeometry());
-        // System.out.println(psiMap.get(removedId));
-        // System.out.println(currNode.getGeometry().getFactory().createPoint(projection));
-        // System.out.println(facesToRemove.get(facesToRemove.size() - 1).getGeometry());
         Polygon toRemove = facesToRemove.get(facesToRemove.size() - 1).getGeometry();
         Pair<Polygon, Polygon> split = splitPolygon(toRemove, currNode.getCoordinate(), projection);//toRemove.getFactory().createLineString(new Coordinate[] { currNode.getCoordinate(), projection }));
         Face absorbingBetaSplit = (supportingVertexClass == PREVIOUS) ? prevAlphaStrip : nextAlphaStrip;
@@ -279,23 +265,21 @@ public class TopologicalStraightSkeletonParcelDecomposition {
         // System.out.println("SHARED " + leftShared + " - " + rightShared);
         System.out.println(absorbingBetaSplitPolygon);
         Polygon absorbedPolygonPart = (leftShared == 2) ? split.getLeft() : split.getRight();
+        Polygon keptPolygonPart = (leftShared == 2) ? split.getRight() : split.getLeft();
         System.out.println("ABSORBEDPART:\n" + absorbedPolygonPart);
         List<Polygon> absorbedPolygons = facesToRemove.subList(0, facesToRemove.size() - 1).stream().map(f -> f.getGeometry()).collect(Collectors.toList());
-        absorbedPolygons.add(absorbedPolygonPart);
         List<Polygon> newAbsorbing = new ArrayList<>(absorbedPolygons);
         newAbsorbing.add(absorbingBetaSplitPolygon);
+        newAbsorbing.add(absorbedPolygonPart);
+        absorbedPolygons.add(toRemove);
         absorbingBetaSplit.setPolygon(Util.polygonUnion(newAbsorbing));
-        absorbedBetaSplit.setPolygon(Util.polygonDifference(Arrays.asList(absorbedBetaSplitPolygon), absorbedPolygons));
+        absorbedBetaSplit.setPolygon(Util.polygonUnion(Arrays.asList(Util.polygonDifference(Arrays.asList(absorbedBetaSplitPolygon), absorbedPolygons), keptPolygonPart)));
         System.out.println("ABSORBING:\n" + absorbingBetaSplit.getGeometry());
         System.out.println("ABSORBED:\n" + absorbedBetaSplit.getGeometry());
       }
       System.out.println("DONE");
     }
-    TopologicalGraph betaStrips = new TopologicalGraph(alphaStrips.getFaces().stream().map(f->f.getGeometry()).collect(Collectors.toList()));
-//    System.out.println("betaStripPolygonMap=");
-//    betaStrips.getFaces().forEach(p -> System.out.println(p.getGeometry()));
-    export(betaStrips);
-    return betaStrips;
+    return new TopologicalGraph(alphaStrips.getFaces().stream().map(f->f.getGeometry()).collect(Collectors.toList()));
   }
 
   @SuppressWarnings("rawtypes")
@@ -413,7 +397,7 @@ public class TopologicalStraightSkeletonParcelDecomposition {
     parcelDS.dispose();
   }
   
-  private static void export(TopologicalGraph graph) {
+  private static void export(TopologicalGraph graph, File directory) {
     for (int id = 0; id < graph.getFaces().size(); id++)
       graph.getFaces().get(id).setAttribute("ID", id);
     List<Node> nodes = new ArrayList<>(graph.getNodes());
@@ -431,8 +415,9 @@ public class TopologicalStraightSkeletonParcelDecomposition {
       edge.setAttribute("TWIN", (edge.getTwin() != null) ? edge.getTwin().getAttribute("ID") : null);
       edge.setAttribute("NEXT", (edge.getNext() != null) ? edge.getNext().getAttribute("ID") : null);
     }
-    TopologicalGraph.export(graph.getFaces(), new File("/tmp/faces.shp"), "Polygon");
-    TopologicalGraph.export(graph.getEdges(), new File("/tmp/edges.shp"), "LineString");
-    TopologicalGraph.export(graph.getNodes(), new File("/tmp/nodes.shp"), "Point");
+    if (!directory.isDirectory()) directory.mkdirs();
+    TopologicalGraph.export(graph.getFaces(), new File(directory, "faces.shp"), "Polygon");
+    TopologicalGraph.export(graph.getEdges(), new File(directory, "edges.shp"), "LineString");
+    TopologicalGraph.export(graph.getNodes(), new File(directory, "nodes.shp"), "Point");
   }
 }

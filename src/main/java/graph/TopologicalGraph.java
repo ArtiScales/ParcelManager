@@ -63,7 +63,8 @@ public class TopologicalGraph {
     for (Polygon polygon: polygons) {
       Face f = new Face(polygon);
       this.faces.add(f);
-      Coordinate[] coords = polygon.getExteriorRing().getCoordinates();
+      // we reverse so that the coordinates are CCW
+      Coordinate[] coords = polygon.getExteriorRing().reverse().getCoordinates();
       for (int index = 0; index < coords.length - 1; index++) {
         Coordinate c1 = coords[index];
         Coordinate c2 = coords[index + 1];
