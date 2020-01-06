@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -154,7 +155,7 @@ public class StraightSkeleton {
       return map.get(snapped);
     }
     Node node = new Node(snapped);
-    graph.getNodes().add(node);
+    graph.addNode(node);
     map.put(p, node);
     return node;
   }
@@ -335,48 +336,6 @@ public class StraightSkeleton {
     return convertCornerLoops(OffsetSkeleton.shrink(buildEdgeLoops(p, null), value), p.getFactory());
   }
 
-  private static <G extends Geometry, E extends GraphElement<G>> void export(List<E> feats, File file, String geomType) {
-    System.out.println(Calendar.getInstance().getTime() + " save " + feats.size() + " features to " + file);
-    if (feats.isEmpty())
-      return;
-    try {
-      String specs = "geom:" + geomType + ":srid=2154";//FIXME should not force lambert93
-      List<String> attributes = feats.get(0).getAttributes();
-      for (String attribute : attributes) {
-        specs += "," + attribute + ":String";
-      }
-      ShapefileDataStoreFactory factory = new ShapefileDataStoreFactory();
-      FileDataStore dataStore = factory.createDataStore(file.toURI().toURL());
-      String featureTypeName = "Object";
-      SimpleFeatureType featureType = DataUtilities.createType(featureTypeName, specs);
-      dataStore.createSchema(featureType);
-      String typeName = dataStore.getTypeNames()[0];
-      FeatureWriter<SimpleFeatureType, SimpleFeature> writer = dataStore.getFeatureWriterAppend(typeName, Transaction.AUTO_COMMIT);
-      System.setProperty("org.geotools.referencing.forceXY", "true");
-      System.out.println(Calendar.getInstance().getTime() + " write shapefile");
-      for (E element : feats) {
-        SimpleFeature feature = writer.next();
-        Object[] att = new Object[attributes.size() + 1];
-        att[0] = element.getGeometry();
-        for (int i = 0; i < attributes.size(); i++) {
-          att[i + 1] = element.getAttribute(attributes.get(i));
-        }
-        // System.out.println("WRITING " + element.getGeometry());
-        feature.setAttributes(att);
-        writer.write();
-      }
-      System.out.println(Calendar.getInstance().getTime() + " done");
-      writer.close();
-      dataStore.dispose();
-    } catch (MalformedURLException e) {
-      e.printStackTrace();
-    } catch (IOException e) {
-      e.printStackTrace();
-    } catch (SchemaException e) {
-      e.printStackTrace();
-    }
-  }
-
   public static void main(String[] args) throws ParseException {
     // String string = "Polygon ((917916 6458449.79999999981373549 216, 917918.19999999995343387 6458435.29999999981373549 216.59999999999999432, 917896 6458434.29999999981373549
     // 221.30000000000001137, 917900.80000000004656613 6458391.5 221.5, 917863.30000000004656613 6458385.90000000037252903 232.19999999999998863, 917864 6458379.70000000018626451
@@ -427,8 +386,9 @@ public class StraightSkeleton {
     TopologicalGraph graph = cs.getGraph();
     for (int id = 0; id < graph.getFaces().size(); id++)
       graph.getFaces().get(id).setAttribute("ID", id);
+    List<Node> nodes = new ArrayList<>(graph.getNodes());
     for (int id = 0; id < graph.getNodes().size(); id++)
-      graph.getNodes().get(id).setAttribute("ID", id);
+      nodes.get(id).setAttribute("ID", id);
     for (int id = 0; id < graph.getEdges().size(); id++) {
       HalfEdge edge = graph.getEdges().get(id);
       edge.setAttribute("ID", id);
@@ -441,8 +401,8 @@ public class StraightSkeleton {
       edge.setAttribute("TWIN", (edge.getTwin() != null) ? edge.getTwin().getAttribute("ID") : null);
       edge.setAttribute("NEXT", (edge.getNext() != null) ? edge.getNext().getAttribute("ID") : null);
     }
-    export(graph.getFaces(), new File("/tmp/faces.shp"), "Polygon");
-    export(graph.getEdges(), new File("/tmp/edges.shp"), "LineString");
-    export(graph.getNodes(), new File("/tmp/nodes.shp"), "Point");
+    TopologicalGraph.export(graph.getFaces(), new File("/tmp/faces.shp"), "Polygon");
+    TopologicalGraph.export(graph.getEdges(), new File("/tmp/edges.shp"), "LineString");
+    TopologicalGraph.export(graph.getNodes(), new File("/tmp/nodes.shp"), "Point");
   }
 }

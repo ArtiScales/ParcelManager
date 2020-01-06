@@ -5,9 +5,12 @@ import java.util.List;
 
 import org.locationtech.jts.geom.Polygon;
 
-public class Face extends GraphElement<Polygon> {
+public class Face extends GraphElement<Polygon,Face> {
   List<HalfEdge> edges = new ArrayList<>();
   Polygon polygon = null;
+  public Face(Polygon p) {
+    this.polygon = p;
+  }
   public Face() {
   }
   public List<HalfEdge> getEdges() {

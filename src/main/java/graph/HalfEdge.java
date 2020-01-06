@@ -2,7 +2,7 @@ package graph;
 
 import org.locationtech.jts.geom.LineString;
 
-public class HalfEdge extends GraphElement<LineString> {
+public class HalfEdge extends GraphElement<LineString,HalfEdge> {
   Node origin = null;
   Node target = null;
   Face face = null;
