@@ -209,7 +209,7 @@ public class FlagParcelDecomposition {
       return Collections.singletonList(p);
     }
     // Determination of splitting polygon (it is a splitting line in the article)
-    List<Polygon> splittingPolygon = OBBBlockDecomposition.computeSplittingPolygon(p, this.getExt(), true, noise, 0.0, 0, 0);
+    List<Polygon> splittingPolygon = OBBBlockDecomposition.computeSplittingPolygon(p, this.getExt(), true, noise,0.0,0,0.0,0,0);
     // Split into polygon
     List<Polygon> splitPolygon = OBBBlockDecomposition.split(p, splittingPolygon);
     long nbNoRoadAccess = splitPolygon.stream().filter(x -> !hasRoadAccess(x)).count();

@@ -9,18 +9,18 @@ Parameters of the .json file must respect the specifications listed below (***bo
 There is two ways to set the location of the input shapefiles.
 It is possible to set every files with the following names:  
 
-  * <i><b>parcelFile</b></i>: shapefile representing the parcels. By default, it should respect french attributes (new schemas can be implemented).
-  * <i><b>zoningFile</b></i>: shapefile representing the zoning plan.
-  * <i><b>buildingFile </b></i>: shapefile representing the buildings.
-  * <i><b>communityFile</b></i>: shapefile representing the community limits. It must have a field containing the city's code (<i>INSEE</i> by default) (can be ***NULL***).
-  * <i><b>predicateFile</b></i>: .csv file containing the rules of the (see xxx in the ArtiScales project to correctly set those rules) (can be ***NULL***).
-  * <i><b>polygonIntersection</b></i>: shapefile containing polygons which represent an interest for the parcel to be urbanized (can be ***NULL***).
-  * <i><b>profileFolder</b></i>: folder where the building profile must be stored under .json names (see xxx for doc about those folders)
-  * <i><b>outFolder</b></i>: folder where the result are stored
+  * ***parcelFile***: shapefile representing the parcels. By default, it should respect french attributes (new schemas can be implemented).
+  * ***zoningFile***: shapefile representing the zoning plan.
+  * ***buildingFile ***: shapefile representing the buildings.
+  * ***communityFile***: shapefile representing the community limits. It must have a field containing the city's code (<i>INSEE</i> by default) (can be ***NULL***).
+  * ***predicateFile***: .csv file containing the rules of the (see xxx in the ArtiScales project to correctly set those rules) (can be ***NULL***).
+  * ***polygonIntersection***: shapefile containing polygons which represent an interest for the parcel to be urbanized (can be ***NULL***).
+  * ***profileFolder***: folder where the building profile must be stored under .json names (see xxx for doc about those folders)
+  * ***outFolder***: folder where the result are stored
 
 It is also possible to set a root folder where every files are store. 
 They have the same names that the parameters previously cited (+ the .shp attribute). 
-Complete folder path is set at the parameter <i><b>rootfile</b></i>. 
+Complete folder path is set at the parameter ***rootfile***. 
 File names set this way would be overwritten if a file path is directly set with the parameter previously cited.
 
 <h2>Parcel Manager Steps</h2>
@@ -39,8 +39,8 @@ The parameter ***step*** must contain a .json table with all the following argum
 <h3>Parcel selection</h3>
 It is possible to set two different types of parcel selection regarding their inclusion in a part of the zoning plan or a community. 
 
-* <i><b>communityNumber</i></b>: Select every parcels that composed the community corresponding to the code. The default field name is <b>INSEE</b>.
-* <i><b>communityType</i></b>: A type of urban tissue. All the communities that follows this type will be selected. Default field name is <i>armature</i>. That doesn't work if a <i><b>communityNumber</i></b> is set. 
+* ***communityNumber***: Select every parcels that composed the community corresponding to the code. The default field name is <b>INSEE</b>.
+* ***communityType***: A type of urban tissue. All the communities that follows this type will be selected. Default field name is <i>armature</i>. That doesn't work if a ***communityNumber*** is set. 
 
 If those two parameters are not set, every parcels are selected and taken into acount. 
 

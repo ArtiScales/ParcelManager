@@ -51,7 +51,7 @@ public class OBBBlockDecomposition {
    * @return
    * @throws Exception
    */
-  public static List<Polygon> computeSplittingPolygon(Polygon pol, List<LineString> ext, boolean shortDirectionSplit, double noise, double roadWidth,
+  public static List<Polygon> computeSplittingPolygon(Polygon pol, List<LineString> ext, boolean shortDirectionSplit, double noise, double smallRoadWidth, int largeRoadLevel, double largeRoadWidth,
       int decompositionLevelWithRoad, int decompositionLevel) {
     if (pol.getArea() < 1.0)
       return Collections.emptyList();
@@ -71,6 +71,10 @@ public class OBBBlockDecomposition {
     // X and Y move of the centroid
     double alpha = 0.5 + (0.5 - Math.random()) * noiseTemp;
     if (decompositionLevel < decompositionLevelWithRoad) {
+    	double roadWidth = smallRoadWidth;
+    	if (decompositionLevel < largeRoadLevel) {
+    		roadWidth = largeRoadWidth;
+    	}
       double roadAlpha = roadWidth / p0.distance(p1);
       Coordinate p4 = new Coordinate(p0.x + (alpha - roadAlpha) * (p1.x - p0.x), p0.y + (alpha - roadAlpha) * (p1.y - p0.y));
       Coordinate p5 = new Coordinate(p3.x + (alpha - roadAlpha) * (p2.x - p3.x), p3.y + (alpha - roadAlpha) * (p2.y - p3.y));
@@ -125,8 +129,15 @@ public class OBBBlockDecomposition {
     return poly.intersects(poly.getFactory().createMultiLineString(ext.toArray(new LineString[ext.size()])).buffer(0.5));
   }
 
-  public static Tree<Pair<Polygon, Integer>> decompose(Polygon polygon, List<LineString> ext, double maximalArea, double maximalWidth, double noise, double epsilon, double roadWidth,
-      boolean forceRoadAccess, int decompositionLevelWithRoad, int decompositionLevel) {
+	public static Tree<Pair<Polygon, Integer>> decompose(Polygon polygon, List<LineString> ext, double maximalArea, double maximalWidth, double noise,
+			double epsilon, double streetWidth, boolean forceStreetAccess, int decompositionLevelWithStreet, int decompositionLevel) {
+		return decompose(polygon, ext, maximalArea, maximalWidth, noise, epsilon, streetWidth, 999, streetWidth, forceStreetAccess,
+				decompositionLevelWithStreet, decompositionLevel);
+	}
+
+	public static Tree<Pair<Polygon, Integer>> decompose(Polygon polygon, List<LineString> ext, double maximalArea, double maximalWidth, double noise,
+			double epsilon, double smallStreetWidth, int largeStreetLevel, double largeStreetWidth, boolean forceStreetAccess, int decompositionLevelWithStreet,
+			int decompositionLevel) {
     double area = polygon.getArea();
  
     double frontSideWidth = frontSideWidth(polygon, ext);
@@ -136,7 +147,7 @@ public class OBBBlockDecomposition {
       return new Tree<>(new ImmutablePair<>(polygon, decompositionLevel));
     }
     // Determination of splitting polygon (it is a splitting line in the article)
-    List<Polygon> splittingPolygon = computeSplittingPolygon(polygon, ext, true, noise, roadWidth, decompositionLevelWithRoad, decompositionLevel);
+    List<Polygon> splittingPolygon = computeSplittingPolygon(polygon, ext, true, noise, smallStreetWidth, largeStreetLevel, largeStreetWidth, decompositionLevelWithStreet, decompositionLevel);
 //    System.out.println(polygon);
 //    for (Polygon sp : splittingPolygon)
 //      System.out.println(sp);
@@ -144,16 +155,16 @@ public class OBBBlockDecomposition {
     List<Polygon> splitPolygons = split(polygon, splittingPolygon);
     // If a parcel has no road access, there is a probability to make a perpendicular split
     // Probability to make a perpendicular split if no road access or a little probabibility epsilon
-    if ((forceRoadAccess && ((!hasRoadAccess(splitPolygons.get(0), ext) || !hasRoadAccess(splitPolygons.get(1), ext)))) || (Math.random() < epsilon)) {
+    if ((forceStreetAccess && ((!hasRoadAccess(splitPolygons.get(0), ext) || !hasRoadAccess(splitPolygons.get(1), ext)))) || (Math.random() < epsilon)) {
       // Same steps but with different splitting geometries
-      splittingPolygon = computeSplittingPolygon(polygon, ext, false, noise, roadWidth, decompositionLevelWithRoad, decompositionLevel);
+      splittingPolygon = computeSplittingPolygon(polygon, ext, false, noise, smallStreetWidth, largeStreetLevel, largeStreetWidth, decompositionLevelWithStreet, decompositionLevel);
       splitPolygons = split(polygon, splittingPolygon);
     }
     // All split polygons are split and results added to the output
 //    return splitPolygons.stream()
 //        .flatMap(pol -> decompose(pol, ext, maximalArea, maximalWidth, noise, epsilon, roadWidth, forceRoadAccess, decompositionLevelWithRoad, decompositionLevel + 1).stream())
 //        .collect(Collectors.toList());
-    return new Tree<>(new ImmutablePair<>(polygon, decompositionLevel), splitPolygons.stream().map(pol -> decompose(pol, ext, maximalArea, maximalWidth, noise, epsilon, roadWidth, forceRoadAccess, decompositionLevelWithRoad, decompositionLevel + 1)).collect(Collectors.toList()));
+    return new Tree<>(new ImmutablePair<>(polygon, decompositionLevel), splitPolygons.stream().map(pol -> decompose(pol, ext, maximalArea, maximalWidth, noise, epsilon, smallStreetWidth, largeStreetLevel, largeStreetWidth, forceStreetAccess, decompositionLevelWithStreet, decompositionLevel + 1)).collect(Collectors.toList()));
   }
   
 
@@ -219,10 +230,7 @@ public class OBBBlockDecomposition {
     LineString ext = polygon.getExteriorRing();
     List<LineString> list = new ArrayList<>();
     list.add(ext);
-    // List<Polygon> splittingPolygon = computeSplittingPolygon(
-    // polygon,
-    // true,
-    // 0.5);
+    // List<Polygon> splittingPolygon = computeSplittingPolygon(polygon, true, 0.5);
     // split(polygon, splittingPolygon).stream().forEach(p->System.out.println(p));
     Tree<Pair<Polygon, Integer>> tree = decompose(polygon, list, 10000, 7, 0, 0, 5, false, 2, 0);
     DescriptiveStatistics dS = new DescriptiveStatistics();

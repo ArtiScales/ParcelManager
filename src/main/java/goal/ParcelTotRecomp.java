@@ -43,13 +43,20 @@ public class ParcelTotRecomp {
 	 * @param maximalArea
 	 * @param minimalArea
 	 * @param maximalWidth
-	 * @param lenRoad
+	 * @param streetWidth
 	 * @param decompositionLevelWithoutRoad
 	 * @return
 	 * @throws Exception
 	 */
 	public static SimpleFeatureCollection parcelTotRecomp(SimpleFeatureCollection initialZone, SimpleFeatureCollection parcels, File tmpFolder,
-			File zoningFile, double maximalArea, double minimalArea, double maximalWidth, double lenRoad, int decompositionLevelWithoutRoad)
+			File zoningFile, double maximalArea, double minimalArea, double maximalWidth, double streetWidth, int decompositionLevelWithoutRoad)
+			throws Exception {
+		return parcelTotRecomp(initialZone, parcels, tmpFolder, zoningFile, maximalArea, minimalArea, maximalWidth, streetWidth, 999, streetWidth,
+				decompositionLevelWithoutRoad);
+	}
+	
+	public static SimpleFeatureCollection parcelTotRecomp(SimpleFeatureCollection initialZone, SimpleFeatureCollection parcels, File tmpFolder,
+			File zoningFile, double maximalArea, double minimalArea, double maximalWidth, double smallStreetWidth, int largeStreetLevel, double largeStreetWidth, int decompositionLevelWithoutRoad)
 			throws Exception {
 
 		// parcel geometry name for all
@@ -181,8 +188,8 @@ public class ParcelTotRecomp {
 		SimpleFeatureCollection splitedZoneParcels  = new DefaultFeatureCollection();
 		switch (PROCESS) {
 		case "OBB":
-			splitedZoneParcels = ParcelSplit.splitParcels(goOdZone, maximalArea, maximalWidth, roadEpsilon, noise, null, lenRoad,
-					false, decompositionLevelWithoutRoad, tmpFolder);
+			splitedZoneParcels = ParcelSplit.splitParcels(goOdZone, maximalArea, maximalWidth, roadEpsilon, noise, null, smallStreetWidth,
+					largeStreetLevel, largeStreetWidth, false, decompositionLevelWithoutRoad, tmpFolder);
 			break;
 		case "SS":
 			System.out.println("not implemented yet");

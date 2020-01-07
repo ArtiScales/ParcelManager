@@ -65,13 +65,16 @@ public class PMStep {
 	static File PROFILEFOLDER;
 
 	public PMStep() {
-
 	}
 
 	public File execute() throws Exception {
+		
+		//get the wanted building profile
 		ProfileBuilding.setProfileFolder(PROFILEFOLDER.toString());
 		ShapefileDataStore shpDSParcel = new ShapefileDataStore(PARCELFILE.toURI().toURL());
 		SimpleFeatureCollection parcel = new DefaultFeatureCollection();
+		
+		//parcel selection
 		if (communityNumber != null) {
 			parcel = ParcelGetter.getParcelByZip(shpDSParcel.getFeatureSource().getFeatures(), communityNumber);
 		} else if (communityType != null) {
@@ -88,6 +91,17 @@ public class PMStep {
 		InputStream fileInputStream = new FileInputStream(ProfileBuilding.getProfileFolder() + "/" + buildingType + ".json");
 		ProfileBuilding profile = mapper.readValue(fileInputStream, ProfileBuilding.class);
 		SimpleFeatureCollection parcelCut = new DefaultFeatureCollection();
+		SimpleFeatureCollection parcelMarked = new DefaultFeatureCollection();
+		
+		// parcel marking step
+		if (POLYGONINTERSECTION != null && POLYGONINTERSECTION.exists()) {
+			parcelMarked = AttributeFromPosition.markParcelIntersectPolygonIntersection(parcel, POLYGONINTERSECTION);
+		}
+		if (ZONINGFILE != null && ZONINGFILE.exists() && zone != null && zone != "") {
+			parcelMarked = AttributeFromPosition.markParcelIntersectZoningType(parcelMarked, zone, ZONINGFILE);
+		}
+
+		//base is the goal : we choose one of the three goals
 		switch (goal) {
 		case "totalZone":
 			ParcelTotRecomp.PROCESS = parcelProcess;
@@ -95,22 +109,18 @@ public class PMStep {
 			SimpleFeatureCollection featuresZones = shpDSZone.getFeatureSource().getFeatures();
 			SimpleFeatureCollection zoneCollection = ParcelTotRecomp.createZoneToCut(zone, featuresZones, parcel);
 			parcelCut = ParcelTotRecomp.parcelTotRecomp(zoneCollection, parcel, TMPFOLDER, ZONINGFILE, profile.getMaximalArea(),
-					profile.getMinimalArea(), profile.getMaximalWidth(), profile.getStreetWidth(), profile.getDecompositionLevelWithoutStreet());
+					profile.getMinimalArea(), profile.getMaximalWidth(), profile.getStreetWidth(), profile.getLargeStreetLevel(), profile.getLargeStreetWidth(),  profile.getDecompositionLevelWithoutStreet());
 			shpDSZone.dispose();
 			break;
 		case "dens":
-			SimpleFeatureCollection parcelMarked = AttributeFromPosition.markParcelIntersectPolygonIntersection(parcel, POLYGONINTERSECTION);
-			SimpleFeatureCollection toDensify = AttributeFromPosition.markParcelIntersectZoningType(parcelMarked, zone, ZONINGFILE);
-			parcelCut = ParcelDensification.parcelDensification(toDensify, ilot, TMPFOLDER, BUILDINGFILE, profile.getMaximalArea(),
+			parcelCut = ParcelDensification.parcelDensification(parcelMarked, ilot, TMPFOLDER, BUILDINGFILE, profile.getMaximalArea(),
 					profile.getMinimalArea(), profile.getMaximalWidth(), profile.getLenDriveway(),
 					ParcelState.isArt3AllowsIsolatedParcel(parcel.features().next(), PREDICATEFILE));
 			break;
 		case "consolid":
-			SimpleFeatureCollection parcelMarked2 = AttributeFromPosition.markParcelIntersectPolygonIntersection(parcel, POLYGONINTERSECTION);
-			SimpleFeatureCollection toDensify2 = AttributeFromPosition.markParcelIntersectZoningType(parcelMarked2, zone, ZONINGFILE);
 			ParcelConsolidRecomp.PROCESS = parcelProcess;
-			parcelCut = ParcelConsolidRecomp.parcelConsolidRecomp(toDensify2, TMPFOLDER, profile.getMaximalArea(), profile.getMinimalArea(),
-					profile.getMaximalWidth(), profile.getStreetWidth(), profile.getDecompositionLevelWithoutStreet());
+			parcelCut = ParcelConsolidRecomp.parcelConsolidRecomp(parcelMarked, TMPFOLDER, profile.getMaximalArea(), profile.getMinimalArea(),
+					profile.getMaximalWidth(), profile.getStreetWidth(), profile.getLargeStreetLevel(), profile.getLargeStreetWidth(), profile.getDecompositionLevelWithoutStreet());
 			break;
 		}
 		File output = new File(OUTFOLDER, "parcelCuted-" + goal + ".shp");

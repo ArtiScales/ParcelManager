@@ -9,7 +9,7 @@
 		"zone":"AU",
 		"communityNumber":"25267",
 		"communityType":"periUrbain",
-		"buildingType1":"smallHouse"
+		"buildingType":"smallHouse"
 		},
 		{
 		"goal":"consolid",
@@ -17,13 +17,13 @@
 		"zone":"NC",
 		"communityNumber":"25267",
 		"communityType":"periUrbain",
-		"buildingType1":"midBlockFlat"
+		"buildingType":"smallHouse"
 		},
 		{
 		"goal":"dens",
 		"zone":"U",
 		"communityNumber":"25267",
 		"communityType":"periUrbain",
-		"buildingType1":"smallHouse"
+		"buildingType":"smallHouse"
 	}]
 }
