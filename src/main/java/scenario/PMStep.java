@@ -101,6 +101,8 @@ public class PMStep {
 			parcelMarked = AttributeFromPosition.markParcelIntersectZoningType(parcelMarked, zone, ZONINGFILE);
 		}
 
+		Vectors.exportSFC(parcelMarked, new File(TMPFOLDER, "parcelMarked.shp"));
+		
 		//base is the goal : we choose one of the three goals
 		switch (goal) {
 		case "totalZone":
