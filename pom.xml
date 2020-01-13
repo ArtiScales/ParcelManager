@@ -108,6 +108,11 @@
 			</exclusions>
 		</dependency>
 		<dependency>
+			<groupId>org.knowm.xchart</groupId>
+			<artifactId>xchart</artifactId>
+			<version>3.6.0</version>
+		</dependency>
+		<dependency>
 			<groupId>fr.ign.cogit</groupId>
 			<artifactId>ArtiScales-tools</artifactId>
 			<version>${artiscales.tools.version}</version>
@@ -161,6 +166,11 @@
 			<groupId>com.github.twak</groupId>
 			<artifactId>campskeleton</artifactId>
 			<version>master-SNAPSHOT</version>
+		</dependency>
+		<dependency> 
+		    <groupId>com.fasterxml.jackson.core</groupId>
+		    <artifactId>jackson-databind</artifactId>
+		    <version>2.10.0</version>
 		</dependency>
 	</dependencies>
 	<pluginRepositories>

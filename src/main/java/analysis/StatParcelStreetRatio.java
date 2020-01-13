@@ -4,22 +4,79 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Hashtable;
 
+import org.geotools.data.shapefile.ShapefileDataStore;
 import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.data.simple.SimpleFeatureIterator;
+import org.geotools.factory.CommonFactoryFinder;
 import org.geotools.feature.DefaultFeatureCollection;
+import org.geotools.feature.simple.SimpleFeatureBuilder;
+import org.geotools.util.factory.GeoTools;
 import org.locationtech.jts.geom.Geometry;
 import org.opengis.feature.simple.SimpleFeature;
+import org.opengis.filter.Filter;
+import org.opengis.filter.FilterFactory2;
+import org.opengis.referencing.FactoryException;
+import org.opengis.referencing.NoSuchAuthorityCodeException;
 
 import fr.ign.cogit.GTFunctions.Csv;
 import fr.ign.cogit.GTFunctions.Vectors;
+import fr.ign.cogit.parcelFunction.ParcelAttribute;
+import fr.ign.cogit.parcelFunction.ParcelSchema;
 
 public class StatParcelStreetRatio {
+	public static void main(String[] args) throws Exception {
 
-	public static double streetRatioParcels(SimpleFeatureCollection initialMarkedParcel, SimpleFeatureCollection cutParcel) {
-		return areaParcelNew(cutParcel) / areaParcelMarked(initialMarkedParcel);
+		ShapefileDataStore sds = new ShapefileDataStore(new File("/tmp/parcelMarked.shp").toURI().toURL());
+		SimpleFeatureCollection sfc = sds.getFeatureSource().getFeatures();
+		ShapefileDataStore sds2 = new ShapefileDataStore(new File("/tmp/parcelCuted-consolid.shp").toURI().toURL());
+		SimpleFeatureCollection sfc2 = sds2.getFeatureSource().getFeatures();
+		streetRatioParcels(sfc, sfc2);
+	}
+
+	public static double streetRatioParcels(SimpleFeatureCollection initialMarkedParcel, SimpleFeatureCollection cutParcel)
+			throws NoSuchAuthorityCodeException, IOException, FactoryException {
+		return streetRatioParcels(initialMarkedParcel, cutParcel, new File("/tmp/"), "SPLIT");
+	}
+
+	public static double streetRatioParcels(SimpleFeatureCollection initialMarkedParcel, SimpleFeatureCollection cutParcel, File fileOutStat,
+			String field) throws IOException, NoSuchAuthorityCodeException, FactoryException {
+		FilterFactory2 ff = CommonFactoryFinder.getFilterFactory2(GeoTools.getDefaultHints());
+		Filter filter = ff.like(ff.property(field), "1");
+		SimpleFeatureCollection selectedParcels = initialMarkedParcel.subCollection(filter);
+
+		DefaultFeatureCollection zone = new DefaultFeatureCollection();
+
+		Geometry multiGeom = Vectors.unionSFC(selectedParcels);
+		SimpleFeatureBuilder sfBuilder = ParcelSchema.getSFBFrenchZoning();
+		for (int i = 0; i < multiGeom.getNumGeometries(); i++) {
+			Geometry zoneGeom = multiGeom.getGeometryN(i);
+			sfBuilder.add(zoneGeom);
+
+			// set needed attributes
+			SimpleFeatureIterator it = cutParcel.features();
+			try {
+				while (it.hasNext()) {
+					SimpleFeature p = it.next();
+					if (zoneGeom.contains(((Geometry) p.getDefaultGeometry()))) {
+						sfBuilder.set("INSEE", ParcelAttribute.makeINSEECode(p));
+						sfBuilder.set("LIBELLE", p.getAttribute("SECTION"));
+						break;
+					}
+				}
+			} catch (Exception problem) {
+				problem.printStackTrace();
+			} finally {
+				it.close();
+			}
+			zone.add(sfBuilder.buildFeature(null));
+		}
+		Vectors.exportSFC(zone, new File("/tmp/zones.shp"));
+
+		return streetRatioParcelZone(zone, cutParcel, fileOutStat);
 	}
 
 	public static double streetRatioParcelZone(SimpleFeatureCollection zone, SimpleFeatureCollection cutParcel, File fileOutStat) throws IOException {
+		System.out.println("++++++++++Road Ratios++++++++++");
 		Hashtable<String, String[]> stat = new Hashtable<String, String[]>();
 
 		Double ratio = areaParcelNew(cutParcel) / area(zone);
@@ -69,28 +126,6 @@ public class StatParcelStreetRatio {
 		return ratio;
 	}
 
-	private static double areaParcelMarked(SimpleFeatureCollection markedParcels) {
-		return areaParcelMarked(markedParcels, "SPLIT");
-	}
-
-	private static double areaParcelMarked(SimpleFeatureCollection markedParcels, String markingField) {
-		SimpleFeatureIterator parcels = markedParcels.features();
-		double totArea = 0.0;
-		try {
-			while (parcels.hasNext()) {
-				SimpleFeature parcel = parcels.next();
-				if (parcel.getAttribute(markingField).equals(1)) {
-					totArea = totArea + ((Geometry) parcel.getDefaultGeometry()).getArea();
-				}
-			}
-		} catch (Exception problem) {
-			problem.printStackTrace();
-		} finally {
-			parcels.close();
-		}
-		return totArea;
-	}
-
 	private static double areaParcelNew(SimpleFeatureCollection markedParcels) {
 		SimpleFeatureIterator parcels = markedParcels.features();
 		double totArea = 0.0;
@@ -110,7 +145,6 @@ public class StatParcelStreetRatio {
 	}
 
 	private static double area(SimpleFeatureCollection markedParcels) throws IOException {
-		Vectors.exportSFC(markedParcels, new File("/tmp/batar.shp"));
 		SimpleFeatureIterator parcels = markedParcels.features();
 		double totArea = 0.0;
 		try {

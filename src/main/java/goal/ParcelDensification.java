@@ -1,8 +1,9 @@
-package algorithm;
+package goal;
 
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.data.simple.SimpleFeatureIterator;
@@ -35,6 +36,11 @@ public class ParcelDensification {
 	public static SimpleFeatureCollection parcelDensification(SimpleFeatureCollection parcelCollection, SimpleFeatureCollection ilotCollection,
 			File tmpFolder, File buildingFile, double maximalAreaSplitParcel, double minimalAreaSplitParcel, double maximalWidthSplitParcel,
 			double lenDriveway, boolean isArt3AllowsIsolatedParcel) throws Exception {
+		if (parcelCollection.getSchema().getAttributeDescriptors().stream().filter(s -> s.getName().toString().equals("SPLIT"))
+				.collect(Collectors.toList()).size() == 0) {
+			System.out.println("Densification : unmarked parcels");
+			return parcelCollection;
+		}
 
 		final String geomName = parcelCollection.getSchema().getGeometryDescriptor().getLocalName();
 
@@ -43,8 +49,8 @@ public class ParcelDensification {
 		// Vectors.exportSFC(ilotCollection, ilotReduced);
 		// IFeatureCollection<IFeature> featC = ShapefileReader.read(ilotReduced.getAbsolutePath());
 
-		// List<IOrientableCurve> lOC = featC.select(parcelCollec.envelope()).parallelStream().map(x -> FromGeomToLineString.convert(x.getGeom()))
-		// .collect(ArrayList::new, List::addAll, List::addAll);
+		// List<IOrientableCurve> lOC = featC.select(parcelCollec.envelope()).parallelStream().map(x -> FromGeomToLineString.convert(x.getGeom())).collect(ArrayList::new,
+		// List::addAll, List::addAll);
 
 		// IMultiCurve<IOrientableCurve> iMultiCurve = new GM_MultiCurve<>(lOC);
 		FilterFactory2 ff = CommonFactoryFinder.getFilterFactory2();
@@ -55,20 +61,21 @@ public class ParcelDensification {
 		try {
 			while (iterator.hasNext()) {
 				SimpleFeature feature = iterator.next();
-				if(feature.getDefaultGeometry() instanceof MultiPolygon){
+				if (feature.getDefaultGeometry() instanceof MultiPolygon) {
 					MultiPolygon mp = (MultiPolygon) feature.getDefaultGeometry();
-					for (int i = 0 ; i < mp.getNumGeometries();i++) {
+					for (int i = 0; i < mp.getNumGeometries(); i++) {
 						lines.add(((Polygon) mp.getGeometryN(i)).getExteriorRing());
 					}
-				}
-				else {
+				} else {
 					lines.add(((Polygon) feature.getDefaultGeometry()).getExteriorRing());
 				}
 			}
 		} finally {
 			iterator.close();
 		}
-		// MultiLineString iMultiCurve = new GeometryFactory().createMultiLineString(lines.toArray(new LineString[lines.size()]));
+		// MultiLineString iMultiCurve = new
+		// GeometryFactory().createMultiLineString(lines.toArray(new
+		// LineString[lines.size()]));
 		DefaultFeatureCollection cutedAll = new DefaultFeatureCollection();
 		SimpleFeatureBuilder SFBFrenchParcel = ParcelSchema.getSFBFrenchParcel();
 		iterator = parcelCollection.features();
@@ -76,11 +83,14 @@ public class ParcelDensification {
 			while (iterator.hasNext()) {
 				SimpleFeature feat = iterator.next();
 				// if the parcel is selected for the simulation and bigger than the limit size
-				if (feat.getAttribute("SPLIT").equals(1) && ((Geometry) feat.getDefaultGeometry()).getArea() > maximalAreaSplitParcel) {
+				if (feat.getAttribute("SPLIT").equals(1)
+						&& ((Geometry) feat.getDefaultGeometry()).getArea() > maximalAreaSplitParcel) {
 					// we falg cut the parcel
-					SimpleFeatureCollection tmp = ParcelSplitFlag.generateFlagSplitedParcels(feat, lines, tmpFolder, buildingFile,
-							maximalAreaSplitParcel, maximalWidthSplitParcel, lenDriveway, isArt3AllowsIsolatedParcel);
-					// if the cut parcels are inferior to the minimal size, we cancel all and add the initial parcel
+					SimpleFeatureCollection tmp = ParcelSplitFlag.generateFlagSplitedParcels(feat, lines, tmpFolder,
+							buildingFile, maximalAreaSplitParcel, maximalWidthSplitParcel, lenDriveway,
+							isArt3AllowsIsolatedParcel);
+					// if the cut parcels are inferior to the minimal size, we cancel all and add
+					// the initial parcel
 					boolean add = true;
 					SimpleFeatureIterator parcelIt = tmp.features();
 					try {
@@ -128,14 +138,14 @@ public class ParcelDensification {
 						}
 						// });
 					} else {
-						 SFBFrenchParcel = ParcelSchema.setSFBFrenchParcelWithFeat(feat, SFBFrenchParcel.getFeatureType());
-						 cutedAll.add(SFBFrenchParcel.buildFeature(null));
+						SFBFrenchParcel = ParcelSchema.setSFBFrenchParcelWithFeat(feat, SFBFrenchParcel.getFeatureType());
+						cutedAll.add(SFBFrenchParcel.buildFeature(null));
 					}
 				}
 				// if no simulation needed, we ad the normal parcel
 				else {
-					 SFBFrenchParcel = ParcelSchema.setSFBFrenchParcelWithFeat(feat, SFBFrenchParcel.getFeatureType());
-					 cutedAll.add(SFBFrenchParcel.buildFeature(null));
+					SFBFrenchParcel = ParcelSchema.setSFBFrenchParcelWithFeat(feat, SFBFrenchParcel.getFeatureType());
+					cutedAll.add(SFBFrenchParcel.buildFeature(null));
 				}
 			}
 		} finally {

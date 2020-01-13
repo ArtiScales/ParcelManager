@@ -1,4 +1,4 @@
-package algorithm;
+package goal;
 
 import java.io.File;
 import java.util.Arrays;
@@ -17,7 +17,14 @@ import processus.ParcelSplit;
 
 public class ParcelConsolidRecomp {
 	static boolean DEBUG = false;
+	public static String PROCESS = "OBB";
 
+	public static SimpleFeatureCollection parcelConsolidRecomp(SimpleFeatureCollection parcels, File tmpFolder, double maximalArea,
+			double minimalArea, double maximalWidth, double streetWidth, int decompositionLevelWithoutStreet) throws Exception {
+		return parcelConsolidRecomp(parcels, tmpFolder, maximalArea, minimalArea, maximalWidth, streetWidth, 999, streetWidth,
+				decompositionLevelWithoutStreet);
+	}
+	
 	/**
 	 * Methods that merge the contiguous indicated zones and the split them with the geoxygene block-subdiviser algorithm
 	 * 
@@ -39,7 +46,7 @@ public class ParcelConsolidRecomp {
 	 * @throws Exception
 	 */
 	public static SimpleFeatureCollection parcelConsolidRecomp(SimpleFeatureCollection parcels, File tmpFolder, double maximalArea,
-			double minimalArea, double maximalWidth, double streetWidth, int decompositionLevelWithoutStreet) throws Exception {
+			double minimalArea, double maximalWidth, double smallStreetWidth, int largeStreetLevel, double largeStreetWidth, int decompositionLevelWithoutStreet) throws Exception {
 
 		DefaultFeatureCollection parcelResult = new DefaultFeatureCollection();
 
@@ -99,8 +106,20 @@ public class ParcelConsolidRecomp {
 				// Parcel big enough, we cut it
 				feat.setAttribute("SPLIT", 1);
 				try {
-					SimpleFeatureCollection freshCutParcel = ParcelSplit.splitParcels(feat, maximalArea, maximalWidth, 0, 0, null, streetWidth, false,
-							decompositionLevelWithoutStreet, tmpFolder);
+					SimpleFeatureCollection freshCutParcel = new DefaultFeatureCollection();
+					switch (PROCESS) {
+					case "OBB":
+						freshCutParcel = ParcelSplit.splitParcels(feat, maximalArea, maximalWidth, 0.0, 0.0, null ,smallStreetWidth,  largeStreetLevel,
+								largeStreetWidth, false, decompositionLevelWithoutStreet, tmpFolder);
+						break;
+					case "SS":
+						System.out.println("not implemented yet");
+						break;
+					case "MS":
+						System.out.println("not implemented yet");
+						break;
+					}
+
 					SimpleFeatureIterator it = freshCutParcel.features();
 					// every single parcel goes into new collection
 					while (it.hasNext()) {

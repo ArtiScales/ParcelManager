@@ -1,4 +1,4 @@
-package algorithm;
+package goal;
 
 import java.io.File;
 import java.io.IOException;
@@ -28,7 +28,7 @@ import processus.ParcelSplit;
 
 public class ParcelTotRecomp {
 	private static String ZoneField = "TYPEZONE";
-
+	public static String PROCESS = "OBB";
 	/**
 	 * Merge and recut a specific zone. Cut first the surrounding parcels to keep them unsplited, then split the zone parcel and remerge them all into the original parcel file A
 	 * bit complicated algorithm to deal with unexisting peaces of parcels (as road)
@@ -43,13 +43,20 @@ public class ParcelTotRecomp {
 	 * @param maximalArea
 	 * @param minimalArea
 	 * @param maximalWidth
-	 * @param lenRoad
+	 * @param streetWidth
 	 * @param decompositionLevelWithoutRoad
 	 * @return
 	 * @throws Exception
 	 */
 	public static SimpleFeatureCollection parcelTotRecomp(SimpleFeatureCollection initialZone, SimpleFeatureCollection parcels, File tmpFolder,
-			File zoningFile, double maximalArea, double minimalArea, double maximalWidth, double lenRoad, int decompositionLevelWithoutRoad)
+			File zoningFile, double maximalArea, double minimalArea, double maximalWidth, double streetWidth, int decompositionLevelWithoutRoad)
+			throws Exception {
+		return parcelTotRecomp(initialZone, parcels, tmpFolder, zoningFile, maximalArea, minimalArea, maximalWidth, streetWidth, 999, streetWidth,
+				decompositionLevelWithoutRoad);
+	}
+	
+	public static SimpleFeatureCollection parcelTotRecomp(SimpleFeatureCollection initialZone, SimpleFeatureCollection parcels, File tmpFolder,
+			File zoningFile, double maximalArea, double minimalArea, double maximalWidth, double smallStreetWidth, int largeStreetLevel, double largeStreetWidth, int decompositionLevelWithoutRoad)
 			throws Exception {
 
 		// parcel geometry name for all
@@ -178,9 +185,20 @@ public class ParcelTotRecomp {
 		double noise = 0;
 
 		// Parcel subdivision
-		// Sometimes it bugs (like on Sector NV in Besançon)
-		SimpleFeatureCollection splitedZoneParcels = ParcelSplit.splitParcels(goOdZone, maximalArea, maximalWidth, roadEpsilon, noise, null, lenRoad,
-				false, decompositionLevelWithoutRoad, tmpFolder);
+		SimpleFeatureCollection splitedZoneParcels  = new DefaultFeatureCollection();
+		switch (PROCESS) {
+		case "OBB":
+			splitedZoneParcels = ParcelSplit.splitParcels(goOdZone, maximalArea, maximalWidth, roadEpsilon, noise, null, smallStreetWidth,
+					largeStreetLevel, largeStreetWidth, false, decompositionLevelWithoutRoad, tmpFolder);
+			break;
+		case "SS":
+			System.out.println("not implemented yet");
+			break;
+		case "MS":
+			System.out.println("not implemented yet");
+			break;
+		}
+		
 		int i = 0;
 		DefaultFeatureCollection result = new DefaultFeatureCollection();
 		SimpleFeatureIterator itZoneParcel = splitedZoneParcels.features();
