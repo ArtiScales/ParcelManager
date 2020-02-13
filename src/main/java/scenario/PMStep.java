@@ -44,6 +44,9 @@ public class PMStep {
 		COMMUNITYFILE = communityFile;
 		OUTFOLDER = outFolder;
 		PROFILEFOLDER = profileFolder;
+		 if(!COMMUNITYFILE.exists()) {
+			 GENERATEATTRIBUTES = false;
+		 }
 	}
 
 	String goal;
@@ -63,6 +66,7 @@ public class PMStep {
 	static File POLYGONINTERSECTION;
 	static File OUTFOLDER;
 	static File PROFILEFOLDER;
+	static boolean GENERATEATTRIBUTES =true ;
 
 	public PMStep() {
 	}
@@ -75,9 +79,9 @@ public class PMStep {
 		SimpleFeatureCollection parcel = new DefaultFeatureCollection();
 		
 		//parcel selection
-		if (communityNumber != null) {
+		if (communityNumber != null && communityNumber != "") {
 			parcel = ParcelGetter.getParcelByZip(shpDSParcel.getFeatureSource().getFeatures(), communityNumber);
-		} else if (communityType != null) {
+		} else if (communityType != null && communityType != "") {
 			// TODO per each type
 		} else {
 			parcel = shpDSParcel.getFeatureSource().getFeatures();
@@ -97,11 +101,15 @@ public class PMStep {
 		if (POLYGONINTERSECTION != null && POLYGONINTERSECTION.exists()) {
 			parcelMarked = AttributeFromPosition.markParcelIntersectPolygonIntersection(parcel, POLYGONINTERSECTION);
 		}
-		if (ZONINGFILE != null && ZONINGFILE.exists() && zone != null && zone != "") {
-			parcelMarked = AttributeFromPosition.markParcelIntersectZoningType(parcelMarked, zone, ZONINGFILE);
-		}
-
 		Vectors.exportSFC(parcelMarked, new File(TMPFOLDER, "parcelMarked.shp"));
+		if (ZONINGFILE != null && ZONINGFILE.exists() && zone != null && zone != "") {
+			if (parcelMarked.size() > 0) {
+				parcelMarked = AttributeFromPosition.markParcelIntersectZoningType(parcelMarked, zone, ZONINGFILE);
+			} else {
+				parcelMarked = AttributeFromPosition.markParcelIntersectZoningType(parcel, zone, ZONINGFILE);
+			}
+		}
+		Vectors.exportSFC(parcelMarked, new File(TMPFOLDER, "parcelMarked2.shp"));
 		
 		//base is the goal : we choose one of the three goals
 		switch (goal) {
@@ -126,7 +134,9 @@ public class PMStep {
 			break;
 		}
 		File output = new File(OUTFOLDER, "parcelCuted-" + goal + ".shp");
+		if (GENERATEATTRIBUTES) {
 		parcelCut = FrenchParcelFields.fixParcelAttributes(parcelCut, TMPFOLDER, COMMUNITYFILE);
+		}
 		Vectors.exportSFC(parcelCut, output);
 		shpDSIlot.dispose();
 		shpDSParcel.dispose();

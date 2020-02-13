@@ -9,6 +9,7 @@ import org.geotools.feature.DefaultFeatureCollection;
 import org.geotools.feature.simple.SimpleFeatureBuilder;
 import org.opengis.feature.simple.SimpleFeature;
 
+import fr.ign.cogit.GTFunctions.Attribute;
 import fr.ign.cogit.parcelFunction.ParcelAttribute;
 import fr.ign.cogit.parcelFunction.ParcelSchema;
 
@@ -35,7 +36,7 @@ public class FrenchParcelFields {
 				// if the parcel already have informations, we just copy them
 				if (parcel.getAttribute("NUMERO") != null) {
 					String section = (String) parcel.getAttribute("SECTION");
-					featureBuilder.set("INSEE", ParcelAttribute.makeINSEECode(parcel));
+					featureBuilder.set("INSEE", Attribute.makeINSEECode(parcel));
 					featureBuilder.set("CODE_DEP", parcel.getAttribute("CODE_DEP"));
 					featureBuilder.set("CODE_COM", parcel.getAttribute("CODE_COM"));
 					featureBuilder.set("SECTION", section);

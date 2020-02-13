@@ -11,6 +11,7 @@ import org.geotools.feature.simple.SimpleFeatureBuilder;
 import org.locationtech.jts.geom.Geometry;
 import org.opengis.feature.simple.SimpleFeature;
 
+import fr.ign.cogit.GTFunctions.Attribute;
 import fr.ign.cogit.parcelFunction.ParcelAttribute;
 import fr.ign.cogit.parcelFunction.ParcelSchema;
 import fr.ign.cogit.parcelFunction.ParcelState;
@@ -47,7 +48,7 @@ public class ArtiScalesFields {
 				featureBuilder.set("the_geom", parcel.getDefaultGeometry());
 
 				String section = (String) parcel.getAttribute("SECTION");
-				featureBuilder.set("INSEE", ParcelAttribute.makeINSEECode(parcel));
+				featureBuilder.set("INSEE", Attribute.makeINSEECode(parcel));
 				featureBuilder.set("CODE_DEP", parcel.getAttribute("CODE_DEP"));
 				featureBuilder.set("CODE_COM", parcel.getAttribute("CODE_COM"));
 				featureBuilder.set("SECTION", section);

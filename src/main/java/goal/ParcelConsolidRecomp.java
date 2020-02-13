@@ -49,9 +49,7 @@ public class ParcelConsolidRecomp {
 			double minimalArea, double maximalWidth, double smallStreetWidth, int largeStreetLevel, double largeStreetWidth, int decompositionLevelWithoutStreet) throws Exception {
 
 		DefaultFeatureCollection parcelResult = new DefaultFeatureCollection();
-
 		parcelResult.addAll(parcels);
-
 		DefaultFeatureCollection parcelToMerge = new DefaultFeatureCollection();
 
 		if (DEBUG) {
@@ -157,9 +155,14 @@ public class ParcelConsolidRecomp {
 				cutParcels.add(sfBuilderFinalParcel.buildFeature(null, new Object[] { feat.getDefaultGeometry() }));
 			}
 		});
+		DefaultFeatureCollection result = new DefaultFeatureCollection();
+		if (cutParcels.size() == 0) {
+			System.out.println("parcelConsolidRecomp produces no cut parcels");
+			return result;
+		}
+		
 		// add initial non cut parcel to final parcels only if they are bigger than the limit
 		SimpleFeatureType schema = cutParcels.getSchema();
-		DefaultFeatureCollection result = new DefaultFeatureCollection();
 		Arrays.stream(cutParcels.toArray(new SimpleFeature[0])).forEach(feat -> {
 			SimpleFeatureBuilder SFBParcel = ParcelSchema.setSFBFrenchParcelWithFeat(feat, schema);
 			result.add(SFBParcel.buildFeature(null));

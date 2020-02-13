@@ -18,7 +18,6 @@ public class PMScenario {
 	private File parcelFile;
 	private File ilotFile;
 	private File profileFolder;
-
 	private File tmpFolder;
 	private File outFolder;
 
@@ -197,7 +196,6 @@ public class PMScenario {
 				polygonIntersection, outFolder, profileFolder);
 		for (PMStep pmstep : getStepList()) {
 			System.out.println("try " + pmstep);
-
 			PMStep.setParcel(pmstep.execute());
 		}
 	}

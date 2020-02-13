@@ -18,9 +18,9 @@ import org.opengis.filter.FilterFactory2;
 import org.opengis.referencing.FactoryException;
 import org.opengis.referencing.NoSuchAuthorityCodeException;
 
+import fr.ign.cogit.GTFunctions.Attribute;
 import fr.ign.cogit.GTFunctions.Csv;
 import fr.ign.cogit.GTFunctions.Vectors;
-import fr.ign.cogit.parcelFunction.ParcelAttribute;
 import fr.ign.cogit.parcelFunction.ParcelSchema;
 
 public class StatParcelStreetRatio {
@@ -58,7 +58,7 @@ public class StatParcelStreetRatio {
 				while (it.hasNext()) {
 					SimpleFeature p = it.next();
 					if (zoneGeom.contains(((Geometry) p.getDefaultGeometry()))) {
-						sfBuilder.set("INSEE", ParcelAttribute.makeINSEECode(p));
+						sfBuilder.set("INSEE", Attribute.makeINSEECode(p));
 						sfBuilder.set("LIBELLE", p.getAttribute("SECTION"));
 						break;
 					}
