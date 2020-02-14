@@ -141,7 +141,7 @@ public class ParcelSplitFlag {
 		// dirty translation from geox to geotools TODO clean that one day
 		File fileOut = new File(tmpFile, "tmp_split.shp");
 //		ShapefileWriter.write(ifeatCollOut, fileOut.toString(), CRS.decode("EPSG:2154"));
-    FeaturePolygonizer.saveGeometries(decomp, fileOut, "Polygon");
+		FeaturePolygonizer.saveGeometries(decomp, fileOut, "Polygon");
 
 		ShapefileDataStore sds = new ShapefileDataStore(fileOut.toURI().toURL());
 		SimpleFeatureCollection parcelOut = DataUtilities.collection(sds.getFeatureSource().getFeatures());

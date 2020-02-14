@@ -179,7 +179,6 @@ public class ParcelSplit {
     DefaultFeatureCollection in = new DefaultFeatureCollection();
     in.add(toSplit);
     return splitParcels(in.collection(), maximalArea, maximalWidth, streetEpsilon, noise, extBlock, smallStreetWidth, largeStreetLevel, largeStreetWidth, forceStreetAccess, decompositionLevelWithoutStreet, tmpFolder);
-
   }
 
   /**

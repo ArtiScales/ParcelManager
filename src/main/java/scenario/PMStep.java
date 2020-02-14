@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
 
+import org.geotools.data.DataUtilities;
 import org.geotools.data.shapefile.ShapefileDataStore;
 import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.feature.DefaultFeatureCollection;
@@ -80,11 +81,11 @@ public class PMStep {
 		
 		//parcel selection
 		if (communityNumber != null && communityNumber != "") {
-			parcel = ParcelGetter.getParcelByZip(shpDSParcel.getFeatureSource().getFeatures(), communityNumber);
+			parcel = DataUtilities.collection(ParcelGetter.getParcelByZip(shpDSParcel.getFeatureSource().getFeatures(), communityNumber));
 		} else if (communityType != null && communityType != "") {
 			// TODO per each type
 		} else {
-			parcel = shpDSParcel.getFeatureSource().getFeatures();
+			parcel = DataUtilities.collection(shpDSParcel.getFeatureSource().getFeatures());
 		}
 
 		ShapefileDataStore shpDSIlot = new ShapefileDataStore(ILOTFILE.toURI().toURL());
@@ -135,7 +136,7 @@ public class PMStep {
 		}
 		File output = new File(OUTFOLDER, "parcelCuted-" + goal + ".shp");
 		if (GENERATEATTRIBUTES) {
-		parcelCut = FrenchParcelFields.fixParcelAttributes(parcelCut, TMPFOLDER, COMMUNITYFILE);
+			parcelCut = FrenchParcelFields.fixParcelAttributes(parcelCut, TMPFOLDER, COMMUNITYFILE);
 		}
 		Vectors.exportSFC(parcelCut, output);
 		shpDSIlot.dispose();

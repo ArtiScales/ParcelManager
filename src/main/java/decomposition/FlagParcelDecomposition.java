@@ -269,7 +269,7 @@ public class FlagParcelDecomposition {
     // We get the two geometries with and without road access
     List<Polygon> lPolygonWithRoadAccess = splittedPolygon.stream().filter(x -> hasRoadAccess(x)).collect(Collectors.toList());
     List<Polygon> lPolygonWithNoRoadAccess = splittedPolygon.stream().filter(x -> !hasRoadAccess(x)).collect(Collectors.toList());
-    System.out.println("lPolygonWithNoRoadAccess");
+//    System.out.println("lPolygonWithNoRoadAccess");
 //    lPolygonWithNoRoadAccess.stream().forEach(p -> System.out.println(p));
 
     bouclepoly: for (Polygon currentPoly : lPolygonWithNoRoadAccess) {
@@ -286,8 +286,8 @@ public class FlagParcelDecomposition {
         // The geometry road
         Geometry road = side.getKey().buffer(this.roadWidth);
         Polygon polygon = side.getValue();
-        System.out.println("ROAD");
-        System.out.println(road);
+//        System.out.println("ROAD");
+//        System.out.println(road);
 
         // The road intersects a building, we do not keep it
         if (!Util.select(this.buildings, road).isEmpty()) {
@@ -321,9 +321,9 @@ public class FlagParcelDecomposition {
 
         List<Polygon> lPolygonsOut2 = Util.getPolygons(geomPol2);
         lPolygonsOut2 = lPolygonsOut2.stream().filter(x -> x.getArea() > TOO_SMALL_PARCEL_AREA).collect(Collectors.toList());
-        System.out.println("lPolygonsOut1");
+//        System.out.println("lPolygonsOut1");
         lPolygonsOut1.stream().forEach(p -> System.out.println(p));
-        System.out.println("lPolygonsOut2");
+//        System.out.println("lPolygonsOut2");
         lPolygonsOut2.stream().forEach(p -> System.out.println(p));
 
         // We check if there is a road acces for all, if not we abort

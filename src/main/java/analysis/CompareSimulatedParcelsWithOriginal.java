@@ -12,7 +12,7 @@ public class CompareSimulatedParcelsWithOriginal {
 
 	public static void main(String[] args) throws Exception {
 		Instant start = Instant.now();
-		File rootFolder = new File("/home/mcolomb/PMtest/");
+		File rootFolder = new File("/home/ubuntu/Documents/PMtest/");
 
 //		 ParcelCollection.markDiffParcel(new File(rootFolder, "brie98.shp"),new File(rootFolder, "brie12.shp"), rootFolder);
 
@@ -24,7 +24,5 @@ public class CompareSimulatedParcelsWithOriginal {
 		Instant end = Instant.now();
 		System.out.println(Duration.between(start, end)); // prints PT1M3.553S
 		// markDiffParcel(new File("/tmp/a.shp"),new File("/tmp/b.shp"), new File("/tmp/"));
-
 	}
-
 }

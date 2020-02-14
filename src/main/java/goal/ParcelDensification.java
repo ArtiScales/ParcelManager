@@ -111,7 +111,6 @@ public class ParcelDensification {
 						// construct the new parcels
 						// could have been cleaner with a stream but still don't know how to have an external counter to set parcels number
 						// Arrays.stream(tmp.toArray(new SimpleFeature[0])).forEach(parcelCuted -> {
-
 						int i = 1;
 						SimpleFeatureIterator parcelCutedIt = tmp.features();
 						try {
