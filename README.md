@@ -19,6 +19,6 @@ Still under developpement.
         <li><i>ParcelConsolidRecomp</i>: Merges predesigned parcel together and run a decomposition task</li>
         <li><i>ParcelDensification</i>: Run the densification process on the predesigned parcels</li>
     </ul>
-    </li>
-<li><b>scenario</b>: Contains objects used for processing an automated simulation on a large zone. A technical description can be [found here](https://github.com/ArtiScales/ParcelManager/blob/master/src/main/resources/doc/scenarioCreation.md)) . </li>
+</li>
+<li><b>scenario</b>: Contains objects used for processing an automated simulation on a large zone ([technical description can be found here](https://github.com/ArtiScales/ParcelManager/blob/master/src/main/resources/doc/scenarioCreation.md))</li>
 </ul>
