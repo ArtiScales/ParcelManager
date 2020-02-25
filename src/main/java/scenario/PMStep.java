@@ -12,10 +12,10 @@ import org.geotools.feature.DefaultFeatureCollection;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import fields.AttributeFromPosition;
 import fields.FrenchParcelFields;
 import fr.ign.cogit.GTFunctions.Vectors;
 import fr.ign.cogit.parameter.ProfileBuilding;
+import fr.ign.cogit.parcelFunction.MarkParcelAttributeFromPosition;
 import fr.ign.cogit.parcelFunction.ParcelGetter;
 import fr.ign.cogit.parcelFunction.ParcelState;
 import goal.ParcelConsolidRecomp;
@@ -100,14 +100,14 @@ public class PMStep {
 		
 		// parcel marking step
 		if (POLYGONINTERSECTION != null && POLYGONINTERSECTION.exists()) {
-			parcelMarked = AttributeFromPosition.markParcelIntersectPolygonIntersection(parcel, POLYGONINTERSECTION);
+			parcelMarked = MarkParcelAttributeFromPosition.markParcelIntersectPolygonIntersection(parcel, POLYGONINTERSECTION);
 		}
 		Vectors.exportSFC(parcelMarked, new File(TMPFOLDER, "parcelMarked.shp"));
 		if (ZONINGFILE != null && ZONINGFILE.exists() && zone != null && zone != "") {
 			if (parcelMarked.size() > 0) {
-				parcelMarked = AttributeFromPosition.markParcelIntersectZoningType(parcelMarked, zone, ZONINGFILE);
+				parcelMarked = MarkParcelAttributeFromPosition.markParcelIntersectZoningType(parcelMarked, zone, ZONINGFILE);
 			} else {
-				parcelMarked = AttributeFromPosition.markParcelIntersectZoningType(parcel, zone, ZONINGFILE);
+				parcelMarked = MarkParcelAttributeFromPosition.markParcelIntersectZoningType(parcel, zone, ZONINGFILE);
 			}
 		}
 		Vectors.exportSFC(parcelMarked, new File(TMPFOLDER, "parcelMarked2.shp"));

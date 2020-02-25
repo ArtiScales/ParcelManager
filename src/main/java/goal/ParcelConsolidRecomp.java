@@ -11,22 +11,16 @@ import org.locationtech.jts.geom.Geometry;
 import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.feature.simple.SimpleFeatureType;
 
+import decomposition.ParcelSplit;
 import fr.ign.cogit.GTFunctions.Vectors;
 import fr.ign.cogit.parcelFunction.ParcelSchema;
-import processus.ParcelSplit;
 
 public class ParcelConsolidRecomp {
-	static boolean DEBUG = false;
+	public static boolean DEBUG = false;
 	public static String PROCESS = "OBB";
 
-	public static SimpleFeatureCollection parcelConsolidRecomp(SimpleFeatureCollection parcels, File tmpFolder, double maximalArea,
-			double minimalArea, double maximalWidth, double streetWidth, int decompositionLevelWithoutStreet) throws Exception {
-		return parcelConsolidRecomp(parcels, tmpFolder, maximalArea, minimalArea, maximalWidth, streetWidth, 999, streetWidth,
-				decompositionLevelWithoutStreet);
-	}
-	
 	/**
-	 * Methods that merge the contiguous indicated zones and the split them with the geoxygene block-subdiviser algorithm
+	 * Method that merges the contiguous marked parcels into zones and then split those zones with a given parcel division algorithm (by default, the Oriented Bounding Box)
 	 * 
 	 * @param parcels
 	 *            The parcels to be merged and cut. Must be marked with the SPLIT filed (see markParcelIntersectMUPOutput for example, with the method concerning MUP-City's output)
@@ -39,7 +33,37 @@ public class ParcelConsolidRecomp {
 	 * @param maximalWidth
 	 *            : The width of parcel connection to street network under which the parcel won"t be anymore cut
 	 * @param streetWidth
-	 *            : the width of generated street network
+	 *            : the width of generated street network. this @overload is setting a single size for those roads
+	 * @param decompositionLevelWithoutStreet
+	 *            : Number of the final row on which street generation doesn't apply
+	 * @return the set of parcel with decomposition
+	 * @throws Exception
+	 */
+	public static SimpleFeatureCollection parcelConsolidRecomp(SimpleFeatureCollection parcels, File tmpFolder, double maximalArea,
+			double minimalArea, double maximalWidth, double streetWidth, int decompositionLevelWithoutStreet) throws Exception {
+		return parcelConsolidRecomp(parcels, tmpFolder, maximalArea, minimalArea, maximalWidth, streetWidth, 999, streetWidth,
+				decompositionLevelWithoutStreet);
+	}
+	
+	/**
+	 * Method that merges the contiguous marked parcels into zones and then split those zones with a given parcel division algorithm (by default, the Oriented Bounding Box)
+	 * 
+	 * @param parcels
+	 *            The parcels to be merged and cut. Must be marked with the SPLIT filed (see markParcelIntersectMUPOutput for example, with the method concerning MUP-City's output)
+	 * @param tmpFolder
+	 *            : A temporary folder where will be saved intermediate results
+	 * @param maximalArea
+	 *            : Area under which a parcel won"t be anymore cut
+	 * @param minimalArea
+	 *            : Area under which a polygon won't be kept as a parcel
+	 * @param maximalWidth
+	 *            : The width of parcel connection to street network under which the parcel won"t be anymore cut
+	 * @param smallStreetWidth
+	 *            : the width of small street network segments
+	 * @param largeStreetLevel
+	 *            : level of decomposition after which the streets are considered as large streets
+	 * @param largeStreetWidth
+	 *            : the width of large street network segments
 	 * @param decompositionLevelWithoutStreet
 	 *            : Number of the final row on which street generation doesn't apply
 	 * @return the set of parcel with decomposition

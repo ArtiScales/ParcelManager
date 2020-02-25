@@ -17,13 +17,14 @@ import org.locationtech.jts.geom.Polygon;
 import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.filter.FilterFactory2;
 
+import decomposition.ParcelSplitFlag;
 import fr.ign.cogit.parcelFunction.ParcelSchema;
-import processus.ParcelSplitFlag;
 
 public class ParcelDensification {
 
 	/**
 	 * Apply the densification process
+	 * only applied for french parcel models
 	 * 
 	 * @param splitZone
 	 * @param parcelCollection

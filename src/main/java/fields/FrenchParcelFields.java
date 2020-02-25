@@ -18,21 +18,17 @@ public class FrenchParcelFields {
 	public static SimpleFeatureCollection fixParcelAttributes(SimpleFeatureCollection parcels, File tmpFolder,
 			File communityFile) throws Exception {
 		DefaultFeatureCollection parcelFinal = new DefaultFeatureCollection();
-
 		int i = 0;
 		SimpleFeatureIterator parcelIt = parcels.features();
 		SimpleFeatureBuilder featureBuilder = ParcelSchema.getSFBParcelAsAS();
-
 		// city information
 		ShapefileDataStore shpDSCities = new ShapefileDataStore(communityFile.toURI().toURL());
 		SimpleFeatureCollection citiesSFS = shpDSCities.getFeatureSource().getFeatures();
-
 		try {
 			while (parcelIt.hasNext()) {
 				i++;
 				SimpleFeature parcel = parcelIt.next();
 				featureBuilder.set("the_geom", parcel.getDefaultGeometry());
-
 				// if the parcel already have informations, we just copy them
 				if (parcel.getAttribute("NUMERO") != null) {
 					String section = (String) parcel.getAttribute("SECTION");
@@ -46,14 +42,11 @@ public class FrenchParcelFields {
 				} else {
 					// we get the city info
 					String insee = ParcelAttribute.getCommunityCodeFromSFC(citiesSFS, parcel);
-
 					featureBuilder.set("INSEE", insee);
 					featureBuilder.set("CODE_DEP", insee.substring(0, 2));
 					featureBuilder.set("CODE_COM", insee.substring(2, 5));
-
 					// should be already set in the previous method
 					String section = (String) parcel.getAttribute("SECTION");
-
 					featureBuilder.set("SECTION", section);
 					featureBuilder.set("NUMERO", i);
 					featureBuilder.set("CODE", insee + "000" + section + i);

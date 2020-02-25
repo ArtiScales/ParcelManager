@@ -16,7 +16,7 @@ import fr.ign.cogit.parcelFunction.ParcelAttribute;
 import fr.ign.cogit.parcelFunction.ParcelSchema;
 import fr.ign.cogit.parcelFunction.ParcelState;
 
-public class ArtiScalesFields {
+public class ArtiScalesParcelFields {
 	/**
 	 * Set the parcel's attribute after a parcel recomposition processus based on the French model. Won't change parcel's information if they are already set
 	 * 

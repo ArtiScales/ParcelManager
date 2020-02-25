@@ -1,4 +1,4 @@
-package processus;
+package decomposition;
 
 import java.io.File;
 import java.util.List;
@@ -11,8 +11,6 @@ import org.locationtech.jts.geom.LineString;
 import org.locationtech.jts.geom.Polygon;
 import org.opengis.feature.simple.SimpleFeature;
 
-import decomposition.FlagParcelDecomposition;
-import decomposition.Util;
 import fr.ign.cogit.FeaturePolygonizer;
 
 public class ParcelSplitFlag {
@@ -111,10 +109,7 @@ public class ParcelSplitFlag {
 	public static SimpleFeatureCollection generateFlagSplitedParcels(SimpleFeature ifeat, List<LineString> iMultiCurve, File tmpFile,
 			File buildingFile, Double maximalAreaSplitParcel, Double maximalWidthSplitParcel, Double lenDriveway, boolean isArt3AllowsIsolatedParcel)
 			throws Exception {
-//		DirectPosition.PRECISION = 3;
-//		SimpleFeatureCollection buildingLargeCollec = ShapefileReader.read(buildingFile.getAbsolutePath());
-//		IFeatureCollection<IFeature> buildingCollec = new FT_FeatureCollection<>();
-//		buildingCollec.addAll(buildingLargeCollec.select(ifeat.getGeom().buffer(10.0)));
+
     ShapefileDataStore buildingDS = new ShapefileDataStore(buildingFile.toURI().toURL());
     SimpleFeatureCollection buildingCollec = buildingDS.getFeatureSource().getFeatures();
 
@@ -125,7 +120,6 @@ public class ParcelSplitFlag {
 //		geom = geom.translate(-dp.getX(), -dp.getY(), 0);
 
 		List<Polygon> surfaces = Util.getPolygons(geom);
-//		List<IOrientableSurface> surfaces = FromGeomToSurface.convertGeom(geom);
 		FlagParcelDecomposition fpd = new FlagParcelDecomposition(surfaces.get(0), buildingCollec, maximalAreaSplitParcel,
 				maximalWidthSplitParcel, lenDriveway, iMultiCurve);
 		List<Polygon> decomp = fpd.decompParcel(0);
@@ -136,11 +130,7 @@ public class ParcelSplitFlag {
 			return ParcelSplit.splitParcels(ifeat, maximalAreaSplitParcel, maximalWidthSplitParcel, 0, 0, iMultiCurve, 0, false, 8, tmpFile);
 		}
 		
-//		IFeatureCollection<IFeature> ifeatCollOut = new FT_FeatureCollection<>();
-//		ifeatCollOut.addAll(decomp);
-		// dirty translation from geox to geotools TODO clean that one day
 		File fileOut = new File(tmpFile, "tmp_split.shp");
-//		ShapefileWriter.write(ifeatCollOut, fileOut.toString(), CRS.decode("EPSG:2154"));
 		FeaturePolygonizer.saveGeometries(decomp, fileOut, "Polygon");
 
 		ShapefileDataStore sds = new ShapefileDataStore(fileOut.toURI().toURL());
