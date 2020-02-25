@@ -2,7 +2,7 @@
 
 Funtion to operate various parcel reshaping operations.
 Documentation can be found on a coming article and on the PhD thesis of Maxime Colomb.
-The easiest way of using this library without coming to the code is to create scenarios using .json files ([see on](https://github.com/ArtiScales/ParcelManager/blob/master/src/main/resources/doc/scenarioCreation.md)).
+The easiest way of using this library without coming to the code is to create scenarios using .json files ([see here](https://github.com/ArtiScales/ParcelManager/blob/master/src/main/resources/doc/scenarioCreation.md)).
 Uses a lot of function from the library [ArtiScales-tools](https://github.com/ArtiScales/ArtiScales-tools) (no stable version yet)
 
 Still under developpement.
@@ -20,5 +20,5 @@ Still under developpement.
         <li><i>ParcelDensification</i>: Run the densification process on the predesigned parcels</li>
     </ul>
     </li>
-<li><b>scenario</b>: Contains objects used for processing an automated simulation on a large zone. A technical description can be found [here](https://github.com/ArtiScales/ParcelManager/blob/master/src/main/resources/doc/scenarioCreation.md)</li>
+<li><b>scenario</b>: Contains objects used for processing an automated simulation on a large zone. A technical description can be [found here](https://github.com/ArtiScales/ParcelManager/blob/master/src/main/resources/doc/scenarioCreation.md)) . </li>
 </ul>
