@@ -1,4 +1,4 @@
-package processus;
+package decomposition;
 
 import java.io.File;
 import java.util.List;
@@ -16,7 +16,6 @@ import org.opengis.feature.Feature;
 import org.opengis.feature.FeatureVisitor;
 import org.opengis.feature.simple.SimpleFeature;
 
-import decomposition.OBBBlockDecomposition;
 import fr.ign.cogit.parcelFunction.ParcelSchema;
 
 public class ParcelSplit {
@@ -179,7 +178,6 @@ public class ParcelSplit {
     DefaultFeatureCollection in = new DefaultFeatureCollection();
     in.add(toSplit);
     return splitParcels(in.collection(), maximalArea, maximalWidth, streetEpsilon, noise, extBlock, smallStreetWidth, largeStreetLevel, largeStreetWidth, forceStreetAccess, decompositionLevelWithoutStreet, tmpFolder);
-
   }
 
   /**

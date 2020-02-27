@@ -75,7 +75,7 @@ public class OBBBlockDecomposition {
     	if (decompositionLevel < largeRoadLevel) {
     		roadWidth = largeRoadWidth;
     	}
-      double roadAlpha = roadWidth / p0.distance(p1);
+      double roadAlpha = roadWidth / (p0.distance(p1)*2);
       Coordinate p4 = new Coordinate(p0.x + (alpha - roadAlpha) * (p1.x - p0.x), p0.y + (alpha - roadAlpha) * (p1.y - p0.y));
       Coordinate p5 = new Coordinate(p3.x + (alpha - roadAlpha) * (p2.x - p3.x), p3.y + (alpha - roadAlpha) * (p2.y - p3.y));
       Coordinate p6 = new Coordinate(p0.x + (alpha + roadAlpha) * (p1.x - p0.x), p0.y + (alpha + roadAlpha) * (p1.y - p0.y));

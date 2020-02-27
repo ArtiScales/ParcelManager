@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
 
+import org.geotools.data.DataUtilities;
 import org.geotools.data.shapefile.ShapefileDataStore;
 import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.feature.DefaultFeatureCollection;
@@ -11,10 +12,10 @@ import org.geotools.feature.DefaultFeatureCollection;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import fields.AttributeFromPosition;
 import fields.FrenchParcelFields;
 import fr.ign.cogit.GTFunctions.Vectors;
 import fr.ign.cogit.parameter.ProfileBuilding;
+import fr.ign.cogit.parcelFunction.MarkParcelAttributeFromPosition;
 import fr.ign.cogit.parcelFunction.ParcelGetter;
 import fr.ign.cogit.parcelFunction.ParcelState;
 import goal.ParcelConsolidRecomp;
@@ -44,6 +45,9 @@ public class PMStep {
 		COMMUNITYFILE = communityFile;
 		OUTFOLDER = outFolder;
 		PROFILEFOLDER = profileFolder;
+		 if(!COMMUNITYFILE.exists()) {
+			 GENERATEATTRIBUTES = false;
+		 }
 	}
 
 	String goal;
@@ -63,6 +67,7 @@ public class PMStep {
 	static File POLYGONINTERSECTION;
 	static File OUTFOLDER;
 	static File PROFILEFOLDER;
+	static boolean GENERATEATTRIBUTES =true ;
 
 	public PMStep() {
 	}
@@ -75,12 +80,12 @@ public class PMStep {
 		SimpleFeatureCollection parcel = new DefaultFeatureCollection();
 		
 		//parcel selection
-		if (communityNumber != null) {
-			parcel = ParcelGetter.getParcelByZip(shpDSParcel.getFeatureSource().getFeatures(), communityNumber);
-		} else if (communityType != null) {
+		if (communityNumber != null && communityNumber != "") {
+			parcel = DataUtilities.collection(ParcelGetter.getParcelByZip(shpDSParcel.getFeatureSource().getFeatures(), communityNumber));
+		} else if (communityType != null && communityType != "") {
 			// TODO per each type
 		} else {
-			parcel = shpDSParcel.getFeatureSource().getFeatures();
+			parcel = DataUtilities.collection(shpDSParcel.getFeatureSource().getFeatures());
 		}
 
 		ShapefileDataStore shpDSIlot = new ShapefileDataStore(ILOTFILE.toURI().toURL());
@@ -95,13 +100,17 @@ public class PMStep {
 		
 		// parcel marking step
 		if (POLYGONINTERSECTION != null && POLYGONINTERSECTION.exists()) {
-			parcelMarked = AttributeFromPosition.markParcelIntersectPolygonIntersection(parcel, POLYGONINTERSECTION);
+			parcelMarked = MarkParcelAttributeFromPosition.markParcelIntersectPolygonIntersection(parcel, POLYGONINTERSECTION);
 		}
-		if (ZONINGFILE != null && ZONINGFILE.exists() && zone != null && zone != "") {
-			parcelMarked = AttributeFromPosition.markParcelIntersectZoningType(parcelMarked, zone, ZONINGFILE);
-		}
-
 		Vectors.exportSFC(parcelMarked, new File(TMPFOLDER, "parcelMarked.shp"));
+		if (ZONINGFILE != null && ZONINGFILE.exists() && zone != null && zone != "") {
+			if (parcelMarked.size() > 0) {
+				parcelMarked = MarkParcelAttributeFromPosition.markParcelIntersectZoningType(parcelMarked, zone, ZONINGFILE);
+			} else {
+				parcelMarked = MarkParcelAttributeFromPosition.markParcelIntersectZoningType(parcel, zone, ZONINGFILE);
+			}
+		}
+		Vectors.exportSFC(parcelMarked, new File(TMPFOLDER, "parcelMarked2.shp"));
 		
 		//base is the goal : we choose one of the three goals
 		switch (goal) {
@@ -126,7 +135,9 @@ public class PMStep {
 			break;
 		}
 		File output = new File(OUTFOLDER, "parcelCuted-" + goal + ".shp");
-		parcelCut = FrenchParcelFields.fixParcelAttributes(parcelCut, TMPFOLDER, COMMUNITYFILE);
+		if (GENERATEATTRIBUTES) {
+			parcelCut = FrenchParcelFields.fixParcelAttributes(parcelCut, TMPFOLDER, COMMUNITYFILE);
+		}
 		Vectors.exportSFC(parcelCut, output);
 		shpDSIlot.dispose();
 		shpDSParcel.dispose();

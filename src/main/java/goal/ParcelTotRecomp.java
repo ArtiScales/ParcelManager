@@ -21,10 +21,10 @@ import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.feature.simple.SimpleFeatureType;
 import org.opengis.filter.FilterFactory2;
 
+import decomposition.ParcelSplit;
 import fr.ign.cogit.FeaturePolygonizer;
 import fr.ign.cogit.GTFunctions.Vectors;
 import fr.ign.cogit.parcelFunction.ParcelSchema;
-import processus.ParcelSplit;
 
 public class ParcelTotRecomp {
 	private static String ZoneField = "TYPEZONE";
@@ -254,23 +254,23 @@ public class ParcelTotRecomp {
 	}
 
 	/**
-	 * 
-	 * @param splitZone
-	 * @param zoning
-	 * @param parcels
-	 * @return
+	 * Create a zone to cut by selecting features from a shapefile regarding a fixed value.
+	 * Name of the field is by default set to "TYPEZONE" and must be changed if needed with the {@link #setZoneField(String) setZoneField} method
+	 * Also takes a bounding SimpleFeatureCollection to bound the output
+	 * @param zoneToCutName: Name of the zone to be cut
+	 * @param zoning: Collection of zones to extract the wanted zone from (ussualy a zoning plan)
+	 * @param parcels: Collection of parcel to bound the process on a wanted location
+	 * @return An extraction of the zoning collection
 	 * @throws IOException
 	 */
-	public static SimpleFeatureCollection createZoneToCut(String splitZone, SimpleFeatureCollection zoning, SimpleFeatureCollection parcels)
+	public static SimpleFeatureCollection createZoneToCut(String zoneToCutName, SimpleFeatureCollection zoning, SimpleFeatureCollection parcels)
 			throws IOException {
-		Geometry unionParcel = Vectors.unionSFC(parcels);
 		// get the wanted zones from the zoning file
 		FilterFactory2 ff = CommonFactoryFinder.getFilterFactory2(GeoTools.getDefaultHints());
-		SimpleFeatureCollection initialZone = zoning.subCollection(ff.like(ff.property(ZoneField), splitZone))
-				.subCollection(ff.intersects(ff.property(zoning.getSchema().getGeometryDescriptor().getLocalName()), ff.literal(unionParcel)));
-
+		SimpleFeatureCollection initialZone = zoning.subCollection(ff.like(ff.property(ZoneField), zoneToCutName))
+				.subCollection(ff.intersects(ff.property(zoning.getSchema().getGeometryDescriptor().getLocalName()), ff.literal(Vectors.unionSFC(parcels))));
 		if (initialZone.isEmpty()) {
-			System.out.println("zone is empty");
+			System.out.println("createZoneToCut(): zone is empty");
 		}
 		return initialZone;
 	}

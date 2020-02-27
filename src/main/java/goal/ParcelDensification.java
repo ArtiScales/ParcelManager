@@ -17,13 +17,14 @@ import org.locationtech.jts.geom.Polygon;
 import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.filter.FilterFactory2;
 
+import decomposition.ParcelSplitFlag;
 import fr.ign.cogit.parcelFunction.ParcelSchema;
-import processus.ParcelSplitFlag;
 
 public class ParcelDensification {
 
 	/**
 	 * Apply the densification process
+	 * only applied for french parcel models
 	 * 
 	 * @param splitZone
 	 * @param parcelCollection
@@ -111,7 +112,6 @@ public class ParcelDensification {
 						// construct the new parcels
 						// could have been cleaner with a stream but still don't know how to have an external counter to set parcels number
 						// Arrays.stream(tmp.toArray(new SimpleFeature[0])).forEach(parcelCuted -> {
-
 						int i = 1;
 						SimpleFeatureIterator parcelCutedIt = tmp.features();
 						try {
