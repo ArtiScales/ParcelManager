@@ -65,6 +65,8 @@ public class TopologicalGraph {
       this.faces.add(f);
       // we reverse so that the coordinates are CCW
       Coordinate[] coords = polygon.getExteriorRing().reverse().getCoordinates();
+      HalfEdge first = null;
+      HalfEdge previous = null;
       for (int index = 0; index < coords.length - 1; index++) {
         Coordinate c1 = coords[index];
         Coordinate c2 = coords[index + 1];
@@ -75,7 +77,11 @@ public class TopologicalGraph {
         if (twin.isPresent()) e.setTwin(twin.get());
         e.setFace(f);
         this.edges.add(e);
+        if (first == null) first = e;
+        if (previous != null) previous.setNext(e);
+        previous = e;
       }
+      previous.setNext(first);
     }
   }
   
@@ -160,5 +166,9 @@ public class TopologicalGraph {
     } catch (SchemaException e) {
       e.printStackTrace();
     }
+  }
+
+  public Node getNode(Coordinate c) {
+    return this.nodes.get(c);
   }
 }
