@@ -13,7 +13,7 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import fields.FrenchParcelFields;
-import fr.ign.cogit.GTFunctions.Vectors;
+import fr.ign.cogit.geoToolsFunctions.vectors.Collec;
 import fr.ign.cogit.parameter.ProfileBuilding;
 import fr.ign.cogit.parcelFunction.MarkParcelAttributeFromPosition;
 import fr.ign.cogit.parcelFunction.ParcelGetter;
@@ -24,7 +24,6 @@ import goal.ParcelTotRecomp;
 
 public class PMStep {
 	public PMStep(String goal, String parcelProcess, String zone, String communityNumber, String communityType, String buildingType) {
-		super();
 		this.goal = goal;
 		this.parcelProcess = parcelProcess;
 		this.zone = zone;
@@ -83,7 +82,7 @@ public class PMStep {
 		if (communityNumber != null && communityNumber != "") {
 			parcel = DataUtilities.collection(ParcelGetter.getParcelByZip(shpDSParcel.getFeatureSource().getFeatures(), communityNumber));
 		} else if (communityType != null && communityType != "") {
-			// TODO per each type
+			parcel = DataUtilities.collection(ParcelGetter.getParcelByTypo(communityType, parcel, ZONINGFILE));
 		} else {
 			parcel = DataUtilities.collection(shpDSParcel.getFeatureSource().getFeatures());
 		}
@@ -102,7 +101,7 @@ public class PMStep {
 		if (POLYGONINTERSECTION != null && POLYGONINTERSECTION.exists()) {
 			parcelMarked = MarkParcelAttributeFromPosition.markParcelIntersectPolygonIntersection(parcel, POLYGONINTERSECTION);
 		}
-		Vectors.exportSFC(parcelMarked, new File(TMPFOLDER, "parcelMarked.shp"));
+		Collec.exportSFC(parcelMarked, new File(TMPFOLDER, "parcelMarked.shp"));
 		if (ZONINGFILE != null && ZONINGFILE.exists() && zone != null && zone != "") {
 			if (parcelMarked.size() > 0) {
 				parcelMarked = MarkParcelAttributeFromPosition.markParcelIntersectZoningType(parcelMarked, zone, ZONINGFILE);
@@ -110,7 +109,7 @@ public class PMStep {
 				parcelMarked = MarkParcelAttributeFromPosition.markParcelIntersectZoningType(parcel, zone, ZONINGFILE);
 			}
 		}
-		Vectors.exportSFC(parcelMarked, new File(TMPFOLDER, "parcelMarked2.shp"));
+		Collec.exportSFC(parcelMarked, new File(TMPFOLDER, "parcelMarked2.shp"));
 		
 		//base is the goal : we choose one of the three goals
 		switch (goal) {
@@ -138,7 +137,7 @@ public class PMStep {
 		if (GENERATEATTRIBUTES) {
 			parcelCut = FrenchParcelFields.fixParcelAttributes(parcelCut, TMPFOLDER, COMMUNITYFILE);
 		}
-		Vectors.exportSFC(parcelCut, output);
+		Collec.exportSFC(parcelCut, output);
 		shpDSIlot.dispose();
 		shpDSParcel.dispose();
 		return output;

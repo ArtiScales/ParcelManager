@@ -23,7 +23,8 @@ import org.opengis.filter.FilterFactory2;
 
 import decomposition.ParcelSplit;
 import fr.ign.cogit.FeaturePolygonizer;
-import fr.ign.cogit.GTFunctions.Vectors;
+import fr.ign.cogit.geoToolsFunctions.vectors.Collec;
+import fr.ign.cogit.geoToolsFunctions.vectors.Geom;
 import fr.ign.cogit.parcelFunction.ParcelSchema;
 
 public class ParcelTotRecomp {
@@ -62,8 +63,8 @@ public class ParcelTotRecomp {
 		// parcel geometry name for all
 		String geomName = parcels.getSchema().getGeometryDescriptor().getLocalName();
 
-		final Geometry geomAU = Vectors.unionSFC(initialZone);
-		Geometry unionParcel = Vectors.unionSFC(parcels);
+		final Geometry geomAU = Geom.unionSFC(initialZone);
+		Geometry unionParcel = Geom.unionSFC(parcels);
 
 		// sort in two different collections, the ones that matters and the ones that will besaved for future purposes
 		DefaultFeatureCollection parcelsInZone = new DefaultFeatureCollection();
@@ -89,7 +90,7 @@ public class ParcelTotRecomp {
 				numZone++;
 				SimpleFeature feat = zoneIt.next();
 				// avoid most of tricky geometry problems
-				Geometry intersection = Vectors
+				Geometry intersection = Geom
 						.scaledGeometryReductionIntersection(Arrays.asList(((Geometry) feat.getDefaultGeometry()), unionParcel));
 				if (!intersection.isEmpty() && intersection.getArea() > 5.0) {
 					if (intersection instanceof MultiPolygon) {
@@ -153,9 +154,9 @@ public class ParcelTotRecomp {
 
 		// parts of parcel outside the zone must not be cut by the algorithm and keep their attributes
 		// temporary shapefiles that serves to do polygons with the polygonizer
-		File fParcelsInAU = Vectors.exportSFC(parcelsInZone, new File(tmpFolder, "parcelCible.shp"));
-		File fZone = Vectors.exportSFC(goOdZone, new File(tmpFolder, "oneAU.shp"));
-		Geometry geomSelectedZone = Vectors.unionSFC(goOdZone);
+		File fParcelsInAU = Collec.exportSFC(parcelsInZone, new File(tmpFolder, "parcelCible.shp"));
+		File fZone = Collec.exportSFC(goOdZone, new File(tmpFolder, "oneAU.shp"));
+		Geometry geomSelectedZone = Geom.unionSFC(goOdZone);
 		File[] polyFiles = { fParcelsInAU, fZone };
 		List<Polygon> polygons = FeaturePolygonizer.getPolygons(polyFiles);
 
@@ -268,7 +269,7 @@ public class ParcelTotRecomp {
 		// get the wanted zones from the zoning file
 		FilterFactory2 ff = CommonFactoryFinder.getFilterFactory2(GeoTools.getDefaultHints());
 		SimpleFeatureCollection initialZone = zoning.subCollection(ff.like(ff.property(ZoneField), zoneToCutName))
-				.subCollection(ff.intersects(ff.property(zoning.getSchema().getGeometryDescriptor().getLocalName()), ff.literal(Vectors.unionSFC(parcels))));
+				.subCollection(ff.intersects(ff.property(zoning.getSchema().getGeometryDescriptor().getLocalName()), ff.literal(Geom.unionSFC(parcels))));
 		if (initialZone.isEmpty()) {
 			System.out.println("createZoneToCut(): zone is empty");
 		}

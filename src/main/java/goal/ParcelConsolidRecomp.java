@@ -12,7 +12,8 @@ import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.feature.simple.SimpleFeatureType;
 
 import decomposition.ParcelSplit;
-import fr.ign.cogit.GTFunctions.Vectors;
+import fr.ign.cogit.geoToolsFunctions.vectors.Collec;
+import fr.ign.cogit.geoToolsFunctions.vectors.Geom;
 import fr.ign.cogit.parcelFunction.ParcelSchema;
 
 public class ParcelConsolidRecomp {
@@ -77,7 +78,7 @@ public class ParcelConsolidRecomp {
 		DefaultFeatureCollection parcelToMerge = new DefaultFeatureCollection();
 
 		if (DEBUG) {
-			Vectors.exportSFC(parcels, new File(tmpFolder, "step0.shp"));
+			Collec.exportSFC(parcels, new File(tmpFolder, "step0.shp"));
 			System.out.println("done step 0");
 		}
 
@@ -93,7 +94,7 @@ public class ParcelConsolidRecomp {
 		});
 
 		if (DEBUG) {
-			Vectors.exportSFC(parcelToMerge.collection(), new File(tmpFolder, "step1.shp"));
+			Collec.exportSFC(parcelToMerge.collection(), new File(tmpFolder, "step1.shp"));
 			System.out.println("done step 1");
 		}
 
@@ -105,14 +106,14 @@ public class ParcelConsolidRecomp {
 
 		SimpleFeatureBuilder sfBuilder = ParcelSchema.getSFBFrenchParcelSplit();
 
-		Geometry multiGeom = Vectors.unionSFC(parcelToMerge);
+		Geometry multiGeom = Geom.unionSFC(parcelToMerge);
 		for (int i = 0; i < multiGeom.getNumGeometries(); i++) {
 			sfBuilder.add(multiGeom.getGeometryN(i));
 			sfBuilder.set("SECTION", Integer.toString(i));
 			mergedParcels.add(sfBuilder.buildFeature(null));
 		}
 		if (DEBUG) {
-			Vectors.exportSFC(mergedParcels.collection(), new File(tmpFolder, "step2.shp"));
+			Collec.exportSFC(mergedParcels.collection(), new File(tmpFolder, "step2.shp"));
 			System.out.println("done step 2");
 		}
 
@@ -196,7 +197,7 @@ public class ParcelConsolidRecomp {
 			result.add(SFBParcel.buildFeature(null));
 		});
 		if (DEBUG) {
-			Vectors.exportSFC(result, new File(tmpFolder, "step3.shp"));
+			Collec.exportSFC(result, new File(tmpFolder, "step3.shp"));
 			System.out.println("done step 3");
 		}
 		return result;

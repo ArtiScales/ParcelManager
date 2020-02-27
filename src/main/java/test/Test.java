@@ -7,7 +7,7 @@ import org.geotools.data.simple.SimpleFeatureCollection;
 
 import analysis.StatParcelStreetRatio;
 import fields.ArtiScalesParcelFields;
-import fr.ign.cogit.GTFunctions.Vectors;
+import fr.ign.cogit.geoToolsFunctions.vectors.Collec;
 import fr.ign.cogit.parcelFunction.MarkParcelAttributeFromPosition;
 import fr.ign.cogit.parcelFunction.ParcelGetter;
 import fr.ign.cogit.parcelFunction.ParcelState;
@@ -47,10 +47,6 @@ public class Test {
 		ShapefileDataStore shpDSParcel = new ShapefileDataStore(parcelFile.toURI().toURL());
 		SimpleFeatureCollection parcel = ParcelGetter.getParcelByZip(shpDSParcel.getFeatureSource().getFeatures(),
 				"25267");
-		// ShapefileDataStore shpDSParcel = new ShapefileDataStore(new
-		// File("/tmp/parcel.shp").toURI().toURL());
-		// SimpleFeatureCollection parcel =
-		// shpDSParcel.getFeatureSource().getFeatures();
 
 		double maximalArea = 400.0;
 		double minimalArea = 100.0;
@@ -74,11 +70,11 @@ public class Test {
 
 		SimpleFeatureCollection parcelCuted = ParcelTotRecomp.parcelTotRecomp(zone, parcel, tmpFolder, zoningFile,
 				maximalArea, minimalArea, maximalWidth, lenRoad, decompositionLevelWithoutRoad);
-		Vectors.exportSFC(parcelCuted, new File("/tmp/parcelTotZoneTmp.shp"));
+		Collec.exportSFC(parcelCuted, new File(tmpFolder,"parcelTotZoneTmp.shp"));
 		SimpleFeatureCollection finaux = ArtiScalesParcelFields.fixParcelAttributes(parcelCuted, tmpFolder, buildingFile,
 				communityFile, polygonIntersection, zoningFile, true);
-		Vectors.exportSFC(finaux, new File("/tmp/parcelTotZone.shp"));
-		Vectors.exportSFC(zone, new File("/tmp/zone.shp"));
+		Collec.exportSFC(finaux, new File(tmpFolder,"parcelTotZone.shp"));
+		Collec.exportSFC(zone, new File(tmpFolder,"zone.shp"));
 		System.out.println(StatParcelStreetRatio.streetRatioParcelZone(zone, finaux, new File(tmpFolder, "stat")));
 
 		shpDSZone.dispose();
@@ -90,21 +86,14 @@ public class Test {
 		System.out.println("consolidRecomp");
 		System.out.println("/////////////////////////");
 //		ParcelConsolidRecomp.DEBUG = true;
-		Vectors.exportSFC(finaux, new File("/tmp/b.shp"));
 		SimpleFeatureCollection testmp = MarkParcelAttributeFromPosition.markParcelIntersectPolygonIntersection(finaux, polygonIntersection);
-		System.out.println(testmp.size());
-		Vectors.exportSFC(testmp, new File("/tmp/bout.shp"));
-
 		SimpleFeatureCollection test = MarkParcelAttributeFromPosition.markParcelIntersectZoningType(testmp, "NC", zoningFile);
-		Vectors.exportSFC(test, new File("/tmp/bat.shp"));
-
 		SimpleFeatureCollection cuted = ParcelConsolidRecomp.parcelConsolidRecomp(test, tmpFolder, maximalArea,
 				minimalArea, maximalWidth, lenRoad, decompositionLevelWithoutRoad);
 		SimpleFeatureCollection finaux2 = ArtiScalesParcelFields.fixParcelAttributes(cuted, tmpFolder, buildingFile,
 				communityFile, polygonIntersection, zoningFile, false);
-		Vectors.exportSFC(finaux2, new File("/tmp/ParcelConsolidRecomp.shp"));
-
-		System.out.println(StatParcelStreetRatio.streetRatioParcels(test, finaux2));
+		Collec.exportSFC(finaux2, new File(tmpFolder,"ParcelConsolidRecomp.shp"));
+		System.out.println(StatParcelStreetRatio.streetRatioParcels(test, finaux2,tmpFolder));
 
 		/////////////////////////
 		//////// try the parcelDensification method
@@ -125,10 +114,8 @@ public class Test {
 				ParcelState.isArt3AllowsIsolatedParcel(parcMarked.features().next(), predicateFile));
 		SimpleFeatureCollection finaux3 = ArtiScalesParcelFields.fixParcelAttributes(salut, tmpFolder, buildingFile,
 				communityFile, polygonIntersection, zoningFile, false);
-		Vectors.exportSFC(finaux3, new File("/tmp/parcelDensification.shp"));
+		Collec.exportSFC(finaux3, new File(tmpFolder,"parcelDensification.shp"));
 		shpDSIlot.dispose();
-
 		shpDSParcel.dispose();
-
 	}
 }

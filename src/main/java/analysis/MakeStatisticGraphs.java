@@ -18,26 +18,46 @@ import org.opengis.feature.simple.SimpleFeature;
 
 public class MakeStatisticGraphs {
 
+	/**
+	 * Class to automate the creation of stat graphs
+	 */
 	public static void main(String[] args) throws IOException {
-		ShapefileDataStore sds = new ShapefileDataStore(new File("/tmp/parcelCuted-consolid.shp").toURI().toURL());
+		makeAreaGraph(new File("/tmp/parcelCuted-consolid.shp"), new File("/tmp/"));
+	}
+	
+	/**
+	 * Automate the generation of graphs about area of fresh parcel cuts
+	 * 
+	 * @param args
+	 * @throws IOException
+	 */	
+	public static void makeAreaGraph(File freshParcelCut, File folderOut) throws IOException {
+		ShapefileDataStore sds = new ShapefileDataStore(freshParcelCut.toURI().toURL());
 		SimpleFeatureCollection sfc = sds.getFeatureSource().getFeatures();
-		sortValuesAndCategorize(sfc, new File("/tmp"));
+		AreaGraph areaGraph = sortValuesAndCategorize(sfc);
+		makeGraphHisto(areaGraph, folderOut, "Distribution de la surface des parcelles subdivisées", "x", "Surface d'une parcelle (m2)",
+				"Nombre de parcelles", 10);	
 	}
 
-	public static void sortValuesAndCategorize(SimpleFeatureCollection parcelOut, File folderOut) throws IOException {
+	/**
+	 * Process to sort which parcels have been cuted, and get the bounds of the distribution
+	 * @warning Developed for French Parcels - section is always a two character 
+	 * @param parcelOut
+	 * @param folderOut
+	 * @return a Graph object  
+	 * @throws IOException
+	 */
+	public static AreaGraph sortValuesAndCategorize(SimpleFeatureCollection parcelOut) throws IOException {
 		List<Double> areaParcel = new ArrayList<Double>();
 		double aMax = 0;
 		double aMin = 100000000;
-
-		// Arrays.stream(parcelOut.toArray(new SimpleFeature[0])).forEach(feat -> {
-
 		SimpleFeatureIterator parcelIt = parcelOut.features();
 		try {
 			while (parcelIt.hasNext()) {
 				SimpleFeature feat = parcelIt.next();
-
-				double area = ((Geometry) feat.getDefaultGeometry()).getArea();
+				//if the section number is not null (parcel exists) and section lenght is superior to three letters (the parcel has been cuted as a section 
 				if (((String) feat.getAttribute("SECTION")) != null && ((String) feat.getAttribute("SECTION")).length() > 3) {
+					double area = ((Geometry) feat.getDefaultGeometry()).getArea();
 					areaParcel.add(area);
 					if (area < aMin) {
 						aMin = area;
@@ -46,21 +66,29 @@ public class MakeStatisticGraphs {
 						aMax = area;
 					}
 				}
-				// });
 			}
 		} catch (Exception problem) {
 			problem.printStackTrace();
 		} finally {
 			parcelIt.close();
 		}
-		makeGraph(areaParcel, folderOut, "Distribution de la surface des parcelles subdivisées", "x", "Surface d'une parcelle (m2)",
-				"Nombre de parcelles", (int) aMin, (int) aMax, 10);
+		return new AreaGraph(areaParcel, aMin, aMax);
 	}
 
-	public static void makeGraph(List<Double> values, File graphDepotFile, String title, String x, String xTitle, String yTitle, int xMin, int xMax,
-			int range) throws IOException {
+	/**
+	 * Generate a histogram graph
+	 * @param graph : area graph object with sorted distribution and bounds
+	 * @param graphDepotFolder : folder where every stats are stocked
+	 * @param title : title of the graph
+	 * @param x : Name of the distribution
+	 * @param xTitle: title of the x dimention
+	 * @param yTitle: title of the y dimention
+	 * @param range : number of categories
+	 * @throws IOException
+	 */
+	public static void makeGraphHisto(AreaGraph graph, File graphDepotFolder, String title, String x, String xTitle, String yTitle, int range) throws IOException {
 
-		Histogram histo = new Histogram(values, range, xMin, xMax);
+		Histogram histo = new Histogram(graph.getSortedDistribution(), range, graph.getBoundMin(), graph.getBoundMax());
 		CategoryChart chart = new CategoryChartBuilder().width(600).height(600).title(title).xAxisTitle(xTitle).yAxisTitle(yTitle).build();
 		chart.addSeries(x, histo.getxAxisData(), histo.getyAxisData());
 
@@ -72,7 +100,7 @@ public class MakeStatisticGraphs {
 		chart.getStyler().setXAxisDecimalPattern("####");
 		chart.getStyler().setXAxisLogarithmicDecadeOnly(true);
 		chart.getStyler().setYAxisLogarithmicDecadeOnly(true);
-		BitmapEncoder.saveBitmap(chart, graphDepotFile + "/" + xTitle + yTitle, BitmapFormat.PNG);
+		BitmapEncoder.saveBitmap(chart, graphDepotFolder + "/" + xTitle + yTitle, BitmapFormat.PNG);
 
 	}
 }

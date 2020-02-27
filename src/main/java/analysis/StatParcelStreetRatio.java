@@ -18,35 +18,51 @@ import org.opengis.filter.FilterFactory2;
 import org.opengis.referencing.FactoryException;
 import org.opengis.referencing.NoSuchAuthorityCodeException;
 
-import fr.ign.cogit.GTFunctions.Attribute;
-import fr.ign.cogit.GTFunctions.Csv;
-import fr.ign.cogit.GTFunctions.Vectors;
+import fr.ign.cogit.geoToolsFunctions.Attribute;
+import fr.ign.cogit.geoToolsFunctions.Csv;
+import fr.ign.cogit.geoToolsFunctions.vectors.Collec;
+import fr.ign.cogit.geoToolsFunctions.vectors.Geom;
 import fr.ign.cogit.parcelFunction.ParcelSchema;
 
 public class StatParcelStreetRatio {
-	public static void main(String[] args) throws Exception {
 
+	static String markFieldName = "SPLIT";
+
+	public static void main(String[] args) throws Exception {
 		ShapefileDataStore sds = new ShapefileDataStore(new File("/tmp/parcelMarked.shp").toURI().toURL());
 		SimpleFeatureCollection sfc = sds.getFeatureSource().getFeatures();
 		ShapefileDataStore sds2 = new ShapefileDataStore(new File("/tmp/parcelCuted-consolid.shp").toURI().toURL());
 		SimpleFeatureCollection sfc2 = sds2.getFeatureSource().getFeatures();
-		streetRatioParcels(sfc, sfc2);
+		streetRatioParcels(sfc, sfc2, new File("/tmp/"));
+		sds.dispose();
+		sds2.dispose();
 	}
 
-	public static double streetRatioParcels(SimpleFeatureCollection initialMarkedParcel, SimpleFeatureCollection cutParcel)
-			throws NoSuchAuthorityCodeException, IOException, FactoryException {
-		return streetRatioParcels(initialMarkedParcel, cutParcel, new File("/tmp/"), "SPLIT");
-	}
-
-	public static double streetRatioParcels(SimpleFeatureCollection initialMarkedParcel, SimpleFeatureCollection cutParcel, File fileOutStat,
-			String field) throws IOException, NoSuchAuthorityCodeException, FactoryException {
+	/**
+	 * Calculate the ratio between the parcel area and the total area of a zone. It express the quantity of not parcel land, which could be either streets or public spaces
+	 * 
+	 * @param initialMarkedParcel:
+	 *            Collection of the initial set of parcels which are marked if they had to simulated. Marks could be made with the methods contained in the class
+	 *            {@link fr.ign.cogit.parcelFunction}. The field attribute is named <i>SPLIT</i> by default. It is possible to change it with the {@link #setMarkFieldName(String)
+	 *            setMarkFieldName()} function.
+	 * @param cutParcel:
+	 *            A collection of parcels after a Parcel Manager simulation
+	 * @param fileOutStat
+	 *            : folder to store the results
+	 * @return the street ratio
+	 * @throws NoSuchAuthorityCodeException
+	 * @throws IOException
+	 * @throws FactoryException
+	 */
+	public static double streetRatioParcels(SimpleFeatureCollection initialMarkedParcel, SimpleFeatureCollection cutParcel, File fileOutStat)
+			throws IOException, NoSuchAuthorityCodeException, FactoryException {
 		FilterFactory2 ff = CommonFactoryFinder.getFilterFactory2(GeoTools.getDefaultHints());
-		Filter filter = ff.like(ff.property(field), "1");
+		Filter filter = ff.like(ff.property(markFieldName), "1");
 		SimpleFeatureCollection selectedParcels = initialMarkedParcel.subCollection(filter);
 
 		DefaultFeatureCollection zone = new DefaultFeatureCollection();
 
-		Geometry multiGeom = Vectors.unionSFC(selectedParcels);
+		Geometry multiGeom = Geom.unionSFC(selectedParcels);
 		SimpleFeatureBuilder sfBuilder = ParcelSchema.getSFBFrenchZoning();
 		for (int i = 0; i < multiGeom.getNumGeometries(); i++) {
 			Geometry zoneGeom = multiGeom.getGeometryN(i);
@@ -56,10 +72,10 @@ public class StatParcelStreetRatio {
 			SimpleFeatureIterator it = cutParcel.features();
 			try {
 				while (it.hasNext()) {
-					SimpleFeature p = it.next();
-					if (zoneGeom.contains(((Geometry) p.getDefaultGeometry()))) {
-						sfBuilder.set("INSEE", Attribute.makeINSEECode(p));
-						sfBuilder.set("LIBELLE", p.getAttribute("SECTION"));
+					SimpleFeature feat = it.next();
+					if (zoneGeom.contains(((Geometry) feat.getDefaultGeometry()))) {
+						sfBuilder.set("INSEE", Attribute.makeINSEECode(feat));
+						sfBuilder.set("LIBELLE", feat.getAttribute("SECTION"));
 						break;
 					}
 				}
@@ -70,7 +86,7 @@ public class StatParcelStreetRatio {
 			}
 			zone.add(sfBuilder.buildFeature(null));
 		}
-		Vectors.exportSFC(zone, new File("/tmp/zones.shp"));
+		Collec.exportSFC(zone, fileOutStat);
 
 		return streetRatioParcelZone(zone, cutParcel, fileOutStat);
 	}
@@ -79,7 +95,7 @@ public class StatParcelStreetRatio {
 		System.out.println("++++++++++Road Ratios++++++++++");
 		Hashtable<String, String[]> stat = new Hashtable<String, String[]>();
 
-		Double ratio = areaParcelNew(cutParcel) / area(zone);
+		Double ratio = areaParcelNewlySimulated(cutParcel) / Collec.area(zone);
 		SimpleFeatureIterator zones = zone.features();
 		String[] firstLine = { "CODE", "INSEE", "LIBELLE", "InitialArea", "ParcelsArea", "Ratio" };
 		int count = 0;
@@ -106,8 +122,8 @@ public class StatParcelStreetRatio {
 					parcelIt.close();
 				}
 				zo.add(z);
-				double iniA = area(zo);
-				double pNew = areaParcelNew(df);
+				double iniA = Collec.area(zo);
+				double pNew = areaParcelNewlySimulated(df);
 				tab[2] = Double.toString(iniA);
 				tab[3] = Double.toString(pNew);
 				tab[4] = Double.toString(pNew / iniA);
@@ -126,7 +142,7 @@ public class StatParcelStreetRatio {
 		return ratio;
 	}
 
-	private static double areaParcelNew(SimpleFeatureCollection markedParcels) {
+	private static double areaParcelNewlySimulated(SimpleFeatureCollection markedParcels) {
 		SimpleFeatureIterator parcels = markedParcels.features();
 		double totArea = 0.0;
 		try {
@@ -144,18 +160,11 @@ public class StatParcelStreetRatio {
 		return totArea;
 	}
 
-	private static double area(SimpleFeatureCollection markedParcels) throws IOException {
-		SimpleFeatureIterator parcels = markedParcels.features();
-		double totArea = 0.0;
-		try {
-			while (parcels.hasNext()) {
-				totArea = totArea + ((Geometry) parcels.next().getDefaultGeometry()).getArea();
-			}
-		} catch (Exception problem) {
-			problem.printStackTrace();
-		} finally {
-			parcels.close();
-		}
-		return totArea;
+	public static String getMarkFieldName() {
+		return markFieldName;
+	}
+
+	public static void setMarkFieldName(String markFieldName) {
+		StatParcelStreetRatio.markFieldName = markFieldName;
 	}
 }
