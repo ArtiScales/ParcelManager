@@ -200,7 +200,10 @@ public class ParcelTotRecomp {
 			System.out.println("not implemented yet");
 			break;
 		}
-		SimpleFeatureCollection realResult = ParcelCollection.mergeTooSmallParcels(result.collection(), (int) minimalArea);
+		Collec.exportSFC(splitedZoneParcels, new File("/tmp/befMerge"));
+		//merge the too small parcels TODO one is not merged -- -- -- 
+		splitedZoneParcels = ParcelCollection.mergeTooSmallParcels(splitedZoneParcels, (int) minimalArea);
+		Collec.exportSFC(splitedZoneParcels, new File("/tmp/afMerge"));
 
 		int i = 0;
 		DefaultFeatureCollection result = new DefaultFeatureCollection();

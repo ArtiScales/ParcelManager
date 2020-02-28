@@ -49,22 +49,21 @@ public class StatParcelStreetRatio {
 	 *            setMarkFieldName()} function.
 	 * @param cutParcel:
 	 *            A collection of parcels after a Parcel Manager simulation
-	 * @param fileOutStat
+	 * @param folderOutStat
 	 *            : folder to store the results
 	 * @return the street ratio
 	 * @throws NoSuchAuthorityCodeException
 	 * @throws IOException
 	 * @throws FactoryException
 	 */
-	public static double streetRatioParcels(SimpleFeatureCollection initialMarkedParcel, SimpleFeatureCollection cutParcel, File fileOutStat)
+	public static double streetRatioParcels(SimpleFeatureCollection initialMarkedParcel, SimpleFeatureCollection cutParcel, File folderOutStat)
 			throws IOException, NoSuchAuthorityCodeException, FactoryException {
 		FilterFactory2 ff = CommonFactoryFinder.getFilterFactory2(GeoTools.getDefaultHints());
 		Filter filter = ff.like(ff.property(markFieldName), "1");
 		SimpleFeatureCollection selectedParcels = initialMarkedParcel.subCollection(filter);
-
 		DefaultFeatureCollection zone = new DefaultFeatureCollection();
-
 		Geometry multiGeom = Geom.unionSFC(selectedParcels);
+		
 		SimpleFeatureBuilder sfBuilder = ParcelSchema.getSFBFrenchZoning();
 		for (int i = 0; i < multiGeom.getNumGeometries(); i++) {
 			Geometry zoneGeom = multiGeom.getGeometryN(i);
@@ -88,12 +87,10 @@ public class StatParcelStreetRatio {
 			}
 			zone.add(sfBuilder.buildFeature(null));
 		}
-		Collec.exportSFC(zone, fileOutStat);
-
-		return streetRatioParcelZone(zone, cutParcel, fileOutStat);
+		return streetRatioParcelZone(zone, cutParcel, folderOutStat);
 	}
 
-	public static double streetRatioParcelZone(SimpleFeatureCollection zone, SimpleFeatureCollection cutParcel, File fileOutStat) throws IOException {
+	public static double streetRatioParcelZone(SimpleFeatureCollection zone, SimpleFeatureCollection cutParcel, File folderOutStat) throws IOException {
 		System.out.println("++++++++++Road Ratios++++++++++");
 		Hashtable<String, String[]> stat = new Hashtable<String, String[]>();
 
@@ -139,7 +136,7 @@ public class StatParcelStreetRatio {
 			zones.close();
 		}
 
-		Csv.generateCsvFile(stat, fileOutStat, "streetRatioParcelZone", false, firstLine);
+		Csv.generateCsvFile(stat, folderOutStat, "streetRatioParcelZone", false, firstLine);
 		System.out.println("Total ratio: " + ratio);
 		return ratio;
 	}
