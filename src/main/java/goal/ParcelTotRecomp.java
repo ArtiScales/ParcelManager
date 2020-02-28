@@ -25,6 +25,7 @@ import decomposition.ParcelSplit;
 import fr.ign.cogit.FeaturePolygonizer;
 import fr.ign.cogit.geoToolsFunctions.vectors.Collec;
 import fr.ign.cogit.geoToolsFunctions.vectors.Geom;
+import fr.ign.cogit.parcelFunction.ParcelCollection;
 import fr.ign.cogit.parcelFunction.ParcelSchema;
 
 public class ParcelTotRecomp {
@@ -199,7 +200,8 @@ public class ParcelTotRecomp {
 			System.out.println("not implemented yet");
 			break;
 		}
-		
+		SimpleFeatureCollection realResult = ParcelCollection.mergeTooSmallParcels(result.collection(), (int) minimalArea);
+
 		int i = 0;
 		DefaultFeatureCollection result = new DefaultFeatureCollection();
 		SimpleFeatureIterator itZoneParcel = splitedZoneParcels.features();
@@ -209,7 +211,7 @@ public class ParcelTotRecomp {
 			while (itZoneParcel.hasNext()) {
 				SimpleFeature parcel = itZoneParcel.next();
 				Geometry parcelGeom = (Geometry) parcel.getDefaultGeometry();
-				if (parcelGeom.getArea() > minimalArea) {
+//				if (parcelGeom.getArea() > minimalArea) {
 					finalParcelBuilder.set(geomName, parcel.getDefaultGeometry());
 					// get the section name
 					String section = "";
@@ -229,7 +231,7 @@ public class ParcelTotRecomp {
 					}
 					finalParcelBuilder.set("SECTION", section);
 					result.add(finalParcelBuilder.buildFeature(null));
-				}
+//				}
 			}
 		} catch (Exception problem) {
 			problem.printStackTrace();
@@ -250,7 +252,6 @@ public class ParcelTotRecomp {
 		} finally {
 			itSavedParcels.close();
 		}
-
 		return result;
 	}
 

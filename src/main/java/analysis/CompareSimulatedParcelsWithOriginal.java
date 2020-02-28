@@ -20,7 +20,7 @@ public class CompareSimulatedParcelsWithOriginal {
 		Instant start = Instant.now();
 		
 		//definition of the shapefiles representing two set of parcel
-		File rootFolder = new File("/home/ubuntu/Documents/PMtest/");
+		File rootFolder = new File("/media/mcolomb/2a3b1227-9bf5-461e-bcae-035a8845f72f/Documents/boulot/theseIGN/PM/PMtest/");
 		File tmpFile = new File("/tmp/");
 		File file1 = new File(rootFolder, "brie98.shp");
 		File file2 = new File(rootFolder, "brie12.shp");
@@ -40,5 +40,7 @@ public class CompareSimulatedParcelsWithOriginal {
 		Instant end = Instant.now();
 		System.out.println(Duration.between(start, end)); // prints PT1M3.553S
 //		 markDiffParcel(new File("/tmp/a.shp"),new File("/tmp/b.shp"), new File("/tmp/"));
+		
+		//TODO calculate macro indocators (nombre de parcelle, distribution comparée
 	}
 }

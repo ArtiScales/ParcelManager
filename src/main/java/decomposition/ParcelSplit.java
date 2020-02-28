@@ -20,10 +20,12 @@ import fr.ign.cogit.parcelFunction.ParcelSchema;
 
 public class ParcelSplit {
 
+	
+	static String splitFiledName = "SPLIT";
   /**
    * Splitting parcel processus. It get the usual parcel schema and add the "split" field in order to determine in the parcel will be splited or not. All the parcels are then
    * split.
-   * 
+   * @deprecated
    * @param parcelIn
    *          : collection of parcels
    * @param tmpFolder
@@ -75,7 +77,7 @@ public class ParcelSplit {
   /**
    * Splitting parcel processus. It get the usual parcel schema and add the "split" field in order to determine in the parcel will be splited or not. All the parcels bigger than
    * the maximal area are split.
-   * 
+   * @deprecated
    * @param parcelIn
    *          : collection of parcels
    * @param tmpFolder
@@ -214,7 +216,7 @@ public class ParcelSplit {
 	  public static SimpleFeatureCollection splitParcels(SimpleFeatureCollection toSplit, double maximalArea, double maximalWidth, double streetEpsilon, double noise,
 		      List<LineString> extBlock, double smallStreetWidth, int largeStreetLevel, double largeStreetWidth, boolean forceStreetAccess, int decompositionLevelWithoutStreet, File tmpFile) throws Exception {
 	  
-    String attNameToTransform = "SPLIT";
+    String attNameToTransform = splitFiledName;
     // Configure memory datastore
     final MemoryDataStore memory = new MemoryDataStore();
     memory.createSchema(toSplit.getSchema());
@@ -233,17 +235,15 @@ public class ParcelSplit {
 //          List<LineString> list = new ArrayList<>(extBlock.getNumGeometries());
 //          for (int i = 0; i < extBlock.getNumGeometries(); i++) list.add((LineString) extBlock.getGeometryN(i));
           DescriptiveStatistics dS = new DescriptiveStatistics();
-					OBBBlockDecomposition
-							.decompose(polygon, extBlock, maximalArea, maximalWidth, noise, streetEpsilon, smallStreetWidth, largeStreetLevel,
+		  OBBBlockDecomposition.decompose(polygon, extBlock, maximalArea, maximalWidth, noise, streetEpsilon, smallStreetWidth, largeStreetLevel,
 									largeStreetWidth, forceStreetAccess, 0, decompositionLevelWithoutStreet)
 							.stream().forEach(c -> dS.addValue(c.getValue()));
-					int decompositionLevelWithRoad = (int) dS.getPercentile(50) - decompositionLevelWithoutStreet;
-					int decompositionLevelWithLargeRoad = (int) dS.getPercentile(50) - largeStreetLevel ;
-					
-					OBBBlockDecomposition
-							.decompose(polygon, extBlock, maximalArea, maximalWidth, noise, streetEpsilon, smallStreetWidth, decompositionLevelWithLargeRoad ,
+		  int decompositionLevelWithRoad = (int) dS.getPercentile(50) - decompositionLevelWithoutStreet;
+		  int decompositionLevelWithLargeRoad = (int) dS.getPercentile(50) - largeStreetLevel ;
+		  OBBBlockDecomposition
+		    .decompose(polygon, extBlock, maximalArea, maximalWidth, noise, streetEpsilon, smallStreetWidth, decompositionLevelWithLargeRoad ,
 									largeStreetWidth, forceStreetAccess, decompositionLevelWithRoad, decompositionLevelWithoutStreet)
-          .childrenStream().forEach(p-> {
+		  	.childrenStream().forEach(p-> {
             SimpleFeature newFeature = builder.buildFeature(null);
             newFeature.setDefaultGeometry(p.getKey());
             memory.addFeature(newFeature);
@@ -253,4 +253,12 @@ public class ParcelSplit {
     }, null);
     return memory.getFeatureSource(toSplit.getSchema().getName()).getFeatures();
   }
+
+	public static String getSplitFiledName() {
+		return splitFiledName;
+	}
+
+	public static void setSplitFiledName(String splitFiledName) {
+		ParcelSplit.splitFiledName = splitFiledName;
+	}
 }

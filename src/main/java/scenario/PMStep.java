@@ -14,7 +14,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import fields.FrenchParcelFields;
 import fr.ign.cogit.geoToolsFunctions.vectors.Collec;
-import fr.ign.cogit.parameter.ProfileBuilding;
+import fr.ign.cogit.parameter.ProfileUrbanFabric;
 import fr.ign.cogit.parcelFunction.MarkParcelAttributeFromPosition;
 import fr.ign.cogit.parcelFunction.ParcelGetter;
 import fr.ign.cogit.parcelFunction.ParcelState;
@@ -23,13 +23,13 @@ import goal.ParcelDensification;
 import goal.ParcelTotRecomp;
 
 public class PMStep {
-	public PMStep(String goal, String parcelProcess, String zone, String communityNumber, String communityType, String buildingType) {
+	public PMStep(String goal, String parcelProcess, String zone, String communityNumber, String communityType, String urbanFabricType) {
 		this.goal = goal;
 		this.parcelProcess = parcelProcess;
 		this.zone = zone;
 		this.communityNumber = communityNumber;
 		this.communityType = communityType;
-		this.buildingType = buildingType;
+		this.urbanFabricType = urbanFabricType;
 	}
 
 	public static void setFiles(File parcelFile, File ilotFile, File zoningFile, File tmpFolder, File buildingFile, File predicateFile,
@@ -54,7 +54,7 @@ public class PMStep {
 	String zone;
 	String communityNumber;
 	String communityType;
-	String buildingType;
+	String urbanFabricType;
 
 	static File PARCELFILE;
 	static File ILOTFILE;
@@ -74,7 +74,7 @@ public class PMStep {
 	public File execute() throws Exception {
 		
 		//get the wanted building profile
-		ProfileBuilding.setProfileFolder(PROFILEFOLDER.toString());
+		ProfileUrbanFabric.setProfileFolder(PROFILEFOLDER.toString());
 		ShapefileDataStore shpDSParcel = new ShapefileDataStore(PARCELFILE.toURI().toURL());
 		SimpleFeatureCollection parcel = new DefaultFeatureCollection();
 		
@@ -92,8 +92,8 @@ public class PMStep {
 
 		ObjectMapper mapper = new ObjectMapper();
 		mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-		InputStream fileInputStream = new FileInputStream(ProfileBuilding.getProfileFolder() + "/" + buildingType + ".json");
-		ProfileBuilding profile = mapper.readValue(fileInputStream, ProfileBuilding.class);
+		InputStream fileInputStream = new FileInputStream(ProfileUrbanFabric.getProfileFolder() + "/" + urbanFabricType + ".json");
+		ProfileUrbanFabric profile = mapper.readValue(fileInputStream, ProfileUrbanFabric.class);
 		SimpleFeatureCollection parcelCut = new DefaultFeatureCollection();
 		SimpleFeatureCollection parcelMarked = new DefaultFeatureCollection();
 		
@@ -151,6 +151,6 @@ public class PMStep {
 	@Override
 	public String toString() {
 		return "PMStep [goal=" + goal + ", parcelProcess=" + parcelProcess + ", zone=" + zone + ", communityNumber=" + communityNumber
-				+ ", communityType=" + communityType + ", buildingType=" + buildingType + "]";
+				+ ", communityType=" + communityType + ", urbanFabricType=" + urbanFabricType + "]";
 	}
 }

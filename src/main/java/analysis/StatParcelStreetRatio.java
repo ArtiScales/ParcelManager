@@ -38,6 +38,8 @@ public class StatParcelStreetRatio {
 		sds2.dispose();
 	}
 
+	//TODO calculate the number (precentage) of parcels that doesn't
+	
 	/**
 	 * Calculate the ratio between the parcel area and the total area of a zone. It express the quantity of not parcel land, which could be either streets or public spaces
 	 * 
