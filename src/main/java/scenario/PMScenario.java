@@ -24,13 +24,15 @@ public class PMScenario {
 	private List<PMStep> stepList = new ArrayList<PMStep>();
 
 	boolean fileSet = false;
+	
+	static boolean SAVEINTERMEDIATERESULT = false; 
 
-	public static void main(String[] args) throws Exception {
-		PMScenario pm = new PMScenario(
-				new File("/home/thema/Documents/MC/workspace/ParcelManager/src/main/resources/testData/jsonEx.json"),
-				new File("/tmp/"));
-		pm.executeStep();
-	}
+//	public static void main(String[] args) throws Exception {
+//		PMScenario pm = new PMScenario(
+//				new File("/home/thema/Documents/MC/workspace/ParcelManager/src/main/resources/testData/jsonEx.json"),
+//				new File("/tmp/"));
+//		pm.executeStep();
+//	}
 
 //	public PMScenario(File jSON) {
 //		return new PMScenario(jSON, new File("/tmp"));
@@ -38,11 +40,13 @@ public class PMScenario {
 
 	public PMScenario(File jSON, File tmpfolder) throws Exception {
 		tmpFolder = tmpfolder;
-
+		
+		PMStep.setSaveIntermediateResult(SAVEINTERMEDIATERESULT);
+System.out.println("lalalalalala "+SAVEINTERMEDIATERESULT);
 		JsonFactory factory = new JsonFactory();
 		JsonParser parser = factory.createParser(jSON);
 		JsonToken token = parser.nextToken();
-
+		
 		while (!parser.isClosed()) {
 			token = parser.nextToken();
 //			shortcut if every data is in the same folder
@@ -215,6 +219,14 @@ public class PMScenario {
 				+ ", parcelFile=" + parcelFile + ", ilotFile=" + ilotFile + ", tmpFolder=" + tmpFolder + ", outFolder="
 				+ outFolder + ", stepList=" + stepList + ", fileSet=" + fileSet + ", profileFolder=" + profileFolder
 				+ "]";
+	}
+
+	public static boolean isSaveIntermediateResult() {
+		return SAVEINTERMEDIATERESULT;
+	}
+
+	public static void setSaveIntermediateResult(boolean saveIntermediateResult) {
+		SAVEINTERMEDIATERESULT = saveIntermediateResult;
 	}
 
 }

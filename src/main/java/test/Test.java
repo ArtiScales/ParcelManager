@@ -35,7 +35,7 @@ public class Test {
 
 		// File rootFolder = new
 		// File(Test.class.getClassLoader().getResource("testData").getFile());
-		File rootFolder = new File("/home/ubuntu/workspace/ParcelManager/src/main/resources/testData/");
+		File rootFolder = new File("/home/mcolomb/workspace/ParcelManager/src/main/resources/testData/");
 
 		File zoningFile = new File(rootFolder, "zoning.shp");
 		File buildingFile = new File(rootFolder, "building.shp");
@@ -79,43 +79,43 @@ public class Test {
 
 		shpDSZone.dispose();
 		
-		/////////////////////////
-		//////// try the consolidRecomp method
-		/////////////////////////
-		System.out.println("/////////////////////////");
-		System.out.println("consolidRecomp");
-		System.out.println("/////////////////////////");
-//		ParcelConsolidRecomp.DEBUG = true;
-		SimpleFeatureCollection testmp = MarkParcelAttributeFromPosition.markParcelIntersectPolygonIntersection(finaux, polygonIntersection);
-		SimpleFeatureCollection test = MarkParcelAttributeFromPosition.markParcelIntersectZoningType(testmp, "NC", zoningFile);
-		SimpleFeatureCollection cuted = ParcelConsolidRecomp.parcelConsolidRecomp(test, tmpFolder, maximalArea,
-				minimalArea, maximalWidth, lenRoad, decompositionLevelWithoutRoad);
-		SimpleFeatureCollection finaux2 = ArtiScalesParcelFields.fixParcelAttributes(cuted, tmpFolder, buildingFile,
-				communityFile, polygonIntersection, zoningFile, false);
-		Collec.exportSFC(finaux2, new File(tmpFolder,"ParcelConsolidRecomp.shp"));
-		System.out.println(StatParcelStreetRatio.streetRatioParcels(test, finaux2,tmpFolder));
-
-		/////////////////////////
-		//////// try the parcelDensification method
-		/////////////////////////
-		System.out.println("/////////////////////////");
-		System.out.println("parcelDensification");
-		System.out.println("/////////////////////////");
-		ShapefileDataStore shpDSIlot = new ShapefileDataStore(ilotFile.toURI().toURL());
-		SimpleFeatureCollection ilot = shpDSIlot.getFeatureSource().getFeatures();
-
-		SimpleFeatureCollection parcMarked = MarkParcelAttributeFromPosition.markParcelIntersectPolygonIntersection(finaux2, polygonIntersection);
-		SimpleFeatureCollection toDensify = MarkParcelAttributeFromPosition.markParcelIntersectZoningType(parcMarked, "U",
-				zoningFile);
-		SimpleFeatureCollection salut = ParcelDensification.parcelDensification(toDensify, ilot, tmpFolder,
-				buildingFile, maximalArea, minimalArea, maximalWidth, lenRoad,
-				// ParcelState.isArt3AllowsIsolatedParcel(ParcelAttribute.getCityCodeFromParcels(toDensify).get(0),
-				// predicateFile));
-				ParcelState.isArt3AllowsIsolatedParcel(parcMarked.features().next(), predicateFile));
-		SimpleFeatureCollection finaux3 = ArtiScalesParcelFields.fixParcelAttributes(salut, tmpFolder, buildingFile,
-				communityFile, polygonIntersection, zoningFile, false);
-		Collec.exportSFC(finaux3, new File(tmpFolder,"parcelDensification.shp"));
-		shpDSIlot.dispose();
+//		/////////////////////////
+//		//////// try the consolidRecomp method
+//		/////////////////////////
+//		System.out.println("/////////////////////////");
+//		System.out.println("consolidRecomp");
+//		System.out.println("/////////////////////////");
+////		ParcelConsolidRecomp.DEBUG = true;
+//		SimpleFeatureCollection testmp = MarkParcelAttributeFromPosition.markParcelIntersectPolygonIntersection(finaux, polygonIntersection);
+//		SimpleFeatureCollection test = MarkParcelAttributeFromPosition.markParcelIntersectZoningType(testmp, "NC", zoningFile);
+//		SimpleFeatureCollection cuted = ParcelConsolidRecomp.parcelConsolidRecomp(test, tmpFolder, maximalArea,
+//				minimalArea, maximalWidth, lenRoad, decompositionLevelWithoutRoad);
+//		SimpleFeatureCollection finaux2 = ArtiScalesParcelFields.fixParcelAttributes(cuted, tmpFolder, buildingFile,
+//				communityFile, polygonIntersection, zoningFile, false);
+//		Collec.exportSFC(finaux2, new File(tmpFolder,"ParcelConsolidRecomp.shp"));
+//		System.out.println(StatParcelStreetRatio.streetRatioParcels(test, finaux2,tmpFolder));
+//
+//		/////////////////////////
+//		//////// try the parcelDensification method
+//		/////////////////////////
+//		System.out.println("/////////////////////////");
+//		System.out.println("parcelDensification");
+//		System.out.println("/////////////////////////");
+//		ShapefileDataStore shpDSIlot = new ShapefileDataStore(ilotFile.toURI().toURL());
+//		SimpleFeatureCollection ilot = shpDSIlot.getFeatureSource().getFeatures();
+//
+//		SimpleFeatureCollection parcMarked = MarkParcelAttributeFromPosition.markParcelIntersectPolygonIntersection(finaux2, polygonIntersection);
+//		SimpleFeatureCollection toDensify = MarkParcelAttributeFromPosition.markParcelIntersectZoningType(parcMarked, "U",
+//				zoningFile);
+//		SimpleFeatureCollection salut = ParcelDensification.parcelDensification(toDensify, ilot, tmpFolder,
+//				buildingFile, maximalArea, minimalArea, maximalWidth, lenRoad,
+//				// ParcelState.isArt3AllowsIsolatedParcel(ParcelAttribute.getCityCodeFromParcels(toDensify).get(0),
+//				// predicateFile));
+//				ParcelState.isArt3AllowsIsolatedParcel(parcMarked.features().next(), predicateFile));
+//		SimpleFeatureCollection finaux3 = ArtiScalesParcelFields.fixParcelAttributes(salut, tmpFolder, buildingFile,
+//				communityFile, polygonIntersection, zoningFile, false);
+//		Collec.exportSFC(finaux3, new File(tmpFolder,"parcelDensification.shp"));
+//		shpDSIlot.dispose();
 		shpDSParcel.dispose();
 	}
 }

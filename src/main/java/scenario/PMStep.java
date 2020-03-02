@@ -38,6 +38,7 @@ public class PMStep {
 		ILOTFILE = ilotFile;
 		ZONINGFILE = zoningFile;
 		TMPFOLDER = tmpFolder;
+		tmpFolder.mkdirs();
 		BUILDINGFILE = buildingFile;
 		POLYGONINTERSECTION = polygonIntersection;
 		PREDICATEFILE = predicateFile;
@@ -66,7 +67,8 @@ public class PMStep {
 	static File POLYGONINTERSECTION;
 	static File OUTFOLDER;
 	static File PROFILEFOLDER;
-	static boolean GENERATEATTRIBUTES =true ;
+	static boolean GENERATEATTRIBUTES = true;
+	static boolean SAVEINTERMEDIATERESULT = false; 
 
 	public PMStep() {
 	}
@@ -115,6 +117,7 @@ public class PMStep {
 		switch (goal) {
 		case "totalZone":
 			ParcelTotRecomp.PROCESS = parcelProcess;
+			ParcelTotRecomp.SAVEINTERMEDIATERESULT = SAVEINTERMEDIATERESULT;
 			ShapefileDataStore shpDSZone = new ShapefileDataStore(ZONINGFILE.toURI().toURL());
 			SimpleFeatureCollection featuresZones = shpDSZone.getFeatureSource().getFeatures();
 			SimpleFeatureCollection zoneCollection = ParcelTotRecomp.createZoneToCut(zone, featuresZones, parcel);
@@ -123,11 +126,13 @@ public class PMStep {
 			shpDSZone.dispose();
 			break;
 		case "dens":
+			ParcelDensification.SAVEINTERMEDIATERESULT = SAVEINTERMEDIATERESULT;
 			parcelCut = ParcelDensification.parcelDensification(parcelMarked, ilot, TMPFOLDER, BUILDINGFILE, profile.getMaximalArea(),
 					profile.getMinimalArea(), profile.getMaximalWidth(), profile.getLenDriveway(),
 					ParcelState.isArt3AllowsIsolatedParcel(parcel.features().next(), PREDICATEFILE));
 			break;
 		case "consolid":
+			ParcelConsolidRecomp.SAVEINTERMEDIATERESULT = SAVEINTERMEDIATERESULT;
 			ParcelConsolidRecomp.PROCESS = parcelProcess;
 			parcelCut = ParcelConsolidRecomp.parcelConsolidRecomp(parcelMarked, TMPFOLDER, profile.getMaximalArea(), profile.getMinimalArea(),
 					profile.getMaximalWidth(), profile.getStreetWidth(), profile.getLargeStreetLevel(), profile.getLargeStreetWidth(), profile.getDecompositionLevelWithoutStreet());
@@ -137,7 +142,7 @@ public class PMStep {
 		if (GENERATEATTRIBUTES) {
 			parcelCut = FrenchParcelFields.fixParcelAttributes(parcelCut, TMPFOLDER, COMMUNITYFILE);
 		}
-		Collec.exportSFC(parcelCut, output);
+		Collec.exportSFC(parcelCut, output, false);
 		shpDSIlot.dispose();
 		shpDSParcel.dispose();
 		return output;
@@ -152,5 +157,13 @@ public class PMStep {
 	public String toString() {
 		return "PMStep [goal=" + goal + ", parcelProcess=" + parcelProcess + ", zone=" + zone + ", communityNumber=" + communityNumber
 				+ ", communityType=" + communityType + ", urbanFabricType=" + urbanFabricType + "]";
+	}
+
+	public static boolean isSaveIntermediateResult() {
+		return SAVEINTERMEDIATERESULT;
+	}
+
+	public static void setSaveIntermediateResult(boolean sAVEINTERMEDIATERESULT) {
+		SAVEINTERMEDIATERESULT = sAVEINTERMEDIATERESULT;
 	}
 }

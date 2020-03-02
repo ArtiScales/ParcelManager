@@ -19,6 +19,7 @@ import fr.ign.cogit.parcelFunction.ParcelSchema;
 public class ParcelConsolidRecomp {
 	public static boolean DEBUG = false;
 	public static String PROCESS = "OBB";
+	public static boolean SAVEINTERMEDIATERESULT = false;
 
 	/**
 	 * Method that merges the contiguous marked parcels into zones and then split those zones with a given parcel division algorithm (by default, the Oriented Bounding Box)
@@ -73,8 +74,8 @@ public class ParcelConsolidRecomp {
 	public static SimpleFeatureCollection parcelConsolidRecomp(SimpleFeatureCollection parcels, File tmpFolder, double maximalArea,
 			double minimalArea, double maximalWidth, double smallStreetWidth, int largeStreetLevel, double largeStreetWidth, int decompositionLevelWithoutStreet) throws Exception {
 
-		DefaultFeatureCollection parcelResult = new DefaultFeatureCollection();
-		parcelResult.addAll(parcels);
+		DefaultFeatureCollection parcelSaved = new DefaultFeatureCollection();
+		parcelSaved.addAll(parcels);
 		DefaultFeatureCollection parcelToMerge = new DefaultFeatureCollection();
 
 		if (DEBUG) {
@@ -89,7 +90,7 @@ public class ParcelConsolidRecomp {
 		Arrays.stream(parcels.toArray(new SimpleFeature[0])).forEach(parcel -> {
 			if (parcel.getAttribute("SPLIT").equals(1)) {
 				parcelToMerge.add(parcel);
-				parcelResult.remove(parcel);
+				parcelSaved.remove(parcel);
 			}
 		});
 
@@ -99,7 +100,7 @@ public class ParcelConsolidRecomp {
 		}
 
 		////////////////
-		// second step : merge of the parcel that touches themselves by lil island
+		// second step : merge of the parcel that touches themselves by islet
 		////////////////
 
 		DefaultFeatureCollection mergedParcels = new DefaultFeatureCollection();
@@ -192,7 +193,12 @@ public class ParcelConsolidRecomp {
 			SimpleFeatureBuilder SFBParcel = ParcelSchema.setSFBFrenchParcelWithFeat(feat, schema);
 			result.add(SFBParcel.buildFeature(null));
 		});
-		Arrays.stream(parcelResult.toArray(new SimpleFeature[0])).forEach(feat -> {
+		
+		if(SAVEINTERMEDIATERESULT) {
+			Collec.exportSFC(result, new File(tmpFolder, "parcelConsolidationOnly.shp"), false);
+		}
+		
+		Arrays.stream(parcelSaved.toArray(new SimpleFeature[0])).forEach(feat -> {
 			SimpleFeatureBuilder SFBParcel = ParcelSchema.setSFBFrenchParcelWithFeat(feat, schema);
 			result.add(SFBParcel.buildFeature(null));
 		});

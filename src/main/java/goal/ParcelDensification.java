@@ -18,9 +18,11 @@ import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.filter.FilterFactory2;
 
 import decomposition.ParcelSplitFlag;
+import fr.ign.cogit.geoToolsFunctions.vectors.Collec;
 import fr.ign.cogit.parcelFunction.ParcelSchema;
 
 public class ParcelDensification {
+	public static boolean SAVEINTERMEDIATERESULT = false;
 
 	/**
 	 * Apply the densification process
@@ -77,6 +79,7 @@ public class ParcelDensification {
 		// MultiLineString iMultiCurve = new
 		// GeometryFactory().createMultiLineString(lines.toArray(new
 		// LineString[lines.size()]));
+		DefaultFeatureCollection cutedParcels = new DefaultFeatureCollection();
 		DefaultFeatureCollection cutedAll = new DefaultFeatureCollection();
 		SimpleFeatureBuilder SFBFrenchParcel = ParcelSchema.getSFBFrenchParcel();
 		iterator = parcelCollection.features();
@@ -129,7 +132,10 @@ public class ParcelDensification {
 								SFBFrenchParcel.set("COM_ABS", "000");
 								SFBFrenchParcel.set("SECTION", newSection);
 								SFBFrenchParcel.set("NUMERO", newNumero);
-								cutedAll.add(SFBFrenchParcel.buildFeature(null));
+								SimpleFeature cutedParcel = SFBFrenchParcel.buildFeature(null);
+								cutedAll.add(cutedParcel);
+								if (SAVEINTERMEDIATERESULT)
+									cutedParcels.add(cutedParcel) ;
 							}
 						} catch (Exception problem) {
 							problem.printStackTrace();
@@ -151,6 +157,10 @@ public class ParcelDensification {
 		} finally {
 			iterator.close();
 		}
+		
+		if (SAVEINTERMEDIATERESULT)
+			Collec.exportSFC(cutedParcels, new File(tmpFolder, "parcelDensificationOnly.shp"), false) ;
+		
 		return cutedAll.collection();
 	}
 }

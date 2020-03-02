@@ -31,6 +31,7 @@ import fr.ign.cogit.parcelFunction.ParcelSchema;
 public class ParcelTotRecomp {
 	private static String ZoneField = "TYPEZONE";
 	public static String PROCESS = "OBB";
+	public static boolean SAVEINTERMEDIATERESULT = false;
 	/**
 	 * Merge and recut a specific zone. Cut first the surrounding parcels to keep them unsplited, then split the zone parcel and remerge them all into the original parcel file A
 	 * bit complicated algorithm to deal with unexisting peaces of parcels (as road)
@@ -205,6 +206,7 @@ public class ParcelTotRecomp {
 		splitedZoneParcels = ParcelCollection.mergeTooSmallParcels(splitedZoneParcels, (int) minimalArea);
 		Collec.exportSFC(splitedZoneParcels, new File("/tmp/afMerge"));
 
+		//get the section numbers 
 		int i = 0;
 		DefaultFeatureCollection result = new DefaultFeatureCollection();
 		SimpleFeatureIterator itZoneParcel = splitedZoneParcels.features();
@@ -242,6 +244,10 @@ public class ParcelTotRecomp {
 			itZoneParcel.close();
 		}
 
+		if (SAVEINTERMEDIATERESULT) {
+			Collec.exportSFC(result, new File(tmpFolder,"parcelZoneDivisionOnly"), false);
+		}
+		
 		// add the saved parcels
 		SimpleFeatureIterator itSavedParcels = savedParcels.features();
 		try {
