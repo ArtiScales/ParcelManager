@@ -6,9 +6,16 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.geotools.data.shapefile.ShapefileDataStore;
+import org.geotools.data.simple.SimpleFeatureCollection;
+import org.locationtech.jts.geom.Geometry;
+
+import fr.ign.cogit.geoToolsFunctions.vectors.Collec;
+import fr.ign.cogit.geoToolsFunctions.vectors.Shp;
 import fr.ign.cogit.geometryGeneration.CityGeneration;
 import fr.ign.cogit.parcelFunction.ParcelCollection;
 import scenario.PMScenario;
+import scenario.PMStep;
 
 public class CompareSimulatedParcelsWithEvolution {
 	/**
@@ -22,8 +29,9 @@ public class CompareSimulatedParcelsWithEvolution {
 		Instant start = Instant.now();
 		
 		//definition of the shapefiles representing two set of parcel
-		File rootFolder = new File("/media/mcolomb/2a3b1227-9bf5-461e-bcae-035a8845f72f/Documents/boulot/theseIGN/PM/PMtest/");
-		File tmpFolder = new File("/tmp/compareTest");
+		File rootFolder = new File("/home/ubuntu/PMtest/");
+		File outFolder = new File("/tmp/compareTest");
+		outFolder.mkdirs();
 		File file1 = new File(rootFolder, "brie98.shp");
 		File file2 = new File(rootFolder, "brie12.shp");
 		
@@ -31,25 +39,58 @@ public class CompareSimulatedParcelsWithEvolution {
 		File scenarioFile = new File(rootFolder, "jsonEx.json");
 		
 		// Mark and export the parcels that have changed between the two set of time
-		ParcelCollection.markDiffParcel(file1, file2 , rootFolder);
+		ParcelCollection.markDiffParcel(file1, file2 , outFolder);
 
 		// create ilots for parcel densification in case they haven't been generated before
 		CityGeneration.createUrbanIslet(file1, rootFolder);
 		
 		PMScenario.setSaveIntermediateResult(true);
-		PMScenario pm = new PMScenario(scenarioFile, tmpFolder);
+		PMScenario pm = new PMScenario(scenarioFile, outFolder);
 		pm.executeStep();
 		
 		List<File> lF = new	ArrayList<File>();
 
-		//get the intermediate files 
-		for (File f : tmpFolder.listFiles()) {
-			System.out.println(f);
-			if (f.getName().contains(("only")) && f.getName().contains((".shp")) ) {
+		//get the intermediate files resulting of the PM steps and merge them together
+		for (File f : outFolder.listFiles()) {
+			if ((f.getName().contains(("Only")) && f.getName().contains(".shp"))) {
 				lF.add(f);
 			}
 		}
-		System.out.println(lF);
+		File simulatedFile = new File(outFolder, "simulatedParcels.shp");
+		Shp.mergeVectFiles(lF, simulatedFile);
+	
+		PMStep.setParcel(file1);
+		PMStep.setPOLYGONINTERSECTION(null);
+
+		//we proceed with an analysis made for each steps
+		for (PMStep step : pm.getStepList()) {
+			
+			File zoneOutFolder = new File(outFolder,step.getZoneStudied());
+			zoneOutFolder.mkdirs();
+			Geometry geom = step.getBoundsOfZone();						
+			// make statistic graphs
+			
+			List<AreaGraph> lAG = new ArrayList<AreaGraph>();
+
+			//simulated parcels crop
+			ShapefileDataStore sdsSimulatedParcel = new ShapefileDataStore(simulatedFile.toURI().toURL());
+			SimpleFeatureCollection sfcSimulatedParcel = Collec.snapDatas(sdsSimulatedParcel.getFeatureSource().getFeatures(),geom);
+			Collec.exportSFC(sfcSimulatedParcel, new File(zoneOutFolder,"SimulatedParcel"));
+			AreaGraph areaSimulatedParcels = MakeStatisticGraphs.sortValuesAndCategorize(sfcSimulatedParcel,"Area of Simulated Parcels");
+			lAG.add(areaSimulatedParcels);
+			sdsSimulatedParcel.dispose();
+
+			//evolved parcel crop
+			ShapefileDataStore sdsEvolvedParcel = new ShapefileDataStore(new File(outFolder, "evolvedParcel.shp").toURI().toURL());
+			SimpleFeatureCollection sfcEvolvedParcel = Collec.snapDatas(sdsEvolvedParcel.getFeatureSource().getFeatures(), geom);
+			Collec.exportSFC(sfcEvolvedParcel, new File(zoneOutFolder,"EvolvedParcel"));
+			AreaGraph areaEvolvedParcels = MakeStatisticGraphs.sortValuesAndCategorize(sfcEvolvedParcel,"Area of Evolved Parcels");
+			lAG.add(areaEvolvedParcels);
+			sdsEvolvedParcel.dispose();
+			
+			MakeStatisticGraphs.makeGraphHisto(lAG,zoneOutFolder , "Distribution de la surface des parcelles subdivisées :"+step.getZoneStudied(), "Surface d'une parcelle (m2)",
+					"Nombre de parcelles", 10);
+		}
 
 		Instant end = Instant.now();
 		System.out.println(Duration.between(start, end)); // prints PT1M3.553S

@@ -3,7 +3,6 @@ package goal;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.data.simple.SimpleFeatureIterator;
@@ -39,8 +38,7 @@ public class ParcelDensification {
 	public static SimpleFeatureCollection parcelDensification(SimpleFeatureCollection parcelCollection, SimpleFeatureCollection ilotCollection,
 			File tmpFolder, File buildingFile, double maximalAreaSplitParcel, double minimalAreaSplitParcel, double maximalWidthSplitParcel,
 			double lenDriveway, boolean isArt3AllowsIsolatedParcel) throws Exception {
-		if (parcelCollection.getSchema().getAttributeDescriptors().stream().filter(s -> s.getName().toString().equals("SPLIT"))
-				.collect(Collectors.toList()).size() == 0) {
+		if (Collec.isCollecContainsAttribute(parcelCollection, "SPLIT")) {
 			System.out.println("Densification : unmarked parcels");
 			return parcelCollection;
 		}

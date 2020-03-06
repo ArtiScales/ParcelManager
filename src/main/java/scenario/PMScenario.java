@@ -40,9 +40,7 @@ public class PMScenario {
 
 	public PMScenario(File jSON, File tmpfolder) throws Exception {
 		tmpFolder = tmpfolder;
-		
 		PMStep.setSaveIntermediateResult(SAVEINTERMEDIATERESULT);
-System.out.println("lalalalalala "+SAVEINTERMEDIATERESULT);
 		JsonFactory factory = new JsonFactory();
 		JsonParser parser = factory.createParser(jSON);
 		JsonToken token = parser.nextToken();
@@ -193,11 +191,11 @@ System.out.println("lalalalalala "+SAVEINTERMEDIATERESULT);
 			}
 		}
 		parser.close();
+		PMStep.setFiles(parcelFile, ilotFile, zoningFile, tmpFolder, buildingFile, predicateFile, communityFile,
+				polygonIntersection, outFolder, profileFolder);
 	}
 
 	public void executeStep() throws Exception {
-		PMStep.setFiles(parcelFile, ilotFile, zoningFile, tmpFolder, buildingFile, predicateFile, communityFile,
-				polygonIntersection, outFolder, profileFolder);
 		for (PMStep pmstep : getStepList()) {
 			System.out.println("try " + pmstep);
 			PMStep.setParcel(pmstep.execute());

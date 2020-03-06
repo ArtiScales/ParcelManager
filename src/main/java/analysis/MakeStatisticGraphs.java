@@ -16,14 +16,16 @@ import org.knowm.xchart.Histogram;
 import org.locationtech.jts.geom.Geometry;
 import org.opengis.feature.simple.SimpleFeature;
 
+import fields.GeneralFileds;
+
 public class MakeStatisticGraphs {
 
-	/**
-	 * Class to automate the creation of stat graphs
-	 */
-	public static void main(String[] args) throws IOException {
-		makeAreaGraph(new File("/tmp/parcelCuted-consolid.shp"), new File("/tmp/"));
-	}
+//	/**
+//	 * Class to automate the creation of stat graphs
+//	 */
+//	public static void main(String[] args) throws IOException {
+//		makeAreaGraph(new File("/tmp/parcelCuted-consolid.shp"), new File("/tmp/"));
+//	}
 	
 	/**
 	 * Automate the generation of graphs about area of fresh parcel cuts
@@ -33,38 +35,39 @@ public class MakeStatisticGraphs {
 	 */	
 	public static void makeAreaGraph(File freshParcelCut, File folderOut) throws IOException {
 		ShapefileDataStore sds = new ShapefileDataStore(freshParcelCut.toURI().toURL());
-		SimpleFeatureCollection sfc = sds.getFeatureSource().getFeatures();
-		AreaGraph areaGraph = sortValuesAndCategorize(sfc);
-		makeGraphHisto(areaGraph, folderOut, "Distribution de la surface des parcelles subdivisées", "x", "Surface d'une parcelle (m2)",
-				"Nombre de parcelles", 10);	
+		SimpleFeatureCollection sfc = GeneralFileds.getParcelWithSimulatedFileds(sds.getFeatureSource().getFeatures());
+		AreaGraph areaGraph = sortValuesAndCategorize(sfc, "area");
+		makeGraphHisto(areaGraph, folderOut, "Distribution de la surface des parcelles subdivisées", "Surface d'une parcelle (m2)",
+				"Nombre de parcelles", 10);
+		sds.dispose();
 	}
 
 	/**
 	 * Process to sort which parcels have been cuted, and get the bounds of the distribution
 	 * @warning Developed for French Parcels - section is always a two character 
-	 * @param parcelOut
-	 * @param folderOut
+	 * @param parcelOut the parcel to sort and plot
+	 * @param nameDistrib the name of the distribution
+	 * @param filed which can be used to filter the features of the parcel collection. Can be null
 	 * @return a Graph object  
 	 * @throws IOException
 	 */
-	public static AreaGraph sortValuesAndCategorize(SimpleFeatureCollection parcelOut) throws IOException {
+	public static AreaGraph sortValuesAndCategorize(SimpleFeatureCollection parcelOut, String nameDistrib) throws IOException {
 		List<Double> areaParcel = new ArrayList<Double>();
+		
+		//get the bounds
 		double aMax = 0;
 		double aMin = 100000000;
 		SimpleFeatureIterator parcelIt = parcelOut.features();
 		try {
 			while (parcelIt.hasNext()) {
 				SimpleFeature feat = parcelIt.next();
-				//if the section number is not null (parcel exists) and section lenght is superior to three letters (the parcel has been cuted as a section 
-				if (((String) feat.getAttribute("SECTION")) != null && ((String) feat.getAttribute("SECTION")).length() > 3) {
-					double area = ((Geometry) feat.getDefaultGeometry()).getArea();
-					areaParcel.add(area);
-					if (area < aMin) {
-						aMin = area;
-					}
-					if (area > aMax) {
-						aMax = area;
-					}
+				double area = ((Geometry) feat.getDefaultGeometry()).getArea();
+				areaParcel.add(area);
+				if (area < aMin) {
+					aMin = area;
+				}
+				if (area > aMax) {
+					aMax = area;
 				}
 			}
 		} catch (Exception problem) {
@@ -72,7 +75,7 @@ public class MakeStatisticGraphs {
 		} finally {
 			parcelIt.close();
 		}
-		return new AreaGraph(areaParcel, aMin, aMax);
+		return new AreaGraph(areaParcel, aMin, aMax,nameDistrib);
 	}
 
 	/**
@@ -86,15 +89,26 @@ public class MakeStatisticGraphs {
 	 * @param range : number of categories
 	 * @throws IOException
 	 */
-	public static void makeGraphHisto(AreaGraph graph, File graphDepotFolder, String title, String x, String xTitle, String yTitle, int range) throws IOException {
+	public static void makeGraphHisto(AreaGraph graph, File graphDepotFolder, String title, String xTitle, String yTitle, int range)
+			throws IOException {
+		List<AreaGraph> list = new ArrayList<AreaGraph>();
+		list.add(graph);
+		makeGraphHisto(list, graphDepotFolder, title, xTitle, yTitle, range);
+	}
 
-		Histogram histo = new Histogram(graph.getSortedDistribution(), range, graph.getBoundMin(), graph.getBoundMax());
+	public static void makeGraphHisto(List<AreaGraph> graphs, File graphDepotFolder, String title, String xTitle, String yTitle, int range)
+			throws IOException {
+
+		// general settings
 		CategoryChart chart = new CategoryChartBuilder().width(600).height(600).title(title).xAxisTitle(xTitle).yAxisTitle(yTitle).build();
-		chart.addSeries(x, histo.getxAxisData(), histo.getyAxisData());
 
+		for (AreaGraph ag : graphs) {
+			Histogram histo = new Histogram(ag.getSortedDistribution(), range, ag.getBoundMin(), ag.getBoundMax());
+			chart.addSeries(ag.getNameDistrib(), histo.getxAxisData(), histo.getyAxisData());
+		}
 		// Customize Chart
 		// chart.getStyler().setLegendPosition(LegendPosition.InsideNW);
-		chart.getStyler().setLegendVisible(false);
+		chart.getStyler().setLegendVisible(true);
 		chart.getStyler().setHasAnnotations(false);
 		chart.getStyler().setXAxisLabelRotation(45);
 		chart.getStyler().setXAxisDecimalPattern("####");
