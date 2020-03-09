@@ -14,12 +14,16 @@ import org.opengis.feature.simple.SimpleFeatureType;
 import decomposition.ParcelSplit;
 import fr.ign.cogit.geoToolsFunctions.vectors.Collec;
 import fr.ign.cogit.geoToolsFunctions.vectors.Geom;
+import fr.ign.cogit.parcelFunction.ParcelCollection;
 import fr.ign.cogit.parcelFunction.ParcelSchema;
 
 public class ParcelConsolidRecomp {
 	public static boolean DEBUG = false;
 	public static String PROCESS = "OBB";
+	public static String markFieldName = "SPLIT";
 	public static boolean SAVEINTERMEDIATERESULT = false;
+	private static boolean OVERWRITESHAPEFILES = true;
+
 
 	/**
 	 * Method that merges the contiguous marked parcels into zones and then split those zones with a given parcel division algorithm (by default, the Oriented Bounding Box)
@@ -88,7 +92,7 @@ public class ParcelConsolidRecomp {
 		////////////////
 
 		Arrays.stream(parcels.toArray(new SimpleFeature[0])).forEach(parcel -> {
-			if (parcel.getAttribute("SPLIT").equals(1)) {
+			if (parcel.getAttribute(markFieldName).equals(1)) {
 				parcelToMerge.add(parcel);
 				parcelSaved.remove(parcel);
 			}
@@ -128,12 +132,12 @@ public class ParcelConsolidRecomp {
 		Arrays.stream(mergedParcels.toArray(new SimpleFeature[0])).forEach(feat -> {
 			if (((Geometry) feat.getDefaultGeometry()).getArea() > maximalArea) {
 				// Parcel big enough, we cut it
-				feat.setAttribute("SPLIT", 1);
+				feat.setAttribute(markFieldName, 1);
 				try {
 					SimpleFeatureCollection freshCutParcel = new DefaultFeatureCollection();
 					switch (PROCESS) {
 					case "OBB":
-						freshCutParcel = ParcelSplit.splitParcels(feat, maximalArea, maximalWidth, 0.0, 0.0, null ,smallStreetWidth,  largeStreetLevel,
+						freshCutParcel = ParcelSplit.splitParcels(feat, maximalArea, maximalWidth, 0.0, 0.0, null, smallStreetWidth, largeStreetLevel,
 								largeStreetWidth, false, decompositionLevelWithoutStreet, tmpFolder);
 						break;
 					case "SS":
@@ -150,7 +154,7 @@ public class ParcelConsolidRecomp {
 						SimpleFeature freshCut = it.next();
 						// that takes time but it's the best way I've found to set a correct section
 						// number (to look at the step 2 polygons)
-						if (((Geometry) feat.getDefaultGeometry()).getArea() > minimalArea) {
+//						if (((Geometry) feat.getDefaultGeometry()).getArea() > minimalArea) {
 							String sec = "Default";
 							SimpleFeatureIterator ilotIt = mergedParcels.features();
 							try {
@@ -171,7 +175,7 @@ public class ParcelConsolidRecomp {
 							sfBuilderFinalParcel.set("SECTION", section);
 							cutParcels.add(sfBuilderFinalParcel.buildFeature(null));
 						}
-					}
+//					}
 					it.close();
 				} catch (Exception e) {
 					e.printStackTrace();
@@ -181,30 +185,41 @@ public class ParcelConsolidRecomp {
 				cutParcels.add(sfBuilderFinalParcel.buildFeature(null, new Object[] { feat.getDefaultGeometry() }));
 			}
 		});
+		
 		DefaultFeatureCollection result = new DefaultFeatureCollection();
 		if (cutParcels.size() == 0) {
 			System.out.println("parcelConsolidRecomp produces no cut parcels");
 			return result;
 		}
+
+		if (DEBUG) {
+			Collec.exportSFC(cutParcels, new File(tmpFolder, "step3.shp"));
+			System.out.println("done step 3");
+		}
 		
-		// add initial non cut parcel to final parcels only if they are bigger than the limit
-		SimpleFeatureType schema = cutParcels.getSchema();
-		Arrays.stream(cutParcels.toArray(new SimpleFeature[0])).forEach(feat -> {
+		//merge small parcels 
+		SimpleFeatureCollection cutBigParcels = ParcelCollection.mergeTooSmallParcels(cutParcels, (int)minimalArea);
+		
+		// add initial non cut parcel to final parcels 
+		SimpleFeatureType schema = cutBigParcels.getSchema();
+		Arrays.stream(cutBigParcels.toArray(new SimpleFeature[0])).forEach(feat -> {
 			SimpleFeatureBuilder SFBParcel = ParcelSchema.setSFBFrenchParcelWithFeat(feat, schema);
 			result.add(SFBParcel.buildFeature(null));
 		});
 		
 		if(SAVEINTERMEDIATERESULT) {
-			Collec.exportSFC(result, new File(tmpFolder, "parcelConsolidationOnly.shp"), false);
+			Collec.exportSFC(result, new File(tmpFolder, "parcelConsolidationOnly.shp"), OVERWRITESHAPEFILES);
+			OVERWRITESHAPEFILES = false;
 		}
 		
 		Arrays.stream(parcelSaved.toArray(new SimpleFeature[0])).forEach(feat -> {
 			SimpleFeatureBuilder SFBParcel = ParcelSchema.setSFBFrenchParcelWithFeat(feat, schema);
 			result.add(SFBParcel.buildFeature(null));
 		});
+		
 		if (DEBUG) {
-			Collec.exportSFC(result, new File(tmpFolder, "step3.shp"));
-			System.out.println("done step 3");
+			Collec.exportSFC(result, new File(tmpFolder, "step4.shp"));
+			System.out.println("done step 4");
 		}
 		return result;
 	}

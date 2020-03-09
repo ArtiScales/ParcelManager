@@ -38,8 +38,6 @@ import org.locationtech.jts.operation.overlay.snap.GeometrySnapper;
 import org.locationtech.jts.operation.polygonize.Polygonizer;
 import org.opengis.feature.simple.SimpleFeature;
 
-import com.google.common.collect.Lists;
-
 import decomposition.analysis.FindObjectInDirection;
 import graph.Face;
 import graph.HalfEdge;

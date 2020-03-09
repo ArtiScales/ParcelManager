@@ -31,6 +31,7 @@ public class CompareSimulatedParcelsWithEvolution {
 		//definition of the shapefiles representing two set of parcel
 		File rootFolder = new File("/home/ubuntu/PMtest/");
 		File outFolder = new File("/tmp/compareTest");
+		File tmpFolder = new File("/tmp");
 		outFolder.mkdirs();
 		File file1 = new File(rootFolder, "brie98.shp");
 		File file2 = new File(rootFolder, "brie12.shp");
@@ -39,7 +40,7 @@ public class CompareSimulatedParcelsWithEvolution {
 		File scenarioFile = new File(rootFolder, "jsonEx.json");
 		
 		// Mark and export the parcels that have changed between the two set of time
-		ParcelCollection.markDiffParcel(file1, file2 , outFolder);
+		ParcelCollection.markDiffParcel(file1, file2, rootFolder, tmpFolder);
 
 		// create ilots for parcel densification in case they haven't been generated before
 		CityGeneration.createUrbanIslet(file1, rootFolder);
@@ -61,7 +62,7 @@ public class CompareSimulatedParcelsWithEvolution {
 	
 		PMStep.setParcel(file1);
 		PMStep.setPOLYGONINTERSECTION(null);
-
+		System.out.println("++++++++++analysis by zones++++++++++");
 		//we proceed with an analysis made for each steps
 		for (PMStep step : pm.getStepList()) {
 			
@@ -77,6 +78,8 @@ public class CompareSimulatedParcelsWithEvolution {
 			SimpleFeatureCollection sfcSimulatedParcel = Collec.snapDatas(sdsSimulatedParcel.getFeatureSource().getFeatures(),geom);
 			Collec.exportSFC(sfcSimulatedParcel, new File(zoneOutFolder,"SimulatedParcel"));
 			AreaGraph areaSimulatedParcels = MakeStatisticGraphs.sortValuesAndCategorize(sfcSimulatedParcel,"Area of Simulated Parcels");
+			MakeStatisticGraphs.makeGraphHisto(areaSimulatedParcels,zoneOutFolder , "Distribution on zone:"+step.getZoneStudied(), "Surface of simulated parcels",
+					"Nombre ", 10);
 			lAG.add(areaSimulatedParcels);
 			sdsSimulatedParcel.dispose();
 
@@ -85,6 +88,8 @@ public class CompareSimulatedParcelsWithEvolution {
 			SimpleFeatureCollection sfcEvolvedParcel = Collec.snapDatas(sdsEvolvedParcel.getFeatureSource().getFeatures(), geom);
 			Collec.exportSFC(sfcEvolvedParcel, new File(zoneOutFolder,"EvolvedParcel"));
 			AreaGraph areaEvolvedParcels = MakeStatisticGraphs.sortValuesAndCategorize(sfcEvolvedParcel,"Area of Evolved Parcels");
+			MakeStatisticGraphs.makeGraphHisto(areaEvolvedParcels,zoneOutFolder , "Distribution on zone:"+step.getZoneStudied(), "Surface of evolved",
+					"Nombre 2", 10);
 			lAG.add(areaEvolvedParcels);
 			sdsEvolvedParcel.dispose();
 			
@@ -94,7 +99,6 @@ public class CompareSimulatedParcelsWithEvolution {
 
 		Instant end = Instant.now();
 		System.out.println(Duration.between(start, end)); // prints PT1M3.553S
-//		 markDiffParcel(new File("/tmp/a.shp"),new File("/tmp/b.shp"), new File("/tmp/"));
 		
 		//TODO calculate macro indocators (nombre de parcelle, distribution comparée
 	}

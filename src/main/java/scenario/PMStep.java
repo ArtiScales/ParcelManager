@@ -5,13 +5,11 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Arrays;
-import java.util.stream.Collectors;
 
 import org.geotools.data.DataUtilities;
 import org.geotools.data.shapefile.ShapefileDataStore;
 import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.feature.DefaultFeatureCollection;
-import org.locationtech.jts.densify.Densifier;
 import org.locationtech.jts.geom.Geometry;
 import org.opengis.feature.simple.SimpleFeature;
 
@@ -37,6 +35,9 @@ public class PMStep {
 		this.communityNumber = communityNumber;
 		this.communityType = communityType;
 		this.urbanFabricType = urbanFabricType;
+		ParcelTotRecomp.SAVEINTERMEDIATERESULT = SAVEINTERMEDIATERESULT;
+		ParcelDensification.SAVEINTERMEDIATERESULT = SAVEINTERMEDIATERESULT;
+		ParcelConsolidRecomp.SAVEINTERMEDIATERESULT = SAVEINTERMEDIATERESULT;
 	}
 
 	public static void setFiles(File parcelFile, File ilotFile, File zoningFile, File tmpFolder, File buildingFile, File predicateFile,
@@ -86,7 +87,8 @@ public class PMStep {
 		SimpleFeatureCollection parcelMarked = getSimulationParcels();
 		
 		ShapefileDataStore shpDSParcel = new ShapefileDataStore(PARCELFILE.toURI().toURL());
-		SimpleFeatureCollection parcel = shpDSParcel.getFeatureSource().getFeatures();
+		SimpleFeatureCollection parcel = DataUtilities.collection(shpDSParcel.getFeatureSource().getFeatures());
+		shpDSParcel.dispose();
 		
 		ShapefileDataStore shpDSIlot = new ShapefileDataStore(ILOTFILE.toURI().toURL());
 		SimpleFeatureCollection ilot = shpDSIlot.getFeatureSource().getFeatures();
@@ -103,7 +105,6 @@ public class PMStep {
 		switch (goal) {
 		case "totalZone":
 			ParcelTotRecomp.PROCESS = parcelProcess;
-			ParcelTotRecomp.SAVEINTERMEDIATERESULT = SAVEINTERMEDIATERESULT;
 			ShapefileDataStore shpDSZone = new ShapefileDataStore(ZONINGFILE.toURI().toURL());
 			SimpleFeatureCollection featuresZones = shpDSZone.getFeatureSource().getFeatures();
 			SimpleFeatureCollection zoneCollection = ParcelTotRecomp.createZoneToCut(zone, featuresZones, parcel);
@@ -112,25 +113,24 @@ public class PMStep {
 			shpDSZone.dispose();
 			break;
 		case "dens":
-			ParcelDensification.SAVEINTERMEDIATERESULT = SAVEINTERMEDIATERESULT;
 			parcelCut = ParcelDensification.parcelDensification(parcelMarked, ilot, TMPFOLDER, BUILDINGFILE, profile.getMaximalArea(),
 					profile.getMinimalArea(), profile.getMaximalWidth(), profile.getLenDriveway(),
 					ParcelState.isArt3AllowsIsolatedParcel(parcel.features().next(), PREDICATEFILE));
 			break;
 		case "consolid":
-			ParcelConsolidRecomp.SAVEINTERMEDIATERESULT = SAVEINTERMEDIATERESULT;
 			ParcelConsolidRecomp.PROCESS = parcelProcess;
 			parcelCut = ParcelConsolidRecomp.parcelConsolidRecomp(parcelMarked, TMPFOLDER, profile.getMaximalArea(), profile.getMinimalArea(),
 					profile.getMaximalWidth(), profile.getStreetWidth(), profile.getLargeStreetLevel(), profile.getLargeStreetWidth(), profile.getDecompositionLevelWithoutStreet());
 			break;
+			default:
+				System.out.println(goal+": unrekognized goal (must be either \"totalZone\", \"dens\" or \"consolid\"");
 		}
 		File output = new File(OUTFOLDER, "parcelCuted-" + goal + ".shp");
 		if (GENERATEATTRIBUTES) {
 			parcelCut = FrenchParcelFields.fixParcelAttributes(parcelCut, TMPFOLDER, COMMUNITYFILE);
 		}
-		Collec.exportSFC(parcelCut, output, false);
+		Collec.exportSFC(parcelCut, output);
 		shpDSIlot.dispose();
-		shpDSParcel.dispose();
 		return output;
 
 	}

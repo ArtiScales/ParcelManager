@@ -53,7 +53,7 @@ public class ArtiScalesParcelFields {
 				featureBuilder.set("CODE_COM", parcel.getAttribute("CODE_COM"));
 				featureBuilder.set("SECTION", section);
 				featureBuilder.set("NUMERO", parcel.getAttribute("NUMERO"));
-				featureBuilder.set("CODE", ParcelAttribute.makeParcelCode(parcel));
+				featureBuilder.set("CODE", ParcelAttribute.makeFrenchParcelCode(parcel));
 				featureBuilder.set("COM_ABS", "000");
 				
 				boolean iPB = ParcelState.isAlreadyBuilt(buildingFile, parcel, (Geometry) parcel.getDefaultGeometry());

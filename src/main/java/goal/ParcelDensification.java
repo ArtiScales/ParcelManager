@@ -22,6 +22,7 @@ import fr.ign.cogit.parcelFunction.ParcelSchema;
 
 public class ParcelDensification {
 	public static boolean SAVEINTERMEDIATERESULT = false;
+	public static boolean OVERWRITESHAPEFILES = true;
 
 	/**
 	 * Apply the densification process
@@ -38,22 +39,13 @@ public class ParcelDensification {
 	public static SimpleFeatureCollection parcelDensification(SimpleFeatureCollection parcelCollection, SimpleFeatureCollection ilotCollection,
 			File tmpFolder, File buildingFile, double maximalAreaSplitParcel, double minimalAreaSplitParcel, double maximalWidthSplitParcel,
 			double lenDriveway, boolean isArt3AllowsIsolatedParcel) throws Exception {
+				
 		if (Collec.isCollecContainsAttribute(parcelCollection, "SPLIT")) {
 			System.out.println("Densification : unmarked parcels");
 			return parcelCollection;
 		}
 
 		final String geomName = parcelCollection.getSchema().getGeometryDescriptor().getLocalName();
-
-		// the little islands (ilots)
-		// File ilotReduced = new File(tmpFolder, "ilotTmp.shp");
-		// Vectors.exportSFC(ilotCollection, ilotReduced);
-		// IFeatureCollection<IFeature> featC = ShapefileReader.read(ilotReduced.getAbsolutePath());
-
-		// List<IOrientableCurve> lOC = featC.select(parcelCollec.envelope()).parallelStream().map(x -> FromGeomToLineString.convert(x.getGeom())).collect(ArrayList::new,
-		// List::addAll, List::addAll);
-
-		// IMultiCurve<IOrientableCurve> iMultiCurve = new GM_MultiCurve<>(lOC);
 		FilterFactory2 ff = CommonFactoryFinder.getFilterFactory2();
 		SimpleFeatureCollection blocks = ilotCollection
 				.subCollection(ff.bbox(ff.property(ilotCollection.getSchema().getGeometryDescriptor().getLocalName()), parcelCollection.getBounds()));
@@ -74,9 +66,6 @@ public class ParcelDensification {
 		} finally {
 			iterator.close();
 		}
-		// MultiLineString iMultiCurve = new
-		// GeometryFactory().createMultiLineString(lines.toArray(new
-		// LineString[lines.size()]));
 		DefaultFeatureCollection cutedParcels = new DefaultFeatureCollection();
 		DefaultFeatureCollection cutedAll = new DefaultFeatureCollection();
 		SimpleFeatureBuilder SFBFrenchParcel = ParcelSchema.getSFBFrenchParcel();
@@ -155,10 +144,10 @@ public class ParcelDensification {
 		} finally {
 			iterator.close();
 		}
-		
-		if (SAVEINTERMEDIATERESULT)
-			Collec.exportSFC(cutedParcels, new File(tmpFolder, "parcelDensificationOnly.shp"), false) ;
-		
+		if (SAVEINTERMEDIATERESULT) {
+			Collec.exportSFC(cutedParcels, new File(tmpFolder, "parcelDensificationOnly.shp"), OVERWRITESHAPEFILES) ;
+			OVERWRITESHAPEFILES = false;
+		}
 		return cutedAll.collection();
 	}
 }
