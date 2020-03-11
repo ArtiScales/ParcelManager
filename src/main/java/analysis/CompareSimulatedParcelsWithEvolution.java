@@ -19,14 +19,16 @@ import fr.ign.cogit.parcelFunction.ParcelCollection;
 import scenario.PMScenario;
 import scenario.PMStep;
 
+
+/**
+ * This process compares the evolution of a parcel plan at two different versions (file1 and file2) with the simulation on the zone.
+ * The simulation must be defined with a scenario (see package {@link fr.ign.cogit.scenario}).
+
+ * @author mcolomb
+ *
+ */
 public class CompareSimulatedParcelsWithEvolution {
-	/**
-	 * This process compares the evolution of a parcel plan at two different versions (file1 and file2) with the simulation on the zone
-	 * The simulation must be defined with a scenario (see package {@link ../scenario})
-	 * 
-	 * @param args
-	 * @throws Exception
-	 */
+
 	public static void main(String[] args) throws Exception {
 		Instant start = Instant.now();
 		

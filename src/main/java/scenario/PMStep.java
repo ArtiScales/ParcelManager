@@ -27,6 +27,14 @@ import goal.ParcelConsolidRecomp;
 import goal.ParcelDensification;
 import goal.ParcelTotRecomp;
 
+/**
+ * Object representing each step of a Parcel Manager scenario. This object is automaticaly set by the PMScenario object Please read the technical documentation on
+ * {@link https://github.com/ArtiScales/ParcelManager/blob/master/src/main/resources/doc/scenarioCreation.md}
+ * 
+ * @author mcolomb
+ *
+ */
+
 public class PMStep {
 	public PMStep(String goal, String parcelProcess, String zone, String communityNumber, String communityType, String urbanFabricType) {
 		this.goal = goal;
@@ -40,6 +48,21 @@ public class PMStep {
 		ParcelConsolidRecomp.SAVEINTERMEDIATERESULT = SAVEINTERMEDIATERESULT;
 	}
 
+	/**
+	 * Set the path of the different files for a PMStep to be executed. The method is used by PMScenario in a static way because it has no reasons to change within a PM simulation,
+	 * except for the parcel file that must be updated after each PMStep to make the new PMStep simulation on an already simulated parcel plan
+	 * 
+	 * @param parcelFile
+	 * @param ilotFile
+	 * @param zoningFile
+	 * @param tmpFolder
+	 * @param buildingFile
+	 * @param predicateFile
+	 * @param communityFile
+	 * @param polygonIntersection
+	 * @param outFolder
+	 * @param profileFolder
+	 */
 	public static void setFiles(File parcelFile, File ilotFile, File zoningFile, File tmpFolder, File buildingFile, File predicateFile,
 			File communityFile, File polygonIntersection, File outFolder, File profileFolder) {
 		PARCELFILE = parcelFile;
@@ -81,8 +104,12 @@ public class PMStep {
 	public PMStep() {
 	}
 
+	/**
+	 * Execute the current PM Step.
+	 * @return The ShapeFile containing the whole parcels of the given collection, where the simulated parcel have replaced the former parcels. 
+	 * @throws Exception
+	 */
 	public File execute() throws Exception {
-
 		//mark (select) the parcels 
 		SimpleFeatureCollection parcelMarked = getSimulationParcels();
 		
@@ -141,11 +168,22 @@ public class PMStep {
 	}
 	
 	/**
-	 * generate which parcels must be simulated 
-	 * @return
-	 * @throws Exception 
+	 * Mark the parcels that must be simulated within a collection of parcels.
+	 * 
+	 * It first select the parcel of the zone studied, whether by a city code or by a zone type. The fields can be set with the setters of the
+	 * {@link fr.ign.cogit.parcelFunction.ParcelGetter} class.
+	 * 
+	 * Then it marks the interesting parcels that either cross a given polygon collection or intersects a zoning type. It return even the parcels that won't be simulated. Split
+	 * field name in "SPLIT" by default and can be changed with the method {@link fr.ign.cogit.parcelFunction.MarkParcelAttributeFromPosition#setMarkFieldName(String)}.
+	 * 
+	 * If none of this informations are set, the algorithm selects all the parcels.
+	 * 
+	 * @return The parcel collection with a mark for the interesting parcels to simulate.
+	 * @throws Exception
 	 */
 	public SimpleFeatureCollection getSimulationParcels() throws Exception {
+
+		//select the interesting parcels
 		ShapefileDataStore shpDSParcel = new ShapefileDataStore(PARCELFILE.toURI().toURL());
 		SimpleFeatureCollection parcel = new DefaultFeatureCollection();
 		if (communityNumber != null && communityNumber != "") {
@@ -156,6 +194,7 @@ public class PMStep {
 			parcel = DataUtilities.collection(shpDSParcel.getFeatureSource().getFeatures());
 		}
 
+		//mark the parcels
 		SimpleFeatureCollection parcelMarked = new DefaultFeatureCollection();
 		// parcel marking step
 		if (POLYGONINTERSECTION != null && POLYGONINTERSECTION.exists()) {
@@ -175,6 +214,12 @@ public class PMStep {
 		return result;
 	}
 	
+	/**
+	 * Generate the bound of the parcels that are simulated by the current PMStep. Uses the marked parcels by the {@link #getSimulationParcels()} method. 
+	 * @return A geometry of the simulated parcels 
+	 * @throws IOException
+	 * @throws Exception
+	 */
 	public Geometry getBoundsOfZone() throws IOException, Exception {
 		DefaultFeatureCollection zone = new DefaultFeatureCollection();
 		Arrays.stream(getSimulationParcels().toArray(new SimpleFeature[0])).forEach(parcel -> {
