@@ -103,7 +103,6 @@ public class MakeStatisticGraphs {
 		CategoryChart chart = new CategoryChartBuilder().width(600).height(600).title(title).xAxisTitle(xTitle).yAxisTitle(yTitle).build();
 //TODO FIXME l'échelle en x n'est pas respécté pour le second graph.. 
 		for (AreaGraph ag : graphs) {
-			System.out.println(ag.getBoundMin()+ ag.getBoundMax());
 			Histogram histo = new Histogram(ag.getSortedDistribution(), range, ag.getBoundMin(), ag.getBoundMax());
 			chart.addSeries(ag.getNameDistrib(), histo.getxAxisData(), histo.getyAxisData());
 		}

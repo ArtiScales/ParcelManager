@@ -4,12 +4,14 @@ import java.io.File;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Hashtable;
 import java.util.List;
 
 import org.geotools.data.shapefile.ShapefileDataStore;
 import org.geotools.data.simple.SimpleFeatureCollection;
 import org.locationtech.jts.geom.Geometry;
 
+import fr.ign.cogit.geoToolsFunctions.Csv;
 import fr.ign.cogit.geoToolsFunctions.vectors.Collec;
 import fr.ign.cogit.geoToolsFunctions.vectors.Shp;
 import fr.ign.cogit.geometryGeneration.CityGeneration;
@@ -29,21 +31,21 @@ public class CompareSimulatedParcelsWithEvolution {
 		Instant start = Instant.now();
 		
 		//definition of the shapefiles representing two set of parcel
-		File rootFolder = new File("/home/ubuntu/PMtest/");
-		File outFolder = new File("/tmp/compareTest");
+		File rootFolder = new File("/home/ubuntu/PMtest/Ponteau");
+		File outFolder = new File("/home/ubuntu/PMtest/Ponteau");
 		File tmpFolder = new File("/tmp");
 		outFolder.mkdirs();
-		File file1 = new File(rootFolder, "brie98.shp");
-		File file2 = new File(rootFolder, "brie12.shp");
+		File file1 = new File(rootFolder, "PonteauPast.shp");
+		File file2 = new File(rootFolder, "PonteauNow.shp");
 		
 		//definition of a parameter file 
 		File scenarioFile = new File(rootFolder, "jsonEx.json");
 		
 		// Mark and export the parcels that have changed between the two set of time
-		ParcelCollection.markDiffParcel(file1, file2, rootFolder, tmpFolder);
-
-		// create ilots for parcel densification in case they haven't been generated before
-		CityGeneration.createUrbanIslet(file1, rootFolder);
+//		ParcelCollection.markDiffParcel(file1, file2, rootFolder, tmpFolder);
+//
+//		// create ilots for parcel densification in case they haven't been generated before
+//		CityGeneration.createUrbanIslet(file1, rootFolder);
 		
 		PMScenario.setSaveIntermediateResult(true);
 		PMScenario pm = new PMScenario(scenarioFile, outFolder);
@@ -72,7 +74,8 @@ public class CompareSimulatedParcelsWithEvolution {
 			// make statistic graphs
 			
 			List<AreaGraph> lAG = new ArrayList<AreaGraph>();
-
+			Hashtable<String, Object[]> csvData = new Hashtable<String, Object[]>();
+			
 			//simulated parcels crop
 			ShapefileDataStore sdsSimulatedParcel = new ShapefileDataStore(simulatedFile.toURI().toURL());
 			SimpleFeatureCollection sfcSimulatedParcel = Collec.snapDatas(sdsSimulatedParcel.getFeatureSource().getFeatures(),geom);
@@ -81,17 +84,21 @@ public class CompareSimulatedParcelsWithEvolution {
 			MakeStatisticGraphs.makeGraphHisto(areaSimulatedParcels,zoneOutFolder , "Distribution on zone:"+step.getZoneStudied(), "Surface of simulated parcels",
 					"Nombre ", 10);
 			lAG.add(areaSimulatedParcels);
+			csvData.put("SimulatedParcels", areaSimulatedParcels.getSortedDistribution().toArray());
 			sdsSimulatedParcel.dispose();
 
 			//evolved parcel crop
-			ShapefileDataStore sdsEvolvedParcel = new ShapefileDataStore(new File(outFolder, "evolvedParcel.shp").toURI().toURL());
+			ShapefileDataStore sdsEvolvedParcel = new ShapefileDataStore(new File(rootFolder, "evolvedParcel.shp").toURI().toURL());
 			SimpleFeatureCollection sfcEvolvedParcel = Collec.snapDatas(sdsEvolvedParcel.getFeatureSource().getFeatures(), geom);
 			Collec.exportSFC(sfcEvolvedParcel, new File(zoneOutFolder,"EvolvedParcel"));
 			AreaGraph areaEvolvedParcels = MakeStatisticGraphs.sortValuesAndCategorize(sfcEvolvedParcel,"Area of Evolved Parcels");
 			MakeStatisticGraphs.makeGraphHisto(areaEvolvedParcels,zoneOutFolder , "Distribution on zone:"+step.getZoneStudied(), "Surface of evolved",
 					"Nombre 2", 10);
 			lAG.add(areaEvolvedParcels);
+			csvData.put("EvolvedParcels", areaEvolvedParcels.getSortedDistribution().toArray());
 			sdsEvolvedParcel.dispose();
+
+			Csv.generateCsvFileCol(csvData, zoneOutFolder, "area");
 			
 			MakeStatisticGraphs.makeGraphHisto(lAG,zoneOutFolder , "Distribution de la surface des parcelles subdivisées :"+step.getZoneStudied(), "Surface d'une parcelle (m2)",
 					"Nombre de parcelles", 10);

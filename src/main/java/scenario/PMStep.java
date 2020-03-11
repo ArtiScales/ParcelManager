@@ -131,8 +131,13 @@ public class PMStep {
 		}
 		Collec.exportSFC(parcelCut, output);
 		shpDSIlot.dispose();
+		
+		//if the step produces no output, we return the input parcels
+		if(!output.exists()) {
+			System.out.println("PMstep "+this.toString() +" returns nothing");
+			return PARCELFILE;
+		}
 		return output;
-
 	}
 	
 	/**
