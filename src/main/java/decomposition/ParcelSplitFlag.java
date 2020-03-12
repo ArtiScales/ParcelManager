@@ -6,136 +6,97 @@ import java.util.List;
 import org.geotools.data.DataUtilities;
 import org.geotools.data.shapefile.ShapefileDataStore;
 import org.geotools.data.simple.SimpleFeatureCollection;
+import org.geotools.data.simple.SimpleFeatureIterator;
+import org.geotools.factory.CommonFactoryFinder;
 import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.geom.LineString;
 import org.locationtech.jts.geom.Polygon;
 import org.opengis.feature.simple.SimpleFeature;
+import org.opengis.filter.FilterFactory2;
 
 import fr.ign.cogit.FeaturePolygonizer;
+import fr.ign.cogit.geoToolsFunctions.vectors.Collec;
 
 public class ParcelSplitFlag {
+	
+	public static void main(String[] args) throws Exception {
+		/////////////////////////
+		//////// try the generateFlagSplitedParcels method
+		/////////////////////////
+		// Input 1/ the input parcelles to split
+		File inputShapeFile = new File("/tmp/parc.shp");
+		// Input 2 : the buildings that mustnt intersects the allowed roads (facultatif)
+		File inputBuildingFile = new File("/media/mcolomb/2a3b1227-9bf5-461e-bcae-035a8845f72f/Documents/boulot/theseIGN/PM/PMtest/Ponteau/building.shp");
+		// Input 3 (facultative) : the exterior of the urban block (it serves to determiner the multicurve)
+		File inputUrbanBlock = new File("/media/mcolomb/2a3b1227-9bf5-461e-bcae-035a8845f72f/Documents/boulot/theseIGN/PM/PMtest/Ponteau/ilot.shp");
+		// Input 4 (facultative) : a road shapefile (it can be used to check road access if this is better than characerizing road as an absence of parcel)
+		File inputRoad = new File("/tmp/ROUTE.SHP");
+		
+		File tmpFolder = new File("/tmp/");
 
-	// /////////////////////////
-	// //////// try the generateFlagSplitedParcels method
-	// /////////////////////////
-	//
-	// File geoFile = new File(, "dataGeo");
-	// IFeatureCollection<IFeature> featColl =
-	// ShapefileReader.read("/tmp/tmp1.shp");
-	//
-	// String inputUrbanBlock = GetFromGeom.getIlots(geoFile).getAbsolutePath();
-	//
-	// IFeatureCollection<IFeature> featC = ShapefileReader.read(inputUrbanBlock);
-	// List<IOrientableCurve> lOC =
-	// featC.select(featColl.envelope()).parallelStream().map(x ->
-	// FromGeomToLineString.convert(x.getGeom())).collect(ArrayList::new,
-	// List::addAll,
-	// List::addAll);
-	//
-	// IMultiCurve<IOrientableCurve> iMultiCurve = new GM_MultiCurve<>(lOC);
-	//
-	// // ShapefileDataStore shpDSZone = new ShapefileDataStore(
-	// // new
-	// File("/home/mcolomb/informatique/ArtiScales/ParcelSelectionFile/exScenar/variant0/parcelGenExport.shp").toURI().toURL());
-	// //
-	// // SimpleFeatureCollection featuresZones =
-	// shpDSZone.getFeatureSource().getFeatures();
-	// // SimpleFeatureIterator it = featuresZones.features();
-	// // SimpleFeature waiting = null;
-	// // while (it.hasNext()) {
-	// // SimpleFeature feat = it.next();
-	// // if (((String) feat.getAttribute("CODE")).equals("25598000AB0446") ) {
-	// // waiting = feat;
-	// // }
-	// // }
-	//
-	// // Vectors.exportSFC(generateSplitedParcels(waiting, tmpFile, p), new
-	// // File("/tmp/tmp2.shp"));
-	// SimpleFeatureCollection salut = generateFlagSplitedParcels(featColl.get(0),
-	// iMultiCurve, geoFile, tmpFile, 2000.0, 15.0, 3.0);
-	//
-	// Vectors.exportSFC(salut, new File("/tmp/tmp2.shp"));
-	//
-	// }
+		FilterFactory2 ff = CommonFactoryFinder.getFilterFactory2();
+		ShapefileDataStore sdsIlot = new ShapefileDataStore(inputUrbanBlock.toURI().toURL());
+		SimpleFeatureCollection collec = sdsIlot.getFeatureSource().getFeatures();
+		ShapefileDataStore sds = new ShapefileDataStore(inputShapeFile.toURI().toURL());
+		SimpleFeatureIterator it = sds.getFeatureSource().getFeatures().features();
+		try {
+			while (it.hasNext()) {
+				SimpleFeature feat = it.next();
+				List<LineString> lines = Collec.fromSFCtoExteriorRingLines(
+						collec.subCollection(ff.bbox(ff.property(feat.getFeatureType().getGeometryDescriptor().getLocalName()), feat.getBounds())));
+				if (feat.getAttribute("SPLIT") != null && (int) feat.getAttribute("SPLIT") == 1) {
+					generateFlagSplitedParcels(feat, lines, tmpFolder, inputBuildingFile,inputRoad, 800.0, 15.0, 3.0, true);
+				}
+			}
+		} catch (Exception problem) {
+			problem.printStackTrace();
+		} finally {
+			it.close();
+		}
+		sds.dispose();
+		sdsIlot.dispose();
+	}
 
-	// public static SimpleFeatureCollection
-	// generateFlagSplitedParcels(SimpleFeatureCollection featColl,
-	// IMultiCurve<IOrientableCurve> iMultiCurve, File geoFile, File tmpFile,
-	// Parameters p) throws NoSuchAuthorityCodeException, FactoryException,
-	// Exception {
-	//
-	// DefaultFeatureCollection collec = new DefaultFeatureCollection();
-	// SimpleFeatureIterator it = featColl.features();
-	//
-	// try {
-	// while (it.hasNext()) {
-	// SimpleFeature feat = it.next();
-	// collec.addAll(generateFlagSplitedParcels(feat, iMultiCurve, geoFile, tmpFile,
-	// p));
-	// }
-	// } catch (Exception problem) {
-	// problem.printStackTrace();
-	// } finally {
-	// it.close();
-	// }
-	//
-	// return collec;
-	// }
-	//
-	// public static SimpleFeatureCollection
-	// generateFlagSplitedParcels(SimpleFeature feat, IMultiCurve<IOrientableCurve>
-	// iMultiCurve, File geoFile, File tmpFile, Parameters p)
-	// throws Exception {
-	// return generateFlagSplitedParcels(feat, iMultiCurve, geoFile, tmpFile,
-	// p.getDouble("maximalAreaSplitParcel"),
-	// p.getDouble("maximalWidthSplitParcel"),
-	// p.getDouble("lenDriveway"));
-	// }
-	//
-	// public static SimpleFeatureCollection
-	// generateFlagSplitedParcels(SimpleFeature feat, IMultiCurve<IOrientableCurve>
-	// iMultiCurve, File geoFile, File tmpFile,
-	// Double maximalAreaSplitParcel, Double maximalWidthSplitParcel, Double
-	// lenDriveway) throws Exception {
-	//
-	// return
-	// generateFlagSplitedParcels(GeOxygeneGeoToolsTypes.convert2IFeature(feat),
-	// iMultiCurve, geoFile, tmpFile, maximalAreaSplitParcel,
-	// maximalWidthSplitParcel,
-	// lenDriveway);
-	//
-	// }
-
-	public static SimpleFeatureCollection generateFlagSplitedParcels(SimpleFeature ifeat, List<LineString> iMultiCurve, File tmpFile,
+	public static SimpleFeatureCollection generateFlagSplitedParcels(SimpleFeature feat, List<LineString> extLines, File tmpFolder,
 			File buildingFile, Double maximalAreaSplitParcel, Double maximalWidthSplitParcel, Double lenDriveway, boolean isArt3AllowsIsolatedParcel)
 			throws Exception {
+		return generateFlagSplitedParcels(feat, extLines, tmpFolder, buildingFile, null, maximalAreaSplitParcel, maximalWidthSplitParcel, 
+				lenDriveway, isArt3AllowsIsolatedParcel);
+	}
+	
+	public static SimpleFeatureCollection generateFlagSplitedParcels(SimpleFeature feat, List<LineString> extLines, File tmpFolder,
+			File buildingFile, File roadFile, Double maximalAreaSplitParcel, Double maximalWidthSplitParcel, Double lenDriveway, boolean isArt3AllowsIsolatedParcel)
+			throws Exception {
 
-    ShapefileDataStore buildingDS = new ShapefileDataStore(buildingFile.toURI().toURL());
-    SimpleFeatureCollection buildingCollec = buildingDS.getFeatureSource().getFeatures();
-
-		Geometry geom = (Geometry) ifeat.getDefaultGeometry();
-
-		// what would that be for?
-//		IDirectPosition dp = new DirectPosition(0, 0, 0); // geom.centroid();
-//		geom = geom.translate(-dp.getX(), -dp.getY(), 0);
-
-		List<Polygon> surfaces = Util.getPolygons(geom);
-		FlagParcelDecomposition fpd = new FlagParcelDecomposition(surfaces.get(0), buildingCollec, maximalAreaSplitParcel,
-				maximalWidthSplitParcel, lenDriveway, iMultiCurve);
+		ShapefileDataStore buildingDS = new ShapefileDataStore(buildingFile.toURI().toURL());
+		List<Polygon> surfaces = Util.getPolygons((Geometry) feat.getDefaultGeometry());
+		//as the road shapefile can be left as null, we differ the FlagParcelDecomposition constructor
+		FlagParcelDecomposition fpd;
+		if (roadFile != null & roadFile.exists()) {
+			ShapefileDataStore roadSDS = new ShapefileDataStore(roadFile.toURI().toURL());
+			fpd = new FlagParcelDecomposition(surfaces.get(0),
+					Collec.snapDatas(buildingDS.getFeatureSource().getFeatures(), ((Geometry) feat.getDefaultGeometry()).buffer(10)),
+					Collec.snapDatas(roadSDS.getFeatureSource().getFeatures(), ((Geometry) feat.getDefaultGeometry()).buffer(10)),
+					maximalAreaSplitParcel, maximalWidthSplitParcel, lenDriveway, extLines);
+			roadSDS.dispose();
+		} else {
+			fpd = new FlagParcelDecomposition(surfaces.get(0), buildingDS.getFeatureSource().getFeatures(), maximalAreaSplitParcel,
+					maximalWidthSplitParcel, lenDriveway, extLines);
+		}
 		List<Polygon> decomp = fpd.decompParcel(0);
-
 		// if the size of the collection is 1, no flag cut has been done. We check if we can normal cut it, if allowed
 		if (decomp.size() == 1 && isArt3AllowsIsolatedParcel) {
 			System.out.println("normal decomp instead of flagg decomp allowed and done");
-			return ParcelSplit.splitParcels(ifeat, maximalAreaSplitParcel, maximalWidthSplitParcel, 0, 0, iMultiCurve, 0, false, 8, tmpFile);
+			return ParcelSplit.splitParcels(feat, maximalAreaSplitParcel, maximalWidthSplitParcel, 0, 0, extLines, 0, false, 8, tmpFolder);
 		}
-		
-		File fileOut = new File(tmpFile, "tmp_split.shp");
+
+		File fileOut = new File(tmpFolder, "tmp_split.shp");
 		FeaturePolygonizer.saveGeometries(decomp, fileOut, "Polygon");
 
 		ShapefileDataStore sds = new ShapefileDataStore(fileOut.toURI().toURL());
 		SimpleFeatureCollection parcelOut = DataUtilities.collection(sds.getFeatureSource().getFeatures());
 		sds.dispose();
+		buildingDS.dispose();
 		return parcelOut;
 	}
 }

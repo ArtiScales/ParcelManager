@@ -216,7 +216,6 @@ public class ParcelSplit {
 	  public static SimpleFeatureCollection splitParcels(SimpleFeatureCollection toSplit, double maximalArea, double maximalWidth, double streetEpsilon, double noise,
 		      List<LineString> extBlock, double smallStreetWidth, int largeStreetLevel, double largeStreetWidth, boolean forceStreetAccess, int decompositionLevelWithoutStreet, File tmpFile) throws Exception {
 	  
-    String attNameToTransform = splitFiledName;
     // Configure memory datastore
     final MemoryDataStore memory = new MemoryDataStore();
     memory.createSchema(toSplit.getSchema());
@@ -225,7 +224,7 @@ public class ParcelSplit {
         SimpleFeature feature = (SimpleFeature) f;
         SimpleFeatureBuilder builder = new SimpleFeatureBuilder(toSplit.getSchema());
         builder.init(feature);
-        Object o = feature.getAttribute(attNameToTransform);
+        Object o = feature.getAttribute(splitFiledName);
         // // if the parcel is not to be split, we add it on the final result and continue to iterate through the parcels.
         if (o == null || Integer.parseInt(o.toString()) != 1) {
           SimpleFeature newFeature = builder.buildFeature(feature.getIdentifier().getID());
