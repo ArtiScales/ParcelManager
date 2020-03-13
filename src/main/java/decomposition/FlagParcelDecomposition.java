@@ -320,10 +320,9 @@ public class FlagParcelDecomposition {
         Polygon polygon = side.getValue();
 //        System.out.println("ROAD");
 //        System.out.println(road);
-
-        // The road intersects a building, we do not keep it
-        if (!Util.select(this.buildings, road).isEmpty()) {
-          // System.out.println("Building case : " + this.polygonInit);
+        // The road intersects a building on the property, we do not keep it
+        if (!Util.select(Collec.snapDatas(this.buildings,this.polygonInit.buffer(-0.5)), road).isEmpty()) {
+//           System.out.println("Building case : " + this.polygonInit);
           continue;
         }
         try {
@@ -361,14 +360,14 @@ public class FlagParcelDecomposition {
         // We check if there is a road acces for all, if not we abort
         for (Polygon pol : lPolygonsOut1) {
           if (!hasRoadAccess(pol)) {
-            System.out.println("Road access is missing ; polyinit : " + this.polygonInit);
+            System.out.println("Road access is missing for the parcel that used to have a road access ; polyinit : " + this.polygonInit);
             System.out.println("Current polyg : " + pol);
             continue boucleside;
           }
         }
         for (Polygon pol : lPolygonsOut2) {
           if (!hasRoadAccess(pol)) {
-            System.out.println("Road access is missing ; polyinit : " + this.polygonInit);
+            System.out.println("Road access is missing for the densified parcel ; polyinit : " + this.polygonInit);
             System.out.println("Current polyg : " + pol);
             continue boucleside;
           }
@@ -458,17 +457,15 @@ private Pair<Geometry,Geometry> getIntersectionDifference(Geometry a, Geometry b
       }
       // We list the segments of the polygon with road access
       List<LineString> lExterior = getSegments(polyWithRoadAcces.getExteriorRing());
-
-      // We keep the ones that does not intersect the buffer of ne no-road-access polygon and the 
-      List<LineString> lExteriorToKeep = lExterior.stream().filter(x -> (!buffer.contains(x))).filter(x -> (!this.getExtAsGeom().buffer(0.1).contains(x) || this.getRoadPolygon(roads).buffer(0.1).contains(x)))
+      // We keep the ones that does not intersect the buffer of new no-road-access polygon and the 
+      List<LineString> lExteriorToKeep = lExterior.stream().filter(x -> (!buffer.contains(x)))
+    		  .filter(x -> (!this.getExtAsGeom().buffer(0.1).contains(x) && !Geom.unionGeom(getRoadPolygon(roads)).contains(x)))
           .collect(Collectors.toList());
-
       // We regroup the lines according to their connectivity
       List<MultiLineString> sides = this.regroupLineStrings(lExteriorToKeep);
       // We add elements to list the correspondance between pears
       sides.stream().forEach(x -> listMap.add(new ImmutablePair<>(x, polyWithRoadAcces)));
     }
-
     return listMap;
   }
 
@@ -490,12 +487,10 @@ private Pair<Geometry,Geometry> getIntersectionDifference(Geometry a, Geometry b
    * @return
    */
   private double frontSideWidth(Polygon p) {
-
     Geometry geom = p.buffer(1).intersection(this.getExtAsGeom());
     if (geom == null) {
       geom = p.buffer(5).intersection(this.getExtAsGeom());
     }
-
     if (geom == null) {
       System.out.println("Cannot process to intersection between");
       System.out.println(p.toString());
@@ -510,7 +505,7 @@ private Pair<Geometry,Geometry> getIntersectionDifference(Geometry a, Geometry b
 	 * argument out of {@link #FlagParcelDecomposition(Polygon, SimpleFeatureCollection, double, double, double, List) the FlagParcelDecomposition constructor} or if not set, the
 	 * bounds of the {@link #polygonInit initial polygon}.
 	 * 
-	 * If no roads have been found and a road shapefile has been set, we look if a road shapefile has been set and if the given road is nearby TODO test that functionnality
+	 * If no roads have been found and a road shapefile has been set, we look if a road shapefile has been set and if the given road is nearby
 	 * 
 	 * @param poly
 	 * @return
@@ -519,17 +514,12 @@ private Pair<Geometry,Geometry> getIntersectionDifference(Geometry a, Geometry b
 	 */
   public boolean hasRoadAccess(Polygon poly){
 	  if (poly.intersects(getExtAsGeom().buffer(0.5))) {
+		return true;
+	  }
+//	  System.out.println(Geom.unionGeom(getRoadPolygon(roads)));
+	  if (roads != null && poly.intersects(Geom.unionGeom(getRoadPolygon(roads)))) {
 		  return true;
 	  }
-	  if (roads != null) {
-		  try {
-			if (poly.intersects(Geom.unionGeom(getRoadPolygon(roads)))) {
-				return true;
-			}
-		  } catch (Exception e) {
-			e.printStackTrace();
-		  }
-		}
     return false;
   }
   
@@ -541,11 +531,14 @@ private Pair<Geometry,Geometry> getIntersectionDifference(Geometry a, Geometry b
     return this.polygonInit.getFactory().createMultiLineString(list.toArray(new LineString[list.size()]));
   }
 
-  public MultiLineString getRoadAsGeom() {
-//	  this.polygonInit.getFactory().createMultiLineString(new LineString[] { this.polygonInit.getExteriorRing() });
-	    return getListAsGeom(getRoadPolygon(this.roads));
-	  }
-  
+  /**
+   * Get a list of the surrounding buffered road segments.
+   * 
+   * The buffer length is calculated with an attribute field. The default name of the field is <i>LARGEUR</i> and can be set with the {@link #setWidthFieldAttribute(String)} method. 
+   * If no field is found, a default value of 7.5 meters is used (this default value can be set with the {@link #setDefaultWidthRoad(double)} method). 
+   * @param roads collection of road
+   * @return
+   */
 	public static List<Geometry> getRoadPolygon(SimpleFeatureCollection roads) {
 		// List<Geometry> roadGeom = Arrays.stream(Collec.snapDatas(roads, poly.buffer(5)).toArray(new SimpleFeature[0]))
 		// .map(g -> ((Geometry) g.getDefaultGeometry()).buffer((double) g.getAttribute("LARGEUR"))).collect(Collectors.toList());
@@ -555,7 +548,7 @@ private Pair<Geometry,Geometry> getIntersectionDifference(Geometry a, Geometry b
 			while (roadSnapIt.hasNext()) {
 				SimpleFeature feat = roadSnapIt.next();
 				roadGeom.add(((Geometry) feat.getDefaultGeometry())
-						.buffer((Collec.isCollecContainsAttribute(roads, widthFieldAttribute) ? (double) feat.getAttribute(widthFieldAttribute) + 1
+						.buffer((Collec.isCollecContainsAttribute(roads, widthFieldAttribute) ? (double) feat.getAttribute(widthFieldAttribute) + 2.5
 								: defaultWidthRoad)));
 			}
 		} catch (Exception problem) {
@@ -585,9 +578,13 @@ private Pair<Geometry,Geometry> getIntersectionDifference(Geometry a, Geometry b
     this.ext = ext;
   }
 
+	/**
+	 * We generate an exterior with the studied polygon itself if no exterior islet has been set
+	 *   
+	 */
   private void generateExt() {
-    // We determine it
-    this.polygonInit.getFactory().createMultiLineString(new LineString[] { this.polygonInit.getExteriorRing() });
+    // FIXME this code doesn't change a thing? If it would (with the use of setExt()), the road could be generated to the exterior of the polygon, possibly leading to nowhere? 
+	  this.polygonInit.getFactory().createMultiLineString(new LineString[] { this.polygonInit.getExteriorRing() });
   }
 
 public static String getWidthFieldAttribute() {

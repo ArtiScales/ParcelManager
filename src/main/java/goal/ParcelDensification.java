@@ -37,7 +37,7 @@ public class ParcelDensification {
 			File tmpFolder, File buildingFile, File roadFile, double maximalAreaSplitParcel, double minimalAreaSplitParcel, double maximalWidthSplitParcel,
 			double lenDriveway, boolean isArt3AllowsIsolatedParcel) throws Exception {
 				
-		if (Collec.isCollecContainsAttribute(parcelCollection, "SPLIT")) {
+		if (!Collec.isCollecContainsAttribute(parcelCollection, "SPLIT")) {
 			System.out.println("Densification : unmarked parcels");
 			return parcelCollection;
 		}

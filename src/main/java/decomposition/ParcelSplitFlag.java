@@ -24,13 +24,13 @@ public class ParcelSplitFlag {
 		//////// try the generateFlagSplitedParcels method
 		/////////////////////////
 		// Input 1/ the input parcelles to split
-		File inputShapeFile = new File("/tmp/parc.shp");
+		File inputShapeFile = new File("/tmp/lala.shp");
 		// Input 2 : the buildings that mustnt intersects the allowed roads (facultatif)
-		File inputBuildingFile = new File("/media/mcolomb/2a3b1227-9bf5-461e-bcae-035a8845f72f/Documents/boulot/theseIGN/PM/PMtest/Ponteau/building.shp");
+		File inputBuildingFile = new File("/media/ubuntu/2a3b1227-9bf5-461e-bcae-035a8845f72f/Documents/boulot/theseIGN/PM/PMtest/Ponteau/building.shp");
 		// Input 3 (facultative) : the exterior of the urban block (it serves to determiner the multicurve)
-		File inputUrbanBlock = new File("/media/mcolomb/2a3b1227-9bf5-461e-bcae-035a8845f72f/Documents/boulot/theseIGN/PM/PMtest/Ponteau/ilot.shp");
+		File inputUrbanBlock = new File("/media/ubuntu/2a3b1227-9bf5-461e-bcae-035a8845f72f/Documents/boulot/theseIGN/PM/PMtest/Ponteau/ilot.shp");
 		// Input 4 (facultative) : a road shapefile (it can be used to check road access if this is better than characerizing road as an absence of parcel)
-		File inputRoad = new File("/tmp/ROUTE.SHP");
+		File inputRoad = new File("/media/ubuntu/2a3b1227-9bf5-461e-bcae-035a8845f72f/Documents/boulot/theseIGN/PM/PMtest/ROUTE.SHP");
 		
 		File tmpFolder = new File("/tmp/");
 
@@ -45,7 +45,7 @@ public class ParcelSplitFlag {
 				List<LineString> lines = Collec.fromSFCtoExteriorRingLines(
 						collec.subCollection(ff.bbox(ff.property(feat.getFeatureType().getGeometryDescriptor().getLocalName()), feat.getBounds())));
 				if (feat.getAttribute("SPLIT") != null && (int) feat.getAttribute("SPLIT") == 1) {
-					generateFlagSplitedParcels(feat, lines, tmpFolder, inputBuildingFile,inputRoad, 800.0, 15.0, 3.0, true);
+					generateFlagSplitedParcels(feat, lines, tmpFolder, inputBuildingFile,inputRoad, 400.0, 15.0, 3.0, true);
 				}
 			}
 		} catch (Exception problem) {
@@ -67,7 +67,6 @@ public class ParcelSplitFlag {
 	public static SimpleFeatureCollection generateFlagSplitedParcels(SimpleFeature feat, List<LineString> extLines, File tmpFolder,
 			File buildingFile, File roadFile, Double maximalAreaSplitParcel, Double maximalWidthSplitParcel, Double lenDriveway, boolean isArt3AllowsIsolatedParcel)
 			throws Exception {
-
 		ShapefileDataStore buildingDS = new ShapefileDataStore(buildingFile.toURI().toURL());
 		List<Polygon> surfaces = Util.getPolygons((Geometry) feat.getDefaultGeometry());
 		//as the road shapefile can be left as null, we differ the FlagParcelDecomposition constructor
@@ -89,12 +88,11 @@ public class ParcelSplitFlag {
 			System.out.println("normal decomp instead of flagg decomp allowed and done");
 			return ParcelSplit.splitParcels(feat, maximalAreaSplitParcel, maximalWidthSplitParcel, 0, 0, extLines, 0, false, 8, tmpFolder);
 		}
-
 		File fileOut = new File(tmpFolder, "tmp_split.shp");
 		FeaturePolygonizer.saveGeometries(decomp, fileOut, "Polygon");
-
 		ShapefileDataStore sds = new ShapefileDataStore(fileOut.toURI().toURL());
 		SimpleFeatureCollection parcelOut = DataUtilities.collection(sds.getFeatureSource().getFeatures());
+	
 		sds.dispose();
 		buildingDS.dispose();
 		return parcelOut;

@@ -16,6 +16,7 @@ import org.opengis.feature.Feature;
 import org.opengis.feature.FeatureVisitor;
 import org.opengis.feature.simple.SimpleFeature;
 
+import fr.ign.cogit.geoToolsFunctions.vectors.Geom;
 import fr.ign.cogit.parcelFunction.ParcelSchema;
 
 public class ParcelSplit {
@@ -170,9 +171,7 @@ public class ParcelSplit {
   
   public static SimpleFeatureCollection splitParcels(SimpleFeature toSplit, double maximalArea, double maximalWidth, double streetEpsilon, double noise, List<LineString> extBlock,
 	      double streetWidth, boolean forceStreetAccess, int decompositionLevelWithoutStreet, File tmpFolder) throws Exception {
-
 	    return splitParcels(toSplit, maximalArea, maximalWidth, streetEpsilon, noise, extBlock, streetWidth,  999,  streetWidth, forceStreetAccess, decompositionLevelWithoutStreet, tmpFolder);
-
 	  }
   
   public static SimpleFeatureCollection splitParcels(SimpleFeature toSplit, double maximalArea, double maximalWidth, double streetEpsilon, double noise, List<LineString> extBlock,
@@ -230,7 +229,7 @@ public class ParcelSplit {
           SimpleFeature newFeature = builder.buildFeature(feature.getIdentifier().getID());
           memory.addFeature(newFeature);
         } else {
-          Polygon polygon = (Polygon) feature.getDefaultGeometry();
+            Polygon polygon = (Polygon) Geom.getPolygon((Geometry) feature.getDefaultGeometry());
 //          List<LineString> list = new ArrayList<>(extBlock.getNumGeometries());
 //          for (int i = 0; i < extBlock.getNumGeometries(); i++) list.add((LineString) extBlock.getGeometryN(i));
           DescriptiveStatistics dS = new DescriptiveStatistics();

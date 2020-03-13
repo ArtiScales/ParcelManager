@@ -63,7 +63,7 @@ public class PMStep {
 	 * @param outFolder
 	 * @param profileFolder
 	 */
-	public static void setFiles(File parcelFile, File ilotFile, File zoningFile, File tmpFolder, File buildingFile, File predicateFile,
+	public static void setFiles(File parcelFile, File ilotFile, File zoningFile, File tmpFolder, File buildingFile, File roadFile, File predicateFile,
 			File communityFile, File polygonIntersection, File outFolder, File profileFolder) {
 		PARCELFILE = parcelFile;
 		ILOTFILE = ilotFile;
@@ -71,6 +71,7 @@ public class PMStep {
 		TMPFOLDER = tmpFolder;
 		tmpFolder.mkdirs();
 		BUILDINGFILE = buildingFile;
+		ROADFILE = roadFile;
 		POLYGONINTERSECTION = polygonIntersection;
 		PREDICATEFILE = predicateFile;
 		COMMUNITYFILE = communityFile;
@@ -81,23 +82,10 @@ public class PMStep {
 		 }
 	}
 
-	String goal;
-	String parcelProcess;
-	String zone;
-	String communityNumber;
-	String communityType;
-	String urbanFabricType;
+	String goal, parcelProcess, zone, communityNumber, communityType, urbanFabricType;
 
-	static File PARCELFILE;
-	static File ILOTFILE;
-	static File ZONINGFILE;
-	static File TMPFOLDER;
-	static File BUILDINGFILE;
-	static File PREDICATEFILE;
-	static File COMMUNITYFILE;
-	static File POLYGONINTERSECTION;
-	static File OUTFOLDER;
-	static File PROFILEFOLDER;
+	static File PARCELFILE, ILOTFILE, ZONINGFILE, TMPFOLDER, BUILDINGFILE, ROADFILE, PREDICATEFILE, 
+	COMMUNITYFILE, POLYGONINTERSECTION, OUTFOLDER, PROFILEFOLDER;
 	static boolean GENERATEATTRIBUTES = true;
 	static boolean SAVEINTERMEDIATERESULT = false; 
 
@@ -140,7 +128,7 @@ public class PMStep {
 			shpDSZone.dispose();
 			break;
 		case "dens":
-			parcelCut = ParcelDensification.parcelDensification(parcelMarked, ilot, TMPFOLDER, BUILDINGFILE, profile.getMaximalArea(),
+			parcelCut = ParcelDensification.parcelDensification(parcelMarked, ilot, TMPFOLDER, BUILDINGFILE, ROADFILE, profile.getMaximalArea(),
 					profile.getMinimalArea(), profile.getMaximalWidth(), profile.getLenDriveway(),
 					ParcelState.isArt3AllowsIsolatedParcel(parcel.features().next(), PREDICATEFILE));
 			break;
