@@ -4,7 +4,9 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 import org.geotools.data.DataUtilities;
 import org.geotools.data.shapefile.ShapefileDataStore;
@@ -21,6 +23,7 @@ import fr.ign.cogit.geoToolsFunctions.vectors.Collec;
 import fr.ign.cogit.geoToolsFunctions.vectors.Geom;
 import fr.ign.cogit.parameter.ProfileUrbanFabric;
 import fr.ign.cogit.parcelFunction.MarkParcelAttributeFromPosition;
+import fr.ign.cogit.parcelFunction.ParcelAttribute;
 import fr.ign.cogit.parcelFunction.ParcelGetter;
 import fr.ign.cogit.parcelFunction.ParcelState;
 import goal.ParcelConsolidRecomp;
@@ -64,7 +67,7 @@ public class PMStep {
 	 * @param profileFolder
 	 */
 	public static void setFiles(File parcelFile, File ilotFile, File zoningFile, File tmpFolder, File buildingFile, File roadFile, File predicateFile,
-			File communityFile, File polygonIntersection, File outFolder, File profileFolder) {
+			File polygonIntersection, File outFolder, File profileFolder) {
 		PARCELFILE = parcelFile;
 		ILOTFILE = ilotFile;
 		ZONINGFILE = zoningFile;
@@ -74,21 +77,19 @@ public class PMStep {
 		ROADFILE = roadFile;
 		POLYGONINTERSECTION = polygonIntersection;
 		PREDICATEFILE = predicateFile;
-		COMMUNITYFILE = communityFile;
 		OUTFOLDER = outFolder;
 		PROFILEFOLDER = profileFolder;
-		 if(!COMMUNITYFILE.exists()) {
-			 GENERATEATTRIBUTES = false;
-		 }
 	}
 
 	String goal, parcelProcess, zone, communityNumber, communityType, urbanFabricType;
-
+	List<String> communityNumbers = new ArrayList<String>(); 
+	
 	static File PARCELFILE, ILOTFILE, ZONINGFILE, TMPFOLDER, BUILDINGFILE, ROADFILE, PREDICATEFILE, 
-	COMMUNITYFILE, POLYGONINTERSECTION, OUTFOLDER, PROFILEFOLDER;
+	POLYGONINTERSECTION, OUTFOLDER, PROFILEFOLDER;
 	static boolean GENERATEATTRIBUTES = true;
 	static boolean SAVEINTERMEDIATERESULT = false; 
-
+	static String parcelType = "french";
+	
 	public PMStep() {
 	}
 
@@ -98,13 +99,20 @@ public class PMStep {
 	 * @throws Exception
 	 */
 	public File execute() throws Exception {
-		//mark (select) the parcels 
-		SimpleFeatureCollection parcelMarked = getSimulationParcels();
-		
+		//convert the parcel to a common type
 		ShapefileDataStore shpDSParcel = new ShapefileDataStore(PARCELFILE.toURI().toURL());
 		SimpleFeatureCollection parcel = DataUtilities.collection(shpDSParcel.getFeatureSource().getFeatures());
-		shpDSParcel.dispose();
+
+		switch (parcelType) {
+		case "french":
+			parcel = FrenchParcelFields.frenchParcelToMinParcel(parcel);
+			Collec.exportSFC(parcel, new File("/tmp/da"));
+			break;
+		}
 		
+		//mark (select) the parcels 
+		SimpleFeatureCollection parcelMarked = getSimulationParcels(parcel);
+
 		ShapefileDataStore shpDSIlot = new ShapefileDataStore(ILOTFILE.toURI().toURL());
 		SimpleFeatureCollection ilot = shpDSIlot.getFeatureSource().getFeatures();
 		SimpleFeatureCollection parcelCut = new DefaultFeatureCollection();
@@ -115,38 +123,52 @@ public class PMStep {
 		mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 		InputStream fileInputStream = new FileInputStream(ProfileUrbanFabric.getProfileFolder() + "/" + urbanFabricType + ".json");
 		ProfileUrbanFabric profile = mapper.readValue(fileInputStream, ProfileUrbanFabric.class);
-		
-		//base is the goal : we choose one of the three goals
-		switch (goal) {
-		case "totalZone":
-			ParcelTotRecomp.PROCESS = parcelProcess;
-			ShapefileDataStore shpDSZone = new ShapefileDataStore(ZONINGFILE.toURI().toURL());
-			SimpleFeatureCollection featuresZones = shpDSZone.getFeatureSource().getFeatures();
-			SimpleFeatureCollection zoneCollection = ParcelTotRecomp.createZoneToCut(zone, featuresZones, parcel);
-			parcelCut = ParcelTotRecomp.parcelTotRecomp(zoneCollection, parcel, TMPFOLDER, ZONINGFILE, profile.getMaximalArea(),
-					profile.getMinimalArea(), profile.getMaximalWidth(), profile.getStreetWidth(), profile.getLargeStreetLevel(), profile.getLargeStreetWidth(),  profile.getDecompositionLevelWithoutStreet());
-			shpDSZone.dispose();
-			break;
-		case "dens":
-			parcelCut = ParcelDensification.parcelDensification(parcelMarked, ilot, TMPFOLDER, BUILDINGFILE, ROADFILE, profile.getMaximalArea(),
-					profile.getMinimalArea(), profile.getMaximalWidth(), profile.getLenDriveway(),
-					ParcelState.isArt3AllowsIsolatedParcel(parcel.features().next(), PREDICATEFILE));
-			break;
-		case "consolid":
-			ParcelConsolidRecomp.PROCESS = parcelProcess;
-			parcelCut = ParcelConsolidRecomp.parcelConsolidRecomp(parcelMarked, TMPFOLDER, profile.getMaximalArea(), profile.getMinimalArea(),
-					profile.getMaximalWidth(), profile.getStreetWidth(), profile.getLargeStreetLevel(), profile.getLargeStreetWidth(), profile.getDecompositionLevelWithoutStreet());
-			break;
+		// in case of lot of cities to simulate, we separate the execution to different 
+		for (String communityNumber : communityNumbers) {
+			System.out.println("for community "+communityNumber);
+			SimpleFeatureCollection parcelMarkedComm = ParcelGetter.getParcelByZip(parcelMarked, communityNumber);
+			// base is the goal : we choose one of the three goals
+			switch (goal) {
+			case "totalZone":
+				ParcelTotRecomp.PROCESS = parcelProcess;
+				ShapefileDataStore shpDSZone = new ShapefileDataStore(ZONINGFILE.toURI().toURL());
+				SimpleFeatureCollection featuresZones = shpDSZone.getFeatureSource().getFeatures();
+				SimpleFeatureCollection zoneCollection = ParcelTotRecomp.createZoneToCut(zone, featuresZones, parcel);
+				((DefaultFeatureCollection) parcelCut).addAll(ParcelTotRecomp.parcelTotRecomp(zoneCollection, parcel, TMPFOLDER, ZONINGFILE, profile.getMaximalArea(),
+						profile.getMinimalArea(), profile.getMaximalWidth(), profile.getStreetWidth(), profile.getLargeStreetLevel(),
+						profile.getLargeStreetWidth(), profile.getDecompositionLevelWithoutStreet()));
+				shpDSZone.dispose();
+				break;
+			case "dens":
+				((DefaultFeatureCollection) parcelCut).addAll(ParcelDensification.parcelDensification(parcelMarkedComm, ilot, TMPFOLDER, BUILDINGFILE, ROADFILE, profile.getMaximalArea(),
+						profile.getMinimalArea(), profile.getMaximalWidth(), profile.getLenDriveway(),
+						ParcelState.isArt3AllowsIsolatedParcel(parcel.features().next(), PREDICATEFILE)));
+				break;
+			case "consolid":
+				ParcelConsolidRecomp.PROCESS = parcelProcess;
+//				ParcelConsolidRecomp.DEBUG = true;
+				((DefaultFeatureCollection) parcelCut).addAll(ParcelConsolidRecomp.parcelConsolidRecomp(parcelMarkedComm, TMPFOLDER, profile.getMaximalArea(), profile.getMinimalArea(),
+						profile.getMaximalWidth(), profile.getStreetWidth(), profile.getLargeStreetLevel(), profile.getLargeStreetWidth(),
+						profile.getDecompositionLevelWithoutStreet()));
+				break;
 			default:
-				System.out.println(goal+": unrekognized goal (must be either \"totalZone\", \"dens\" or \"consolid\"");
+				System.out.println(goal + ": unrekognized goal (must be either \"totalZone\", \"dens\" or \"consolid\"");
+			}
 		}
 		File output = new File(OUTFOLDER, "parcelCuted-" + goal + ".shp");
 		if (GENERATEATTRIBUTES) {
-			parcelCut = FrenchParcelFields.fixParcelAttributes(parcelCut, TMPFOLDER, COMMUNITYFILE);
+			switch (parcelType) {
+			case "french":
+				System.out.println("we set attribute as a french parcel");
+				parcelCut = FrenchParcelFields.setOriginalFrenchParcelAttributes(parcelCut, shpDSParcel.getFeatureSource().getFeatures());
+
+				break;
+			}
 		}
 		Collec.exportSFC(parcelCut, output);
 		shpDSIlot.dispose();
-		
+		shpDSParcel.dispose();
+
 		//if the step produces no output, we return the input parcels
 		if(!output.exists()) {
 			System.out.println("PMstep "+this.toString() +" returns nothing");
@@ -169,26 +191,51 @@ public class PMStep {
 	 * @return The parcel collection with a mark for the interesting parcels to simulate.
 	 * @throws Exception
 	 */
-	public SimpleFeatureCollection getSimulationParcels() throws Exception {
-
-		//select the interesting parcels
-		ShapefileDataStore shpDSParcel = new ShapefileDataStore(PARCELFILE.toURI().toURL());
+	public SimpleFeatureCollection getSimulationParcels(SimpleFeatureCollection parcelIn) throws Exception {
+		//select the parcels from the interesting communities
 		SimpleFeatureCollection parcel = new DefaultFeatureCollection();
+		// if a community information has been set 
 		if (communityNumber != null && communityNumber != "") {
-			parcel = DataUtilities.collection(ParcelGetter.getParcelByZip(shpDSParcel.getFeatureSource().getFeatures(), communityNumber));
-		} else if (communityType != null && communityType != "") {
-			parcel = DataUtilities.collection(ParcelGetter.getParcelByTypo(communityType, parcel, ZONINGFILE));
-		} else {
-			parcel = DataUtilities.collection(shpDSParcel.getFeatureSource().getFeatures());
+			// if a list of community has been set, the numbers must be separated with 
+			if (communityNumber.contains(",")) {
+				// we select parcels from every zipcodes
+				for (String z : communityNumber.split(",")) {
+					communityNumbers.add(z);
+					((DefaultFeatureCollection) parcel).addAll(ParcelGetter.getParcelByZip(parcelIn, z));
+				}
+			} 
+			// if a single community number is set
+			else {
+				communityNumbers.add(communityNumber);
+				parcel = DataUtilities.collection(ParcelGetter.getParcelByZip(parcelIn, communityNumber));
+			}
+		} 
+		// if multiple communities are present in the parcel collection
+		else if(ParcelAttribute.getCityCodeFromParcels(parcelIn).size() > 1) {
+			for (String cityCode : ParcelAttribute.getCityCodeFromParcels(parcelIn)) {
+				communityNumbers.add(cityCode);
+				((DefaultFeatureCollection) parcel).addAll(ParcelGetter.getParcelByZip(parcelIn, cityCode));
+			}
+		} 
+		// if a type of community has been set  
+		else if (communityType != null && communityType != "") {
+			communityNumbers.addAll(ParcelAttribute.getCityCodeFromParcels(parcelIn));
+			parcel = DataUtilities.collection(ParcelGetter.getParcelByTypo(communityType, parcelIn, ZONINGFILE));
+		} 
+		// if the input parcel is just what needs to be simulated
+		else {
+			communityNumbers.addAll(ParcelAttribute.getCityCodeFromParcels(parcelIn));
+			parcel = DataUtilities.collection(parcelIn);
 		}
 
 		//mark the parcels
 		SimpleFeatureCollection parcelMarked = new DefaultFeatureCollection();
-		// parcel marking step
+		// parcel marking with input polygons 
 		if (POLYGONINTERSECTION != null && POLYGONINTERSECTION.exists()) {
 			parcelMarked = MarkParcelAttributeFromPosition.markParcelIntersectPolygonIntersection(parcel, POLYGONINTERSECTION);
 		}
 //		Collec.exportSFC(parcelMarked, new File(TMPFOLDER, "parcelMarked.shp"));
+		// parcel marking with an attribute selection (mainly zoning plan, but it can be other files)
 		if (ZONINGFILE != null && ZONINGFILE.exists() && zone != null && zone != "") {
 			if (parcelMarked.size() > 0) {
 				parcelMarked = MarkParcelAttributeFromPosition.markParcelIntersectZoningType(parcelMarked, zone, ZONINGFILE);
@@ -198,7 +245,6 @@ public class PMStep {
 		}
 //		Collec.exportSFC(parcelMarked, new File(TMPFOLDER, "parcelMarked2.shp"));
 		DefaultFeatureCollection result = DataUtilities.collection(parcelMarked);
-		shpDSParcel.dispose();
 		return result;
 	}
 	
@@ -210,11 +256,13 @@ public class PMStep {
 	 */
 	public Geometry getBoundsOfZone() throws IOException, Exception {
 		DefaultFeatureCollection zone = new DefaultFeatureCollection();
-		Arrays.stream(getSimulationParcels().toArray(new SimpleFeature[0])).forEach(parcel -> {
+		ShapefileDataStore sds = new ShapefileDataStore(PARCELFILE.toURI().toURL());
+		Arrays.stream(getSimulationParcels(sds.getFeatureSource().getFeatures()).toArray(new SimpleFeature[0])).forEach(parcel -> {
 			if (parcel.getAttribute(MarkParcelAttributeFromPosition.getMarkFieldName()).equals(1)) {
 				zone.add(parcel);
 			}
 		});
+		sds.dispose();
 		return Geom.unionSFC(zone);
 	}
 
@@ -246,5 +294,13 @@ public class PMStep {
 
 	public static void setPOLYGONINTERSECTION(File pOLYGONINTERSECTION) {
 		POLYGONINTERSECTION = pOLYGONINTERSECTION;
+	}
+
+	public static boolean isGENERATEATTRIBUTES() {
+		return GENERATEATTRIBUTES;
+	}
+
+	public static void setGENERATEATTRIBUTES(boolean gENERATEATTRIBUTES) {
+		GENERATEATTRIBUTES = gENERATEATTRIBUTES;
 	}
 }

@@ -17,12 +17,11 @@ import org.opengis.feature.FeatureVisitor;
 import org.opengis.feature.simple.SimpleFeature;
 
 import fr.ign.cogit.geoToolsFunctions.vectors.Geom;
+import fr.ign.cogit.parcelFunction.MarkParcelAttributeFromPosition;
 import fr.ign.cogit.parcelFunction.ParcelSchema;
 
 public class ParcelSplit {
 
-	
-	static String splitFiledName = "SPLIT";
   /**
    * Splitting parcel processus. It get the usual parcel schema and add the "split" field in order to determine in the parcel will be splited or not. All the parcels are then
    * split.
@@ -101,10 +100,6 @@ public class ParcelSplit {
    */
   public static SimpleFeatureCollection generateSplitParcelsIfBigger(SimpleFeatureCollection parcelsIn, File tmpFolder, double maximalArea, double maximalWidth, double epsilon,
       List<LineString> extBlock, int decompositionLevelWithoutStreet, double streetWidth, boolean forceStreetAccess) throws Exception {
-
-    ///////
-    // putting the need of splitting into attribute
-    ///////
 
     // create a new collection
     SimpleFeatureBuilder sfBuilder = ParcelSchema.getSFBParcelAsASSplit();
@@ -223,7 +218,7 @@ public class ParcelSplit {
         SimpleFeature feature = (SimpleFeature) f;
         SimpleFeatureBuilder builder = new SimpleFeatureBuilder(toSplit.getSchema());
         builder.init(feature);
-        Object o = feature.getAttribute(splitFiledName);
+        Object o = feature.getAttribute(MarkParcelAttributeFromPosition.getMarkFieldName());
         // // if the parcel is not to be split, we add it on the final result and continue to iterate through the parcels.
         if (o == null || Integer.parseInt(o.toString()) != 1) {
           SimpleFeature newFeature = builder.buildFeature(feature.getIdentifier().getID());
@@ -251,12 +246,4 @@ public class ParcelSplit {
     }, null);
     return memory.getFeatureSource(toSplit.getSchema().getName()).getFeatures();
   }
-
-	public static String getSplitFiledName() {
-		return splitFiledName;
-	}
-
-	public static void setSplitFiledName(String splitFiledName) {
-		ParcelSplit.splitFiledName = splitFiledName;
-	}
 }

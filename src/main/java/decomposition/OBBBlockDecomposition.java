@@ -16,6 +16,8 @@ import org.locationtech.jts.geom.LineString;
 import org.locationtech.jts.geom.MultiLineString;
 import org.locationtech.jts.geom.Polygon;
 
+import fr.ign.cogit.geoToolsFunctions.vectors.Geom;
+
 public class OBBBlockDecomposition {
   /**
    * Determine the width of the parcel on road.
@@ -102,7 +104,8 @@ public class OBBBlockDecomposition {
    * @return
    */
   public static List<Polygon> split(Polygon poly1, Polygon poly2) {
-    Geometry intersection = poly1.intersection(poly2);
+//    Geometry intersection = poly1.intersection(poly2);
+	  Geometry intersection = Geom.scaledGeometryReductionIntersection(Arrays.asList(poly1, poly2));
     if (intersection instanceof Polygon)
       return Arrays.asList((Polygon) intersection);
     List<Polygon> res = new ArrayList<>(intersection.getNumGeometries());

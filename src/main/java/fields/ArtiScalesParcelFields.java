@@ -28,10 +28,9 @@ public class ArtiScalesParcelFields {
 	 * @return The parcel set with the right attributes
 	 * @throws Exception
 	 */
-	public static SimpleFeatureCollection fixParcelAttributes(SimpleFeatureCollection parcels, File tmpFolder,
-			File buildingFile, File communityFile, File polygonIntersectionFile, File zoningFile, boolean allOrCell)
-			throws Exception {
-		SimpleFeatureCollection parcelsFrenched = FrenchParcelFields.fixParcelAttributes(parcels, tmpFolder, communityFile);
+	public static SimpleFeatureCollection fixParcelAttributes(SimpleFeatureCollection parcels, File buildingFile, File communityFile,
+			File polygonIntersectionFile, File zoningFile, boolean allOrCell) throws Exception {
+		SimpleFeatureCollection parcelsFrenched = FrenchParcelFields.fixParcelAttributes(parcels, communityFile);
 		DefaultFeatureCollection parcelFinal = new DefaultFeatureCollection();
 
 		int i = 0;

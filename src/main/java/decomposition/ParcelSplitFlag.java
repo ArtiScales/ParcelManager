@@ -16,6 +16,7 @@ import org.opengis.filter.FilterFactory2;
 
 import fr.ign.cogit.FeaturePolygonizer;
 import fr.ign.cogit.geoToolsFunctions.vectors.Collec;
+import fr.ign.cogit.parcelFunction.MarkParcelAttributeFromPosition;
 
 public class ParcelSplitFlag {
 	
@@ -44,7 +45,8 @@ public class ParcelSplitFlag {
 				SimpleFeature feat = it.next();
 				List<LineString> lines = Collec.fromSFCtoExteriorRingLines(
 						collec.subCollection(ff.bbox(ff.property(feat.getFeatureType().getGeometryDescriptor().getLocalName()), feat.getBounds())));
-				if (feat.getAttribute("SPLIT") != null && (int) feat.getAttribute("SPLIT") == 1) {
+				if (feat.getAttribute(MarkParcelAttributeFromPosition.getMarkFieldName()) != null
+						&& (int) feat.getAttribute(MarkParcelAttributeFromPosition.getMarkFieldName()) == 1) {
 					generateFlagSplitedParcels(feat, lines, tmpFolder, inputBuildingFile,inputRoad, 400.0, 15.0, 3.0, true);
 				}
 			}
@@ -92,7 +94,6 @@ public class ParcelSplitFlag {
 		FeaturePolygonizer.saveGeometries(decomp, fileOut, "Polygon");
 		ShapefileDataStore sds = new ShapefileDataStore(fileOut.toURI().toURL());
 		SimpleFeatureCollection parcelOut = DataUtilities.collection(sds.getFeatureSource().getFeatures());
-	
 		sds.dispose();
 		buildingDS.dispose();
 		return parcelOut;

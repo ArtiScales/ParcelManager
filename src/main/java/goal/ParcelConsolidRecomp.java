@@ -14,15 +14,16 @@ import org.opengis.feature.simple.SimpleFeatureType;
 import decomposition.ParcelSplit;
 import fr.ign.cogit.geoToolsFunctions.vectors.Collec;
 import fr.ign.cogit.geoToolsFunctions.vectors.Geom;
+import fr.ign.cogit.parcelFunction.MarkParcelAttributeFromPosition;
 import fr.ign.cogit.parcelFunction.ParcelCollection;
 import fr.ign.cogit.parcelFunction.ParcelSchema;
+import fr.ign.cogit.parcelFunction.ParcelState;
 
 public class ParcelConsolidRecomp {
 	public static boolean DEBUG = false;
 	public static String PROCESS = "OBB";
-	public static String markFieldName = "SPLIT";
 	public static boolean SAVEINTERMEDIATERESULT = false;
-	private static boolean OVERWRITESHAPEFILES = true;
+	public static boolean OVERWRITESHAPEFILES = true;
 
 
 	/**
@@ -92,7 +93,7 @@ public class ParcelConsolidRecomp {
 		////////////////
 
 		Arrays.stream(parcels.toArray(new SimpleFeature[0])).forEach(parcel -> {
-			if (parcel.getAttribute(markFieldName).equals(1)) {
+			if (parcel.getAttribute(MarkParcelAttributeFromPosition.getMarkFieldName()).equals(1)) {
 				parcelToMerge.add(parcel);
 				parcelSaved.remove(parcel);
 			}
@@ -108,13 +109,14 @@ public class ParcelConsolidRecomp {
 		////////////////
 
 		DefaultFeatureCollection mergedParcels = new DefaultFeatureCollection();
-
-		SimpleFeatureBuilder sfBuilder = ParcelSchema.getSFBFrenchParcelSplit();
+		SimpleFeatureBuilder sfBuilder = ParcelSchema.getSFBMinParcelSplit();
 
 		Geometry multiGeom = Geom.unionSFC(parcelToMerge);
 		for (int i = 0; i < multiGeom.getNumGeometries(); i++) {
 			sfBuilder.add(multiGeom.getGeometryN(i));
-			sfBuilder.set("SECTION", Integer.toString(i));
+			sfBuilder.set(ParcelSchema.getMinParcelSectionField(), Integer.toString(i));
+			sfBuilder.set(ParcelSchema.getMinParcelCommunityFiled(),
+					ParcelState.getFieldFromSFC(multiGeom.getGeometryN(i), parcels, ParcelSchema.getMinParcelCommunityFiled()));
 			mergedParcels.add(sfBuilder.buildFeature(null));
 		}
 		if (DEBUG) {
@@ -126,13 +128,13 @@ public class ParcelConsolidRecomp {
 		// third step : cuting of the parcels
 		////////////////
 
-		SimpleFeatureBuilder sfBuilderFinalParcel = ParcelSchema.getSFBFrenchParcel();
+		SimpleFeatureBuilder sfBuilderFinalParcel = ParcelSchema.getSFBMinParcel();
 		DefaultFeatureCollection cutParcels = new DefaultFeatureCollection();
 
 		Arrays.stream(mergedParcels.toArray(new SimpleFeature[0])).forEach(feat -> {
 			if (((Geometry) feat.getDefaultGeometry()).getArea() > maximalArea) {
 				// Parcel big enough, we cut it
-				feat.setAttribute(markFieldName, 1);
+				feat.setAttribute(MarkParcelAttributeFromPosition.getMarkFieldName(), 1);
 				try {
 					SimpleFeatureCollection freshCutParcel = new DefaultFeatureCollection();
 					switch (PROCESS) {
@@ -147,35 +149,35 @@ public class ParcelConsolidRecomp {
 						System.out.println("not implemented yet");
 						break;
 					}
-
 					SimpleFeatureIterator it = freshCutParcel.features();
 					// every single parcel goes into new collection
+					int i = 0 ;
 					while (it.hasNext()) {
 						SimpleFeature freshCut = it.next();
 						// that takes time but it's the best way I've found to set a correct section
 						// number (to look at the step 2 polygons)
-//						if (((Geometry) feat.getDefaultGeometry()).getArea() > minimalArea) {
-							String sec = "Default";
-							SimpleFeatureIterator ilotIt = mergedParcels.features();
-							try {
-								while (ilotIt.hasNext()) {
-									SimpleFeature ilot = ilotIt.next();
-									if (((Geometry) ilot.getDefaultGeometry()).intersects((Geometry) freshCut.getDefaultGeometry())) {
-										sec = (String) ilot.getAttribute("SECTION");
-										break;
-									}
+						String sec = "Default";
+						SimpleFeatureIterator ilotIt = mergedParcels.features();
+						try {
+							while (ilotIt.hasNext()) {
+								SimpleFeature ilot = ilotIt.next();
+								if (((Geometry) ilot.getDefaultGeometry()).intersects((Geometry) freshCut.getDefaultGeometry())) {
+									sec = (String) ilot.getAttribute(ParcelSchema.getMinParcelSectionField());
+									break;
 								}
-							} catch (Exception problem) {
-								problem.printStackTrace();
-							} finally {
-								ilotIt.close();
 							}
-							String section = "newSection" + sec + "ConsolidRecomp";
-							sfBuilderFinalParcel.set("the_geom", freshCut.getDefaultGeometry());
-							sfBuilderFinalParcel.set("SECTION", section);
-							cutParcels.add(sfBuilderFinalParcel.buildFeature(null));
+						} catch (Exception problem) {
+							problem.printStackTrace();
+						} finally {
+							ilotIt.close();
 						}
-//					}
+						sfBuilderFinalParcel.set("the_geom", freshCut.getDefaultGeometry());
+						sfBuilderFinalParcel.set(ParcelSchema.getMinParcelSectionField(), "newSection" + sec + "ConsolidRecomp");
+						sfBuilderFinalParcel.set(ParcelSchema.getMinParcelNumberField(), String.valueOf(i++));
+						sfBuilderFinalParcel.set(ParcelSchema.getMinParcelCommunityFiled(),
+								feat.getAttribute(ParcelSchema.getMinParcelCommunityFiled()));
+						cutParcels.add(sfBuilderFinalParcel.buildFeature(null));
+					}
 					it.close();
 				} catch (Exception e) {
 					e.printStackTrace();
@@ -187,23 +189,21 @@ public class ParcelConsolidRecomp {
 		});
 		
 		DefaultFeatureCollection result = new DefaultFeatureCollection();
-		if (cutParcels.size() == 0) {
-			System.out.println("parcelConsolidRecomp produces no cut parcels");
-			return result;
-		}
+//		if (cutParcels.size() == 0) {
+//			System.out.println("parcelConsolidRecomp produces no cut parcels");
+//			return parcels;
+//		}
 
 		if (DEBUG) {
 			Collec.exportSFC(cutParcels, new File(tmpFolder, "step3.shp"));
 			System.out.println("done step 3");
 		}
 		
-		//merge small parcels 
-		SimpleFeatureCollection cutBigParcels = ParcelCollection.mergeTooSmallParcels(cutParcels, (int)minimalArea);
-		
-		// add initial non cut parcel to final parcels 
-		SimpleFeatureType schema = cutBigParcels.getSchema();
+		// merge small parcels
+		SimpleFeatureCollection cutBigParcels = ParcelCollection.mergeTooSmallParcels(cutParcels, (int) minimalArea);
+		SimpleFeatureType schema = ParcelSchema.getSFBMinParcel().getFeatureType();
 		Arrays.stream(cutBigParcels.toArray(new SimpleFeature[0])).forEach(feat -> {
-			SimpleFeatureBuilder SFBParcel = ParcelSchema.setSFBFrenchParcelWithFeat(feat, schema);
+			SimpleFeatureBuilder SFBParcel = ParcelSchema.setSFBMinParcelWithFeat(feat, schema);
 			result.add(SFBParcel.buildFeature(null));
 		});
 		
@@ -212,8 +212,9 @@ public class ParcelConsolidRecomp {
 			OVERWRITESHAPEFILES = false;
 		}
 		
+		// add initial non cut parcel to final parcels 
 		Arrays.stream(parcelSaved.toArray(new SimpleFeature[0])).forEach(feat -> {
-			SimpleFeatureBuilder SFBParcel = ParcelSchema.setSFBFrenchParcelWithFeat(feat, schema);
+			SimpleFeatureBuilder SFBParcel = ParcelSchema.setSFBMinParcelWithFeat(feat, schema);
 			result.add(SFBParcel.buildFeature(null));
 		});
 		

@@ -33,12 +33,12 @@ public class CompareSimulatedParcelsWithEvolution {
 		Instant start = Instant.now();
 		
 		//definition of the shapefiles representing two set of parcel
-		File rootFolder = new File("/home/ubuntu/PMtest/Ponteau");
-		File outFolder = new File("/home/ubuntu/PMtest/Ponteau");
-		File tmpFolder = new File("/tmp");
+		File rootFolder = new File("/home/ubuntu/PMtest/SeineEtMarne/");
+		File outFolder = new File("/home/ubuntu/PMtest/SeineEtMarne/out");
+		File tmpFolder = new File("/home/ubuntu/PMtest/SeineEtMarne/out/");
 		outFolder.mkdirs();
-		File file1 = new File(rootFolder, "PonteauPast.shp");
-		File file2 = new File(rootFolder, "PonteauNow.shp");
+		File file1 = new File(rootFolder, "PARCELLE03.SHP");
+		File file2 = new File(rootFolder, "PARCELLE12In.shp");
 		
 		//definition of a parameter file 
 		File scenarioFile = new File(rootFolder, "jsonEx.json");
@@ -50,6 +50,7 @@ public class CompareSimulatedParcelsWithEvolution {
 //		CityGeneration.createUrbanIslet(file1, rootFolder);
 		
 		PMScenario.setSaveIntermediateResult(true);
+		PMStep.setGENERATEATTRIBUTES(false);
 		PMScenario pm = new PMScenario(scenarioFile, outFolder);
 		pm.executeStep();
 		

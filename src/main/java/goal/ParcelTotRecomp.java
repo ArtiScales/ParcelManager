@@ -25,6 +25,7 @@ import decomposition.ParcelSplit;
 import fr.ign.cogit.FeaturePolygonizer;
 import fr.ign.cogit.geoToolsFunctions.vectors.Collec;
 import fr.ign.cogit.geoToolsFunctions.vectors.Geom;
+import fr.ign.cogit.parcelFunction.MarkParcelAttributeFromPosition;
 import fr.ign.cogit.parcelFunction.ParcelCollection;
 import fr.ign.cogit.parcelFunction.ParcelSchema;
 
@@ -84,7 +85,7 @@ public class ParcelTotRecomp {
 		// complete the void left by the existing roads from the zones
 		// Also assess a section number
 		// tricky operations to avoid geometry problems
-		SimpleFeatureBuilder sfBuilder = ParcelSchema.getSFBFrenchParcelSplit();
+		SimpleFeatureBuilder sfBuilder = ParcelSchema.getSFBMinParcelSplit();
 		int numZone = 0;
 
 		DefaultFeatureCollection goOdZone = new DefaultFeatureCollection();
@@ -102,8 +103,8 @@ public class ParcelTotRecomp {
 							Geometry geom = GeometryPrecisionReducer.reduce(intersection.getGeometryN(i), new PrecisionModel(100));
 							if (geom.getArea() > 5.0) {
 								sfBuilder.set(geomName, geom);
-								sfBuilder.set("SECTION", "New" + numZone + "Section");
-								sfBuilder.set("SPLIT", 1);
+								sfBuilder.set(ParcelSchema.getMinParcelSectionField(), "New" + numZone + "Section");
+								sfBuilder.set(MarkParcelAttributeFromPosition.getMarkFieldName(), 1);
 								goOdZone.add(sfBuilder.buildFeature(null));
 							}
 						}
@@ -112,8 +113,8 @@ public class ParcelTotRecomp {
 							Geometry g = intersection.getGeometryN(i);
 							if (g instanceof Polygon && g.getArea() > 5.0) {
 								sfBuilder.set(geomName, GeometryPrecisionReducer.reduce(intersection, new PrecisionModel(100)));
-								sfBuilder.set("SECTION", "New" + numZone + "Section");
-								sfBuilder.set("SPLIT", 1);
+								sfBuilder.set(ParcelSchema.getMinParcelSectionField(), "New" + numZone + "Section");
+								sfBuilder.set(MarkParcelAttributeFromPosition.getMarkFieldName(), 1);
 								goOdZone.add(sfBuilder.buildFeature(null));
 							}
 						}
@@ -121,8 +122,8 @@ public class ParcelTotRecomp {
 						Geometry geom = GeometryPrecisionReducer.reduce(intersection, new PrecisionModel(100));
 						if (geom.getArea() > 5.0) {
 							sfBuilder.set(geomName, geom);
-							sfBuilder.set("SECTION", "New" + numZone + "Section");
-							sfBuilder.set("SPLIT", 1);
+							sfBuilder.set(ParcelSchema.getMinParcelSectionField(), "New" + numZone + "Section");
+							sfBuilder.set(MarkParcelAttributeFromPosition.getMarkFieldName(), 1);
 							goOdZone.add(sfBuilder.buildFeature(null));
 						}
 					}
@@ -168,14 +169,13 @@ public class ParcelTotRecomp {
 		for (Geometry poly : polygons) {
 			// if the polygons are not included on the AU zone, we check to which parcel they belong
 			if (!geomSelectedZone.buffer(0.01).contains(poly)) {
-				sfBuilder.set(geomName, poly);
 				SimpleFeatureIterator parcelIt = parcelsInZone.features();
 				try {
 					while (parcelIt.hasNext()) {
 						SimpleFeature feat = parcelIt.next();
 						// we copy the previous parcels informations
 						if (((Geometry) feat.getDefaultGeometry()).buffer(0.01).contains(poly)) {
-							sfBuilder = ParcelSchema.fillSFBFrenchParcelSplitWithFeat(feat, sfBuilder, geomName, poly, 0);
+							sfBuilder = ParcelSchema.setSFBMinParcelSplitWithFeat(feat, sfBuilder, feat.getFeatureType(), 0);
 							goOdZone.add(sfBuilder.buildFeature(null));
 						}
 					}
@@ -203,17 +203,14 @@ public class ParcelTotRecomp {
 			System.out.println("not implemented yet");
 			break;
 		}
-		Collec.exportSFC(splitedZoneParcels, new File("/tmp/befMerge"));
-		//merge the too small parcels TODO one is not merged -- -- -- 
+		//merge the small parcels to bigger ones
 		splitedZoneParcels = ParcelCollection.mergeTooSmallParcels(splitedZoneParcels, (int) minimalArea);
-		Collec.exportSFC(splitedZoneParcels, new File("/tmp/afMerge"));
-
 		//get the section numbers 
 		int i = 0;
 		DefaultFeatureCollection result = new DefaultFeatureCollection();
 		SimpleFeatureIterator itZoneParcel = splitedZoneParcels.features();
-		SimpleFeatureBuilder finalParcelBuilder = ParcelSchema.getSFBFrenchParcel();
-		SimpleFeatureType schemaFrenchParcel = finalParcelBuilder.getFeatureType();
+		SimpleFeatureBuilder finalParcelBuilder = ParcelSchema.getSFBMinParcel();
+		SimpleFeatureType schemaParcel = finalParcelBuilder.getFeatureType();
 		try {
 			while (itZoneParcel.hasNext()) {
 				SimpleFeature parcel = itZoneParcel.next();
@@ -227,7 +224,7 @@ public class ParcelTotRecomp {
 						while (goOdZoneIt.hasNext()) {
 							SimpleFeature zone = goOdZoneIt.next();
 							if (((Geometry) zone.getDefaultGeometry()).buffer(2).contains(parcelGeom)) {
-								section = (String) zone.getAttribute("SECTION");
+								section = (String) zone.getAttribute(ParcelSchema.getMinParcelSectionField());
 								break;
 							}
 						}
@@ -236,7 +233,7 @@ public class ParcelTotRecomp {
 					} finally {
 						goOdZoneIt.close();
 					}
-					finalParcelBuilder.set("SECTION", section);
+					finalParcelBuilder.set(ParcelSchema.getMinParcelSectionField(), section);
 					result.add(finalParcelBuilder.buildFeature(null));
 //				}
 			}
@@ -256,7 +253,7 @@ public class ParcelTotRecomp {
 		try {
 			while (itSavedParcels.hasNext()) {
 				SimpleFeature parcel = itSavedParcels.next();
-				finalParcelBuilder = ParcelSchema.setSFBFrenchParcelWithFeat(parcel, schemaFrenchParcel);
+				finalParcelBuilder = ParcelSchema.setSFBMinParcelWithFeat(parcel, schemaParcel);
 				result.add(finalParcelBuilder.buildFeature(Integer.toString(i++)));
 			}
 		} catch (Exception problem) {

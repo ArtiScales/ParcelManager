@@ -18,15 +18,15 @@ import org.opengis.filter.FilterFactory2;
 import org.opengis.referencing.FactoryException;
 import org.opengis.referencing.NoSuchAuthorityCodeException;
 
+import fields.GeneralFields;
 import fr.ign.cogit.geoToolsFunctions.Attribute;
 import fr.ign.cogit.geoToolsFunctions.Csv;
 import fr.ign.cogit.geoToolsFunctions.vectors.Collec;
 import fr.ign.cogit.geoToolsFunctions.vectors.Geom;
+import fr.ign.cogit.parcelFunction.MarkParcelAttributeFromPosition;
 import fr.ign.cogit.parcelFunction.ParcelSchema;
 
 public class StatParcelStreetRatio {
-
-	static String markFieldName = "SPLIT";
 
 	public static void main(String[] args) throws Exception {
 		ShapefileDataStore sds = new ShapefileDataStore(new File("/tmp/parcelMarked.shp").toURI().toURL());
@@ -38,8 +38,8 @@ public class StatParcelStreetRatio {
 		sds2.dispose();
 	}
 
-	//TODO calculate the number (precentage) of parcels that doesn't
-	
+	//TODO calculate the number (precentage) of parcels that doesn't touch the road ? 
+	//FIXME some stuff seems to be broken 
 	/**
 	 * Calculate the ratio between the parcel area and the total area of a zone. It express the quantity of not parcel land, which could be either streets or public spaces
 	 * 
@@ -59,24 +59,23 @@ public class StatParcelStreetRatio {
 	public static double streetRatioParcels(SimpleFeatureCollection initialMarkedParcel, SimpleFeatureCollection cutParcel, File folderOutStat)
 			throws IOException, NoSuchAuthorityCodeException, FactoryException {
 		FilterFactory2 ff = CommonFactoryFinder.getFilterFactory2(GeoTools.getDefaultHints());
-		Filter filter = ff.like(ff.property(markFieldName), "1");
+		Filter filter = ff.like(ff.property(MarkParcelAttributeFromPosition.getMarkFieldName()), "1");
 		SimpleFeatureCollection selectedParcels = initialMarkedParcel.subCollection(filter);
 		DefaultFeatureCollection zone = new DefaultFeatureCollection();
 		Geometry multiGeom = Geom.unionSFC(selectedParcels);
 		
-		SimpleFeatureBuilder sfBuilder = ParcelSchema.getSFBFrenchZoning();
+		SimpleFeatureBuilder sfBuilderZone = ParcelSchema.getSFBFrenchZoning();
 		for (int i = 0; i < multiGeom.getNumGeometries(); i++) {
 			Geometry zoneGeom = multiGeom.getGeometryN(i);
-			sfBuilder.add(zoneGeom);
-
+			sfBuilderZone.add(zoneGeom);
 			// set needed attributes
 			SimpleFeatureIterator it = cutParcel.features();
 			try {
 				while (it.hasNext()) {
 					SimpleFeature feat = it.next();
 					if (zoneGeom.contains(((Geometry) feat.getDefaultGeometry()))) {
-						sfBuilder.set("INSEE", Attribute.makeINSEECode(feat));
-						sfBuilder.set("LIBELLE", feat.getAttribute("SECTION"));
+						sfBuilderZone.set("INSEE", Attribute.makeINSEECode(feat));
+						sfBuilderZone.set("LIBELLE", feat.getAttribute(ParcelSchema.getMinParcelSectionField()));
 						break;
 					}
 				}
@@ -85,7 +84,7 @@ public class StatParcelStreetRatio {
 			} finally {
 				it.close();
 			}
-			zone.add(sfBuilder.buildFeature(null));
+			zone.add(sfBuilderZone.buildFeature(null));
 		}
 		return streetRatioParcelZone(zone, cutParcel, folderOutStat);
 	}
@@ -147,7 +146,7 @@ public class StatParcelStreetRatio {
 		try {
 			while (parcels.hasNext()) {
 				SimpleFeature parcel = parcels.next();
-				if (((String) parcel.getAttribute("SECTION")) != null && ((String) parcel.getAttribute("SECTION")).length() != 2) {
+				if (GeneralFields.isParcelLikeFrenchHasSimulatedFileds(parcel)) {
 					totArea = totArea + ((Geometry) parcel.getDefaultGeometry()).getArea();
 				}
 			}
@@ -157,13 +156,5 @@ public class StatParcelStreetRatio {
 			parcels.close();
 		}
 		return totArea;
-	}
-
-	public static String getMarkFieldName() {
-		return markFieldName;
-	}
-
-	public static void setMarkFieldName(String markFieldName) {
-		StatParcelStreetRatio.markFieldName = markFieldName;
 	}
 }

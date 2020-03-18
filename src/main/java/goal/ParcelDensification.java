@@ -15,6 +15,7 @@ import org.opengis.filter.FilterFactory2;
 
 import decomposition.ParcelSplitFlag;
 import fr.ign.cogit.geoToolsFunctions.vectors.Collec;
+import fr.ign.cogit.parcelFunction.MarkParcelAttributeFromPosition;
 import fr.ign.cogit.parcelFunction.ParcelSchema;
 
 public class ParcelDensification {
@@ -36,8 +37,8 @@ public class ParcelDensification {
 	public static SimpleFeatureCollection parcelDensification(SimpleFeatureCollection parcelCollection, SimpleFeatureCollection ilotCollection,
 			File tmpFolder, File buildingFile, File roadFile, double maximalAreaSplitParcel, double minimalAreaSplitParcel, double maximalWidthSplitParcel,
 			double lenDriveway, boolean isArt3AllowsIsolatedParcel) throws Exception {
-				
-		if (!Collec.isCollecContainsAttribute(parcelCollection, "SPLIT")) {
+				System.out.println(parcelCollection.size());
+		if (!Collec.isCollecContainsAttribute(parcelCollection, MarkParcelAttributeFromPosition.getMarkFieldName())) {
 			System.out.println("Densification : unmarked parcels");
 			return parcelCollection;
 		}
@@ -46,13 +47,13 @@ public class ParcelDensification {
 		FilterFactory2 ff = CommonFactoryFinder.getFilterFactory2();
 		DefaultFeatureCollection cutedParcels = new DefaultFeatureCollection();
 		DefaultFeatureCollection cutedAll = new DefaultFeatureCollection();
-		SimpleFeatureBuilder SFBFrenchParcel = ParcelSchema.getSFBFrenchParcel();
+		SimpleFeatureBuilder sFBMinParcel = ParcelSchema.getSFBMinParcel();
 		SimpleFeatureIterator iterator = parcelCollection.features();
 		try {
 			while (iterator.hasNext()) {
 				SimpleFeature feat = iterator.next();
 				// if the parcel is selected for the simulation and bigger than the limit size
-				if (feat.getAttribute("SPLIT").equals(1)
+				if (feat.getAttribute(MarkParcelAttributeFromPosition.getMarkFieldName()).equals(1)
 						&& ((Geometry) feat.getDefaultGeometry()).getArea() > maximalAreaSplitParcel) {
 					//we get the ilot lines
 					List<LineString> lines = Collec.fromSFCtoExteriorRingLines(ilotCollection.subCollection(
@@ -82,25 +83,16 @@ public class ParcelDensification {
 					if (add) {
 						// construct the new parcels
 						// could have been cleaner with a stream but still don't know how to have an external counter to set parcels number
-						// Arrays.stream(tmp.toArray(new SimpleFeature[0])).forEach(parcelCuted -> {
 						int i = 1;
 						SimpleFeatureIterator parcelCutedIt = tmp.features();
 						try {
 							while (parcelCutedIt.hasNext()) {
 								SimpleFeature parcelCuted = parcelCutedIt.next();
-								String newCodeDep = (String) feat.getAttribute("CODE_DEP");
-								String newCodeCom = (String) feat.getAttribute("CODE_COM");
-								String newSection = (String) feat.getAttribute("SECTION") + "-Densifyed";
-								String newNumero = String.valueOf(i++);
-								String newCode = newCodeDep + newCodeCom + "000" + newSection + newNumero;
-								SFBFrenchParcel.set(geomName, parcelCuted.getDefaultGeometry());
-								SFBFrenchParcel.set("CODE", newCode);
-								SFBFrenchParcel.set("CODE_DEP", newCodeDep);
-								SFBFrenchParcel.set("CODE_COM", newCodeCom);
-								SFBFrenchParcel.set("COM_ABS", "000");
-								SFBFrenchParcel.set("SECTION", newSection);
-								SFBFrenchParcel.set("NUMERO", newNumero);
-								SimpleFeature cutedParcel = SFBFrenchParcel.buildFeature(null);
+								sFBMinParcel.set(geomName, parcelCuted.getDefaultGeometry());
+								sFBMinParcel.set(ParcelSchema.getMinParcelSectionField(), (String) feat.getAttribute(ParcelSchema.getMinParcelSectionField()) + "-Densifyed");
+								sFBMinParcel.set(ParcelSchema.getMinParcelNumberField(), String.valueOf(i++));
+								sFBMinParcel.set(ParcelSchema.getMinParcelCommunityFiled(), feat.getAttribute(ParcelSchema.getMinParcelCommunityFiled()));
+								SimpleFeature cutedParcel = sFBMinParcel.buildFeature(null);
 								cutedAll.add(cutedParcel);
 								if (SAVEINTERMEDIATERESULT)
 									cutedParcels.add(cutedParcel);
@@ -110,16 +102,15 @@ public class ParcelDensification {
 						} finally {
 							parcelCutedIt.close();
 						}
-						// });
 					} else {
-						SFBFrenchParcel = ParcelSchema.setSFBFrenchParcelWithFeat(feat, SFBFrenchParcel.getFeatureType());
-						cutedAll.add(SFBFrenchParcel.buildFeature(null));
+						sFBMinParcel = ParcelSchema.setSFBMinParcelWithFeat(feat, sFBMinParcel.getFeatureType());
+						cutedAll.add(sFBMinParcel.buildFeature(null));
 					}
 				}
 				// if no simulation needed, we ad the normal parcel
 				else {
-					SFBFrenchParcel = ParcelSchema.setSFBFrenchParcelWithFeat(feat, SFBFrenchParcel.getFeatureType());
-					cutedAll.add(SFBFrenchParcel.buildFeature(null));
+					sFBMinParcel = ParcelSchema.setSFBMinParcelWithFeat(feat, sFBMinParcel.getFeatureType());
+					cutedAll.add(sFBMinParcel.buildFeature(null));
 				}
 			}
 		} finally {

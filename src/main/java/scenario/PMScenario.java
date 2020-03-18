@@ -10,8 +10,7 @@ import com.fasterxml.jackson.core.JsonToken;
 
 public class PMScenario {
 
-	private File zoningFile, buildingFile, roadFile, polygonIntersection, communityFile, predicateFile, 
-	parcelFile, ilotFile, profileFolder, tmpFolder, outFolder;
+	private File zoningFile, buildingFile, roadFile, polygonIntersection, predicateFile, parcelFile, ilotFile, profileFolder, tmpFolder, outFolder;
 
 	private List<PMStep> stepList = new ArrayList<PMStep>();
 
@@ -49,7 +48,6 @@ public class PMScenario {
 					buildingFile = new File(rootFolder, "building.shp");
 					roadFile = new File(rootFolder, "road.shp");
 					polygonIntersection = new File(rootFolder, "polygonIntersection.shp");
-					communityFile = new File(rootFolder, "communities.shp");
 					predicateFile = new File(rootFolder, "predicate.csv");
 					parcelFile = new File(rootFolder, "parcelle.shp");
 					ilotFile = new File(rootFolder, "ilot.shp");
@@ -146,13 +144,6 @@ public class PMScenario {
 					fileSet = true;
 				}
 			}
-			if (token == JsonToken.FIELD_NAME && "communityFile".equals(parser.getCurrentName())) {
-				token = parser.nextToken();
-				if (token == JsonToken.VALUE_STRING) {
-					communityFile = new File(parser.getText());
-					fileSet = true;
-				}
-			}
 			if (token == JsonToken.FIELD_NAME && "predicateFile".equals(parser.getCurrentName())) {
 				token = parser.nextToken();
 				if (token == JsonToken.VALUE_STRING) {
@@ -190,8 +181,8 @@ public class PMScenario {
 			}
 		}
 		parser.close();
-		PMStep.setFiles(parcelFile, ilotFile, zoningFile, tmpFolder, buildingFile, roadFile, predicateFile, communityFile,
-				polygonIntersection, outFolder, profileFolder);
+		PMStep.setFiles(parcelFile, ilotFile, zoningFile, tmpFolder, buildingFile, roadFile, predicateFile, polygonIntersection, outFolder,
+				profileFolder);
 	}
 
 	public void executeStep() throws Exception {
@@ -212,9 +203,8 @@ public class PMScenario {
 	@Override
 	public String toString() {
 		return "PMScenario [zoningFile=" + zoningFile + ", buildingFile=" + buildingFile + ", roadFile=" + roadFile + ", polygonIntersection="
-				+ polygonIntersection + ", communityFile=" + communityFile + ", predicateFile=" + predicateFile
-				+ ", parcelFile=" + parcelFile + ", ilotFile=" + ilotFile + ", tmpFolder=" + tmpFolder + ", outFolder="
-				+ outFolder + ", stepList=" + stepList + ", fileSet=" + fileSet + ", profileFolder=" + profileFolder
+				+ polygonIntersection + ", predicateFile=" + predicateFile + ", parcelFile=" + parcelFile + ", ilotFile=" + ilotFile + ", tmpFolder="
+				+ tmpFolder + ", outFolder=" + outFolder + ", stepList=" + stepList + ", fileSet=" + fileSet + ", profileFolder=" + profileFolder
 				+ "]";
 	}
 

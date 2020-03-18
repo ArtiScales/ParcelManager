@@ -16,7 +16,7 @@ import org.knowm.xchart.Histogram;
 import org.locationtech.jts.geom.Geometry;
 import org.opengis.feature.simple.SimpleFeature;
 
-import fields.GeneralFileds;
+import fields.GeneralFields;
 
 public class MakeStatisticGraphs {
 
@@ -35,7 +35,7 @@ public class MakeStatisticGraphs {
 	 */	
 	public static void makeAreaGraph(File freshParcelCut, File folderOut) throws IOException {
 		ShapefileDataStore sds = new ShapefileDataStore(freshParcelCut.toURI().toURL());
-		SimpleFeatureCollection sfc = GeneralFileds.getParcelWithSimulatedFileds(sds.getFeatureSource().getFeatures());
+		SimpleFeatureCollection sfc = GeneralFields.getParcelLikeFrenchWithSimulatedFileds(sds.getFeatureSource().getFeatures());
 		AreaGraph areaGraph = sortValuesAndCategorize(sfc, "area");
 		makeGraphHisto(areaGraph, folderOut, "Distribution de la surface des parcelles subdivisées", "Surface d'une parcelle (m2)",
 				"Nombre de parcelles", 10);

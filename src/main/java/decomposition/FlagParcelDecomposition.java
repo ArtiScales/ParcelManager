@@ -459,7 +459,7 @@ private Pair<Geometry,Geometry> getIntersectionDifference(Geometry a, Geometry b
       List<LineString> lExterior = getSegments(polyWithRoadAcces.getExteriorRing());
       // We keep the ones that does not intersect the buffer of new no-road-access polygon and the 
       List<LineString> lExteriorToKeep = lExterior.stream().filter(x -> (!buffer.contains(x)))
-    		  .filter(x -> (!this.getExtAsGeom().buffer(0.1).contains(x) && !Geom.unionGeom(getRoadPolygon(roads)).contains(x)))
+    		  .filter(x -> (!this.getExtAsGeom().buffer(0.1).contains(x) && !isRoadPolygonIntersectsLine(roads,x)))
           .collect(Collectors.toList());
       // We regroup the lines according to their connectivity
       List<MultiLineString> sides = this.regroupLineStrings(lExteriorToKeep);
@@ -499,7 +499,7 @@ private Pair<Geometry,Geometry> getIntersectionDifference(Geometry a, Geometry b
     }
     return geom.getLength();
   }
-
+  
 	/**
 	 * Indicate if the given polygon is near the {@link org.locationtech.jts.geom.Polygon#getExteriorRing() shell} of a given Polygon object. This object is the islandExterior
 	 * argument out of {@link #FlagParcelDecomposition(Polygon, SimpleFeatureCollection, double, double, double, List) the FlagParcelDecomposition constructor} or if not set, the
@@ -531,6 +531,9 @@ private Pair<Geometry,Geometry> getIntersectionDifference(Geometry a, Geometry b
     return this.polygonInit.getFactory().createMultiLineString(list.toArray(new LineString[list.size()]));
   }
 
+	public static boolean isRoadPolygonIntersectsLine(SimpleFeatureCollection roads, LineString ls) {
+		return roads != null && Geom.unionGeom(getRoadPolygon(roads)).contains(ls);
+	}
   /**
    * Get a list of the surrounding buffered road segments.
    * 
