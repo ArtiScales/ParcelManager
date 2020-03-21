@@ -1,8 +1,6 @@
 package analysis;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.InputStream;
 import java.util.Arrays;
 import java.util.stream.Collectors;
 
@@ -10,10 +8,6 @@ import org.geotools.data.shapefile.ShapefileDataStore;
 import org.geotools.data.simple.SimpleFeatureCollection;
 import org.opengis.feature.simple.SimpleFeature;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
-import fr.ign.cogit.parameter.ProfileUrbanFabric;
 import fr.ign.cogit.parcelFunction.MarkParcelAttributeFromPosition;
 import fr.ign.cogit.parcelFunction.ParcelGetter;
 import goal.Densification;
@@ -34,27 +28,25 @@ public class DensificationRatio {
 		File isletFile = new File(rootFolder, "silet.shp");
 		File outFolder = new File(rootFolder, "/out/");
 		File tmpFolder = new File(rootFolder, "/out/");
-	File profileFile = new File(rootFolder, "/profileFolder/smallHouse.json");
+		File profileFile = new File(rootFolder, "/profileFolder/smallHouse.json");
 
-	ShapefileDataStore sdsIslet = new ShapefileDataStore(parcelFile.toURI().toURL());
-	SimpleFeatureCollection islet = sdsIslet.getFeatureSource().getFeatures();
-	
+		ShapefileDataStore sdsIslet = new ShapefileDataStore(parcelFile.toURI().toURL());
+		SimpleFeatureCollection islet = sdsIslet.getFeatureSource().getFeatures();
+
 		ShapefileDataStore sdsParcel = new ShapefileDataStore(parcelFile.toURI().toURL());
 		SimpleFeatureCollection parcels = sdsParcel.getFeatureSource().getFeatures();
 
-		String[] zones = {"U","Ua","Ub"};
-
 		// get total unbuilt parcels from the urbanized zones
-		Long nbVacantParcelU = Arrays.stream(MarkParcelAttributeFromPosition
+		Long nbVacantParcelU = Arrays
+				.stream(MarkParcelAttributeFromPosition
 						.markBuiltParcel(ParcelGetter.getParcelByZoningType("U", parcels, zoningFile), buildingFile)
 						.toArray(new SimpleFeature[0]))
 				.filter(feat -> feat.getAttribute(MarkParcelAttributeFromPosition.getMarkFieldName()).equals(1))
 				.collect(Collectors.counting());
 		System.out.println(nbVacantParcelU + " vacant parcel in U ");
-		SimpleFeatureCollection parcelsToSimulate = MarkParcelAttributeFromPosition.markRandomParcels(parcels, "U", zoningFile, 100.0,
-				(int) Math.round(ratio * Double.valueOf(nbVacantParcelU)));
-		Densification.densification(parcelsToSimulate, islet, tmpFolder, buildingFile, 
-				600, 100, 15, 3, false);
+		SimpleFeatureCollection parcelsToSimulate = MarkParcelAttributeFromPosition.markRandomParcels(parcels, "U",
+				zoningFile, 100.0, (int) Math.round(ratio * Double.valueOf(nbVacantParcelU)));
+		Densification.densification(parcelsToSimulate, islet, tmpFolder, buildingFile,roadFile, profileFile, false);
 	}
 
 	
