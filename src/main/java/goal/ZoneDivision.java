@@ -29,7 +29,7 @@ import fr.ign.cogit.parcelFunction.MarkParcelAttributeFromPosition;
 import fr.ign.cogit.parcelFunction.ParcelCollection;
 import fr.ign.cogit.parcelFunction.ParcelSchema;
 
-public class ParcelTotRecomp {
+public class ZoneDivision {
 	private static String ZoneField = "TYPEZONE";
 	public static String PROCESS = "OBB";
 	public static boolean SAVEINTERMEDIATERESULT = false;
@@ -54,14 +54,14 @@ public class ParcelTotRecomp {
 	 * @return
 	 * @throws Exception
 	 */
-	public static SimpleFeatureCollection parcelTotRecomp(SimpleFeatureCollection initialZone, SimpleFeatureCollection parcels, File tmpFolder,
+	public static SimpleFeatureCollection zoneDivision(SimpleFeatureCollection initialZone, SimpleFeatureCollection parcels, File tmpFolder,
 			File zoningFile, double maximalArea, double minimalArea, double maximalWidth, double streetWidth, int decompositionLevelWithoutRoad)
 			throws Exception {
-		return parcelTotRecomp(initialZone, parcels, tmpFolder, zoningFile, maximalArea, minimalArea, maximalWidth, streetWidth, 999, streetWidth,
+		return zoneDivision(initialZone, parcels, tmpFolder, zoningFile, maximalArea, minimalArea, maximalWidth, streetWidth, 999, streetWidth,
 				decompositionLevelWithoutRoad);
 	}
 	
-	public static SimpleFeatureCollection parcelTotRecomp(SimpleFeatureCollection initialZone, SimpleFeatureCollection parcels, File tmpFolder,
+	public static SimpleFeatureCollection zoneDivision(SimpleFeatureCollection initialZone, SimpleFeatureCollection parcels, File tmpFolder,
 			File zoningFile, double maximalArea, double minimalArea, double maximalWidth, double smallStreetWidth, int largeStreetLevel, double largeStreetWidth, int decompositionLevelWithoutRoad)
 			throws Exception {
 

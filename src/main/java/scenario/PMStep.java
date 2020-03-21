@@ -14,6 +14,8 @@ import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.feature.DefaultFeatureCollection;
 import org.locationtech.jts.geom.Geometry;
 import org.opengis.feature.simple.SimpleFeature;
+import org.opengis.referencing.FactoryException;
+import org.opengis.referencing.NoSuchAuthorityCodeException;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -26,9 +28,9 @@ import fr.ign.cogit.parcelFunction.MarkParcelAttributeFromPosition;
 import fr.ign.cogit.parcelFunction.ParcelAttribute;
 import fr.ign.cogit.parcelFunction.ParcelGetter;
 import fr.ign.cogit.parcelFunction.ParcelState;
-import goal.ParcelConsolidRecomp;
-import goal.ParcelDensification;
-import goal.ParcelTotRecomp;
+import goal.ConsolidationDivision;
+import goal.Densification;
+import goal.ZoneDivision;
 
 /**
  * Object representing each step of a Parcel Manager scenario. This object is automaticaly set by the PMScenario object Please read the technical documentation on
@@ -46,9 +48,9 @@ public class PMStep {
 		this.communityNumber = communityNumber;
 		this.communityType = communityType;
 		this.urbanFabricType = urbanFabricType;
-		ParcelTotRecomp.SAVEINTERMEDIATERESULT = SAVEINTERMEDIATERESULT;
-		ParcelDensification.SAVEINTERMEDIATERESULT = SAVEINTERMEDIATERESULT;
-		ParcelConsolidRecomp.SAVEINTERMEDIATERESULT = SAVEINTERMEDIATERESULT;
+		ZoneDivision.SAVEINTERMEDIATERESULT = SAVEINTERMEDIATERESULT;
+		Densification.SAVEINTERMEDIATERESULT = SAVEINTERMEDIATERESULT;
+		ConsolidationDivision.SAVEINTERMEDIATERESULT = SAVEINTERMEDIATERESULT;
 	}
 
 	/**
@@ -130,24 +132,24 @@ public class PMStep {
 			// base is the goal : we choose one of the three goals
 			switch (goal) {
 			case "totalZone":
-				ParcelTotRecomp.PROCESS = parcelProcess;
+				ZoneDivision.PROCESS = parcelProcess;
 				ShapefileDataStore shpDSZone = new ShapefileDataStore(ZONINGFILE.toURI().toURL());
 				SimpleFeatureCollection featuresZones = shpDSZone.getFeatureSource().getFeatures();
-				SimpleFeatureCollection zoneCollection = ParcelTotRecomp.createZoneToCut(zone, featuresZones, parcel);
-				((DefaultFeatureCollection) parcelCut).addAll(ParcelTotRecomp.parcelTotRecomp(zoneCollection, parcel, TMPFOLDER, ZONINGFILE, profile.getMaximalArea(),
+				SimpleFeatureCollection zoneCollection = ZoneDivision.createZoneToCut(zone, featuresZones, parcel);
+				((DefaultFeatureCollection) parcelCut).addAll(ZoneDivision.zoneDivision(zoneCollection, parcel, TMPFOLDER, ZONINGFILE, profile.getMaximalArea(),
 						profile.getMinimalArea(), profile.getMaximalWidth(), profile.getStreetWidth(), profile.getLargeStreetLevel(),
 						profile.getLargeStreetWidth(), profile.getDecompositionLevelWithoutStreet()));
 				shpDSZone.dispose();
 				break;
 			case "dens":
-				((DefaultFeatureCollection) parcelCut).addAll(ParcelDensification.parcelDensification(parcelMarkedComm, ilot, TMPFOLDER, BUILDINGFILE, ROADFILE, profile.getMaximalArea(),
+				((DefaultFeatureCollection) parcelCut).addAll(Densification.densification(parcelMarkedComm, ilot, TMPFOLDER, BUILDINGFILE, ROADFILE, profile.getMaximalArea(),
 						profile.getMinimalArea(), profile.getMaximalWidth(), profile.getLenDriveway(),
 						ParcelState.isArt3AllowsIsolatedParcel(parcel.features().next(), PREDICATEFILE)));
 				break;
 			case "consolid":
-				ParcelConsolidRecomp.PROCESS = parcelProcess;
+				ConsolidationDivision.PROCESS = parcelProcess;
 //				ParcelConsolidRecomp.DEBUG = true;
-				((DefaultFeatureCollection) parcelCut).addAll(ParcelConsolidRecomp.parcelConsolidRecomp(parcelMarkedComm, TMPFOLDER, profile.getMaximalArea(), profile.getMinimalArea(),
+				((DefaultFeatureCollection) parcelCut).addAll(ConsolidationDivision.consolidationDivision(parcelMarkedComm, TMPFOLDER, profile.getMaximalArea(), profile.getMinimalArea(),
 						profile.getMaximalWidth(), profile.getStreetWidth(), profile.getLargeStreetLevel(), profile.getLargeStreetWidth(),
 						profile.getDecompositionLevelWithoutStreet()));
 				break;
@@ -189,9 +191,12 @@ public class PMStep {
 	 * If none of this informations are set, the algorithm selects all the parcels.
 	 * 
 	 * @return The parcel collection with a mark for the interesting parcels to simulate.
+	 * @throws IOException 
+	 * @throws FactoryException 
+	 * @throws NoSuchAuthorityCodeException 
 	 * @throws Exception
 	 */
-	public SimpleFeatureCollection getSimulationParcels(SimpleFeatureCollection parcelIn) throws Exception {
+	public SimpleFeatureCollection getSimulationParcels(SimpleFeatureCollection parcelIn) throws IOException, NoSuchAuthorityCodeException, FactoryException  {
 		//select the parcels from the interesting communities
 		SimpleFeatureCollection parcel = new DefaultFeatureCollection();
 		// if a community information has been set 

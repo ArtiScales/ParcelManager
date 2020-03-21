@@ -1,6 +1,8 @@
 package goal;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.InputStream;
 import java.util.List;
 
 import org.geotools.data.simple.SimpleFeatureCollection;
@@ -13,28 +15,36 @@ import org.locationtech.jts.geom.LineString;
 import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.filter.FilterFactory2;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import decomposition.ParcelSplitFlag;
 import fr.ign.cogit.geoToolsFunctions.vectors.Collec;
+import fr.ign.cogit.parameter.ProfileUrbanFabric;
 import fr.ign.cogit.parcelFunction.MarkParcelAttributeFromPosition;
 import fr.ign.cogit.parcelFunction.ParcelSchema;
 
-public class ParcelDensification {
+public class Densification {
 	public static boolean SAVEINTERMEDIATERESULT = false;
 	public static boolean OVERWRITESHAPEFILES = true;
 
 	/**
-	 * Apply the densification process.
-	 * Only applied for french parcel models
-	 * 
-	 * @param splitZone
+	 * Apply the densification goal on a set of marked parcels.
+	 *
 	 * @param parcelCollection
+	 * @param isletCollection
 	 * @param tmpFolder
-	 * @param rootFile
-	 * @param p
+	 * @param buildingFile
+	 * @param roadFile
+	 * @param maximalAreaSplitParcel
+	 * @param minimalAreaSplitParcel
+	 * @param maximalWidthSplitParcel
+	 * @param lenDriveway
+	 * @param isArt3AllowsIsolatedParcel
 	 * @return
 	 * @throws Exception
 	 */
-	public static SimpleFeatureCollection parcelDensification(SimpleFeatureCollection parcelCollection, SimpleFeatureCollection ilotCollection,
+	public static SimpleFeatureCollection densification(SimpleFeatureCollection parcelCollection, SimpleFeatureCollection isletCollection,
 			File tmpFolder, File buildingFile, File roadFile, double maximalAreaSplitParcel, double minimalAreaSplitParcel, double maximalWidthSplitParcel,
 			double lenDriveway, boolean isArt3AllowsIsolatedParcel) throws Exception {
 				System.out.println(parcelCollection.size());
@@ -56,7 +66,7 @@ public class ParcelDensification {
 				if (feat.getAttribute(MarkParcelAttributeFromPosition.getMarkFieldName()).equals(1)
 						&& ((Geometry) feat.getDefaultGeometry()).getArea() > maximalAreaSplitParcel) {
 					//we get the ilot lines
-					List<LineString> lines = Collec.fromSFCtoExteriorRingLines(ilotCollection.subCollection(
+					List<LineString> lines = Collec.fromSFCtoExteriorRingLines(isletCollection.subCollection(
 							ff.bbox(ff.property(feat.getFeatureType().getGeometryDescriptor().getLocalName()), feat.getBounds())));
 					// we falg cut the parcel
 					SimpleFeatureCollection tmp = ParcelSplitFlag.generateFlagSplitedParcels(feat, lines, tmpFolder,
@@ -123,10 +133,51 @@ public class ParcelDensification {
 		return cutedAll.collection();
 	}
 	
-	public static SimpleFeatureCollection parcelDensification(SimpleFeatureCollection parcelCollection, SimpleFeatureCollection ilotCollection,
+	/**
+	 * Apply the densification goal on a set of marked parcels.
+	 *
+	 * @overload if we choose to not use a road Shapefile
+	 * @param parcelCollection
+	 * @param isletCollection
+	 * @param tmpFolder
+	 * @param buildingFile
+	 * @param maximalAreaSplitParcel
+	 * @param minimalAreaSplitParcel
+	 * @param maximalWidthSplitParcel
+	 * @param lenDriveway
+	 * @param isArt3AllowsIsolatedParcel
+	 * @return
+	 * @throws Exception
+	 */
+	public static SimpleFeatureCollection densification(SimpleFeatureCollection parcelCollection, SimpleFeatureCollection isletCollection,
 			File tmpFolder, File buildingFile, double maximalAreaSplitParcel, double minimalAreaSplitParcel, double maximalWidthSplitParcel,
 			double lenDriveway, boolean isArt3AllowsIsolatedParcel) throws Exception {
-		return parcelDensification(parcelCollection, ilotCollection, tmpFolder, buildingFile, null, maximalAreaSplitParcel, minimalAreaSplitParcel,
+		return densification(parcelCollection, isletCollection, tmpFolder, buildingFile, null, maximalAreaSplitParcel, minimalAreaSplitParcel,
 				maximalWidthSplitParcel, lenDriveway, isArt3AllowsIsolatedParcel);
+	}
+	
+	
+	/**
+	 * Apply the densification goal on a set of marked parcels.
+	 *
+	 * @overload iwith a profile building type input
+	 * @param parcelCollection
+	 * @param isletCollection
+	 * @param tmpFolder
+	 * @param buildingFile
+	 * @param isArt3AllowsIsolatedParcel
+	 * @return
+	 * @throws Exception
+	 */
+	public static SimpleFeatureCollection densification(SimpleFeatureCollection parcelCollection, SimpleFeatureCollection isletCollection,
+			File tmpFolder, File buildingFile, File roadFile, File profileFile, boolean isArt3AllowsIsolatedParcel) throws Exception {
+		// profile building
+		ObjectMapper mapper = new ObjectMapper();
+		mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+		InputStream fileInputStream = new FileInputStream(profileFile);
+		ProfileUrbanFabric profile = mapper.readValue(fileInputStream, ProfileUrbanFabric.class);
+		return densification(parcelCollection, isletCollection, tmpFolder, buildingFile, roadFile,
+				profile.getMaximalArea(), profile.getMinimalArea(), profile.getMaximalWidth(), profile.getLenDriveway(),
+				isArt3AllowsIsolatedParcel);
 	}
 }

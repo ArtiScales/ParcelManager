@@ -19,7 +19,7 @@ import fr.ign.cogit.parcelFunction.ParcelCollection;
 import fr.ign.cogit.parcelFunction.ParcelSchema;
 import fr.ign.cogit.parcelFunction.ParcelState;
 
-public class ParcelConsolidRecomp {
+public class ConsolidationDivision {
 	public static boolean DEBUG = false;
 	public static String PROCESS = "OBB";
 	public static boolean SAVEINTERMEDIATERESULT = false;
@@ -28,7 +28,7 @@ public class ParcelConsolidRecomp {
 
 	/**
 	 * Method that merges the contiguous marked parcels into zones and then split those zones with a given parcel division algorithm (by default, the Oriented Bounding Box)
-	 * 
+	 * @overload for a single road size usage
 	 * @param parcels
 	 *            The parcels to be merged and cut. Must be marked with the SPLIT filed (see markParcelIntersectMUPOutput for example, with the method concerning MUP-City's output)
 	 * @param tmpFolder
@@ -46,9 +46,9 @@ public class ParcelConsolidRecomp {
 	 * @return the set of parcel with decomposition
 	 * @throws Exception
 	 */
-	public static SimpleFeatureCollection parcelConsolidRecomp(SimpleFeatureCollection parcels, File tmpFolder, double maximalArea,
+	public static SimpleFeatureCollection consolidationDivision(SimpleFeatureCollection parcels, File tmpFolder, double maximalArea,
 			double minimalArea, double maximalWidth, double streetWidth, int decompositionLevelWithoutStreet) throws Exception {
-		return parcelConsolidRecomp(parcels, tmpFolder, maximalArea, minimalArea, maximalWidth, streetWidth, 999, streetWidth,
+		return consolidationDivision(parcels, tmpFolder, maximalArea, minimalArea, maximalWidth, streetWidth, 999, streetWidth,
 				decompositionLevelWithoutStreet);
 	}
 	
@@ -76,7 +76,7 @@ public class ParcelConsolidRecomp {
 	 * @return the set of parcel with decomposition
 	 * @throws Exception
 	 */
-	public static SimpleFeatureCollection parcelConsolidRecomp(SimpleFeatureCollection parcels, File tmpFolder, double maximalArea,
+	public static SimpleFeatureCollection consolidationDivision(SimpleFeatureCollection parcels, File tmpFolder, double maximalArea,
 			double minimalArea, double maximalWidth, double smallStreetWidth, int largeStreetLevel, double largeStreetWidth, int decompositionLevelWithoutStreet) throws Exception {
 
 		DefaultFeatureCollection parcelSaved = new DefaultFeatureCollection();

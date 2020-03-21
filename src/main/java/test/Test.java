@@ -11,9 +11,9 @@ import fr.ign.cogit.geoToolsFunctions.vectors.Collec;
 import fr.ign.cogit.parcelFunction.MarkParcelAttributeFromPosition;
 import fr.ign.cogit.parcelFunction.ParcelGetter;
 import fr.ign.cogit.parcelFunction.ParcelState;
-import goal.ParcelConsolidRecomp;
-import goal.ParcelDensification;
-import goal.ParcelTotRecomp;
+import goal.ConsolidationDivision;
+import goal.Densification;
+import goal.ZoneDivision;
 
 public class Test {
 
@@ -61,14 +61,14 @@ public class Test {
 		System.out.println("/////////////////////////");
 		ShapefileDataStore shpDSZone = new ShapefileDataStore(zoningFile.toURI().toURL());
 		SimpleFeatureCollection featuresZones = shpDSZone.getFeatureSource().getFeatures();
-		SimpleFeatureCollection zone = ParcelTotRecomp.createZoneToCut("AU", featuresZones, parcel);
+		SimpleFeatureCollection zone = ZoneDivision.createZoneToCut("AU", featuresZones, parcel);
 		// If no zones, we won't bother
 		if (zone.isEmpty()) {
 			System.out.println("parcelGenZone : no zones to be cut");
 			System.exit(1);
 		}
-		ParcelTotRecomp.SAVEINTERMEDIATERESULT = true;
-		SimpleFeatureCollection parcelCuted = ParcelTotRecomp.parcelTotRecomp(zone, parcel, tmpFolder, zoningFile,
+		ZoneDivision.SAVEINTERMEDIATERESULT = true;
+		SimpleFeatureCollection parcelCuted = ZoneDivision.zoneDivision(zone, parcel, tmpFolder, zoningFile,
 				maximalArea, minimalArea, maximalWidth, lenRoad, decompositionLevelWithoutRoad);
 		Collec.exportSFC(parcelCuted, new File(tmpFolder,"parcelTotZoneTmp.shp"));
 		SimpleFeatureCollection finaux = FrenchParcelFields.fixParcelAttributes(parcelCuted, communityFile);
@@ -84,11 +84,11 @@ public class Test {
 		System.out.println("/////////////////////////");
 		System.out.println("consolidRecomp");
 		System.out.println("/////////////////////////");
-		ParcelConsolidRecomp.DEBUG = true;
-		ParcelConsolidRecomp.SAVEINTERMEDIATERESULT = true;
+		ConsolidationDivision.DEBUG = true;
+		ConsolidationDivision.SAVEINTERMEDIATERESULT = true;
 		SimpleFeatureCollection testmp = MarkParcelAttributeFromPosition.markParcelIntersectPolygonIntersection(finaux, polygonIntersection);
 		SimpleFeatureCollection test = MarkParcelAttributeFromPosition.markParcelIntersectZoningType(testmp, "NC", zoningFile);
-		SimpleFeatureCollection cuted = ParcelConsolidRecomp.parcelConsolidRecomp(test, tmpFolder, maximalArea,
+		SimpleFeatureCollection cuted = ConsolidationDivision.consolidationDivision(test, tmpFolder, maximalArea,
 				minimalArea, maximalWidth, lenRoad, decompositionLevelWithoutRoad);
 //		SimpleFeatureCollection finaux2 = ArtiScalesParcelFields.fixParcelAttributes(cuted, tmpFolder, buildingFile,
 //				communityFile, polygonIntersection, zoningFile, false);
@@ -110,7 +110,7 @@ public class Test {
 
 		SimpleFeatureCollection toDensify = MarkParcelAttributeFromPosition.markParcelIntersectZoningType(parcMarked, "U",
 				zoningFile);
-		SimpleFeatureCollection salut = ParcelDensification.parcelDensification(toDensify, ilot, tmpFolder, buildingFile,new File("/tmp/road.shp"), maximalArea, minimalArea,
+		SimpleFeatureCollection salut = Densification.densification(toDensify, ilot, tmpFolder, buildingFile,new File("/tmp/road.shp"), maximalArea, minimalArea,
 				maximalWidth, lenRoad, ParcelState.isArt3AllowsIsolatedParcel(parcMarked.features().next(), predicateFile));
 
 //		SimpleFeatureCollection finaux3 = ArtiScalesParcelFields.fixParcelAttributes(salut, tmpFolder, buildingFile, communityFile,
