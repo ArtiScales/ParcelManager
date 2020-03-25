@@ -180,4 +180,36 @@ public class Densification {
 				profile.getMaximalArea(), profile.getMinimalArea(), profile.getMaximalWidth(), profile.getLenDriveway(),
 				isArt3AllowsIsolatedParcel);
 	}
+	
+	/**
+	 * Apply a hybrid densification process on the coming parcel collection. 
+	 * The parcels that size are inferior to 4x the maximal area of parcel type to create are runned with the densication goal.
+	 * The parcels that size are superior to 4x the maximal area are considered as able to build neighborhood. 
+	 * They are divided with the {@link goal.ConsolidationDivision#consolidationDivision(SimpleFeatureCollection, File, double, double, double, double, int)} method.  
+	 *
+ 	 * @param parcelCollection
+	 * @param isletCollection
+	 * @param tmpFolder
+	 * @param buildingFile
+	 * @param roadFile
+	 * @param profileFile
+	 * @param isArt3AllowsIsolatedParcel
+	 * @return
+	 * @throws Exception
+	 */
+	public static SimpleFeatureCollection densificationOrNeighborhood(SimpleFeatureCollection parcelCollection, SimpleFeatureCollection isletCollection,
+			File tmpFolder, File buildingFile, File roadFile, File profileFile, boolean isArt3AllowsIsolatedParcel) throws Exception {
+		ObjectMapper mapper = new ObjectMapper();
+		mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+		InputStream fileInputStream = new FileInputStream(profileFile);
+		ProfileUrbanFabric profile = mapper.readValue(fileInputStream, ProfileUrbanFabric.class);
+		SimpleFeatureCollection parcelDensified = densification(MarkParcelAttributeFromPosition.markParcelsInf(parcelCollection, (int) profile.getMaximalArea()*4), isletCollection, tmpFolder, buildingFile, roadFile,
+				profile.getMaximalArea(), profile.getMinimalArea(), profile.getMaximalWidth(), profile.getLenDriveway(),
+				isArt3AllowsIsolatedParcel);
+		parcelDensified = MarkParcelAttributeFromPosition.markAlreadyMarkedParcels(parcelDensified, parcelCollection);
+		SimpleFeatureCollection parcelZone= ConsolidationDivision.consolidationDivision(MarkParcelAttributeFromPosition.markParcelsSup(parcelDensified, (int) profile.getMaximalArea()*4), tmpFolder, 
+				profile.getMaximalArea(), profile.getMinimalArea(), profile.getMaximalWidth(), profile.getStreetWidth(),
+				profile.getDecompositionLevelWithoutStreet());
+		return parcelZone;
+	}
 }
