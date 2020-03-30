@@ -27,26 +27,22 @@ public class FrenchParcelFields {
 	 */
 	public static SimpleFeatureCollection frenchParcelToMinParcel(SimpleFeatureCollection parcels) throws NoSuchAuthorityCodeException, FactoryException, IOException {
 		SimpleFeatureBuilder builder = ParcelSchema.getSFBMinParcel();
-		SimpleFeatureIterator parcelIt = parcels.features();
 		DefaultFeatureCollection result = new DefaultFeatureCollection();
-		try {
+		try (SimpleFeatureIterator parcelIt = parcels.features()){
 			while (parcelIt.hasNext()) {
 				SimpleFeature parcel = parcelIt.next();
 				result.add(ParcelSchema.setSFBMinParcelWithFeat(parcel, builder, parcel.getFeatureType()).buildFeature(null));
 			}
 		} catch (Exception problem) {
 			problem.printStackTrace();
-		} finally {
-			parcelIt.close();
 		}
 		return result.collection();
 	}
 	
 	public static SimpleFeatureCollection setOriginalFrenchParcelAttributes(SimpleFeatureCollection parcels, SimpleFeatureCollection initialParcels) throws Exception {
 		DefaultFeatureCollection parcelFinal = new DefaultFeatureCollection();
-		SimpleFeatureIterator parcelIt = parcels.features();
 		SimpleFeatureBuilder featureBuilder = ParcelSchema.getSFBFrenchParcel();
-		try {
+		try (SimpleFeatureIterator parcelIt = parcels.features()){
 			while (parcelIt.hasNext()) {
 				SimpleFeature parcel = parcelIt.next();
 				featureBuilder.set("the_geom", parcel.getDefaultGeometry());
@@ -63,8 +59,6 @@ public class FrenchParcelFields {
 			}
 		} catch (Exception problem) {
 			problem.printStackTrace();
-		} finally {
-			parcelIt.close();
 		}
 		return parcelFinal.collection();
 	}
@@ -83,12 +77,11 @@ public class FrenchParcelFields {
 	public static SimpleFeatureCollection fixParcelAttributes(SimpleFeatureCollection parcels, File communityFile) throws Exception {
 		DefaultFeatureCollection parcelFinal = new DefaultFeatureCollection();
 		int i = 0;
-		SimpleFeatureIterator parcelIt = parcels.features();
 		SimpleFeatureBuilder featureBuilder = ParcelSchema.getSFBFrenchParcel();
 		// city information
 		ShapefileDataStore shpDSCities = new ShapefileDataStore(communityFile.toURI().toURL());
 		SimpleFeatureCollection citiesSFS = shpDSCities.getFeatureSource().getFeatures();
-		try {
+		try (SimpleFeatureIterator parcelIt = parcels.features()){
 			while (parcelIt.hasNext()) {
 				i++;
 				SimpleFeature parcel = parcelIt.next();
@@ -119,8 +112,6 @@ public class FrenchParcelFields {
 			}
 		} catch (Exception problem) {
 			problem.printStackTrace();
-		} finally {
-			parcelIt.close();
 		}
 		shpDSCities.dispose();
 		return parcelFinal.collection();

@@ -157,8 +157,7 @@ public class ConsolidationDivision {
 						// that takes time but it's the best way I've found to set a correct section
 						// number (to look at the step 2 polygons)
 						String sec = "Default";
-						SimpleFeatureIterator ilotIt = mergedParcels.features();
-						try {
+						try (SimpleFeatureIterator ilotIt = mergedParcels.features()){
 							while (ilotIt.hasNext()) {
 								SimpleFeature ilot = ilotIt.next();
 								if (((Geometry) ilot.getDefaultGeometry()).intersects((Geometry) freshCut.getDefaultGeometry())) {
@@ -168,9 +167,7 @@ public class ConsolidationDivision {
 							}
 						} catch (Exception problem) {
 							problem.printStackTrace();
-						} finally {
-							ilotIt.close();
-						}
+						} 
 						sfBuilderFinalParcel.set("the_geom", freshCut.getDefaultGeometry());
 						sfBuilderFinalParcel.set(ParcelSchema.getMinParcelSectionField(), "newSection" + sec + "ConsolidRecomp");
 						sfBuilderFinalParcel.set(ParcelSchema.getMinParcelNumberField(), String.valueOf(i++));

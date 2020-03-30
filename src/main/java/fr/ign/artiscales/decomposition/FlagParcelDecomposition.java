@@ -230,7 +230,7 @@ public class FlagParcelDecomposition {
    * The core algorithm
    * 
    * @param p
-   * @return
+   * @return the flag cut parcel if possible. The input parcel otherwise
    * @throws Exception
    */
   private List<Polygon> decompParcel(Polygon p, double noise) throws Exception {
@@ -251,7 +251,7 @@ public class FlagParcelDecomposition {
       Pair<List<Polygon>, List<Polygon>> polGeneratedParcel = generateFlagParcel(splitPolygon);
       splitPolygon = polGeneratedParcel.getLeft();
       result.addAll(polGeneratedParcel.getRight());
-    }
+	  }
     // All split polygons are split and results added to the output
     for (Polygon pol : splitPolygon) {
       // System.out.println("---" + pol.area());
@@ -282,21 +282,18 @@ public class FlagParcelDecomposition {
   }
 
   /**
-   * The output is a list of two elements : 1/ the first one contains parcel with road access initially 2/ the second contains parcel with added road access
-   * 
-   * @param splittedPolygon
-   * @return
+   * Generate flag parcels: check if parcels have access to road and if not, try to generate a road throught other parcels
+   * @param splittedPolygon list of polygon split with the OBB method
+   * @return The output is a pair of two elements:<ul>
+   *  <li> the left one contains parcel with an initial road access and may continue to be decomposed</li>
+   *  <li> the right one contains parcel with added road access </li>
+   *  </ul>
    */
   private Pair<List<Polygon>, List<Polygon>> generateFlagParcel(List<Polygon> splittedPolygon) {
-//    System.out.println("generateFlagParcel");
 //    splittedPolygon.stream().forEach(p -> System.out.println(p));
 
     List<Polygon> left = new ArrayList<>();
     List<Polygon> right = new ArrayList<>();
-    // The output polygon
-    // List<List<Polygon>> polygonesOut = new ArrayList<>();
-    // polygonesOut.add(new ArrayList<>());
-    // polygonesOut.add(new ArrayList<>());
 
     // We get the two geometries with and without road access
     List<Polygon> lPolygonWithRoadAccess = splittedPolygon.stream().filter(x -> hasRoadAccess(x)).collect(Collectors.toList());
@@ -375,7 +372,7 @@ public class FlagParcelDecomposition {
 
         // We directly add the result from polygon 2 to the results
         right.addAll(lPolygonsOut2);
-
+        
         // We update the geometry of the first polygon
         lPolygonWithRoadAccess.remove(side.getValue());
         lPolygonWithRoadAccess.addAll(lPolygonsOut1);
@@ -386,9 +383,7 @@ public class FlagParcelDecomposition {
           e.printStackTrace();
         }
       }
-      /*
-       * System.out.println("I am empty"); generateFlagParcel(splittedPolygon);
-       */
+      // System.out.println("I am empty"); generateFlagParcel(splittedPolygon);
       // We have added nothing if we are here, we kept the initial polygon
       right.add(currentPoly);
     }
@@ -500,27 +495,8 @@ private Pair<Geometry,Geometry> getIntersectionDifference(Geometry a, Geometry b
     return geom.getLength();
   }
   
-	/**
-	 * Indicate if the given polygon is near the {@link org.locationtech.jts.geom.Polygon#getExteriorRing() shell} of a given Polygon object. This object is the islandExterior
-	 * argument out of {@link #FlagParcelDecomposition(Polygon, SimpleFeatureCollection, double, double, double, List) the FlagParcelDecomposition constructor} or if not set, the
-	 * bounds of the {@link #polygonInit initial polygon}.
-	 * 
-	 * If no roads have been found and a road shapefile has been set, we look if a road shapefile has been set and if the given road is nearby
-	 * 
-	 * @param poly
-	 * @return
-	 * @throws Exception 
-	 * @throws IOException 
-	 */
   public boolean hasRoadAccess(Polygon poly){
-	  if (poly.intersects(getExtAsGeom().buffer(0.5))) {
-		return true;
-	  }
-//	  System.out.println(Geom.unionGeom(getRoadPolygon(roads)));
-	  if (roads != null && poly.intersects(Geom.unionGeom(getRoadPolygon(roads)))) {
-		  return true;
-	  }
-    return false;
+	return isParcelHasRoadAccess(poly, roads, poly.getFactory().createMultiLineString(ext.toArray(new LineString[ext.size()])));
   }
   
 //  public boolean hasRoadAccess(Polygon poly) {
@@ -528,12 +504,17 @@ private Pair<Geometry,Geometry> getIntersectionDifference(Geometry a, Geometry b
 //	  }
 
   public MultiLineString getListAsGeom(List<LineString> list) {
-    return this.polygonInit.getFactory().createMultiLineString(list.toArray(new LineString[list.size()]));
+    return getListAsGeom(list, this.polygonInit);
   }
 
+  public static MultiLineString getListAsGeom(List<LineString> list, Polygon polygon) {
+	    return polygon.getFactory().createMultiLineString(list.toArray(new LineString[list.size()]));
+  }
+  
 	public static boolean isRoadPolygonIntersectsLine(SimpleFeatureCollection roads, LineString ls) {
 		return roads != null && Geom.unionGeom(getRoadPolygon(roads)).contains(ls);
 	}
+	
   /**
    * Get a list of the surrounding buffered road segments.
    * 
@@ -561,6 +542,31 @@ private Pair<Geometry,Geometry> getIntersectionDifference(Geometry a, Geometry b
 		}
 		return roadGeom;
   }
+	
+	/**
+	 * Indicate if the given polygon is near the {@link org.locationtech.jts.geom.Polygon#getExteriorRing() shell} of a given Polygon object. This object is the islandExterior
+	 * argument out of {@link #FlagParcelDecomposition(Polygon, SimpleFeatureCollection, double, double, double, List) the FlagParcelDecomposition constructor} or if not set, the
+	 * bounds of the {@link #polygonInit initial polygon}.
+	 * 
+	 * If no roads have been found and a road shapefile has been set, we look if a road shapefile has been set and if the given road is nearby
+	 * 
+	 * @param poly
+	 * @param geometry
+	 * @return
+	 * @throws Exception
+	 * @throws IOException
+	 */
+	public static boolean isParcelHasRoadAccess(Polygon poly, SimpleFeatureCollection roads, MultiLineString ext) {
+//		if (poly.intersects((((Polygon) ext).getExteriorRing()).buffer(0.5))) {
+		if (poly.intersects(ext.buffer(0.5))) {
+			return true;
+		}
+		// System.out.println(Geom.unionGeom(getRoadPolygon(roads)));
+		if (roads != null && poly.intersects(Geom.unionGeom(getRoadPolygon(roads)))) {
+			return true;
+		}
+		return false;
+	}
   
   /**
    * Get the islet external perimeter

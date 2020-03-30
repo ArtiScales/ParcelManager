@@ -107,8 +107,7 @@ public class ParcelSplit {
 
     // iterate on the parcels
     int i = 0;
-    SimpleFeatureIterator parcelIt = parcelsIn.features();
-    try {
+    try ( SimpleFeatureIterator parcelIt = parcelsIn.features()) {
       while (parcelIt.hasNext()) {
         SimpleFeature feat = parcelIt.next();
         String numParcelValue = "";
@@ -132,8 +131,6 @@ public class ParcelSplit {
       }
     } catch (Exception problem) {
       problem.printStackTrace();
-    } finally {
-      parcelIt.close();
     }
     return splitParcels(toSplit, maximalArea, maximalWidth, epsilon, 0.0, extBlock, streetWidth, forceStreetAccess, decompositionLevelWithoutStreet, tmpFolder);
   }

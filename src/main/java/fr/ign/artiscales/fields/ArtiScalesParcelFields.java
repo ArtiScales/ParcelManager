@@ -34,12 +34,10 @@ public class ArtiScalesParcelFields {
 		DefaultFeatureCollection parcelFinal = new DefaultFeatureCollection();
 
 		int i = 0;
-		SimpleFeatureIterator parcelIt = parcelsFrenched.features();
 		SimpleFeatureBuilder featureBuilder = ParcelSchema.getSFBParcelAsAS();
-
 		ShapefileDataStore shpDSCells = new ShapefileDataStore(polygonIntersectionFile.toURI().toURL());
 		SimpleFeatureCollection cellsSFS = shpDSCells.getFeatureSource().getFeatures();
-		try {
+		try (SimpleFeatureIterator parcelIt = parcelsFrenched.features()){
 			while (parcelIt.hasNext()) {
 				boolean newlyGenerate = true;
 				i++;
@@ -85,7 +83,6 @@ public class ArtiScalesParcelFields {
 						featureBuilder.set("NC", false);
 					}
 				}
-
 				// Simulation information
 				// if already set from the parcel file
 				if (!newlyGenerate && parcel.getAttribute("DoWeSimul") != null) {
@@ -98,17 +95,12 @@ public class ArtiScalesParcelFields {
 					featureBuilder.set("DoWeSimul", "false");
 					featureBuilder.set("eval", 0);
 				}
-				SimpleFeature feat = featureBuilder.buildFeature(Integer.toString(i));
-				parcelFinal.add(feat);
+				parcelFinal.add(featureBuilder.buildFeature(Integer.toString(i)));
 			}
 		} catch (Exception problem) {
 			problem.printStackTrace();
-		} finally {
-			parcelIt.close();
 		}
-
 		shpDSCells.dispose();
-
 		return parcelFinal.collection();
 	}
 }

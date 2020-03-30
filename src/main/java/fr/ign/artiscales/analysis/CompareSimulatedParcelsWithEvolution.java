@@ -70,12 +70,11 @@ public class CompareSimulatedParcelsWithEvolution {
 		System.out.println("++++++++++analysis by zones++++++++++");
 		//we proceed with an analysis made for each steps
 		for (PMStep step : pm.getStepList()) {
-			
 			File zoneOutFolder = new File(outFolder,step.getZoneStudied());
 			zoneOutFolder.mkdirs();
 			Geometry geom = step.getBoundsOfZone();						
-			// make statistic graphs
 			
+			// make statistic graphs
 			List<AreaGraph> lAG = new ArrayList<AreaGraph>();
 			Hashtable<String, Object[]> csvData = new Hashtable<String, Object[]>();
 			

@@ -41,7 +41,6 @@ public class ParcelCollection {
 	public static void main(String[] args) throws Exception {
 		ShapefileDataStore sds = new ShapefileDataStore(new File("/tmp/lala.shp").toURI().toURL());
 		SimpleFeatureCollection sfc = sds.getFeatureSource().getFeatures();
-		
 		Collec.exportSFC(mergeTooSmallParcels(sfc,100),new File("/tmp/lalaMerged.shp"));
 //		markDiffParcel(new File("/tmp/lala.shp"), new File("/tmp/lala2.shp"), new File("/tmp/delRoad"), new File("/tmp/"));
 //
@@ -92,8 +91,7 @@ public class ParcelCollection {
 		List<String> ids = new ArrayList<String>();	
 		//easy hack to sort parcels by their size
 		SortedMap<Double, SimpleFeature> index = new TreeMap<>();
-		SimpleFeatureIterator itr = parcelsUnsorted.features();
-		try {
+		try (SimpleFeatureIterator itr = parcelsUnsorted.features()) {
 			while (itr.hasNext()) {
 				SimpleFeature feature = itr.next();
 				//get the area an generate random numbers for the last 4 for out of 14 decimal. this hack is done to avoid exaclty same key area and delete some features
@@ -102,9 +100,7 @@ public class ParcelCollection {
 			}
 		} catch (Exception problem) {
 			problem.printStackTrace();
-		} finally {
-			itr.close();
-		}
+		} 
 		for (Entry<Double, SimpleFeature> entry : index.entrySet()) {
 			SimpleFeature feat = entry.getValue();
 			// if the parcel has already been merged with a smaller one, we skip (and we made the hypotheses that a merged parcel will always be bigger than the threshold)
@@ -187,8 +183,7 @@ public class ParcelCollection {
 	public static DefaultFeatureCollection addAllParcels(SimpleFeatureCollection parcelIn, SimpleFeatureCollection parcelAdd) {
 		DefaultFeatureCollection result = new DefaultFeatureCollection();
 		result.addAll(parcelIn);
-		SimpleFeatureIterator parcelAddIt = parcelAdd.features();
-		try {
+		try (SimpleFeatureIterator parcelAddIt = parcelAdd.features()) {
 			while (parcelAddIt.hasNext()) {
 				SimpleFeature featAdd = parcelAddIt.next();
 				SimpleFeatureBuilder fit = ParcelSchema.setSFBParcelAsASWithFeat(featAdd);
@@ -196,8 +191,6 @@ public class ParcelCollection {
 			}
 		} catch (Exception problem) {
 			problem.printStackTrace();
-		} finally {
-			parcelAddIt.close();
 		}
 		return result;
 	}
@@ -343,8 +336,7 @@ public class ParcelCollection {
 		DefaultFeatureCollection result = new DefaultFeatureCollection();
 		SimpleFeatureType schema = parcelTot.features().next().getFeatureType();
 		// result.addAll(parcelCuted);
-		SimpleFeatureIterator parcelCutedIt = parcelCuted.features();
-		try {
+		try (SimpleFeatureIterator parcelCutedIt = parcelCuted.features()) {
 			while (parcelCutedIt.hasNext()) {
 				SimpleFeature featCut = parcelCutedIt.next();
 				SimpleFeatureBuilder fit = ParcelSchema.setSFBParcelAsASWithFeat(featCut, schema);
@@ -352,12 +344,8 @@ public class ParcelCollection {
 			}
 		} catch (Exception problem) {
 			problem.printStackTrace();
-		} finally {
-			parcelCutedIt.close();
-		}
-
-		SimpleFeatureIterator totIt = parcelTot.features();
-		try {
+		} 
+		try (SimpleFeatureIterator totIt = parcelTot.features()) {
 			while (totIt.hasNext()) {
 				SimpleFeature featTot = totIt.next();
 				boolean add = true;
@@ -374,8 +362,6 @@ public class ParcelCollection {
 			}
 		} catch (Exception problem) {
 			problem.printStackTrace();
-		} finally {
-			totIt.close();
 		}
 		return result.collection();
 	}
@@ -426,7 +412,6 @@ public class ParcelCollection {
 		SimpleFeatureCollection parcelToSort = sds.getFeatureSource().getFeatures();
 		ShapefileDataStore sdsRef = new ShapefileDataStore(parcelRefFile.toURI().toURL());
 		SimpleFeatureCollection parcelRef = sdsRef.getFeatureSource().getFeatures();
-		SimpleFeatureIterator itRef = parcelRef.features();
 		FilterFactory2 ff = CommonFactoryFinder.getFilterFactory2();
 		PropertyName pName = ff.property(parcelRef.getSchema().getGeometryDescriptor().getLocalName());
 
@@ -434,15 +419,14 @@ public class ParcelCollection {
 		DefaultFeatureCollection notSame = new DefaultFeatureCollection();
 		DefaultFeatureCollection polygonIntersection = new DefaultFeatureCollection();
 		//for every reference parcels 
-		try {
+		try (SimpleFeatureIterator itRef = parcelRef.features()){
 			refParcel: while (itRef.hasNext()) {
 				SimpleFeature pRef = itRef.next();
 				Geometry geomPRef = (Geometry) pRef.getDefaultGeometry();
 				double geomArea = geomPRef.getArea();
 				//for every intersected parcels, we check if it is close to (as tiny geometry changes)
 				SimpleFeatureCollection parcelsIntersectRef = parcelToSort.subCollection(ff.intersects(pName, ff.literal(geomPRef)));
-				SimpleFeatureIterator itParcelIntersectRef = parcelsIntersectRef.features();
-				try {
+				try (SimpleFeatureIterator itParcelIntersectRef = parcelsIntersectRef.features()) {
 					while (itParcelIntersectRef.hasNext()) {
 						double inter = geomPRef.intersection((Geometry) itParcelIntersectRef.next().getDefaultGeometry()).getArea();
 						// if there are parcel intersection and a similar area, we conclude that parcel haven't changed. We put it in the \"same\" collection and stop the search
@@ -453,9 +437,7 @@ public class ParcelCollection {
 					}
 				} catch (Exception problem) {
 					problem.printStackTrace();
-				} finally {
-					itParcelIntersectRef.close();
-				}
+				} 
 				//we check if the parcel has been intentionally deleted by generating new polygons (same technique of area comparison, but with a way smaller error bound)
 				// if it has been cleaned, we don't add it to no additional parcels 
 				File[] polyFiles = {Collec.exportSFC(parcelsIntersectRef, new File(tmpFolder, "parcelsIntersectRef.shp")),Geom.exportGeom(geomPRef, new File(tmpFolder, "geom.shp"))};
@@ -472,9 +454,7 @@ public class ParcelCollection {
 			}
 		} catch (Exception problem) {
 			problem.printStackTrace();
-		} finally {
-			itRef.close();
-		}
+		} 
 		Collec.exportSFC(same, new File(parcelOutFolder, "same.shp"));
 		Collec.exportSFC(notSame, new File(parcelOutFolder, "notSame.shp"));
 		Collec.exportSFC(polygonIntersection, new File(parcelOutFolder, "polygonIntersection.shp"));
@@ -493,17 +473,13 @@ public class ParcelCollection {
 	 * @return
 	 */
 	public static List<String> dontAddParcel(List<String> parcelToNotAdd, SimpleFeatureCollection bigZoned) {
-
-		SimpleFeatureIterator feat = bigZoned.features();
-		try {
+		try (SimpleFeatureIterator feat = bigZoned.features()) {
 			while (feat.hasNext()) {
 				parcelToNotAdd.add((String) feat.next().getAttribute("CODE"));
 			}
 		} catch (Exception problem) {
 			problem.printStackTrace();
-		} finally {
-			feat.close();
-		}
+		} 
 		return parcelToNotAdd;
 	}
 }

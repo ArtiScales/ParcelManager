@@ -37,7 +37,8 @@ public class ParcelGetter {
 //	}
 	
 	/**
-	 * try 
+	 * get a set of parcel depending to their zoning type. 
+	 * TODO normalize with the french zoning nomenclature
 	 * @param zone
 	 * @param parcelles
 	 * @param zoningFile
@@ -67,8 +68,7 @@ public class ParcelGetter {
 		}
 
 		DefaultFeatureCollection zoneSelected = new DefaultFeatureCollection();
-		SimpleFeatureIterator itZonez = zonesSFC.features();
-		try {
+		try(SimpleFeatureIterator itZonez = zonesSFC.features()) {
 			while (itZonez.hasNext()) {
 				SimpleFeature zones = itZonez.next();
 				if (listZones.contains(zones.getAttribute(zoneNameFiled))) {
@@ -77,16 +77,12 @@ public class ParcelGetter {
 			}
 		} catch (Exception problem) {
 			problem.printStackTrace();
-		} finally {
-			itZonez.close();
-		}
+		} 
 		DefaultFeatureCollection result = new DefaultFeatureCollection();
-		SimpleFeatureIterator it = parcelles.features();
-		try {
+		try (SimpleFeatureIterator it = parcelles.features()) {
 			while (it.hasNext()) {
 				SimpleFeature parcelFeat = it.next();
-				SimpleFeatureIterator itZone = zoneSelected.features();
-				try {
+				try (SimpleFeatureIterator itZone = zoneSelected.features()) {
 					while (itZone.hasNext()) {
 						SimpleFeature zoneFeat = itZone.next();
 						Geometry zoneGeom = (Geometry) zoneFeat.getDefaultGeometry();
@@ -103,15 +99,11 @@ public class ParcelGetter {
 					}
 				} catch (Exception problem) {
 					problem.printStackTrace();
-				} finally {
-					itZone.close();
-				}
+				} 
 			}
 		} catch (Exception problem) {
 			problem.printStackTrace();
-		} finally {
-			it.close();
-		}
+		} 
 		zonesSDS.dispose();
 		return result.collection();
 	}
@@ -134,8 +126,7 @@ public class ParcelGetter {
 
 		FilterFactory2 ff = CommonFactoryFinder.getFilterFactory2(GeoTools.getDefaultHints());
 		DefaultFeatureCollection result = new DefaultFeatureCollection();
-		SimpleFeatureIterator itParcel = parcels.features();
-		try {
+		try (SimpleFeatureIterator itParcel = parcels.features()) {
 			while (itParcel.hasNext()) {
 				SimpleFeature parcelFeat = itParcel.next();
 				Geometry parcelGeom = (Geometry) parcelFeat.getDefaultGeometry();
@@ -144,8 +135,7 @@ public class ParcelGetter {
 					continue;
 				}
 				Filter filter = ff.like(ff.property(typologyField), typo);
-				SimpleFeatureIterator itTypo = communitiesSFC.subCollection(filter).features();
-				try {
+				try (SimpleFeatureIterator itTypo = communitiesSFC.subCollection(filter).features()){
 					while (itTypo.hasNext()) {
 						SimpleFeature typoFeat = itTypo.next();
 						Geometry typoGeom = (Geometry) typoFeat.getDefaultGeometry();
@@ -169,14 +159,10 @@ public class ParcelGetter {
 					}
 				} catch (Exception problem) {
 					problem.printStackTrace();
-				} finally {
-					itTypo.close();
 				}
 			}
 		} catch (Exception problem) {
 			problem.printStackTrace();
-		} finally {
-			itParcel.close();
 		}
 		communitiesSDS.dispose();
 		return result.collection();
@@ -230,9 +216,8 @@ public class ParcelGetter {
 	 * 	 * @throws IOException
 	 */
 	public static SimpleFeatureCollection getParcelByZip(SimpleFeatureCollection parcelIn, String val, String firstFieldName, String secondFieldName) throws IOException {
-		SimpleFeatureIterator it = parcelIn.features();
 		DefaultFeatureCollection result = new DefaultFeatureCollection();
-		try {
+		try (SimpleFeatureIterator it = parcelIn.features()) {
 			while (it.hasNext()) {
 				SimpleFeature feat = it.next();
 				String zipCode = ((String) feat.getAttribute(firstFieldName)).concat(((String) feat.getAttribute(secondFieldName)));
@@ -242,9 +227,7 @@ public class ParcelGetter {
 			}
 		} catch (Exception problem) {
 			problem.printStackTrace();
-		} finally {
-			it.close();
-		}
+		} 
 		return result.collection();
 	}
 	
@@ -500,8 +483,7 @@ public class ParcelGetter {
 		DefaultFeatureCollection newParcel = new DefaultFeatureCollection();
 
 		// int tot = parcels.size();
-		SimpleFeatureIterator parcelIt = parcelsSFC.features();
-		try {
+		try (SimpleFeatureIterator parcelIt = parcelsSFC.features()) {
 			parc: while (parcelIt.hasNext()) {
 				SimpleFeature feat = parcelIt.next();
 				Geometry geom = (Geometry) feat.getDefaultGeometry();
@@ -544,10 +526,7 @@ public class ParcelGetter {
 
 		} catch (Exception problem) {
 			problem.printStackTrace();
-		} finally {
-			parcelIt.close();
-		}
-
+		} 
 		parcelSDS.dispose();
 		shpDSBati.dispose();
 

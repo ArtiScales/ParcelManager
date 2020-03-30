@@ -79,11 +79,9 @@ public class ParcelState {
 	}
 
 	public static boolean isArt3AllowsIsolatedParcel(String insee, File predicateFile) throws IOException {
-
 		if(!predicateFile.exists()) {
 			return true;
 		}
-		
 		int nInsee = 0;
 		int nArt3 = 0;
 		// get rule file
@@ -140,8 +138,7 @@ public class ParcelState {
 	 */
 	public static boolean isAlreadyBuilt(File buildingFile, SimpleFeature parcel, Geometry emprise) throws Exception {
 		ShapefileDataStore batiSDS = new ShapefileDataStore(buildingFile.toURI().toURL());
-		SimpleFeatureCollection batiFeatures = batiSDS.getFeatureSource().getFeatures();
-		boolean result = isAlreadyBuilt(Collec.snapDatas(batiFeatures, emprise), parcel, 0.0);
+		boolean result = isAlreadyBuilt(Collec.snapDatas(batiSDS.getFeatureSource().getFeatures(), emprise), parcel, 0.0);
 		batiSDS.dispose();
 		return result;
 	}
@@ -161,8 +158,7 @@ public class ParcelState {
 			throws IOException {
 		boolean isContent = false;
 		Geometry geom = ((Geometry) feature.getDefaultGeometry());
-		SimpleFeatureIterator iterator = batiSFC.features();
-		try {
+		try (SimpleFeatureIterator iterator = batiSFC.features()) {
 			while (iterator.hasNext()) {
 				if (geom.intersects(((Geometry) iterator.next().getDefaultGeometry()).buffer(bufferBati))) {
 					isContent = true;
@@ -171,8 +167,6 @@ public class ParcelState {
 			}
 		} catch (Exception problem) {
 			problem.printStackTrace();
-		} finally {
-			iterator.close();
 		}
 		return isContent;
 	}
@@ -197,31 +191,25 @@ public class ParcelState {
 	public static Double getEvalInParcel(SimpleFeature parcel, File outMup)
 			throws ParseException, NoSuchAuthorityCodeException, FactoryException, IOException {
 		ShapefileDataStore cellsSDS = new ShapefileDataStore(outMup.toURI().toURL());
-		SimpleFeatureCollection cellsCollection = cellsSDS.getFeatureSource().getFeatures();
-		Double result = getEvalInParcel(parcel, cellsCollection);
+		Double result = getEvalInParcel(parcel, cellsSDS.getFeatureSource().getFeatures());
 		cellsSDS.dispose();
 		return result;
 	}
 
 	public static Double getEvalInParcel(SimpleFeature parcel, SimpleFeatureCollection mupSFC) {
-
 		FilterFactory2 ff = CommonFactoryFinder.getFilterFactory2(GeoTools.getDefaultHints());
-		String geometryCellPropertyName = mupSFC.getSchema().getGeometryDescriptor().getLocalName();
-		Filter inter = ff.intersects(ff.property(geometryCellPropertyName), ff.literal(parcel.getDefaultGeometry()));
+		Filter inter = ff.intersects(ff.property(mupSFC.getSchema().getGeometryDescriptor().getLocalName()), ff.literal(parcel.getDefaultGeometry()));
 		SimpleFeatureCollection onlyCells = mupSFC.subCollection(inter);
 		Double bestEval = 0.0;
 		// put the best cell evaluation into the parcel
 		if (onlyCells.size() > 0) {
-			SimpleFeatureIterator onlyCellIt = onlyCells.features();
-			try {
+			try (SimpleFeatureIterator onlyCellIt = onlyCells.features()) {
 				while (onlyCellIt.hasNext()) {
 					bestEval = Math.max(bestEval, (Double) onlyCellIt.next().getAttribute("eval"));
 				}
 			} catch (Exception problem) {
 				problem.printStackTrace();
-			} finally {
-				onlyCellIt.close();
-			}
+			} 
 		}
 		// si jamais le nom est déjà généré
 		// sort collection with evaluation
@@ -248,21 +236,17 @@ public class ParcelState {
 	public static Double getCloseEvalInParcel(SimpleFeature parcel, SimpleFeatureCollection mupSFC) {
 
 		FilterFactory2 ff = CommonFactoryFinder.getFilterFactory2(GeoTools.getDefaultHints());
-		String geometryCellPropertyName = mupSFC.getSchema().getGeometryDescriptor().getLocalName();
-
-		Filter inter = ff.intersects(ff.property(geometryCellPropertyName),
+		Filter inter = ff.intersects(ff.property(mupSFC.getSchema().getGeometryDescriptor().getLocalName()),
 				ff.literal(((Geometry) parcel.getDefaultGeometry()).buffer(100.0)));
 		SimpleFeatureCollection onlyCells = mupSFC.subCollection(inter);
 		Double bestEval = 0.0;
-
 		// put the best cell evaluation into the parcel
 		if (onlyCells.size() > 0) {
 			double distBuffer = 0.0;
 			// we randomly decide that the cell cannot be further than 100 meters
 			while (distBuffer < 100) {
 				Geometry geometryUp = ((Geometry) parcel.getDefaultGeometry()).buffer(distBuffer);
-				SimpleFeatureIterator onlyCellIt = onlyCells.features();
-				try {
+				try (SimpleFeatureIterator onlyCellIt = onlyCells.features()) {
 					while (onlyCellIt.hasNext()) {
 						SimpleFeature cell = onlyCellIt.next();
 						if (geometryUp.intersects((Geometry) cell.getDefaultGeometry())) {
@@ -271,9 +255,7 @@ public class ParcelState {
 					}
 				} catch (Exception problem) {
 					problem.printStackTrace();
-				} finally {
-					onlyCellIt.close();
-				}
+				} 
 				distBuffer = distBuffer + 5;
 			}
 		}
@@ -286,8 +268,7 @@ public class ParcelState {
 		cellsCollection = Collec.snapDatas(cellsCollection, geom);
 		boolean result = false;
 		// import of the cells of MUP-City outputs
-		SimpleFeatureIterator cellsCollectionIt = cellsCollection.features();
-		try {
+		try (SimpleFeatureIterator cellsCollectionIt = cellsCollection.features()) {
 			while (cellsCollectionIt.hasNext()) {
 				if (((Geometry) cellsCollectionIt.next().getDefaultGeometry()).intersects(geom)) {
 					result = true;
@@ -296,8 +277,6 @@ public class ParcelState {
 			}
 		} catch (Exception problem) {
 			problem.printStackTrace();
-		} finally {
-			cellsCollectionIt.close();
 		}
 		return result;
 	}
@@ -330,14 +309,12 @@ public class ParcelState {
 	public static List<String> parcelInBigZone(SimpleFeature parcelIn, File zoningFile) throws Exception {
 		List<String> result = new LinkedList<String>();
 		ShapefileDataStore shpDSZone = new ShapefileDataStore(zoningFile.toURI().toURL());
-		SimpleFeatureCollection shpDSZoneReduced = Collec.snapDatas(shpDSZone.getFeatureSource().getFeatures(),
-				(Geometry) parcelIn.getDefaultGeometry());
-		SimpleFeatureIterator featuresZones = shpDSZoneReduced.features();
 		// if there's two zones, we need to sort them by making collection. zis iz évy
 		// calculation, but it could worth it
 		boolean twoZones = false;
 		HashMap<String, Double> repart = new HashMap<String, Double>();
-		try {
+		try (SimpleFeatureIterator featuresZones = Collec
+				.snapDatas(shpDSZone.getFeatureSource().getFeatures(), (Geometry) parcelIn.getDefaultGeometry()).features()) {
 			zoneLoop: while (featuresZones.hasNext()) {
 				SimpleFeature feat = featuresZones.next();
 				PrecisionModel precMod = new PrecisionModel(100);
@@ -394,8 +371,6 @@ public class ParcelState {
 			}
 		} catch (Exception problem) {
 			problem.printStackTrace();
-		} finally {
-			featuresZones.close();
 		}
 		shpDSZone.dispose();
 
@@ -439,16 +414,12 @@ public class ParcelState {
 	public static List<String> parcelInTypo(SimpleFeature parcelIn, File communeFile) throws Exception {
 		List<String> result = new ArrayList<String>();
 		ShapefileDataStore shpDSZone = new ShapefileDataStore(communeFile.toURI().toURL());
-		SimpleFeatureCollection shpDSZoneReduced = Collec.snapDatas(shpDSZone.getFeatureSource().getFeatures(),
-				(Geometry) parcelIn.getDefaultGeometry());
-
-		SimpleFeatureIterator featuresZones = shpDSZoneReduced.features();
-
 		// objects for crossed zones
 		boolean twoZones = false;
 		HashMap<String, Double> repart = new HashMap<String, Double>();
 
-		try {
+		try (SimpleFeatureIterator featuresZones = Collec
+				.snapDatas(shpDSZone.getFeatureSource().getFeatures(), (Geometry) parcelIn.getDefaultGeometry()).features()) {
 			zone: while (featuresZones.hasNext()) {
 				SimpleFeature feat = featuresZones.next();
 				Geometry parcelInGeometry = (Geometry) parcelIn.getDefaultGeometry();
@@ -523,9 +494,7 @@ public class ParcelState {
 			}
 		} catch (Exception problem) {
 			problem.printStackTrace();
-		} finally {
-			featuresZones.close();
-		}
+		} 
 
 		if (twoZones == true) {
 			List<Entry<String, Double>> entryList = new ArrayList<Entry<String, Double>>(repart.entrySet());
@@ -558,10 +527,9 @@ public class ParcelState {
 	 */
 	public static String getFieldFromSFC(Geometry geometry, SimpleFeatureCollection parcels, String fieldName) {
 		HashMap<String, Double> repart = new HashMap<String, Double>();
-		SimpleFeatureIterator parcelIt = parcels.features();
 		boolean twoZones = false;
 		String result = "";
-		try {
+		try (SimpleFeatureIterator parcelIt = parcels.features()) {
 			while (parcelIt.hasNext()) {
 				SimpleFeature parcel = parcelIt.next();
 				Geometry parcelGeom = ((Geometry) parcel.getDefaultGeometry());
@@ -578,8 +546,6 @@ public class ParcelState {
 			}
 		} catch (Exception problem) {
 			problem.printStackTrace();
-		} finally {
-			parcelIt.close();
 		}
 		// in case of multi zones, we sort the entries relatively to the highest area
 		if (twoZones == true) {

@@ -89,8 +89,7 @@ public class ZoneDivision {
 		int numZone = 0;
 
 		DefaultFeatureCollection goOdZone = new DefaultFeatureCollection();
-		SimpleFeatureIterator zoneIt = initialZone.features();
-		try {
+		try (SimpleFeatureIterator zoneIt = initialZone.features()){
 			while (zoneIt.hasNext()) {
 				numZone++;
 				SimpleFeature feat = zoneIt.next();
@@ -131,26 +130,20 @@ public class ZoneDivision {
 			}
 		} catch (Exception problem) {
 			problem.printStackTrace();
-		} finally {
-			zoneIt.close();
-		}
-
+		} 
 		// zones verification
 		if (goOdZone.isEmpty()) {
 			System.out.println("parcelGenZone : no zones to cut");
 			return parcels;
 		}
 		// detect if the zone is a leftover
-		SimpleFeatureIterator itGoOD = goOdZone.features();
 		double totAireGoOD = 0.0;
-		try {
+		try (SimpleFeatureIterator itGoOD = goOdZone.features()) {
 			while (itGoOD.hasNext()) {
 				totAireGoOD = totAireGoOD + ((Geometry) itGoOD.next().getDefaultGeometry()).getArea();
 			}
 		} catch (Exception problem) {
 			problem.printStackTrace();
-		} finally {
-			itGoOD.close();
 		}
 		if (totAireGoOD < minimalArea) {
 			System.out.println("Tot zone is too small to be taken into consideration -- return is null");
@@ -169,8 +162,7 @@ public class ZoneDivision {
 		for (Geometry poly : polygons) {
 			// if the polygons are not included on the AU zone, we check to which parcel they belong
 			if (!geomSelectedZone.buffer(0.01).contains(poly)) {
-				SimpleFeatureIterator parcelIt = parcelsInZone.features();
-				try {
+				try (SimpleFeatureIterator parcelIt = parcelsInZone.features()){
 					while (parcelIt.hasNext()) {
 						SimpleFeature feat = parcelIt.next();
 						// we copy the previous parcels informations
@@ -181,9 +173,7 @@ public class ZoneDivision {
 					}
 				} catch (Exception problem) {
 					problem.printStackTrace();
-				} finally {
-					parcelIt.close();
-				}
+				} 
 			}
 		}
 		double roadEpsilon = 0;
@@ -208,10 +198,8 @@ public class ZoneDivision {
 		//get the section numbers 
 		int i = 0;
 		DefaultFeatureCollection result = new DefaultFeatureCollection();
-		SimpleFeatureIterator itZoneParcel = splitedZoneParcels.features();
 		SimpleFeatureBuilder finalParcelBuilder = ParcelSchema.getSFBMinParcel();
-		SimpleFeatureType schemaParcel = finalParcelBuilder.getFeatureType();
-		try {
+		try (SimpleFeatureIterator itZoneParcel = splitedZoneParcels.features()){
 			while (itZoneParcel.hasNext()) {
 				SimpleFeature parcel = itZoneParcel.next();
 				Geometry parcelGeom = (Geometry) parcel.getDefaultGeometry();
@@ -219,8 +207,7 @@ public class ZoneDivision {
 					finalParcelBuilder.set(geomName, parcel.getDefaultGeometry());
 					// get the section name
 					String section = "";
-					SimpleFeatureIterator goOdZoneIt = goOdZone.features();
-					try {
+					try (SimpleFeatureIterator goOdZoneIt = goOdZone.features()) {
 						while (goOdZoneIt.hasNext()) {
 							SimpleFeature zone = goOdZoneIt.next();
 							if (((Geometry) zone.getDefaultGeometry()).buffer(2).contains(parcelGeom)) {
@@ -230,8 +217,6 @@ public class ZoneDivision {
 						}
 					} catch (Exception problem) {
 						problem.printStackTrace();
-					} finally {
-						goOdZoneIt.close();
 					}
 					finalParcelBuilder.set(ParcelSchema.getMinParcelSectionField(), section);
 					result.add(finalParcelBuilder.buildFeature(null));
@@ -239,18 +224,14 @@ public class ZoneDivision {
 			}
 		} catch (Exception problem) {
 			problem.printStackTrace();
-		} finally {
-			itZoneParcel.close();
-		}
-
+		} 
 		if (SAVEINTERMEDIATERESULT) {
 			Collec.exportSFC(result, new File(tmpFolder,"parcelZoneDivisionOnly"), OVERWRITESHAPEFILES);
 			OVERWRITESHAPEFILES = false;
 		}
-		
 		// add the saved parcels
-		SimpleFeatureIterator itSavedParcels = savedParcels.features();
-		try {
+		SimpleFeatureType schemaParcel = finalParcelBuilder.getFeatureType();
+		try (SimpleFeatureIterator itSavedParcels = savedParcels.features()){
 			while (itSavedParcels.hasNext()) {
 				SimpleFeature parcel = itSavedParcels.next();
 				finalParcelBuilder = ParcelSchema.setSFBMinParcelWithFeat(parcel, schemaParcel);
@@ -258,8 +239,6 @@ public class ZoneDivision {
 			}
 		} catch (Exception problem) {
 			problem.printStackTrace();
-		} finally {
-			itSavedParcels.close();
 		}
 		return result;
 	}

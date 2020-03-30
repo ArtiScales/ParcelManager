@@ -24,14 +24,16 @@ public class ParcelSplitFlag {
 		/////////////////////////
 		//////// try the generateFlagSplitedParcels method
 		/////////////////////////
+		File rootFolder = new File("/home/ubuntu/PMtest/Densification/");
+		
 		// Input 1/ the input parcelles to split
-		File inputShapeFile = new File("/tmp/lala.shp");
+		File inputShapeFile = new File("/tmp/marked.shp");
 		// Input 2 : the buildings that mustnt intersects the allowed roads (facultatif)
-		File inputBuildingFile = new File("/media/ubuntu/2a3b1227-9bf5-461e-bcae-035a8845f72f/Documents/boulot/theseIGN/PM/PMtest/Ponteau/building.shp");
+		File inputBuildingFile = new File(rootFolder, "building.shp");
 		// Input 3 (facultative) : the exterior of the urban block (it serves to determiner the multicurve)
-		File inputUrbanBlock = new File("/media/ubuntu/2a3b1227-9bf5-461e-bcae-035a8845f72f/Documents/boulot/theseIGN/PM/PMtest/Ponteau/ilot.shp");
+		File inputUrbanBlock = new File(rootFolder, "islet.shp");
 		// Input 4 (facultative) : a road shapefile (it can be used to check road access if this is better than characerizing road as an absence of parcel)
-		File inputRoad = new File("/media/ubuntu/2a3b1227-9bf5-461e-bcae-035a8845f72f/Documents/boulot/theseIGN/PM/PMtest/ROUTE.SHP");
+		File inputRoad = new File(rootFolder, "road.shp");
 		
 		File tmpFolder = new File("/tmp/");
 
@@ -47,7 +49,7 @@ public class ParcelSplitFlag {
 						collec.subCollection(ff.bbox(ff.property(feat.getFeatureType().getGeometryDescriptor().getLocalName()), feat.getBounds())));
 				if (feat.getAttribute(MarkParcelAttributeFromPosition.getMarkFieldName()) != null
 						&& (int) feat.getAttribute(MarkParcelAttributeFromPosition.getMarkFieldName()) == 1) {
-					generateFlagSplitedParcels(feat, lines, tmpFolder, inputBuildingFile,inputRoad, 400.0, 15.0, 3.0, true);
+					generateFlagSplitedParcels(feat, lines, tmpFolder, inputBuildingFile, inputRoad, 400.0, 15.0, 3.0, false);
 				}
 			}
 		} catch (Exception problem) {
@@ -75,14 +77,16 @@ public class ParcelSplitFlag {
 		FlagParcelDecomposition fpd;
 		if (roadFile != null & roadFile.exists()) {
 			ShapefileDataStore roadSDS = new ShapefileDataStore(roadFile.toURI().toURL());
+			Geometry geom = ((Geometry) feat.getDefaultGeometry()).buffer(10);
 			fpd = new FlagParcelDecomposition(surfaces.get(0),
-					Collec.snapDatas(buildingDS.getFeatureSource().getFeatures(), ((Geometry) feat.getDefaultGeometry()).buffer(10)),
-					Collec.snapDatas(roadSDS.getFeatureSource().getFeatures(), ((Geometry) feat.getDefaultGeometry()).buffer(10)),
+					Collec.snapDatas(buildingDS.getFeatureSource().getFeatures(), geom),
+					Collec.snapDatas(roadSDS.getFeatureSource().getFeatures(), geom), 
 					maximalAreaSplitParcel, maximalWidthSplitParcel, lenDriveway, extLines);
 			roadSDS.dispose();
 		} else {
-			fpd = new FlagParcelDecomposition(surfaces.get(0), buildingDS.getFeatureSource().getFeatures(), maximalAreaSplitParcel,
-					maximalWidthSplitParcel, lenDriveway, extLines);
+			fpd = new FlagParcelDecomposition(surfaces.get(0),
+					Collec.snapDatas(buildingDS.getFeatureSource().getFeatures(), ((Geometry) feat.getDefaultGeometry()).buffer(10)),
+					maximalAreaSplitParcel, maximalWidthSplitParcel, lenDriveway, extLines);
 		}
 		List<Polygon> decomp = fpd.decompParcel(0);
 		// if the size of the collection is 1, no flag cut has been done. We check if we can normal cut it, if allowed

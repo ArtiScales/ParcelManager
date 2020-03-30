@@ -2,9 +2,13 @@ package fr.ign.artiscales.parcelFunction;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.SortedMap;
 import java.util.TreeMap;
+import java.util.stream.Collectors;
 
 import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.data.simple.SimpleFeatureIterator;
@@ -19,6 +23,14 @@ public class ParcelAttribute {
 	
 	private static String armatureFieldName = "armature";
 
+//	public static void main(String[] args) throws Exception {
+//	File parcelFile = new File("/tmp/tmp.shp");
+//	ShapefileDataStore sds = new ShapefileDataStore(parcelFile.toURI().toURL());
+//	SimpleFeatureCollection sfc = sds.getFeatureSource().getFeatures();
+//	
+//	System.out.println(getCityCodeFromParcels(sfc));
+//	}
+	 
 	/**
 	 * Construct a french parcel code
 	 * @param parcel : French parcel feature
@@ -30,7 +42,7 @@ public class ParcelAttribute {
 	}
 
 	/**
-	 * get the Community Code numbers from a Simplefeature (that is most of the time, a parcel or building)
+	 * get the Community Code number from a Simplefeature (that is most of the time, a parcel or building)
 	 * 
 	 * @param community : Collection of cities. The default field name is <i>DEPCOM</i> an can be changed with the function {@link #setArmatureCodeName(String)}
 	 * @param parcel : Collection of parcels to get city codes from
@@ -62,11 +74,10 @@ public class ParcelAttribute {
 	 */
 	public static String getAttributeFromSFC(SimpleFeatureCollection collec, SimpleFeature givenFeature, String fieldName) {
 		SimpleFeature overlappingFeature = null;
-		SimpleFeatureIterator collecIt = collec.features();
 		Geometry givenFeatureGeom = GeometryPrecisionReducer.reduce((Geometry) givenFeature.getDefaultGeometry(), new PrecisionModel(10)); 
 		boolean multipleOverlap = false;
 		SortedMap<Double, SimpleFeature> index = new TreeMap<>();
-		try {
+		try (SimpleFeatureIterator collecIt = collec.features()){
 			while (collecIt.hasNext()) {
 				SimpleFeature theFeature = collecIt.next();
 				Geometry theFeatureGeom =  GeometryPrecisionReducer.reduce((Geometry) theFeature.getDefaultGeometry(), new PrecisionModel(10));
@@ -82,10 +93,8 @@ public class ParcelAttribute {
 			}
 		} catch (Exception problem) {
 			problem.printStackTrace();
-		} finally {
-			collecIt.close();
-		}
-		if(multipleOverlap) {
+		} 
+		if (multipleOverlap) {
 			overlappingFeature = index.get(index.lastKey());
 		}
 		return (String) overlappingFeature.getAttribute(fieldName);
@@ -115,25 +124,54 @@ public class ParcelAttribute {
 	 */
 	public static List<String> getCodeParcels(SimpleFeatureCollection parcels) {
 		List<String> result = new ArrayList<String>();
-		SimpleFeatureIterator parcelIt = parcels.features();
-		try {
+		try (SimpleFeatureIterator parcelIt = parcels.features()) {
 			while (parcelIt.hasNext()) {
 				SimpleFeature feat = parcelIt.next();
 				String code = ((String) feat.getAttribute("CODE"));
 				if (code != null && !code.isEmpty()) {
 					result.add(code);
 				} else {
-					result.add(makeFrenchParcelCode(feat));
+					try {
+						result.add(makeFrenchParcelCode(feat));
+					} catch (Exception e) {
+					}
 				}
 			}
 		} catch (Exception problem) {
 			problem.printStackTrace();
-		} finally {
-			parcelIt.close();
 		}
 		return result;
 	}
 
+	/**
+	 * get the most represented <i>city code numbers</i> of the given collection. The city code field name is <i>DEPCOM<i> by default and can be changed with the method
+	 * {@link #setCityNumberCodeName(String)} If no code is found, we try to generate it (only for the French Parcels)
+	 * 
+	 * @param parcels
+	 *            : a collection of parcels
+	 * @param String
+	 *            containing the name of the field containing the city's code
+	 * @return
+	 */
+	public static List<String> getCityCodesFromParcels(SimpleFeatureCollection parcels) {
+		List<String> result = new ArrayList<String>();
+		Arrays.stream(parcels.toArray(new SimpleFeature[0])).forEach(feat -> {
+			String code = ((String) feat.getAttribute(ParcelSchema.getMinParcelCommunityFiled()));
+			if (code != null && !code.isEmpty()) {
+				result.add(code);
+			} else {
+				try {
+					String c = Attribute.makeINSEECode(feat);
+					if (c != null && !result.contains(c)) {
+						result.add(Attribute.makeINSEECode(feat));
+					}
+				} catch (Exception e) {
+				}
+			}
+		});
+		return result;
+	}
+	
 	/**
 	 * get a list of all the <i>city code numbers</i> of the given collection.
 	 * The city code field name is <i>DEPCOM<i> by default and can be changed with the method {@link #setCityNumberCodeName(String)}
@@ -145,20 +183,29 @@ public class ParcelAttribute {
 	 *            containing the name of the field containing the city's code
 	 * @return
 	 */
-	public static List<String> getCityCodeFromParcels(SimpleFeatureCollection parcels) {
-		List<String> result = new ArrayList<String>();
-		Arrays.stream(parcels.toArray(new SimpleFeature[0])).forEach(feat -> {
-			String code = ((String) feat.getAttribute(ParcelSchema.getMinParcelCommunityFiled()));
-			if (code != null && !code.isEmpty()) {
-				result.add(code);
-			} else {
-				String c = Attribute.makeINSEECode(feat);
-				if (c != null && !result.contains(c)) {
-					result.add(Attribute.makeINSEECode(feat));
+	public static String getCityCodeFromParcels(SimpleFeatureCollection parcels) {
+		HashMap<String, Integer> result = new HashMap<String, Integer>(); 
+		try (SimpleFeatureIterator it = parcels.features()) {
+			while (it.hasNext()) {
+				SimpleFeature feat = it.next();
+				String code = ((String) feat.getAttribute(ParcelSchema.getMinParcelCommunityFiled()));
+				if (code != null && !code.isEmpty()) {
+					result.put(code, result.getOrDefault(code, 0));
+				} else {
+					try {
+						String c = Attribute.makeINSEECode(feat);
+						if (c != null && !result.containsKey(c)) {
+							result.put(code, result.getOrDefault(code, 0));
+						}
+					} catch (Exception e) {
+					}
 				}
 			}
-		});
-		return result;
+		} catch (Exception problem) {
+			problem.printStackTrace();
+		}
+		List<Entry<String, Integer>> sorted = result.entrySet().stream().sorted(Map.Entry.comparingByValue()).collect(Collectors.toList());
+		return sorted.get(sorted.size()-1).getKey();
 	}
 	
 	public static String sysoutFrenchParcel(SimpleFeature parcel) {

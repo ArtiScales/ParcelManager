@@ -20,5 +20,6 @@ Still under developpement.
         <li><i>ParcelDensification</i>: Run the densification process on the predesigned parcels</li>
     </ul>
 </li>
+<li><b>parcelFunction</b>: Various functions for single parcels, sort by type (collection, state, schemas, attribute, marking, etc.)</li>
 <li><b>scenario</b>: Contains objects used for processing an automated simulation on a large zone ([technical description can be found here](https://github.com/ArtiScales/ParcelManager/blob/master/src/main/resources/doc/scenarioCreation.md))</li>
 </ul>

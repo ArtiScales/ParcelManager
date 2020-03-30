@@ -1,9 +1,7 @@
 package fr.ign.artiscales.scenario;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -17,9 +15,7 @@ import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.referencing.FactoryException;
 import org.opengis.referencing.NoSuchAuthorityCodeException;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
+import fr.ign.artiscales.analysis.DensificationStudy;
 import fr.ign.artiscales.fields.FrenchParcelFields;
 import fr.ign.artiscales.goal.ConsolidationDivision;
 import fr.ign.artiscales.goal.Densification;
@@ -58,7 +54,7 @@ public class PMStep {
 	 * except for the parcel file that must be updated after each PMStep to make the new PMStep simulation on an already simulated parcel plan
 	 * 
 	 * @param parcelFile
-	 * @param ilotFile
+	 * @param isletFile
 	 * @param zoningFile
 	 * @param tmpFolder
 	 * @param buildingFile
@@ -68,10 +64,10 @@ public class PMStep {
 	 * @param outFolder
 	 * @param profileFolder
 	 */
-	public static void setFiles(File parcelFile, File ilotFile, File zoningFile, File tmpFolder, File buildingFile, File roadFile, File predicateFile,
+	public static void setFiles(File parcelFile, File isletFile, File zoningFile, File tmpFolder, File buildingFile, File roadFile, File predicateFile,
 			File polygonIntersection, File outFolder, File profileFolder) {
 		PARCELFILE = parcelFile;
-		ILOTFILE = ilotFile;
+		ISLETFILE = isletFile;
 		ZONINGFILE = zoningFile;
 		TMPFOLDER = tmpFolder;
 		tmpFolder.mkdirs();
@@ -86,7 +82,7 @@ public class PMStep {
 	String goal, parcelProcess, zone, communityNumber, communityType, urbanFabricType;
 	List<String> communityNumbers = new ArrayList<String>(); 
 	
-	static File PARCELFILE, ILOTFILE, ZONINGFILE, TMPFOLDER, BUILDINGFILE, ROADFILE, PREDICATEFILE, 
+	static File PARCELFILE, ISLETFILE, ZONINGFILE, TMPFOLDER, BUILDINGFILE, ROADFILE, PREDICATEFILE, 
 	POLYGONINTERSECTION, OUTFOLDER, PROFILEFOLDER;
 	static boolean GENERATEATTRIBUTES = true;
 	static boolean SAVEINTERMEDIATERESULT = false; 
@@ -108,23 +104,17 @@ public class PMStep {
 		switch (parcelType) {
 		case "french":
 			parcel = FrenchParcelFields.frenchParcelToMinParcel(parcel);
-			Collec.exportSFC(parcel, new File("/tmp/da"));
 			break;
 		}
 		
 		//mark (select) the parcels 
 		SimpleFeatureCollection parcelMarked = getSimulationParcels(parcel);
-
-		ShapefileDataStore shpDSIlot = new ShapefileDataStore(ILOTFILE.toURI().toURL());
+		ShapefileDataStore shpDSIlot = new ShapefileDataStore(ISLETFILE.toURI().toURL());
 		SimpleFeatureCollection ilot = shpDSIlot.getFeatureSource().getFeatures();
 		SimpleFeatureCollection parcelCut = new DefaultFeatureCollection();
 		
 		//get the wanted building profile
-		ProfileUrbanFabric.setProfileFolder(PROFILEFOLDER.toString());
-		ObjectMapper mapper = new ObjectMapper();
-		mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-		InputStream fileInputStream = new FileInputStream(ProfileUrbanFabric.getProfileFolder() + "/" + urbanFabricType + ".json");
-		ProfileUrbanFabric profile = mapper.readValue(fileInputStream, ProfileUrbanFabric.class);
+		ProfileUrbanFabric profile = ProfileUrbanFabric.convertJSONtoProfile(new File(PROFILEFOLDER + "/" + urbanFabricType + ".json"));
 		// in case of lot of cities to simulate, we separate the execution to different 
 		for (String communityNumber : communityNumbers) {
 			System.out.println("for community "+communityNumber);
@@ -152,6 +142,10 @@ public class PMStep {
 				((DefaultFeatureCollection) parcelCut).addAll(ConsolidationDivision.consolidationDivision(parcelMarkedComm, TMPFOLDER, profile.getMaximalArea(), profile.getMinimalArea(),
 						profile.getMaximalWidth(), profile.getStreetWidth(), profile.getLargeStreetLevel(), profile.getLargeStreetWidth(),
 						profile.getDecompositionLevelWithoutStreet()));
+				break;
+			case "densificationStudy":
+				DensificationStudy.runDensificationStudy(parcelMarkedComm, ISLETFILE, BUILDINGFILE, ROADFILE, ZONINGFILE, TMPFOLDER, OUTFOLDER,
+						ParcelState.isArt3AllowsIsolatedParcel(parcel.features().next(), PREDICATEFILE), profile);
 				break;
 			default:
 				System.out.println(goal + ": unrekognized goal (must be either \"totalZone\", \"dens\" or \"consolid\"");
@@ -216,20 +210,20 @@ public class PMStep {
 			}
 		} 
 		// if multiple communities are present in the parcel collection
-		else if(ParcelAttribute.getCityCodeFromParcels(parcelIn).size() > 1) {
-			for (String cityCode : ParcelAttribute.getCityCodeFromParcels(parcelIn)) {
+		else if(ParcelAttribute.getCityCodesFromParcels(parcelIn).size() > 1) {
+			for (String cityCode : ParcelAttribute.getCityCodesFromParcels(parcelIn)) {
 				communityNumbers.add(cityCode);
 				((DefaultFeatureCollection) parcel).addAll(ParcelGetter.getParcelByZip(parcelIn, cityCode));
 			}
 		} 
 		// if a type of community has been set  
 		else if (communityType != null && communityType != "") {
-			communityNumbers.addAll(ParcelAttribute.getCityCodeFromParcels(parcelIn));
+			communityNumbers.addAll(ParcelAttribute.getCityCodesFromParcels(parcelIn));
 			parcel = DataUtilities.collection(ParcelGetter.getParcelByTypo(communityType, parcelIn, ZONINGFILE));
 		} 
 		// if the input parcel is just what needs to be simulated
 		else {
-			communityNumbers.addAll(ParcelAttribute.getCityCodeFromParcels(parcelIn));
+			communityNumbers.addAll(ParcelAttribute.getCityCodesFromParcels(parcelIn));
 			parcel = DataUtilities.collection(parcelIn);
 		}
 
