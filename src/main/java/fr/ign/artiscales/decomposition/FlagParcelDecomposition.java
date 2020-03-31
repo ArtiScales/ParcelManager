@@ -357,15 +357,15 @@ public class FlagParcelDecomposition {
         // We check if there is a road acces for all, if not we abort
         for (Polygon pol : lPolygonsOut1) {
           if (!hasRoadAccess(pol)) {
-            System.out.println("Road access is missing for the parcel that used to have a road access ; polyinit : " + this.polygonInit);
-            System.out.println("Current polyg : " + pol);
+//            System.out.println("Road access is missing for the parcel that used to have a road access ; polyinit : " + this.polygonInit);
+//            System.out.println("Current polyg : " + pol);
             continue boucleside;
           }
         }
         for (Polygon pol : lPolygonsOut2) {
           if (!hasRoadAccess(pol)) {
-            System.out.println("Road access is missing for the densified parcel ; polyinit : " + this.polygonInit);
-            System.out.println("Current polyg : " + pol);
+//            System.out.println("Road access is missing for the densified parcel ; polyinit : " + this.polygonInit);
+//            System.out.println("Current polyg : " + pol);
             continue boucleside;
           }
         }

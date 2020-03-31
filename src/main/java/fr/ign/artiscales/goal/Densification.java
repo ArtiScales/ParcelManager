@@ -75,7 +75,7 @@ public class Densification {
 					try (SimpleFeatureIterator parcelIt = tmp.features()){
 						while (parcelIt.hasNext()) {
 							if (((Geometry) parcelIt.next().getDefaultGeometry()).getArea() < minimalAreaSplitParcel) {
-								System.out.println("densifyed parcel is too small");
+//								System.out.println("densifyed parcel is too small");
 								add = false;
 								break;
 							}

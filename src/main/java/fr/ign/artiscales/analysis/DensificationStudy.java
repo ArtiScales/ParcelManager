@@ -34,7 +34,7 @@ public class DensificationStudy {
 		PMStep.setGENERATEATTRIBUTES(false);
 		PMScenario pmScen = new PMScenario(new File("/home/ubuntu/PMtest/Densification/SetM/jsonEx.json"), new File("/tmp"));
 		pmScen.executeStep();
-		
+	////"77458,77442,77510,77508,77054,77504,77501,77045,77491,77031,77021,77489,77016,77114,77099,77089,77071,77061,77060,77178,77155,77152,77226,77222,77217,77192,77191,77285,77279,77267,77261,77244,77243,77230,77327,77317,77313,77312,77297,77387,77377,77370,77353,77340,77337,77329,77482,77468
 		//run a densification study on a single community
 //		File rootFolder = new File("/home/ubuntu/PMtest/Densification/");
 //		File parcelFile = new File(rootFolder, "torcy.shp");
@@ -54,6 +54,8 @@ public class DensificationStudy {
 //		runDensificationStudy(parcels, isletFile, buildingFile, roadFile, zoningFile, tmpFolder, outFolder,
 //				isParcelWithoutStreetAllowed, profile);
 //		sdsParcel.dispose();		
+		
+
 	}
 
 	public static void runDensificationStudy(SimpleFeatureCollection parcels, File isletFile, File buildingFile, File roadFile, File zoningFile,

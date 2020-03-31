@@ -180,6 +180,8 @@ public class PMStep {
 	 * 
 	 * If none of this informations are set, the algorithm selects all the parcels.
 	 * 
+	 * TODO find a way to either select parcels nearby the communities to avoid the simulation to think city's parcels are surrounded with mega giant freeways 
+	 * 
 	 * @return The parcel collection with a mark for the interesting parcels to simulate.
 	 * @throws IOException 
 	 * @throws FactoryException 
@@ -222,8 +224,6 @@ public class PMStep {
 			communityNumbers.addAll(ParcelAttribute.getCityCodesFromParcels(parcelIn));
 			parcel = DataUtilities.collection(parcelIn);
 		}
-//		// if we simulate everything, we mark all parcels 
-//		parcel = MarkParcelAttributeFromPosition.markAllParcel(parcel);
 		
 		// parcel marking with input polygons 
 		if (POLYGONINTERSECTION != null && POLYGONINTERSECTION.exists()) {

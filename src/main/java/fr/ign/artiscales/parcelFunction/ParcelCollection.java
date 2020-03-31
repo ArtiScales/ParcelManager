@@ -72,13 +72,13 @@ public class ParcelCollection {
 		SimpleFeatureCollection result = recursiveMergeTooSmallParcel(parcelsUnsorted, minimalParcelSize);
 
 		sizeResults.add(result.size());
-		System.out.println("Merging too small parcels");
-		System.out.println("OG size:"+parcelsUnsorted.size());
+//		System.out.println("Merging too small parcels");
+//		System.out.println("OG size:"+parcelsUnsorted.size());
 		do {
 			// recursive application of the merge algorithm to merge little parcels to big ones one-by-one
 			result = recursiveMergeTooSmallParcel(result, minimalParcelSize);
 			sizeResults.add(result.size());
-			System.out.println(sizeResults);
+//			System.out.println(sizeResults);
 		}
 		// while parcels are still getting merged, we run the recursive algorithm
 		while (!sizeResults.get(sizeResults.size() - 1).equals(sizeResults.get(sizeResults.size() - 2)));

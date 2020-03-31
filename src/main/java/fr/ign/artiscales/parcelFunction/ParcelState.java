@@ -69,7 +69,7 @@ public class ParcelState {
 	 * that could be done
 	 * 
 	 * @param feat     : the parcel
-	 * @param predicateFile : the table containing urban rules. If null, will return true anytime
+	 * @param predicateFile : the table containing urban rules. If null or not set, will return <b>false</b>
 	 * @return
 	 * @throws IOException
 	 */
@@ -80,7 +80,7 @@ public class ParcelState {
 
 	public static boolean isArt3AllowsIsolatedParcel(String insee, File predicateFile) throws IOException {
 		if(!predicateFile.exists()) {
-			return true;
+			return false;
 		}
 		int nInsee = 0;
 		int nArt3 = 0;
@@ -110,7 +110,7 @@ public class ParcelState {
 			}
 		}
 		rule.close();
-		return true;
+		return false;
 	}
 
 	/**

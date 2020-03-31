@@ -7,7 +7,7 @@ public class FrenchZoningFields {
 	public static boolean isZoneUsuallyAdmitResidentialConstruction(SimpleFeature feat) {
 		try {
 			String libelle = ((String) feat.getAttribute("LIBELLE")).toLowerCase();
-			if (feat.getAttribute("TYPEZONE").equals("U") && (libelle.startsWith("ua") || libelle.startsWith("ub") || libelle.startsWith("uc"))) {
+			if (feat.getAttribute("TYPEZONE").equals("U") && (libelle.equals("u") || libelle.startsWith("ua") || libelle.startsWith("ub") || libelle.startsWith("uc")|| libelle.startsWith("ud")|| libelle.startsWith("c"))) {
 				return true;
 			}
 		} catch (Exception e) {
