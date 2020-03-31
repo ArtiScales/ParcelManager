@@ -15,7 +15,6 @@ import fr.ign.artiscales.decomposition.ParcelSplit;
 import fr.ign.artiscales.parcelFunction.MarkParcelAttributeFromPosition;
 import fr.ign.artiscales.parcelFunction.ParcelCollection;
 import fr.ign.artiscales.parcelFunction.ParcelSchema;
-import fr.ign.artiscales.parcelFunction.ParcelState;
 import fr.ign.cogit.geoToolsFunctions.vectors.Collec;
 import fr.ign.cogit.geoToolsFunctions.vectors.Geom;
 
@@ -116,7 +115,7 @@ public class ConsolidationDivision {
 			sfBuilder.add(multiGeom.getGeometryN(i));
 			sfBuilder.set(ParcelSchema.getMinParcelSectionField(), Integer.toString(i));
 			sfBuilder.set(ParcelSchema.getMinParcelCommunityFiled(),
-					ParcelState.getFieldFromSFC(multiGeom.getGeometryN(i), parcels, ParcelSchema.getMinParcelCommunityFiled()));
+					Collec.getFieldFromSFC(multiGeom.getGeometryN(i), parcels, ParcelSchema.getMinParcelCommunityFiled()));
 			mergedParcels.add(sfBuilder.buildFeature(null));
 		}
 		if (DEBUG) {

@@ -517,49 +517,4 @@ public class ParcelState {
 		}
 		return result;
 	}
-
-	/**
-	 * Get the field from the feature of a simplecollection that is the closest to the given geometry 
-	 * @param geometryN
-	 * @param parcels
-	 * @param string
-	 * @return
-	 */
-	public static String getFieldFromSFC(Geometry geometry, SimpleFeatureCollection parcels, String fieldName) {
-		HashMap<String, Double> repart = new HashMap<String, Double>();
-		boolean twoZones = false;
-		String result = "";
-		try (SimpleFeatureIterator parcelIt = parcels.features()) {
-			while (parcelIt.hasNext()) {
-				SimpleFeature parcel = parcelIt.next();
-				Geometry parcelGeom = ((Geometry) parcel.getDefaultGeometry());
-				if (parcelGeom.buffer(0.5).contains(geometry)) {
-					twoZones = false;
-					result = (String) parcel.getAttribute(fieldName);
-					break;
-				}
-				// maybe the parcel is in between two zones (less optimized) intersection
-				else if (parcelGeom.intersects(geometry)) {
-					twoZones = true;
-					repart.put((String) parcel.getAttribute(fieldName), Geom.scaledGeometryReductionIntersection(Arrays.asList(parcelGeom, geometry)).getArea());
-				}
-			}
-		} catch (Exception problem) {
-			problem.printStackTrace();
-		}
-		// in case of multi zones, we sort the entries relatively to the highest area
-		if (twoZones == true) {
-			List<Entry<String, Double>> entryList = new ArrayList<Entry<String, Double>>(repart.entrySet());
-			Collections.sort(entryList, new Comparator<Entry<String, Double>>() {
-				@Override
-				public int compare(Entry<String, Double> obj1, Entry<String, Double> obj2) {
-					return obj2.getValue().compareTo(obj1.getValue());
-				}
-			});
-			for (Entry<String, Double> s : entryList) {
-				return s.getKey();
-			}
-		}
-		return result;
-	}
 }

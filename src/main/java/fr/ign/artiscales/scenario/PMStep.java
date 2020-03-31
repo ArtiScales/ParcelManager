@@ -32,7 +32,7 @@ import fr.ign.cogit.parameter.ProfileUrbanFabric;
  * Object representing each step of a Parcel Manager scenario. This object is automaticaly set by the PMScenario object Please read the technical documentation on
  * {@link https://github.com/ArtiScales/ParcelManager/blob/master/src/main/resources/doc/scenarioCreation.md}
  * 
- * @author mcolomb
+ * @author Maxime Colomb
  *
  */
 
@@ -100,19 +100,14 @@ public class PMStep {
 		//convert the parcel to a common type
 		ShapefileDataStore shpDSParcel = new ShapefileDataStore(PARCELFILE.toURI().toURL());
 		SimpleFeatureCollection parcel = DataUtilities.collection(shpDSParcel.getFeatureSource().getFeatures());
-
 		switch (parcelType) {
 		case "french":
 			parcel = FrenchParcelFields.frenchParcelToMinParcel(parcel);
 			break;
 		}
-		
 		//mark (select) the parcels 
 		SimpleFeatureCollection parcelMarked = getSimulationParcels(parcel);
-		ShapefileDataStore shpDSIlot = new ShapefileDataStore(ISLETFILE.toURI().toURL());
-		SimpleFeatureCollection ilot = shpDSIlot.getFeatureSource().getFeatures();
 		SimpleFeatureCollection parcelCut = new DefaultFeatureCollection();
-		
 		//get the wanted building profile
 		ProfileUrbanFabric profile = ProfileUrbanFabric.convertJSONtoProfile(new File(PROFILEFOLDER + "/" + urbanFabricType + ".json"));
 		// in case of lot of cities to simulate, we separate the execution to different 
@@ -132,9 +127,11 @@ public class PMStep {
 				shpDSZone.dispose();
 				break;
 			case "dens":
-				((DefaultFeatureCollection) parcelCut).addAll(Densification.densification(parcelMarkedComm, ilot, TMPFOLDER, BUILDINGFILE, ROADFILE, profile.getMaximalArea(),
+				ShapefileDataStore shpDSIlot = new ShapefileDataStore(ISLETFILE.toURI().toURL());
+				((DefaultFeatureCollection) parcelCut).addAll(Densification.densification(parcelMarkedComm, shpDSIlot.getFeatureSource().getFeatures(), TMPFOLDER, BUILDINGFILE, ROADFILE, profile.getMaximalArea(),
 						profile.getMinimalArea(), profile.getMaximalWidth(), profile.getLenDriveway(),
 						ParcelState.isArt3AllowsIsolatedParcel(parcel.features().next(), PREDICATEFILE)));
+				shpDSIlot.dispose();
 				break;
 			case "consolid":
 				ConsolidationDivision.PROCESS = parcelProcess;
@@ -162,7 +159,6 @@ public class PMStep {
 			}
 		}
 		Collec.exportSFC(parcelCut, output);
-		shpDSIlot.dispose();
 		shpDSParcel.dispose();
 
 		//if the step produces no output, we return the input parcels
@@ -213,8 +209,8 @@ public class PMStep {
 		else if(ParcelAttribute.getCityCodesFromParcels(parcelIn).size() > 1) {
 			for (String cityCode : ParcelAttribute.getCityCodesFromParcels(parcelIn)) {
 				communityNumbers.add(cityCode);
-				((DefaultFeatureCollection) parcel).addAll(ParcelGetter.getParcelByZip(parcelIn, cityCode));
 			}
+			((DefaultFeatureCollection) parcel).addAll(parcelIn);
 		} 
 		// if a type of community has been set  
 		else if (communityType != null && communityType != "") {
@@ -226,24 +222,23 @@ public class PMStep {
 			communityNumbers.addAll(ParcelAttribute.getCityCodesFromParcels(parcelIn));
 			parcel = DataUtilities.collection(parcelIn);
 		}
-
-		//mark the parcels
-		SimpleFeatureCollection parcelMarked = new DefaultFeatureCollection();
+//		// if we simulate everything, we mark all parcels 
+//		parcel = MarkParcelAttributeFromPosition.markAllParcel(parcel);
+		
 		// parcel marking with input polygons 
 		if (POLYGONINTERSECTION != null && POLYGONINTERSECTION.exists()) {
-			parcelMarked = MarkParcelAttributeFromPosition.markParcelIntersectPolygonIntersection(parcel, POLYGONINTERSECTION);
+			parcel = MarkParcelAttributeFromPosition.markParcelIntersectPolygonIntersection(parcel, POLYGONINTERSECTION);
 		}
-//		Collec.exportSFC(parcelMarked, new File(TMPFOLDER, "parcelMarked.shp"));
 		// parcel marking with an attribute selection (mainly zoning plan, but it can be other files)
 		if (ZONINGFILE != null && ZONINGFILE.exists() && zone != null && zone != "") {
-			if (parcelMarked.size() > 0) {
-				parcelMarked = MarkParcelAttributeFromPosition.markParcelIntersectZoningType(parcelMarked, zone, ZONINGFILE);
+			if (parcel.size() > 0) {
+				parcel = MarkParcelAttributeFromPosition.markParcelIntersectZoningType(parcel, zone, ZONINGFILE);
 			} else {
-				parcelMarked = MarkParcelAttributeFromPosition.markParcelIntersectZoningType(parcel, zone, ZONINGFILE);
+				parcel = MarkParcelAttributeFromPosition.markParcelIntersectZoningType(parcel, zone, ZONINGFILE);
 			}
 		}
-//		Collec.exportSFC(parcelMarked, new File(TMPFOLDER, "parcelMarked2.shp"));
-		DefaultFeatureCollection result = DataUtilities.collection(parcelMarked);
+		System.out.println();
+		DefaultFeatureCollection result = DataUtilities.collection(parcel);
 		return result;
 	}
 	

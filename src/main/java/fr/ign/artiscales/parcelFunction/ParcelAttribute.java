@@ -144,7 +144,7 @@ public class ParcelAttribute {
 	}
 
 	/**
-	 * get the most represented <i>city code numbers</i> of the given collection. The city code field name is <i>DEPCOM<i> by default and can be changed with the method
+	 * get  a list of all the  <i>city code numbers</i> of the given collection. The city code field name is <i>DEPCOM<i> by default and can be changed with the method
 	 * {@link #setCityNumberCodeName(String)} If no code is found, we try to generate it (only for the French Parcels)
 	 * 
 	 * @param parcels
@@ -158,7 +158,9 @@ public class ParcelAttribute {
 		Arrays.stream(parcels.toArray(new SimpleFeature[0])).forEach(feat -> {
 			String code = ((String) feat.getAttribute(ParcelSchema.getMinParcelCommunityFiled()));
 			if (code != null && !code.isEmpty()) {
-				result.add(code);
+				if (!result.contains(code)) {
+					result.add(code);
+				}
 			} else {
 				try {
 					String c = Attribute.makeINSEECode(feat);
@@ -173,7 +175,7 @@ public class ParcelAttribute {
 	}
 	
 	/**
-	 * get a list of all the <i>city code numbers</i> of the given collection.
+	 * get the most represented <i>city code numbers</i> of the given collection.
 	 * The city code field name is <i>DEPCOM<i> by default and can be changed with the method {@link #setCityNumberCodeName(String)}
 	 * If no code is found, we try to generate it (only for the French Parcels)
 	 * 

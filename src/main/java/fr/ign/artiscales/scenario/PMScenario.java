@@ -10,7 +10,7 @@ import com.fasterxml.jackson.core.JsonToken;
 
 public class PMScenario {
 
-	private File zoningFile, buildingFile, roadFile, polygonIntersection, predicateFile, parcelFile, ilotFile, profileFolder, tmpFolder, outFolder;
+	private File zoningFile, buildingFile, roadFile, polygonIntersection, predicateFile, parcelFile, isletFile, profileFolder, tmpFolder, outFolder;
 
 	private List<PMStep> stepList = new ArrayList<PMStep>();
 
@@ -49,9 +49,9 @@ public class PMScenario {
 					roadFile = new File(rootFolder, "road.shp");
 					polygonIntersection = new File(rootFolder, "polygonIntersection.shp");
 					predicateFile = new File(rootFolder, "predicate.csv");
-					parcelFile = new File(rootFolder, "parcelle.shp");
-					ilotFile = new File(rootFolder, "ilot.shp");
-					profileFolder = new File(rootFolder, "ilot.shp");
+					parcelFile = new File(rootFolder, "parcel.shp");
+					isletFile = new File(rootFolder, "islet.shp");
+					profileFolder = new File(rootFolder, "profileBuildingType");
 				}
 			}
 
@@ -161,7 +161,7 @@ public class PMScenario {
 			if (token == JsonToken.FIELD_NAME && "ilotFile".equals(parser.getCurrentName())) {
 				token = parser.nextToken();
 				if (token == JsonToken.VALUE_STRING) {
-					ilotFile = new File(parser.getText());
+					isletFile = new File(parser.getText());
 					fileSet = true;
 				}
 			}
@@ -181,7 +181,7 @@ public class PMScenario {
 			}
 		}
 		parser.close();
-		PMStep.setFiles(parcelFile, ilotFile, zoningFile, tmpFolder, buildingFile, roadFile, predicateFile, polygonIntersection, outFolder,
+		PMStep.setFiles(parcelFile, isletFile, zoningFile, tmpFolder, buildingFile, roadFile, predicateFile, polygonIntersection, outFolder,
 				profileFolder);
 	}
 
@@ -203,7 +203,7 @@ public class PMScenario {
 	@Override
 	public String toString() {
 		return "PMScenario [zoningFile=" + zoningFile + ", buildingFile=" + buildingFile + ", roadFile=" + roadFile + ", polygonIntersection="
-				+ polygonIntersection + ", predicateFile=" + predicateFile + ", parcelFile=" + parcelFile + ", ilotFile=" + ilotFile + ", tmpFolder="
+				+ polygonIntersection + ", predicateFile=" + predicateFile + ", parcelFile=" + parcelFile + ", ilotFile=" + isletFile + ", tmpFolder="
 				+ tmpFolder + ", outFolder=" + outFolder + ", stepList=" + stepList + ", fileSet=" + fileSet + ", profileFolder=" + profileFolder
 				+ "]";
 	}
