@@ -22,6 +22,7 @@ import org.opengis.feature.simple.SimpleFeatureType;
 import org.opengis.filter.FilterFactory2;
 
 import fr.ign.artiscales.decomposition.ParcelSplit;
+import fr.ign.artiscales.fields.GeneralFields;
 import fr.ign.artiscales.parcelFunction.MarkParcelAttributeFromPosition;
 import fr.ign.artiscales.parcelFunction.ParcelCollection;
 import fr.ign.artiscales.parcelFunction.ParcelSchema;
@@ -29,10 +30,26 @@ import fr.ign.cogit.FeaturePolygonizer;
 import fr.ign.cogit.geoToolsFunctions.vectors.Collec;
 import fr.ign.cogit.geoToolsFunctions.vectors.Geom;
 
+/**
+ * Simulation following this goal operates on a zone rather than on parcels. Zones are usually taken from a zoning plan and their integration is made with the
+ * {@link #createZoneToCut(String, SimpleFeatureCollection, SimpleFeatureCollection)} method. The parcel which are across the zone are cut and the parts that aren't contained into
+ * the zone are kept with their attributes. The chosen parcel division process (OBB by default) is then applied on the zone.
+ * 
+ * @author Maxime Colomb
+ *
+ */
 public class ZoneDivision {
-	private static String ZoneField = "TYPEZONE";
+	/**
+	 * The process used to divide the parcels
+	 */
 	public static String PROCESS = "OBB";
+	/**
+	 * If true, will save a shapefile containing only the simulated parcels in the temporary folder.
+	 */
 	public static boolean SAVEINTERMEDIATERESULT = false;
+	/**
+	 * If true, overwrite the output saved shapefiles. If false, happend the simulated parcels to a potential already existing shapefile.
+	 */
 	public static boolean OVERWRITESHAPEFILES = true;
 
 	/**
@@ -51,7 +68,8 @@ public class ZoneDivision {
 	 * @param maximalWidth
 	 * @param streetWidth
 	 * @param decompositionLevelWithoutRoad
-	 * @return
+	 * @return The input parcel {@link SimpleFeatureCollection} with the marked parcels replaced by the simulated parcels. All parcels have the
+	 *         {@link fr.ign.artiscales.parcelFunction.ParcelSchema#getSFBMinParcel()} schema.
 	 * @throws Exception
 	 */
 	public static SimpleFeatureCollection zoneDivision(SimpleFeatureCollection initialZone, SimpleFeatureCollection parcels, File tmpFolder,
@@ -244,12 +262,15 @@ public class ZoneDivision {
 	}
 
 	/**
-	 * Create a zone to cut by selecting features from a shapefile regarding a fixed value.
-	 * Name of the field is by default set to "TYPEZONE" and must be changed if needed with the {@link #setZoneField(String) setZoneField} method
-	 * Also takes a bounding SimpleFeatureCollection to bound the output
-	 * @param zoneToCutName: Name of the zone to be cut
-	 * @param zoning: Collection of zones to extract the wanted zone from (ussualy a zoning plan)
-	 * @param parcels: Collection of parcel to bound the process on a wanted location
+	 * Create a zone to cut by selecting features from a shapefile regarding a fixed value. Name of the field is by default set to <i>TYPEZONE</i> and must be changed if needed with the
+	 * {@link fr.ign.artiscales.fields.GeneralFields#setZoneGenericNameField(String)} method. Also takes a bounding SimpleFeatureCollection to bound the output
+	 * 
+	 * @param zoneToCutName
+	 *            Name of the zone to be cut
+	 * @param zoning
+	 *            Collection of zones to extract the wanted zone from (ussualy a zoning plan)
+	 * @param parcels
+	 *            Collection of parcel to bound the process on a wanted location
 	 * @return An extraction of the zoning collection
 	 * @throws IOException
 	 */
@@ -257,15 +278,11 @@ public class ZoneDivision {
 			throws IOException {
 		// get the wanted zones from the zoning file
 		FilterFactory2 ff = CommonFactoryFinder.getFilterFactory2(GeoTools.getDefaultHints());
-		SimpleFeatureCollection initialZone = zoning.subCollection(ff.like(ff.property(ZoneField), zoneToCutName))
+		SimpleFeatureCollection initialZone = zoning.subCollection(ff.like(ff.property(GeneralFields.getZoneGenericNameField()), zoneToCutName))
 				.subCollection(ff.intersects(ff.property(zoning.getSchema().getGeometryDescriptor().getLocalName()), ff.literal(Geom.unionSFC(parcels))));
 		if (initialZone.isEmpty()) {
 			System.out.println("createZoneToCut(): zone is empty");
 		}
 		return initialZone;
-	}
-
-	public static void setZoneField(String zoneField) {
-		ZoneField = zoneField;
 	}
 }

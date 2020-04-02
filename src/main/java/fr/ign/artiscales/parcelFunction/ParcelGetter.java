@@ -22,6 +22,9 @@ import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.filter.Filter;
 import org.opengis.filter.FilterFactory2;
 
+import fr.ign.artiscales.fields.FrenchParcelFields;
+import fr.ign.artiscales.fields.FrenchZoningFields;
+import fr.ign.artiscales.fields.GeneralFields;
 import fr.ign.cogit.FeaturePolygonizer;
 import fr.ign.cogit.geoToolsFunctions.vectors.Collec;
 import fr.ign.cogit.geoToolsFunctions.vectors.Geom;
@@ -30,7 +33,6 @@ public class ParcelGetter {
 	
 	static String codeDepFiled = "CODE_DEP";
 	static String codeComFiled = "CODE_COM";
-	static String zoneNameFiled = "TYPEZONE";
 	static String typologyField = "typo";
 //	public static void main(String[] args) throws Exception {
 //		
@@ -38,40 +40,24 @@ public class ParcelGetter {
 	
 	/**
 	 * get a set of parcel depending to their zoning type. 
-	 * TODO normalize with the french zoning nomenclature
 	 * @param zone
 	 * @param parcelles
-	 * @param zoningFile
-	 * @return
+	 * @param zoningFile Shapefile containing the french zoning
+	 * @return a {@link SimpleFeatureCollection} of parcels that more of the half are contained into the zone 
 	 * @throws IOException
 	 */
-	public static SimpleFeatureCollection getParcelByZoningType(String zone, SimpleFeatureCollection parcelles, File zoningFile)
+	public static SimpleFeatureCollection getParcelByFrenchZoningType(String zone, SimpleFeatureCollection parcelles, File zoningFile)
 			throws IOException {
 		ShapefileDataStore zonesSDS = new ShapefileDataStore(zoningFile.toURI().toURL());
 		SimpleFeatureCollection zonesSFCBig = zonesSDS.getFeatureSource().getFeatures();
 		SimpleFeatureCollection zonesSFC = Collec.cropSFC(zonesSFCBig, parcelles);
-		List<String> listZones = new ArrayList<>();
-		switch (zone) {
-		case "U":
-			listZones.add("U");
-			listZones.add("ZC");
-			break;
-		case "AU":
-			listZones.add("AU");
-			listZones.add("TBC");
-			break;
-		case "NC":
-			listZones.add("A");
-			listZones.add("N");
-			listZones.add("NC");
-			break;
-		}
+		List<String> listZones = FrenchZoningFields.getUsualNames(zone);
 
 		DefaultFeatureCollection zoneSelected = new DefaultFeatureCollection();
 		try(SimpleFeatureIterator itZonez = zonesSFC.features()) {
 			while (itZonez.hasNext()) {
 				SimpleFeature zones = itZonez.next();
-				if (listZones.contains(zones.getAttribute(zoneNameFiled))) {
+				if (listZones.contains(zones.getAttribute(GeneralFields.getZoneGenericNameField()))) {
 					zoneSelected.add(zones);
 				}
 			}
@@ -92,8 +78,7 @@ public class ParcelGetter {
 						}
 						// if the intersection is less than 50% of the parcel, we let it to the other
 						// (with the hypothesis that there is only 2 features)
-						else if (Geom.scaledGeometryReductionIntersection(Arrays.asList(parcelGeom, zoneGeom)).getArea() > parcelGeom.getArea()
-								/ 2) {
+						else if (Geom.scaledGeometryReductionIntersection(Arrays.asList(parcelGeom, zoneGeom)).getArea() > parcelGeom.getArea() / 2) {
 							result.add(parcelFeat);
 						}
 					}
@@ -109,11 +94,14 @@ public class ParcelGetter {
 	}
 
 	/**
-	 * Get parcels by their typology. 
-	 * Default typology field name is "typo" and can be changed using method {@link setTypology(String) setTypology()}
-	 * @param typo : name of the seeked typology 
-	 * @param parcels : collection of parcels
-	 * @param communityFile :ShapeFile of the communities with a filed describing their typology
+	 * Get parcels by their typology. Default typology field name is "typo" and can be changed using method {@link #setTypologyField(String)}.
+	 * 
+	 * @param typo
+	 *            Name of the searched typology
+	 * @param parcels
+	 *            Collection of parcels
+	 * @param communityFile
+	 *            ShapeFile of the communities with a filed describing their typology
 	 * @return parcels which are included in the communities of a given typology
 	 * @throws IOException
 	 */
@@ -233,22 +221,24 @@ public class ParcelGetter {
 	
 	/**
 	 * Get parcels out of a parcel collection with the zip code of them parcels
-	 * @param parcelIn : input parcel collection
-	 * @param val : zipCode value
-	 * @param zipCodeField : Field of the zipcode 
+	 * 
+	 * @param parcelIn
+	 *            Input {@link SimpleFeatureCollection} of parcel
+	 * @param val
+	 *            City number value
 	 * @return a simple feature collection of parcels having the <i>val</i> value.
 	 * @throws IOException
 	 */
 	public static SimpleFeatureCollection getParcelByZip(SimpleFeatureCollection parcelIn, String val) throws IOException {
 		//we check if the field for zipcodes is present, otherwise we try national types of parcels 
-		if(!Collec.isCollecContainsAttribute(parcelIn, ParcelSchema.getMinParcelCommunityFiled())) {
+		if(!Collec.isCollecContainsAttribute(parcelIn, ParcelSchema.getMinParcelCommunityField())) {
 			return getFrenchParcelByZip(parcelIn, val);
 		}
 		DefaultFeatureCollection result = new DefaultFeatureCollection();
 		Arrays.stream(parcelIn.toArray(new SimpleFeature[0])).forEach(feat -> {
-			if (Collec.isSimpleFeatureContainsAttribute(feat, ParcelSchema.getMinParcelCommunityFiled())
-					&& feat.getAttribute(ParcelSchema.getMinParcelCommunityFiled()) != null
-					&& ((String) feat.getAttribute(ParcelSchema.getMinParcelCommunityFiled())).equals(val)) {
+			if (Collec.isSimpleFeatureContainsAttribute(feat, ParcelSchema.getMinParcelCommunityField())
+					&& feat.getAttribute(ParcelSchema.getMinParcelCommunityField()) != null
+					&& ((String) feat.getAttribute(ParcelSchema.getMinParcelCommunityField())).equals(val)) {
 				result.add(feat);
 			}
 		});
@@ -259,14 +249,14 @@ public class ParcelGetter {
 	 * prepare the parcel SimpleFeatureCollection and add necessary attributes and informations for an ArtiScales Simulation overload to run on every cities contained into the
 	 * parcel file, simulate a single community and automatically cut all parcels regarding to the zoning file
 	 * 
-	 * @param geoFile
-	 *            : the folder containing the geographic data
-	 * @param regulFile
-	 *            : the folder containing the urban regulation related data
-	 * @param tmpFile
-	 *            : Folder where every temporary file is saved
-	 * @param zip
-	 *            : Community code that must be simulated.
+	 * @param currentFile
+	 * @param buildingFile
+	 *            Shapefile containing the building features
+	 * @param zoningFile
+	 *            Shapefile containing the zoning features
+	 * @param parcelFile
+	 *            Shapefile containing the parcel features
+	 * @param preCutParcels
 	 * @return the ready to deal with the selection process parcels under a SimpleFeatureCollection format. Also saves it on the tmpFile on a shapeFile format
 	 * @throws Exception
 	 */
@@ -278,23 +268,25 @@ public class ParcelGetter {
 	 * prepare the parcel SimpleFeatureCollection and add necessary attributes and informations for an ArtiScales Simulation overload to simulate a single community and
 	 * automatically cut all parcels regarding to the zoning file
 	 * 
-	 * @param geoFile
-	 *            : the folder containing the geographic data
-	 * @param regulFile
-	 *            : the folder containing the urban regulation related data
-	 * @param tmpFile
-	 *            : Folder where every temporary file is saved
+	 * @param buildingFile
+	 *            Shapefile containing the building features
+	 * @param zoningFile
+	 *            Shapefile containing the zoning features
+	 * @param parcelFile
+	 *            Shapefile containing the parcel features
+	 * @param tmpFolder
+	 *            Folder where every temporary file is saved
 	 * @param zip
-	 *            : Community code that must be simulated.
+	 *            Community code that must be simulated.
 	 * @param preCutParcels
-	 *            : if cut all parcels regarding to the zoning file
+	 *            if true, cut all parcels regarding to the zoning file
 	 * @return the ready to deal with the selection process parcels under a SimpleFeatureCollection format. Also saves it on the tmpFile on a shapeFile format
 	 * @throws Exception
 	 */
-	public static File getParcels(File buildingFile, File zoningFile, File parcelFile, File tmpFile, String zip, boolean preCutParcels) throws Exception {
+	public static File getParcels(File buildingFile, File zoningFile, File parcelFile, File tmpFolder, String zip, boolean preCutParcels) throws Exception {
 		List<String> lZip = new ArrayList<String>();
 		lZip.add(zip);
-		return getParcels(buildingFile, zoningFile, parcelFile, tmpFile, lZip, null, preCutParcels);
+		return getParcels(buildingFile, zoningFile, parcelFile, tmpFolder, lZip, null, preCutParcels);
 	}
 
 	public static File getParcels(File buildingFile, File zoningFile, File parcelFile, File tmpFile, String zip, File specificParcelsToSimul, boolean preCutParcels)
@@ -309,41 +301,44 @@ public class ParcelGetter {
 	 * prepare the parcel SimpleFeatureCollection and add necessary attributes and informations for an ArtiScales Simulation overload to automatically cut all parcels regarding to
 	 * the zoning file
 	 * 
-	 * @param geoFile
-	 *            : the folder containing the geographic data
-	 * @param regulFile
-	 *            : the folder containing the urban regulation related data
-	 * @param tmpFile
-	 *            : Folder where every temporary file is saved
+	 * @param buildingFile
+	 *            Shapefile containing the building features
+	 * @param zoningFile
+	 *            Shapefile containing the zoning features
+	 * @param parcelFile
+	 *            Shapefile containing the parcel features
+	 * @param tmpFolder
+	 *            Folder where every temporary file is saved
 	 * @param listZip
 	 *            : List of all the communities codes that must be simulated. If empty, we run it on every cities contained into the parcel file
 	 * @return the ready to deal with the selection process parcels under a SimpleFeatureCollection format. Also saves it on the tmpFile on a shapeFile format
 	 * @throws Exception
 	 */
-	public static File getParcels(File buildingFile, File zoningFile, File parcelFile, File tmpFile, List<String> listZip) throws Exception {
-		return getParcels(buildingFile, zoningFile, parcelFile, tmpFile, listZip, null, true);
+	public static File getParcels(File buildingFile, File zoningFile, File parcelFile, File tmpFolder, List<String> listZip) throws Exception {
+		return getParcels(buildingFile, zoningFile, parcelFile, tmpFolder, listZip, null, true);
 	}
 
 	/**
-	 * @deprecated
-	 * prepare the parcel SimpleFeatureCollection and add necessary attributes and informations for an ArtiScales Simulation
+	 * @deprecated prepare the parcel SimpleFeatureCollection and add necessary attributes and informations for an ArtiScales Simulation
 	 * 
-	 * @param geoFile
-	 *            : the folder containing the geographic data
-	 * @param regulFile
-	 *            : the folder containing the urban regulation related data
-	 * @param tmpFile
-	 *            : Folder where every temporary file is saved
+	 * @param buildingFile
+	 *            Shapefile containing the building features
+	 * @param zoningFile
+	 *            Shapefile containing the zoning features
+	 * @param parcelFile
+	 *            Shapefile containing the parcel features
+	 * @param tmpFolder
+	 *            Folder where every temporary file is saved
 	 * @param listZip
-	 *            : List of all the communities codes that must be simulated. If empty, we work on every cities contained into the parcel file
+	 *            List of all the communities codes that must be simulated. If empty, we work on every cities contained into the parcel file
 	 * @param specificParcelsToSimul
-	 *            : shapeFile of specific parcel that will be simulated. If empty, will simulate all parcels
+	 *            ShapeFile of specific parcel that will be simulated. If empty, will simulate all parcels
 	 * @param preCutParcels
-	 *            : if cut all parcels regarding to the zoning file
+	 *            If cut all parcels regarding to the zoning file
 	 * @return the ready to deal with the selection process parcels under a SimpleFeatureCollection format. Also saves it on the tmpFile on a shapeFile format
 	 * @throws Exception
 	 */
-	public static File getParcels(File buildingFile, File zoningFile, File parcelFile, File tmpFile, List<String> listZip, File specificParcelsToSimul,
+	public static File getParcels(File buildingFile, File zoningFile, File parcelFile, File tmpFolder, List<String> listZip, File specificParcelsToSimul,
 			boolean preCutParcels) throws Exception {
 
 //		DirectPosition.PRECISION = 3;
@@ -398,7 +393,7 @@ public class ParcelGetter {
 
 		// if we cut all the parcel regarding to the zoning code
 		if (preCutParcels) {
-			File tmpParcel = Collec.exportSFC(parcelsSFC, new File(tmpFile, "tmpParcel.shp"));
+			File tmpParcel = Collec.exportSFC(parcelsSFC, new File(tmpFolder, "tmpParcel.shp"));
 			File[] polyFiles = { tmpParcel, zoningFile };
 			List<Polygon> polygons = FeaturePolygonizer.getPolygons(polyFiles);
 			// register to precise every parcel that are in the output
@@ -425,7 +420,7 @@ public class ParcelGetter {
 							sfSimpleBuilder.set("SECTION", feat.getAttribute("SECTION"));
 							String num = (String) feat.getAttribute("NUMERO");
 							// if a part has already been added
-							String code = ParcelAttribute.makeFrenchParcelCode(feat);
+							String code = FrenchParcelFields.makeFrenchParcelCode(feat);
 							if (codeParcelsTot.contains(code)) {
 								while (true) {
 									num = num + "bis";
@@ -507,7 +502,7 @@ public class ParcelGetter {
 						}
 					}
 					finalParcelBuilder.set("the_geom", geom);
-					finalParcelBuilder.set("CODE", ParcelAttribute.makeFrenchParcelCode(feat));
+					finalParcelBuilder.set("CODE", FrenchParcelFields.makeFrenchParcelCode(feat));
 					finalParcelBuilder.set("CODE_DEP", feat.getAttribute("CODE_DEP"));
 					finalParcelBuilder.set("CODE_COM", feat.getAttribute("CODE_COM"));
 					finalParcelBuilder.set("COM_ABS", feat.getAttribute("COM_ABS"));
@@ -530,7 +525,7 @@ public class ParcelGetter {
 		parcelSDS.dispose();
 		shpDSBati.dispose();
 
-		return Collec.exportSFC(newParcel.collection(), new File(tmpFile, "parcelProcessed.shp"));
+		return Collec.exportSFC(newParcel.collection(), new File(tmpFolder, "parcelProcessed.shp"));
 	}
 
 	public static String getCodeDepFiled() {
@@ -547,14 +542,6 @@ public class ParcelGetter {
 
 	public static void setCodeComFiled(String codeComFiled) {
 		ParcelGetter.codeComFiled = codeComFiled;
-	}
-
-	public static String getZoneNameFiled() {
-		return zoneNameFiled;
-	}
-
-	public static void setZoneNameFiled(String zoneNameFiled) {
-		ParcelGetter.zoneNameFiled = zoneNameFiled;
 	}
 
 	public static String getTypologyField() {

@@ -50,7 +50,7 @@ public class OBBBlockDecomposition {
    *          : the input polygon
    * @param shortDirectionSplit
    *          : it is split by the short edges or by the long edge.
-   * @return
+   * @return A list of split polygons
    * @throws Exception
    */
   public static List<Polygon> computeSplittingPolygon(Polygon pol, List<LineString> ext, boolean shortDirectionSplit, double noise, double smallRoadWidth, int largeRoadLevel, double largeRoadWidth,
@@ -101,7 +101,7 @@ public class OBBBlockDecomposition {
    * 
    * @param poly1
    * @param poly2
-   * @return
+   * @return The splitting of Polygon1 with Polygon2
    */
   public static List<Polygon> split(Polygon poly1, Polygon poly2) {
 //    Geometry intersection = poly1.intersection(poly2);
@@ -121,8 +121,8 @@ public class OBBBlockDecomposition {
    * Split the input polygons by a list of polygons.
    * 
    * @param poly
-   * @param polygones
-   * @return
+   * @param polygons
+   * @return A list of the split input polygons
    */
   public static List<Polygon> split(Polygon poly, List<Polygon> polygons) {
     return polygons.stream().flatMap(p -> split(poly, p).stream()).collect(Collectors.toList());

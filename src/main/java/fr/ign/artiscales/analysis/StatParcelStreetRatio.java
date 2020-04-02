@@ -43,15 +43,15 @@ public class StatParcelStreetRatio {
 	/**
 	 * Calculate the ratio between the parcel area and the total area of a zone. It express the quantity of not parcel land, which could be either streets or public spaces
 	 * 
-	 * @param initialMarkedParcel:
+	 * @param initialMarkedParcel
 	 *            Collection of the initial set of parcels which are marked if they had to simulated. Marks could be made with the methods contained in the class
-	 *            {@link fr.ign.cogit.parcelFunction}. The field attribute is named <i>SPLIT</i> by default. It is possible to change it with the {@link #setMarkFieldName(String)
-	 *            setMarkFieldName()} function.
-	 * @param cutParcel:
+	 *            {@link fr.ign.artiscales.parcelFunction}. The field attribute is named <i>SPLIT</i> by default. It is possible to change it with the
+	 *            {@link fr.ign.artiscales.parcelFunction.MarkParcelAttributeFromPosition#setMarkFieldName(String)} function.
+	 * @param cutParcel
 	 *            A collection of parcels after a Parcel Manager simulation
 	 * @param folderOutStat
-	 *            : folder to store the results
-	 * @return the street ratio
+	 *            folder to store the results
+	 * @return The street ratio
 	 * @throws NoSuchAuthorityCodeException
 	 * @throws IOException
 	 * @throws FactoryException
@@ -74,8 +74,8 @@ public class StatParcelStreetRatio {
 				while (it.hasNext()) {
 					SimpleFeature feat = it.next();
 					if (zoneGeom.contains(((Geometry) feat.getDefaultGeometry()))) {
-						sfBuilderZone.set("INSEE", Attribute.makeINSEECode(feat));
-						sfBuilderZone.set("LIBELLE", feat.getAttribute(ParcelSchema.getMinParcelSectionField()));
+						sfBuilderZone.set(ParcelSchema.getMinParcelCommunityField(), Attribute.makeINSEECode(feat));
+						sfBuilderZone.set(GeneralFields.getZonePreciseNameField(), feat.getAttribute(ParcelSchema.getMinParcelSectionField()));
 						break;
 					}
 				}

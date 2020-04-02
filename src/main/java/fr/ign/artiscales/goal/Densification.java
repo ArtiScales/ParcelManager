@@ -20,25 +20,52 @@ import fr.ign.artiscales.parcelFunction.ParcelSchema;
 import fr.ign.cogit.geoToolsFunctions.vectors.Collec;
 import fr.ign.cogit.parameter.ProfileUrbanFabric;
 
+/**
+ * Simulation following that goal divides parcels to ensure that they could be densified. The {@link fr.ign.artiscales.decomposition.ParcelSplitFlag} process is applied on the
+ * selected parcels. If the creation of a flag parcel is impossible and the local rules allows parcel to be disconnected from the road network, the
+ * {@link fr.ign.artiscales.decomposition.ParcelSplit} is applied. Other behavior can be set relatively to the parcel's sizes.
+ * 
+ * @author Maxime Colomb
+ *
+ */
 public class Densification {
+	
+	/**
+	 * If true, will save a shapefile containing only the simulated parcels in the temporary folder.
+	 */
 	public static boolean SAVEINTERMEDIATERESULT = false;
+	/**
+	 * If true, overwrite the output saved shapefiles. If false, happend the simulated parcels to a potential already existing shapefile.
+	 */
 	public static boolean OVERWRITESHAPEFILES = true;
+
 
 	/**
 	 * Apply the densification goal on a set of marked parcels.
 	 *
 	 * @param parcelCollection
+	 *            {@link SimpleFeatureCollection} of marked parcels.
 	 * @param isletCollection
+	 *            {@link SimpleFeatureCollection} containing the morphological islet. Can be generated with the
+	 *            {@link fr.ign.cogit.geometryGeneration.CityGeneration#createUrbanIslet(File, File)} method.
 	 * @param tmpFolder
+	 *            Folder to store temporary files
 	 * @param buildingFile
+	 *            Shapefile representing the buildings
 	 * @param roadFile
+	 *            Shapefile representing the roads. If road not needed, use the overloaded method.
 	 * @param maximalAreaSplitParcel
+	 *            threshold of parcel area above which the OBB algorithm stops to decompose parcels
 	 * @param minimalAreaSplitParcel
+	 *            threshold under which the parcels is not kept. If parcel simulated is under this goal will keep the unsimulated parcel.
 	 * @param maximalWidthSplitParcel
+	 *            threshold of parcel connection to road under which the OBB algorithm stops to decompose parcels
 	 * @param lenDriveway
+	 *            lenght of the driveway to connect a parcel through another parcel to the road
 	 * @param isArt3AllowsIsolatedParcel
-	 * @return
-	 * @throws Exception
+	 *            true if the simulated parcels have the right to be isolated from the road, false otherwise.
+	 * @return The input parcel {@link SimpleFeatureCollection} with the marked parcels replaced by the simulated parcels. All parcels have the
+	 *         {@link fr.ign.artiscales.parcelFunction.ParcelSchema#getSFBMinParcel()} schema. * @throws Exception
 	 */
 	public static SimpleFeatureCollection densification(SimpleFeatureCollection parcelCollection, SimpleFeatureCollection isletCollection,
 			File tmpFolder, File buildingFile, File roadFile, double maximalAreaSplitParcel, double minimalAreaSplitParcel, double maximalWidthSplitParcel,
@@ -93,7 +120,7 @@ public class Densification {
 								sFBMinParcel.set(geomName, parcelCuted.getDefaultGeometry());
 								sFBMinParcel.set(ParcelSchema.getMinParcelSectionField(), (String) feat.getAttribute(ParcelSchema.getMinParcelSectionField()) + "-Densifyed");
 								sFBMinParcel.set(ParcelSchema.getMinParcelNumberField(), String.valueOf(i++));
-								sFBMinParcel.set(ParcelSchema.getMinParcelCommunityFiled(), feat.getAttribute(ParcelSchema.getMinParcelCommunityFiled()));
+								sFBMinParcel.set(ParcelSchema.getMinParcelCommunityField(), feat.getAttribute(ParcelSchema.getMinParcelCommunityField()));
 								SimpleFeature cutedParcel = sFBMinParcel.buildFeature(null);
 								resultParcels.add(cutedParcel);
 								if (SAVEINTERMEDIATERESULT)
@@ -126,18 +153,30 @@ public class Densification {
 	/**
 	 * Apply the densification goal on a set of marked parcels.
 	 *
-	 * @overload if we choose to not use a road Shapefile
+	 * overload of the {@link #densification(SimpleFeatureCollection, SimpleFeatureCollection, File, File, File, double, double, double, double, boolean)} method if we choose to
+	 * not use a road Shapefile
+	 * 
 	 * @param parcelCollection
+	 *            SimpleFeatureCollection of marked parcels.
 	 * @param isletCollection
+	 *            SimpleFeatureCollection containing the morphological islet. Can be generated with the
+	 *            {@link fr.ign.cogit.geometryGeneration.CityGeneration#createUrbanIslet(File, File)} method.
 	 * @param tmpFolder
+	 *            folder to store temporary files
 	 * @param buildingFile
+	 *            Shapefile representing the buildings
 	 * @param maximalAreaSplitParcel
+	 *            threshold of parcel area above which the OBB algorithm stops to decompose parcels
 	 * @param minimalAreaSplitParcel
+	 *            threshold under which the parcels is not kept. If parcel simulated is under this goal will keep the unsimulated parcel.
 	 * @param maximalWidthSplitParcel
+	 *            threshold of parcel connection to road under which the OBB algorithm stops to decompose parcels
 	 * @param lenDriveway
+	 *            lenght of the driveway to connect a parcel through another parcel to the road
 	 * @param isArt3AllowsIsolatedParcel
-	 * @return
-	 * @throws Exception
+	 *            true if the simulated parcels have the right to be isolated from the road, false otherwise.
+	 * @return The input parcel {@link SimpleFeatureCollection} with the marked parcels replaced by the simulated parcels. All parcels have the
+	 *         {@link fr.ign.artiscales.parcelFunction.ParcelSchema#getSFBMinParcel()} schema. * @throws Exception
 	 */
 	public static SimpleFeatureCollection densification(SimpleFeatureCollection parcelCollection, SimpleFeatureCollection isletCollection,
 			File tmpFolder, File buildingFile, double maximalAreaSplitParcel, double minimalAreaSplitParcel, double maximalWidthSplitParcel,
@@ -146,22 +185,32 @@ public class Densification {
 				maximalWidthSplitParcel, lenDriveway, isArt3AllowsIsolatedParcel);
 	}
 	
-	
 	/**
 	 * Apply the densification goal on a set of marked parcels.
 	 *
-	 * @overload iwith a profile building type input
+	 * overload {@link #densification(SimpleFeatureCollection, SimpleFeatureCollection, File, File, File, double, double, double, double, boolean)} method with a profile building
+	 * type input (which automatically report its parameters to the fields)
+	 * 
 	 * @param parcelCollection
+	 *            SimpleFeatureCollection of marked parcels.
 	 * @param isletCollection
+	 *            SimpleFeatureCollection containing the morphological islet. Can be generated with the
+	 *            {@link fr.ign.cogit.geometryGeneration.CityGeneration#createUrbanIslet(File, File)} method.
 	 * @param tmpFolder
+	 *            folder to store temporary files.
 	 * @param buildingFile
+	 *            Shapefile representing the buildings.
+	 * @param roadFile
+	 *            Shapefile representing the roads (optional).
+	 * @param profileFile
+	 *            File containing the .json description of the urban scene profile planed to be simulated on this zone.
 	 * @param isArt3AllowsIsolatedParcel
-	 * @return
-	 * @throws Exception
+	 *            true if the simulated parcels have the right to be isolated from the road, false otherwise.
+	 * @return The input parcel {@link SimpleFeatureCollection} with the marked parcels replaced by the simulated parcels. All parcels have the
+	 *         {@link fr.ign.artiscales.parcelFunction.ParcelSchema#getSFBMinParcel()} schema. * @throws Exception
 	 */
 	public static SimpleFeatureCollection densification(SimpleFeatureCollection parcelCollection, SimpleFeatureCollection isletCollection,
 			File tmpFolder, File buildingFile, File roadFile, File profileFile, boolean isArt3AllowsIsolatedParcel) throws Exception {
-		// profile building
 		ProfileUrbanFabric profile = ProfileUrbanFabric.convertJSONtoProfile(profileFile);
 		return densification(parcelCollection, isletCollection, tmpFolder, buildingFile, roadFile,
 				profile.getMaximalArea(), profile.getMinimalArea(), profile.getMaximalWidth(), profile.getLenDriveway(),
@@ -169,19 +218,27 @@ public class Densification {
 	}
 	
 	/**
-	 * Apply a hybrid densification process on the coming parcel collection. 
-	 * The parcels that size are inferior to 4x the maximal area of parcel type to create are runned with the densication goal.
-	 * The parcels that size are superior to 4x the maximal area are considered as able to build neighborhood. 
-	 * They are divided with the {@link goal.ConsolidationDivision#consolidationDivision(SimpleFeatureCollection, File, double, double, double, double, int)} method.  
+	 * Apply a hybrid densification process on the coming parcel collection. The parcels that size are inferior to 4x the maximal area of parcel type to create are runned with the
+	 * densication goal. The parcels that size are superior to 4x the maximal area are considered as able to build neighborhood. They are divided with the
+	 * {@link fr.ign.artiscales.goal.ConsolidationDivision#consolidationDivision(SimpleFeatureCollection, File, double, double, double, double, int)} method.
 	 *
- 	 * @param parcelCollection
+	 * @param parcelCollection
+	 *            SimpleFeatureCollection of marked parcels.
 	 * @param isletCollection
+	 *            SimpleFeatureCollection containing the morphological islet. Can be generated with the
+	 *            {@link fr.ign.cogit.geometryGeneration.CityGeneration#createUrbanIslet(File, File)} method.
 	 * @param tmpFolder
+	 *            folder to store temporary files.
 	 * @param buildingFile
+	 *            Shapefile representing the buildings.
 	 * @param roadFile
-	 * @param profileFile
+	 *            Shapefile representing the roads (optional).
+	 * @param profile
+	 *            ProfileUrbanFabric of the simulated urban scene.
 	 * @param isArt3AllowsIsolatedParcel
-	 * @return
+	 *            true if the simulated parcels have the right to be isolated from the road, false otherwise.
+	 * @return The input parcel {@link SimpleFeatureCollection} with the marked parcels replaced by the simulated parcels. All parcels have the
+	 *         {@link fr.ign.artiscales.parcelFunction.ParcelSchema#getSFBMinParcel()} schema.
 	 * @throws Exception
 	 */
 	public static SimpleFeatureCollection densificationOrNeighborhood(SimpleFeatureCollection parcelCollection, SimpleFeatureCollection isletCollection,

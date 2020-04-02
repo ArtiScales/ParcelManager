@@ -22,9 +22,9 @@ import fr.ign.artiscales.scenario.PMStep;
 
 /**
  * This process compares the evolution of a parcel plan at two different versions (file1 and file2) with the simulation on the zone.
- * The simulation must be defined with a scenario (see package {@link fr.ign.cogit.scenario}).
+ * The simulation must be defined with a scenario (see package {@link fr.ign.artiscales.scenario}).
 
- * @author mcolomb
+ * @author Maxime Colomb
  *
  */
 public class CompareSimulatedParcelsWithEvolution {
@@ -107,7 +107,7 @@ public class CompareSimulatedParcelsWithEvolution {
 		}
 
 		Instant end = Instant.now();
-		System.out.println(Duration.between(start, end)); // prints PT1M3.553S
+		System.out.println(Duration.between(start, end));
 		
 		//TODO calculate macro indocators (nombre de parcelle, distribution comparée
 	}

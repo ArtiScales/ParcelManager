@@ -1,6 +1,7 @@
 package fr.ign.artiscales.fields;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.List;
 
 import org.geotools.data.shapefile.ShapefileDataStore;
@@ -10,8 +11,9 @@ import org.geotools.feature.DefaultFeatureCollection;
 import org.geotools.feature.simple.SimpleFeatureBuilder;
 import org.locationtech.jts.geom.Geometry;
 import org.opengis.feature.simple.SimpleFeature;
+import org.opengis.referencing.FactoryException;
+import org.opengis.referencing.NoSuchAuthorityCodeException;
 
-import fr.ign.artiscales.parcelFunction.ParcelAttribute;
 import fr.ign.artiscales.parcelFunction.ParcelSchema;
 import fr.ign.artiscales.parcelFunction.ParcelState;
 import fr.ign.cogit.geoToolsFunctions.Attribute;
@@ -20,16 +22,22 @@ public class ArtiScalesParcelFields {
 	/**
 	 * Set the parcel's attribute after a parcel recomposition processus based on the French model. Won't change parcel's information if they are already set
 	 * 
-	 * @param parcels       : Whole set of parcels
-	 * @param tmpFolder     : A temporary folder where will be saved intermediate results
-	 * @param buildingFile  : A shapefile containing the builings of the zone.
-	 * @param communityFile : A shapefile containing the communities of the zone.
-	 * @param polygonIntersectionFile : A shapefile containing outputs of MUP-City. Can be empty
+	 * @param parcels
+	 *            Whole set of parcels
+	 * @param buildingFile
+	 *            A shapefile containing the builings of the zone.
+	 * @param communityFile
+	 *            A shapefile containing the communities of the zone.
+	 * @param polygonIntersectionFile
+	 *            A shapefile containing outputs of MUP-City. Can be empty
 	 * @return The parcel set with the right attributes
+	 * @throws FactoryException 
+	 * @throws IOException 
+	 * @throws NoSuchAuthorityCodeException 
 	 * @throws Exception
 	 */
 	public static SimpleFeatureCollection fixParcelAttributes(SimpleFeatureCollection parcels, File buildingFile, File communityFile,
-			File polygonIntersectionFile, File zoningFile, boolean allOrCell) throws Exception {
+			File polygonIntersectionFile, File zoningFile, boolean allOrCell) throws NoSuchAuthorityCodeException, IOException, FactoryException  {
 		SimpleFeatureCollection parcelsFrenched = FrenchParcelFields.fixParcelAttributes(parcels, communityFile);
 		DefaultFeatureCollection parcelFinal = new DefaultFeatureCollection();
 
@@ -50,7 +58,7 @@ public class ArtiScalesParcelFields {
 				featureBuilder.set("CODE_COM", parcel.getAttribute("CODE_COM"));
 				featureBuilder.set("SECTION", section);
 				featureBuilder.set("NUMERO", parcel.getAttribute("NUMERO"));
-				featureBuilder.set("CODE", ParcelAttribute.makeFrenchParcelCode(parcel));
+				featureBuilder.set("CODE", FrenchParcelFields.makeFrenchParcelCode(parcel));
 				featureBuilder.set("COM_ABS", "000");
 				
 				boolean iPB = ParcelState.isAlreadyBuilt(buildingFile, parcel, (Geometry) parcel.getDefaultGeometry());

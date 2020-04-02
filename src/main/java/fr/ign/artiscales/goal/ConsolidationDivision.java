@@ -18,30 +18,48 @@ import fr.ign.artiscales.parcelFunction.ParcelSchema;
 import fr.ign.cogit.geoToolsFunctions.vectors.Collec;
 import fr.ign.cogit.geoToolsFunctions.vectors.Geom;
 
+/**
+ * Simulation following this goal merge together the contiguous marked parcels to create zones. The chosen parcel division process (OBB by default) is then applied on each created zone.
+ * 
+ * @author Maxime Colomb
+ *
+ */
 public class ConsolidationDivision {
+	/**
+	 * If true, will save all the intermediate results in the temporary folder
+	 */
 	public static boolean DEBUG = false;
+	/**
+	 * The process used to divide the parcels
+	 */
 	public static String PROCESS = "OBB";
+	/**
+	 * If true, will save a shapefile containing only the simulated parcels in the temporary folder.
+	 */
 	public static boolean SAVEINTERMEDIATERESULT = false;
+	/**
+	 * If true, overwrite the output saved shapefiles. If false, happend the simulated parcels to a potential already existing shapefile.
+	 */
 	public static boolean OVERWRITESHAPEFILES = true;
 
 
 	/**
 	 * Method that merges the contiguous marked parcels into zones and then split those zones with a given parcel division algorithm (by default, the Oriented Bounding Box)
-	 * @overload for a single road size usage
+	 * overload of {@link #consolidationDivision(SimpleFeatureCollection, File, double, double, double, double, int, double, int)} for a single road size usage
 	 * @param parcels
 	 *            The parcels to be merged and cut. Must be marked with the SPLIT filed (see markParcelIntersectMUPOutput for example, with the method concerning MUP-City's output)
 	 * @param tmpFolder
-	 *            : A temporary folder where will be saved intermediate results
+	 *            A temporary folder where will be saved intermediate results
 	 * @param maximalArea
-	 *            : Area under which a parcel won"t be anymore cut
+	 *            Area under which a parcel won"t be anymore cut
 	 * @param minimalArea
-	 *            : Area under which a polygon won't be kept as a parcel
+	 *            Area under which a polygon won't be kept as a parcel
 	 * @param maximalWidth
-	 *            : The width of parcel connection to street network under which the parcel won"t be anymore cut
+	 *            The width of parcel connection to street network under which the parcel won"t be anymore cut
 	 * @param streetWidth
-	 *            : the width of generated street network. this @overload is setting a single size for those roads
+	 *            the width of generated street network. this @overload is setting a single size for those roads
 	 * @param decompositionLevelWithoutStreet
-	 *            : Number of the final row on which street generation doesn't apply
+	 *            Number of the final row on which street generation doesn't apply
 	 * @return the set of parcel with decomposition
 	 * @throws Exception
 	 */
@@ -114,8 +132,8 @@ public class ConsolidationDivision {
 		for (int i = 0; i < multiGeom.getNumGeometries(); i++) {
 			sfBuilder.add(multiGeom.getGeometryN(i));
 			sfBuilder.set(ParcelSchema.getMinParcelSectionField(), Integer.toString(i));
-			sfBuilder.set(ParcelSchema.getMinParcelCommunityFiled(),
-					Collec.getFieldFromSFC(multiGeom.getGeometryN(i), parcels, ParcelSchema.getMinParcelCommunityFiled()));
+			sfBuilder.set(ParcelSchema.getMinParcelCommunityField(),
+					Collec.getFieldFromSFC(multiGeom.getGeometryN(i), parcels, ParcelSchema.getMinParcelCommunityField()));
 			mergedParcels.add(sfBuilder.buildFeature(null));
 		}
 		if (DEBUG) {
@@ -170,8 +188,8 @@ public class ConsolidationDivision {
 						sfBuilderFinalParcel.set("the_geom", freshCut.getDefaultGeometry());
 						sfBuilderFinalParcel.set(ParcelSchema.getMinParcelSectionField(), "newSection" + sec + "ConsolidRecomp");
 						sfBuilderFinalParcel.set(ParcelSchema.getMinParcelNumberField(), String.valueOf(i++));
-						sfBuilderFinalParcel.set(ParcelSchema.getMinParcelCommunityFiled(),
-								feat.getAttribute(ParcelSchema.getMinParcelCommunityFiled()));
+						sfBuilderFinalParcel.set(ParcelSchema.getMinParcelCommunityField(),
+								feat.getAttribute(ParcelSchema.getMinParcelCommunityField()));
 						cutParcels.add(sfBuilderFinalParcel.buildFeature(null));
 					}
 					it.close();

@@ -30,6 +30,13 @@ import fr.ign.artiscales.fields.GeneralFields;
 import fr.ign.cogit.geoToolsFunctions.vectors.Collec;
 import fr.ign.cogit.geoToolsFunctions.vectors.Geom;
 
+/**
+ * Static methods to mark parcel collections relatively to many other geographic elements, parcel attributes or geometries or other sets of parcels. Doesn't change the input
+ * {@link SimpleFeatureCollection} structure but add a marking field. This field's name is <i>SPLIT</i> by default and can be changed.
+ * 
+ * @author Maxime Colomb
+ *
+ */
 public class MarkParcelAttributeFromPosition {
 	
 //	public static void main(String[] args) throws Exception {
@@ -44,16 +51,27 @@ public class MarkParcelAttributeFromPosition {
 //		System.out.println(stopTime - startTime);
 //	}
 	
+	/**
+	 * Name of the field containing the parcel's mark 
+	 */
 	static String markFieldName = "SPLIT";
 
+
 	/**
+	 * Mark the parcels that have a connection to the road network, represented either by the void of parcels or road lines (optional)
 	 * 
-	 * @param parcelsDensifCreated
+	 * @param parcels
+	 *            Input parcel {@link SimpleFeatureCollection}
+	 * @param islet
+	 *            {@link SimpleFeatureCollection} containing the morphological islet. Can be generated with the
+	 *            {@link fr.ign.cogit.geometryGeneration.CityGeneration#createUrbanIslet(File, File)} method.
 	 * @param roadFile
-	 * @return
-	 * @throws FactoryException 
-	 * @throws NoSuchAuthorityCodeException 
-	 * @throws IOException 
+	 *            Shapefile containing the road segments
+	 * @return {@link SimpleFeatureCollection} of the input parcels with marked parcels on the {@link #markFieldName} field.
+	 * 
+	 * @throws NoSuchAuthorityCodeException
+	 * @throws FactoryException
+	 * @throws IOException
 	 */
 	public static SimpleFeatureCollection markParcelsConnectedToRoad(SimpleFeatureCollection parcels, SimpleFeatureCollection islet, File roadFile) throws NoSuchAuthorityCodeException, FactoryException, IOException {
 		ShapefileDataStore sds = new ShapefileDataStore(roadFile.toURI().toURL());
@@ -61,7 +79,7 @@ public class MarkParcelAttributeFromPosition {
 		final SimpleFeatureType featureSchema = ParcelSchema.getSFBMinParcelSplit().getFeatureType();
 		DefaultFeatureCollection result = new DefaultFeatureCollection();
 		
-		//if features have the schema that the one intended to set, we bypass 
+		//if features have the schema that the one intended to set, we bypass
 		if (featureSchema.equals(parcels.getSchema())) {
 			Arrays.stream(parcels.toArray(new SimpleFeature[0])).forEach(feat -> {
 				try {
@@ -81,6 +99,7 @@ public class MarkParcelAttributeFromPosition {
 			sds.dispose();
 			return result;
 		}
+		
 		SimpleFeatureBuilder featureBuilder = ParcelSchema.getSFBMinParcelSplit();
 		try (SimpleFeatureIterator it = parcels.features()) {
 			while (it.hasNext()) {
@@ -102,10 +121,12 @@ public class MarkParcelAttributeFromPosition {
 		}
 	
 	/**
-	 * Mark the parcels that size are superior or equal to a given threshold. 
-	 * @param parcels: Parcel collection
-	 * @param size : Area threshold 
-	 * @return Same parcels as input with a <i>markFieldName</i> field. 
+	 * Mark the parcels that size are superior or equal to a given threshold.
+	 * @param parcels
+	 *            Input parcel {@link SimpleFeatureCollection}
+	 * @param size
+	 *            Area threshold
+	 * @return {@link SimpleFeatureCollection} of the input parcels with marked parcels on the {@link #markFieldName} field.
 	 * @throws NoSuchAuthorityCodeException
 	 * @throws FactoryException
 	 * @throws IOException
@@ -147,10 +168,13 @@ public class MarkParcelAttributeFromPosition {
 	}
 	
 	/**
-	 * Mark the parcels that size are inferior to a given threshold. 
-	 * @param parcels: Parcel collection
-	 * @param size : Area threshold 
-	 * @return Same parcels as input with a <i>markFieldName</i> field. 
+	 * Mark the parcels that size are inferior to a given threshold.
+	 * 
+	 * @param parcels
+	 *            Input parcel {@link SimpleFeatureCollection}
+	 * @param size
+	 *            Area threshold
+	 * @return {@link SimpleFeatureCollection} of the input parcels with marked parcels on the {@link #markFieldName} field.
 	 * @throws NoSuchAuthorityCodeException
 	 * @throws FactoryException
 	 * @throws IOException
@@ -191,13 +215,18 @@ public class MarkParcelAttributeFromPosition {
 		}
 		return result.collection();
 }
+	
 	/**
-	 * look if a parcel has the <i>mark</i> field and if it is positive or negative
-	 * @param feat input SimpleFeature
-	 * @return <ul><li>If no <i>mark</i> field or the field is unset, return <b>-1</b>
-	 * <li>If <i>mark</i> field is set to 0, return <b>0</b>
-	 * <li>If <i>mark</i> field is set to 1, return <b>1</b>
-	 * </ul> 
+	 * look if a parcel has the {@link #markFieldName} field and if it is positive or negative
+	 * 
+	 * @param feat
+	 *            input SimpleFeature
+	 * @return
+	 *         <ul>
+	 *         <li>If no <i>mark</i> field or the field is unset, return <b>-1</b>
+	 *         <li>If <i>mark</i> field is set to 0, return <b>0</b>
+	 *         <li>If <i>mark</i> field is set to 1, return <b>1</b>
+	 *         </ul>
 	 */
 	public static int isAlreadyMarked(SimpleFeature feat) {
 		if (Collec.isSimpleFeatureContainsAttribute(feat, markFieldName) && feat.getAttribute(markFieldName) != null) {
@@ -214,14 +243,17 @@ public class MarkParcelAttributeFromPosition {
 			return -1;
 		}
 	}
+
 	/**
-	 * Mark a given number of parcel for the simulation. The selection is random but
-	 * parcels must be bigger than a certain area threshold.
+	 * Mark a given number of parcel for the simulation. The selection is random but parcels must be bigger than a certain area threshold.
 	 * 
-	 * @param parcels        input parcel collection
-	 * @param minSize        : minimal size of parcels to be selected
-	 * @param nbParcelToMark : number of parcel wanted
-	 * @return a random collection of parcel marked to be simulated.
+	 * @param parcels
+	 *            Input parcel {@link SimpleFeatureCollection}
+	 * @param minSize
+	 *            minimal size of parcels to be selected
+	 * @param nbParcelToMark
+	 *            number of parcel wanted
+	 * @return {@link SimpleFeatureCollection} of the input parcels with random marked parcels on the {@link #markFieldName} field.
 	 * @throws NoSuchAuthorityCodeException
 	 * @throws FactoryException
 	 */
@@ -231,16 +263,20 @@ public class MarkParcelAttributeFromPosition {
 	}
 
 	/**
-	 * Mark a given number of parcel for the simulation. The selection is random but
-	 * parcels must be bigger than a certain area threshold and must be contained is
-	 * a given zoning type.
+	 * Mark a given number of parcel for the simulation. The selection is random but parcels must be bigger than a certain area threshold and must be contained is a given zoning
+	 * type.
 	 * 
-	 * @param parcels        input parcel collection
-	 * @param minSize        : minimal size of parcels to be selected
-	 * @param zoningType     : type of the zoning plan to take into consideration
-	 * @param zoningFile     : Shapefile containing the zoning plan
-	 * @param nbParcelToMark : number of parcel wanted
-	 * @return a random collection of parcel marked to be simulated.
+	 * @param parcels
+	 *            Input parcel {@link SimpleFeatureCollection}
+	 * @param minSize
+	 *            Minimal size of parcels to be selected
+	 * @param zoningType
+	 *            Type of the zoning plan to take into consideration
+	 * @param zoningFile
+	 *            Shapefile containing the zoning plan
+	 * @param nbParcelToMark
+	 *            Number of parcel wanted
+	 * @return {@link SimpleFeatureCollection} of the input parcels with random marked parcels on the {@link #markFieldName} field.
 	 * @throws NoSuchAuthorityCodeException
 	 * @throws FactoryException
 	 */
@@ -264,9 +300,12 @@ public class MarkParcelAttributeFromPosition {
 	
 	/**
 	 * Mark the built parcels. Subtract a buffer of 1 meters on the buildings to avoid blurry parcel and builing definition
+	 * 
 	 * @param parcels
+	 *            Input parcel {@link SimpleFeatureCollection}
 	 * @param buildingFile
-	 * @return
+	 *            Shapefile containing building features
+	 * @return {@link SimpleFeatureCollection} of the input parcels with marked parcels on the {@link #markFieldName} field.
 	 * @throws IOException
 	 * @throws NoSuchAuthorityCodeException
 	 * @throws FactoryException
@@ -313,11 +352,13 @@ public class MarkParcelAttributeFromPosition {
 	}
 	
 	/**
-	 * Mark the built parcels. Subtract a buffer of 1 meters on the buildings to avoid blurry parcel and builing definition
+	 * Mark the built parcels. Subtract a buffer of 1 meters on the buildings to avoid blurry parcel and building definition
+	 * 
 	 * @param parcels
+	 *            Input parcel {@link SimpleFeatureCollection}
 	 * @param buildingFile
-	 * @param built  if true, mark the built parcels. If false, mark the unbuilt parcels
-	 * @return
+	 *            Shapefile representing the buildings
+	 * @return {@link SimpleFeatureCollection} of the input parcels with marked parcels on the {@link #markFieldName} field.
 	 * @throws IOException
 	 * @throws NoSuchAuthorityCodeException
 	 * @throws FactoryException
@@ -365,17 +406,17 @@ public class MarkParcelAttributeFromPosition {
 	
 	
 	/**
-	 * Mark parcels that intersects a given collection of polygons.
-	 * The default field name containing the mark is "SPLIT" but it can be changed with the {@link #setMarkFieldName()} method.
+	 * Mark parcels that intersects a given collection of polygons. The default field name containing the mark is "SPLIT" but it can be changed with the {@link #setMarkFieldName(String)}
+	 * method.
 	 * 
 	 * @param parcels
-	 *            : The collection of parcels to mark
+	 *            Input parcel {@link SimpleFeatureCollection}
 	 * @param polygonIntersectionFile
-	 *            : A shapefile containing the collection of polygons
-	 * @return
+	 *            A shapefile containing the collection of polygons
+	 * @return {@link SimpleFeatureCollection} of the input parcels with marked parcels on the {@link #markFieldName} field.
 	 * @throws IOException
-	 * @throws FactoryException 
-	 * @throws NoSuchAuthorityCodeException 
+	 * @throws FactoryException
+	 * @throws NoSuchAuthorityCodeException
 	 * @throws Exception
 	 */
 	public static SimpleFeatureCollection markParcelIntersectPolygonIntersection(SimpleFeatureCollection parcels, File polygonIntersectionFile)
@@ -424,11 +465,12 @@ public class MarkParcelAttributeFromPosition {
 	 * Mark parcels that intersects a certain type of zoning.
 	 * 
 	 * @param parcels
+	 *            Input parcel {@link SimpleFeatureCollection}
 	 * @param zoningType
-	 *            : The big kind of the zoning (either not constructible (NC), urbanizable (U) or to be urbanize (TBU). Other keywords can be tolerate
+	 *            The big kind of the zoning (either not constructible (NC), urbanizable (U) or to be urbanize (TBU). Other keywords can be tolerate
 	 * @param zoningFile
-	 *            : A shapefile containing the zoning plan
-	 * @return The same collection of parcels with the SPLIT field
+	 *            A shapefile containing the zoning plan
+	 * @return {@link SimpleFeatureCollection} of the input parcels with marked parcels on the {@link #markFieldName} field.
 	 * @throws FactoryException 
 	 * @throws NoSuchAuthorityCodeException 
 	 * @throws IOException
@@ -474,15 +516,16 @@ public class MarkParcelAttributeFromPosition {
 	 * Mark parcels that intersects that are usually constructible for French regulation
 	 * 
 	 * @param parcels
+	 *            Input parcel {@link SimpleFeatureCollection}
 	 * @param zoningFile
-	 *            : A shapefile containing the zoning plan
-	 * @return The same collection of parcels with the SPLIT field
+	 *            A shapefile containing the zoning plan
+	 * @return {@link SimpleFeatureCollection} of the input parcels with marked parcels on the {@link #markFieldName} field.
 	 * @throws FactoryException 
 	 * @throws NoSuchAuthorityCodeException 
 	 * @throws IOException
 	 * @throws Exception
 	 */
-	public static SimpleFeatureCollection markParcelIntersectConstructibleZoningType(SimpleFeatureCollection parcels, File zoningFile) throws NoSuchAuthorityCodeException, FactoryException, IOException {
+	public static SimpleFeatureCollection markParcelIntersectFrenchConstructibleZoningType(SimpleFeatureCollection parcels, File zoningFile) throws NoSuchAuthorityCodeException, FactoryException, IOException {
 		final SimpleFeatureType featureSchema = ParcelSchema.getSFBMinParcelSplit().getFeatureType();
 		
 		ShapefileDataStore sds = new ShapefileDataStore(zoningFile.toURI().toURL());
@@ -494,7 +537,7 @@ public class MarkParcelAttributeFromPosition {
 		if (featureSchema.equals(parcels.getSchema())) {
 			Arrays.stream(parcels.toArray(new SimpleFeature[0])).forEach(feat -> {
 				if (isAlreadyMarked(feat) != 0 && FrenchZoningFields
-						.isZoneUsuallyAdmitResidentialConstruction(Collec.getSimpleFeatureFromSFC((Geometry) feat.getDefaultGeometry(), zonings))) {
+						.isUrbanZoneUsuallyAdmitResidentialConstruction(Collec.getSimpleFeatureFromSFC((Geometry) feat.getDefaultGeometry(), zonings))) {
 					feat.setAttribute(markFieldName, 1);
 				} else {
 					feat.setAttribute(markFieldName, 0);
@@ -511,7 +554,7 @@ public class MarkParcelAttributeFromPosition {
 				SimpleFeature feat = it.next();
 				featureBuilder = ParcelSchema.setSFBMinParcelSplitWithFeat(feat,featureBuilder, featureSchema, 0);
 				if (isAlreadyMarked(feat) != 0 && FrenchZoningFields
-						.isZoneUsuallyAdmitResidentialConstruction(Collec.getSimpleFeatureFromSFC((Geometry) feat.getDefaultGeometry(), zonings))) {
+						.isUrbanZoneUsuallyAdmitResidentialConstruction(Collec.getSimpleFeatureFromSFC((Geometry) feat.getDefaultGeometry(), zonings))) {
 					featureBuilder.set(markFieldName, 1);
 				} 
 				result.add(featureBuilder.buildFeature(null));
@@ -576,9 +619,12 @@ public class MarkParcelAttributeFromPosition {
 
 	/**
 	 * Mark parcels that have already been marked on an other simple collection feature
-	 * @param parcelDensified parcel collection to copy the marks on. Could have a markFieldName or not. 
-	 * @param parcelMarked parcel collection that has a markFieldName field 
-	 * @return 
+	 * 
+	 * @param parcelsToMark
+	 *            Parcel collection to copy the marks on. Could have a markFieldName or not.
+	 * @param parcelsMarked
+	 *            Parcel collection that has a markFieldName field
+	 * @return {@link SimpleFeatureCollection} of the input parcels with marked parcels on the {@link #markFieldName} field.
 	 */
 	public static SimpleFeatureCollection markAlreadyMarkedParcels(SimpleFeatureCollection parcelsToMark, SimpleFeatureCollection parcelsMarked) {
 		if (!Collec.isCollecContainsAttribute(parcelsMarked, markFieldName)) {
@@ -629,12 +675,15 @@ public class MarkParcelAttributeFromPosition {
 	}
 
 	/**
-	 * Mark a parcel if it has been simulated. This is done using the <i>section</i> field name and the method {@link fr.ign.artiscales.fields.GeneralFields#isParcelLikeFrenchHasSimulatedFileds(SimpleFeature)}.
+	 * Mark a parcel if it has been simulated. This is done using the <i>section</i> field name and the method
+	 * {@link fr.ign.artiscales.fields.GeneralFields#isParcelLikeFrenchHasSimulatedFileds(SimpleFeature)}.
+	 * 
 	 * @param parcels
-	 * @return
-	 * @throws FactoryException 
-	 * @throws NoSuchAuthorityCodeException 
-	 * @throws IOException 
+	 *            Input parcel {@link SimpleFeatureCollection}
+	 * @return {@link SimpleFeatureCollection} of the input parcels with marked parcels on the {@link #markFieldName} field.
+	 * @throws FactoryException
+	 * @throws NoSuchAuthorityCodeException
+	 * @throws IOException
 	 */
 	public static SimpleFeatureCollection markSimulatedParcel(SimpleFeatureCollection parcels) throws NoSuchAuthorityCodeException, FactoryException, IOException {
 		final SimpleFeatureType featureSchema = ParcelSchema.getSFBMinParcelSplit().getFeatureType();

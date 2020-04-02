@@ -19,23 +19,20 @@ import org.geotools.factory.CommonFactoryFinder;
 import org.geotools.util.factory.GeoTools;
 import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.geom.PrecisionModel;
-import org.locationtech.jts.io.ParseException;
 import org.locationtech.jts.precision.GeometryPrecisionReducer;
 import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.filter.Filter;
 import org.opengis.filter.FilterFactory2;
-import org.opengis.referencing.FactoryException;
-import org.opengis.referencing.NoSuchAuthorityCodeException;
 
 import com.opencsv.CSVReader;
 
+import fr.ign.artiscales.fields.FrenchZoningFields;
+import fr.ign.artiscales.fields.GeneralFields;
 import fr.ign.cogit.geoToolsFunctions.vectors.Collec;
 import fr.ign.cogit.geoToolsFunctions.vectors.Geom;
 
 public class ParcelState {
 
-	public static String zoneNameField = "TYPEZONE";
-	
 //	public static void main(String[] args) throws Exception {
 //		File geoFile = new File("/home/ubuntu/boulot/these/result2903/dataGeo/");
 //		File batiFile = new File(geoFile, "building.shp");
@@ -63,14 +60,14 @@ public class ParcelState {
 //	}
 
 	/**
-	 * return false if the parcel mandatory needs a contact with the road to be
-	 * urbanized. return true otherwise TODO haven't done it for the zones because I
-	 * only found communities that set the same rule regardless of the zone, but
-	 * that could be done
+	 * return false if the parcel mandatory needs a contact with the road to be urbanized. return true otherwise TODO haven't done it for the zones because I only found communities
+	 * that set the same rule regardless of the zone, but that could be done
 	 * 
-	 * @param feat     : the parcel
-	 * @param predicateFile : the table containing urban rules. If null or not set, will return <b>false</b>
-	 * @return
+	 * @param feat
+	 *            The parcel (which has to be French)
+	 * @param predicateFile
+	 *            The table containing urban rules. If null or not set, will return <b>false</b>
+	 * @return false by default
 	 * @throws IOException
 	 */
 	public static boolean isArt3AllowsIsolatedParcel(SimpleFeature feat, File predicateFile) throws IOException {
@@ -78,6 +75,17 @@ public class ParcelState {
 				((String) feat.getAttribute("CODE_DEP")) + ((String) feat.getAttribute("CODE_COM")), predicateFile);
 	}
 
+	/**
+	 * return false if the parcel mandatory needs a contact with the road to be urbanized. return true otherwise TODO haven't done it for the zones because I only found communities
+	 * that set the same rule regardless of the zone, but that could be done
+	 * 
+	 * @param insee
+	 *            The community number of the concerned city
+	 * @param predicateFile
+	 *            The table containing urban rules. If null or not set, will return <b>false</b>
+	 * @return false by default
+	 * @throws IOException
+	 */
 	public static boolean isArt3AllowsIsolatedParcel(String insee, File predicateFile) throws IOException {
 		if(!predicateFile.exists()) {
 			return false;
@@ -119,7 +127,7 @@ public class ParcelState {
 	 * 
 	 * @param batiSFC
 	 * @param feature
-	 * @return
+	 * @return True if a building is really intersecting the parcel
 	 * @throws IOException
 	 */
 	public static boolean isAlreadyBuilt(SimpleFeatureCollection batiSFC, SimpleFeature feature) throws IOException {
@@ -128,12 +136,12 @@ public class ParcelState {
 
 	/**
 	 * This algorithm looks if a parcel is overlapped by a building and returns true if they are.
-	 * @overload to select only a selection of buildings
+	 * overload of the {@link #isAlreadyBuilt(SimpleFeatureCollection, SimpleFeature, double)} to select only a selection of buildings
 	 * 
 	 * @param buildingFile
 	 * @param parcel
 	 * @param emprise
-	 * @return
+	 * @return True if a building is really intersecting the parcel
 	 * @throws Exception
 	 */
 	public static boolean isAlreadyBuilt(File buildingFile, SimpleFeature parcel, Geometry emprise) throws Exception {
@@ -144,20 +152,19 @@ public class ParcelState {
 	}
 
 	/**
-	 * This algorithm looks if a parcel is overlapped by a building+a buffer (in
-	 * most of the cases, buffer is negative to delete small parts of buildings that
-	 * can slightly overlap a parcel) and returns true if they are.
+	 * This algorithm looks if a parcel is overlapped by a building+a buffer (in most of the cases, buffer is negative to delete small parts of buildings that can slightly overlap
+	 * a parcel) and returns true if they are.
 	 * 
 	 * @param batiSFC
-	 * @param feature
+	 * @param parcel
 	 * @param bufferBati
-	 * @return
+	 * @return True if a building is really intersecting the parcel
 	 * @throws IOException
 	 */
-	public static boolean isAlreadyBuilt(SimpleFeatureCollection batiSFC, SimpleFeature feature, double bufferBati)
+	public static boolean isAlreadyBuilt(SimpleFeatureCollection batiSFC, SimpleFeature parcel, double bufferBati)
 			throws IOException {
 		boolean isContent = false;
-		Geometry geom = ((Geometry) feature.getDefaultGeometry());
+		Geometry geom = ((Geometry) parcel.getDefaultGeometry());
 		try (SimpleFeatureIterator iterator = batiSFC.features()) {
 			while (iterator.hasNext()) {
 				if (geom.intersects(((Geometry) iterator.next().getDefaultGeometry()).buffer(bufferBati))) {
@@ -180,22 +187,31 @@ public class ParcelState {
 //	}
 
 	/**
+	 * Get the evaluation of a cell generated by MUP-City and contained in a input parcel
 	 * 
-	 * @param parcelIn
-	 * @return
-	 * @throws ParseException
-	 * @throws NoSuchAuthorityCodeException
-	 * @throws FactoryException
+	 * @param parcel
+	 *            Input {@link SimpleFeature} parcel
+	 * @param outMup
+	 *            Shapefile to the vectorized MUP-City output
+	 * @return The best evaluation of the intersected MUP-City's cells 
 	 * @throws IOException
 	 */
-	public static Double getEvalInParcel(SimpleFeature parcel, File outMup)
-			throws ParseException, NoSuchAuthorityCodeException, FactoryException, IOException {
+	public static Double getEvalInParcel(SimpleFeature parcel, File outMup) throws IOException {
 		ShapefileDataStore cellsSDS = new ShapefileDataStore(outMup.toURI().toURL());
 		Double result = getEvalInParcel(parcel, cellsSDS.getFeatureSource().getFeatures());
 		cellsSDS.dispose();
 		return result;
 	}
 
+	/**
+	 * Get the evaluation of a cell generated by MUP-City and contained in a input parcel
+	 * 
+	 * @param parcel
+	 *            Input {@link SimpleFeature} parcel
+	 * @param mupSFC
+	 *            {@link SimpleFeatureCollection} of MUP-City's outputs
+	 * @return The best evaluation of the intersected MUP-City's cells
+	 */
 	public static Double getEvalInParcel(SimpleFeature parcel, SimpleFeatureCollection mupSFC) {
 		FilterFactory2 ff = CommonFactoryFinder.getFilterFactory2(GeoTools.getDefaultHints());
 		Filter inter = ff.intersects(ff.property(mupSFC.getSchema().getGeometryDescriptor().getLocalName()), ff.literal(parcel.getDefaultGeometry()));
@@ -211,27 +227,17 @@ public class ParcelState {
 				problem.printStackTrace();
 			} 
 		}
-		// si jamais le nom est déjà généré
-		// sort collection with evaluation
-		// PropertyName pN = ff.property("eval");
-		// SortByImpl sbt = new SortByImpl(pN,
-		// org.opengis.filter.sort.SortOrder.DESCENDING);
-		// SimpleFeatureCollection collectOut = new
-		// SortedSimpleFeatureCollection(newParcel, new SortBy[] { sbt });
-		//
-		// moyenneEval(collectOut);
 		return bestEval;
 	}
 
 	/**
-	 * If we want an evaluation for a parcel that is not intersected by a MUP-City
-	 * cell, we will increasly seek for a cell around The seeking is made 5 meters
-	 * by 5 meters and the first cell found is chosen The evaluation of this cell is
-	 * then sent
+	 * Get the evaluation of a cell generated by MUP-City and close to the input parcel
 	 * 
 	 * @param parcel
+	 *            Input {@link SimpleFeature} parcel
 	 * @param mupSFC
-	 * @return
+	 *            {@link SimpleFeatureCollection} of MUP-City's outputs
+	 * @return The best evaluation of the MUP-City's cells near the parcel every 5 meters. Return 0 if the cells are 100 meters far from the parcels.
 	 */
 	public static Double getCloseEvalInParcel(SimpleFeature parcel, SimpleFeatureCollection mupSFC) {
 
@@ -282,12 +288,11 @@ public class ParcelState {
 	}
 
 	/**
-	 * return a single TYPEZONE that a parcels intersect if the parcel intersects
-	 * multiple, we select the one that covers the most area
+	 * Return a single Zone Generic Name that a parcels intersect. If the parcel intersects multiple, we select the one that covers the most area
 	 * 
 	 * @param parcelIn
 	 * @param zoningFile
-	 * @return
+	 * @return Zone Generic Name that a parcels intersect
 	 * @throws Exception
 	 */
 	public static String parcelInBigZone(File zoningFile, SimpleFeature parcelIn) throws Exception {
@@ -298,12 +303,11 @@ public class ParcelState {
 	}
 
 	/**
-	 * return the TYPEZONEs that a parcels intersect result is sorted by the largest
-	 * interdected zone to the lowest
+	 * return the Zone Generic Name that a parcels intersect result is sorted by the largest intersected zone to the lowest
 	 * 
 	 * @param parcelIn
 	 * @param zoningFile
-	 * @return the multiple parcel intersected, sorted by area of occupation
+	 * @return A list of the multiple parcel intersected, sorted by area of occupation
 	 * @throws Exception
 	 */
 	public static List<String> parcelInBigZone(SimpleFeature parcelIn, File zoningFile) throws Exception {
@@ -323,7 +327,7 @@ public class ParcelState {
 						precMod);
 				if (featGeometry.buffer(0.5).contains(parcelInGeometry)) {
 					twoZones = false;
-					String zoneName = ParcelAttribute.normalizeNameFrenchBigZone((String) feat.getAttribute(zoneNameField));
+					String zoneName = FrenchZoningFields.normalizeNameFrenchBigZone((String) feat.getAttribute(GeneralFields.getZoneGenericNameField()));
 					switch (zoneName) {
 					case "U":
 						result.add("U");
@@ -353,7 +357,7 @@ public class ParcelState {
 					double area = Geom
 							.scaledGeometryReductionIntersection(Arrays.asList(featGeometry, parcelInGeometry))
 							.getArea();
-					String zoneName = ParcelAttribute.normalizeNameFrenchBigZone((String) feat.getAttribute(zoneNameField));
+					String zoneName = FrenchZoningFields.normalizeNameFrenchBigZone((String) feat.getAttribute(GeneralFields.getZoneGenericNameField()));
 					switch (zoneName) {
 					case "U":
 						repart.put("U",repart.getOrDefault("U", 0.0) + area);
@@ -365,7 +369,7 @@ public class ParcelState {
 						repart.put("NC", repart.getOrDefault("NC", 0.0) + area);
 						break;
 					default:
-						repart.put(zoneName, repart.getOrDefault((String) feat.getAttribute(zoneNameField), 0.0) + area);
+						repart.put(zoneName, repart.getOrDefault((String) feat.getAttribute(GeneralFields.getZoneGenericNameField()), 0.0) + area);
 					}
 				}
 			}
@@ -395,25 +399,25 @@ public class ParcelState {
 	 * multiple, we select the one that covers the most area
 	 * 
 	 * @param parcelIn
-	 * @param regulFile
-	 * @return
+	 * @param communityFile
+	 * @return the number of most intersected community type
 	 * @throws Exception
 	 */
-	public static String parcelInTypo(File communeFile, SimpleFeature parcelIn) throws Exception {
-		return parcelInTypo(parcelIn, communeFile).get(0);
+	public static String parcelInTypo(File communityFile, SimpleFeature parcelIn) throws Exception {
+		return parcelInTypo(parcelIn, communityFile).get(0);
 	}
 
 	/**
 	 * return the typologies that a parcels intersect
 	 * 
 	 * @param parcelIn
-	 * @param regulFile
+	 * @param communityFile
 	 * @return the multiple parcel intersected, sorted by area of occupation
 	 * @throws Exception
 	 */
-	public static List<String> parcelInTypo(SimpleFeature parcelIn, File communeFile) throws Exception {
+	public static List<String> parcelInTypo(SimpleFeature parcelIn, File communityFile) throws Exception {
 		List<String> result = new ArrayList<String>();
-		ShapefileDataStore shpDSZone = new ShapefileDataStore(communeFile.toURI().toURL());
+		ShapefileDataStore shpDSZone = new ShapefileDataStore(communityFile.toURI().toURL());
 		// objects for crossed zones
 		boolean twoZones = false;
 		HashMap<String, Double> repart = new HashMap<String, Double>();

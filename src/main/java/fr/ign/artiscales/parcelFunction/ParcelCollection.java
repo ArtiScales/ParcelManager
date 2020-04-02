@@ -54,19 +54,19 @@ public class ParcelCollection {
 	}
 	
 	/**
-	 * This algorithm merges parcels when they are under an area threshold. 
-	 * It seek the surrounding parcel that share the largest side with the small parcel and merge their geometries. Parcel must touch at least. 
-	 * If no surrounding parcels are found touching (or intersecting) the small parcel, the parcel is deleted and left as a public space.  
-	 * Attributes from the large parcel are kept. 
-	 * @param parcels SimpleFeature collection to check every parcels 
-	 * @param minimalParcelSize threshold which parcels are under to be merged
-	 * @return
-	 * @throws FactoryException 
-	 * @throws NoSuchAuthorityCodeException 
-	 * @throws IOException 
+	 * This algorithm merges parcels when they are under an area threshold. It seek the surrounding parcel that share the largest side with the small parcel and merge their
+	 * geometries. Parcel must touch at least. If no surrounding parcels are found touching (or intersecting) the small parcel, the parcel is deleted and left as a public space.
+	 * Attributes from the large parcel are kept.
+	 * 
+	 * @param parcelsUnsorted
+	 *            {@link SimpleFeatureCollection} to check every parcels
+	 * @param minimalParcelSize
+	 *            Threshold which parcels are under to be merged
+	 * @return The input {@link SimpleFeatureCollection} with small parcels merged or removed
+	 * @throws IOException
 	 */
 	public static SimpleFeatureCollection mergeTooSmallParcels(SimpleFeatureCollection parcelsUnsorted, int minimalParcelSize)
-			throws NoSuchAuthorityCodeException, FactoryException, IOException {
+			throws IOException {
 		
 		List<Integer> sizeResults = new ArrayList<Integer>();
 		SimpleFeatureCollection result = recursiveMergeTooSmallParcel(parcelsUnsorted, minimalParcelSize);
@@ -175,10 +175,13 @@ public class ParcelCollection {
 	}
 	
 	/**
-	 * add a given collection of parcels to another collection of parcel, for which the schema is kept. 
-	 * @param parcelIn : Parcels that receive the other parcels
-	 * @param parcelAdd : Parcel to add
-	 * @return
+	 * Add a given collection of parcels to another collection of parcel, for which the schema is kept.
+	 * 
+	 * @param parcelIn
+	 *            Parcels that receive the other parcels
+	 * @param parcelAdd
+	 *            Parcel to add
+	 * @return parcelIn {@link SimpleFeatureCollection} with added parcels
 	 */
 	public static DefaultFeatureCollection addAllParcels(SimpleFeatureCollection parcelIn, SimpleFeatureCollection parcelAdd) {
 		DefaultFeatureCollection result = new DefaultFeatureCollection();
@@ -322,11 +325,11 @@ public class ParcelCollection {
 //		return result;
 //	}
 /**
- * @warning NOT SURE IT'S WORKING
+ * WARNING: NOT SURE IT'S WORKING
  * @param parcelTot
  * @param parcelCuted
  * @param parcelToNotAdd
- * @return
+ * @return completed parcel collection
  * @throws NoSuchAuthorityCodeException
  * @throws FactoryException
  * @throws IOException
@@ -393,18 +396,20 @@ public class ParcelCollection {
 	 * method that compares two set of parcels and sort the reference plan parcels between the ones that changed and the ones that doesn't We compare the parcels area of the
 	 * reference parcel to the ones that are intersected. If they are similar with a 3% error rate, we conclude that they are the same.
 	 * 
+	 * This method creates four shapefiles in the tmpFolder:
+	 * <ul>
+	 * <li><b>same.shp</b> contains the reference parcels that have not evolved</li> 
+	 * <li><b>notSame.shp</b> contains the reference parcels that have changed</li>
+	 * <li><b>polygonIntersection.shp</b> contains the <i>notSame.shp</i> parcels with a reduction buffer, used for a precise intersection with other parcel. It is used for Parcel Manager scenarios</li>
+	 * <li><b>evolvedParcel.shp</b> contains only the compared parcels that have evolved</li>
+	 *  </ul>
+	 * 
 	 * @param parcelRefFile
 	 *            : The reference parcel plan
 	 * @param parcelToCompareFile
 	 *            : The parcel plan to compare
 	 * @param parcelOutFolder
 	 *            : Folder where are stored the result shapefiles
-	 * @return Four shapefiles <ul>
-	 * <li><b>same.shp</b> contains the reference parcels that have not evolved</li> 
-	 * <li><b>notSame.shp</b> contains the reference parcels that have changed</li>
-	 * <li><b>polygonIntersection.shp</b> contains the <i>notSame.shp</i> parcels with a reduction buffer, used for a precise intersection with other parcel. It is used for Parcel Manager scenarios</li>
-	 * <li><b>evolvedParcel.shp</b> contains only the compared parcels that have evolved</li>
-	 *  </ul>
 	 * @throws IOException
 	 */
 	public static void markDiffParcel(File parcelRefFile, File parcelToCompareFile, File parcelOutFolder, File tmpFolder) throws IOException {
@@ -466,11 +471,12 @@ public class ParcelCollection {
 		sds.dispose();
 		sdsRef.dispose();
 	}
+	
 	/**
-	 * @warning not tested (maybe not needed)
+	 * WARNING not tested (maybe not needed)
 	 * @param parcelToNotAdd
 	 * @param bigZoned
-	 * @return
+	 * @return A LIST
 	 */
 	public static List<String> dontAddParcel(List<String> parcelToNotAdd, SimpleFeatureCollection bigZoned) {
 		try (SimpleFeatureIterator feat = bigZoned.features()) {

@@ -7,7 +7,14 @@ import java.util.List;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonToken;
-
+/**
+ * Object representing a Parcel Manager scenario. Will set files and launch a list of predefined {@link fr.ign.artiscales.scenario.PMStep}.
+ * 
+ * @see <a href="https://github.com/ArtiScales/ParcelManager/blob/master/src/main/resources/doc/scenarioCreation.md">scenarioCreation.md</a>
+ * 
+ * @author Maxime Colomb
+ *
+ */
 public class PMScenario {
 
 	private File zoningFile, buildingFile, roadFile, polygonIntersection, predicateFile, parcelFile, isletFile, profileFolder, tmpFolder, outFolder;
@@ -15,7 +22,9 @@ public class PMScenario {
 	private List<PMStep> stepList = new ArrayList<PMStep>();
 
 	boolean fileSet = false;
-	
+	/**
+	 * If true, save a shapefile containing only the simulated parcels in the temporary folder for every goal simulated.
+	 */
 	static boolean SAVEINTERMEDIATERESULT = false; 
 
 //	public static void main(String[] args) throws Exception {
@@ -23,10 +32,6 @@ public class PMScenario {
 //				new File("/home/thema/Documents/MC/workspace/ParcelManager/src/main/resources/testData/jsonEx.json"),
 //				new File("/tmp/"));
 //		pm.executeStep();
-//	}
-
-//	public PMScenario(File jSON) {
-//		return new PMScenario(jSON, new File("/tmp"));
 //	}
 
 	public PMScenario(File jSON, File tmpfolder) throws Exception {
@@ -68,7 +73,7 @@ public class PMScenario {
 					token = parser.nextToken();
 
 					// must i recreate a json object ? or can I map this object directly into a new java object? Maybe, but tired of searching
-//					System.out.println(token + " - " + parser.getCurrentName());
+					// System.out.println(token + " - " + parser.getCurrentName());
 
 					if (token == JsonToken.FIELD_NAME && parser.getCurrentName().equals("goal")) {
 						token = parser.nextToken();

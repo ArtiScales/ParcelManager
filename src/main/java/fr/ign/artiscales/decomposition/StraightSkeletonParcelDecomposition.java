@@ -118,7 +118,6 @@ public class StraightSkeletonParcelDecomposition {
    *          : standard deviation of width distribution beteween minWidth and mawWidthdetermineInteriorLineString
    * @param rng
    *          : Random generator
-   * @return
    * @throws SchemaException
    */
   public static SimpleFeatureCollection runStraightSkeleton2(Polygon pol, SimpleFeatureCollection roads, double maxDepth, double maxDistanceForNearestRoad, double minimalArea,
@@ -610,7 +609,6 @@ public class StraightSkeletonParcelDecomposition {
    *          : standard deviation of width distribution beteween minWidth and mawWidth
    * @param rng
    *          : Random generator
-   * @return
    */
   public static void runStraightSkeleton(Polygon pol, SimpleFeatureCollection roads, double maxDepth, double maxDistanceForNearestRoad, double minimalArea, double minWidth,
       double maxWidth, double noiseParameter, Random rng) {

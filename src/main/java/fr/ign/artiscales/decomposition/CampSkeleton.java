@@ -65,9 +65,9 @@ public class CampSkeleton {
   /**
    * Calcul du squelette droit, le résultat est obtenu par le getCarteTopo() Une pondération est appliquée
    * 
-   * @param p
+   * @param inputPolygon
    * @param angles
-   *          : la pondération appliquée pour le calcul de squelette droit. Le nombre d'élément du tableaux doit être au moins égal au nombre de côté (intérieurs inclus du
+   *          la pondération appliquée pour le calcul de squelette droit. Le nombre d'élément du tableaux doit être au moins égal au nombre de côté (intérieurs inclus du
    *          polygone)
    */
   public CampSkeleton(Polygon inputPolygon, double[] angles, double cap) {
@@ -246,7 +246,6 @@ public class CampSkeleton {
    * Convertit une liste de sommets formant un cycle en arrêtes
    * 
    * @param dpl
-   * @return
    */
   public static List<Edge> fromDPLToEdges(Coordinate[] dpl) {
     int nbPoints = dpl.length;

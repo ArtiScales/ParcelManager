@@ -8,8 +8,10 @@ import java.util.stream.Collectors;
 
 import org.geotools.data.shapefile.ShapefileDataStore;
 import org.geotools.data.simple.SimpleFeatureCollection;
+import org.locationtech.jts.geom.Geometry;
 import org.opengis.feature.simple.SimpleFeature;
 
+import fr.ign.artiscales.fields.FrenchZoningFields;
 import fr.ign.artiscales.goal.Densification;
 import fr.ign.artiscales.parcelFunction.MarkParcelAttributeFromPosition;
 import fr.ign.artiscales.parcelFunction.ParcelAttribute;
@@ -19,23 +21,22 @@ import fr.ign.cogit.geoToolsFunctions.Csv;
 import fr.ign.cogit.geoToolsFunctions.vectors.Collec;
 import fr.ign.cogit.parameter.ProfileUrbanFabric;
 
+/**
+ * This class provides a workflow in order to help densification studies. They can be asked in French Schémas de Cohérence Territoriale (SCoT). It isolate empty parcels within urban zones (called
+ * <i>vacant lot</i> and simulates their densification. If they are too big, it simulates the creation of a whole neighborhood. The output shapefile is called
+ * <i>parcelDentCreusesDensified.shp</i>
+ * 
+ * It also simulates the parcels that can be created with the flag parcels on already built parcels. The shapefile containing those parcels is called
+ * <i>parcelPossiblyDensified.shp</i>
+ *
+ */
 public class DensificationStudy {
 
-	/**
-	 * This class allows to help densification studies that can be ask in French Schémas de Cohérence Territoriale (SCoT). It isolate empty parcels within urban zones (called
-	 * <i>dent creuses</i> and simulates their densification. If they are too big, it simulates the creation of a whole neighborhood. Th output shapefile is called
-	 * <i>parcelDentCreusesDensified.shp</i>
-	 * 
-	 * It also simulates the parcels that can be created with the flag parcels on already built parcels. The shapefile containing those parcels is called
-	 * <i>parcelPossiblyDensified.shp</i>
-	 *
-	 */
 	public static void main(String[] args) throws Exception {
 		PMStep.setGENERATEATTRIBUTES(false);
 		PMScenario pmScen = new PMScenario(new File("/home/ubuntu/PMtest/Densification/SetM/jsonEx.json"), new File("/tmp"));
 		pmScen.executeStep();
-	////"77458,77442,77510,77508,77054,77504,77501,77045,77491,77031,77021,77489,77016,77114,77099,77089,77071,77061,77060,77178,77155,77152,77226,77222,77217,77192,77191,77285,77279,77267,77261,77244,77243,77230,77327,77317,77313,77312,77297,77387,77377,77370,77353,77340,77337,77329,77482,77468
-		//run a densification study on a single community
+////		run a densification study on a single community
 //		File rootFolder = new File("/home/ubuntu/PMtest/Densification/");
 //		File parcelFile = new File(rootFolder, "torcy.shp");
 //		// File parcelFile = new File(rootFolder, "marked.shp");
@@ -54,10 +55,21 @@ public class DensificationStudy {
 //		runDensificationStudy(parcels, isletFile, buildingFile, roadFile, zoningFile, tmpFolder, outFolder,
 //				isParcelWithoutStreetAllowed, profile);
 //		sdsParcel.dispose();		
-		
+		}
 
-	}
-
+	/**
+	 * Densification study. Can be used as a goal in scenarios
+	 * @param parcels
+	 * @param isletFile
+	 * @param buildingFile
+	 * @param roadFile
+	 * @param zoningFile
+	 * @param tmpFolder
+	 * @param outFolder
+	 * @param isParcelWithoutStreetAllowed
+	 * @param profile
+	 * @throws Exception
+	 */
 	public static void runDensificationStudy(SimpleFeatureCollection parcels, File isletFile, File buildingFile, File roadFile, File zoningFile,
 			File tmpFolder, File outFolder, boolean isParcelWithoutStreetAllowed, ProfileUrbanFabric profile) throws Exception {
 
@@ -66,47 +78,57 @@ public class DensificationStudy {
 
 		String splitField = MarkParcelAttributeFromPosition.getMarkFieldName();
 		// get total unbuilt parcels from the urbanized zones
-		SimpleFeatureCollection parcelsDentCreuseZone = MarkParcelAttributeFromPosition
-				.markParcelIntersectConstructibleZoningType(MarkParcelAttributeFromPosition.markUnBuiltParcel(parcels, buildingFile), zoningFile);
-		SimpleFeatureCollection parcelsCreated = Densification.densificationOrNeighborhood(parcelsDentCreuseZone, islet, tmpFolder, buildingFile,
+		SimpleFeatureCollection parcelsVacantLot = MarkParcelAttributeFromPosition
+				.markParcelIntersectFrenchConstructibleZoningType(MarkParcelAttributeFromPosition.markUnBuiltParcel(parcels, buildingFile), zoningFile);
+		SimpleFeatureCollection parcelsVacantLotCreated = Densification.densificationOrNeighborhood(parcelsVacantLot, islet, tmpFolder, buildingFile,
 				roadFile, profile, isParcelWithoutStreetAllowed);
 		// simulate the densification of built parcels in the given zone
 		SimpleFeatureCollection parcelsDensifZone = MarkParcelAttributeFromPosition
-				.markParcelIntersectConstructibleZoningType(MarkParcelAttributeFromPosition.markBuiltParcel(parcels, buildingFile), zoningFile);
+				.markParcelIntersectFrenchConstructibleZoningType(MarkParcelAttributeFromPosition.markBuiltParcel(parcels, buildingFile), zoningFile);
 		SimpleFeatureCollection parcelsDensifCreated = Densification.densificationOrNeighborhood(parcelsDensifZone, islet, tmpFolder, buildingFile,
 				roadFile, profile, isParcelWithoutStreetAllowed);
 
 		// change split name to show if they can be built
 		MarkParcelAttributeFromPosition.setMarkFieldName("BUILDABLE");
 		// Mark the simulated parcels that doesn't contains buildings (and therefore can be build)
-		parcelsCreated = MarkParcelAttributeFromPosition.markUnBuiltParcel(MarkParcelAttributeFromPosition.markSimulatedParcel(parcelsCreated),
+		parcelsVacantLotCreated = MarkParcelAttributeFromPosition.markUnBuiltParcel(MarkParcelAttributeFromPosition.markSimulatedParcel(parcelsVacantLotCreated),
 				buildingFile);
 
 		parcelsDensifCreated = MarkParcelAttributeFromPosition
 				.markUnBuiltParcel(MarkParcelAttributeFromPosition.markSimulatedParcel(parcelsDensifCreated), buildingFile);
 		// If the parcels have to be connected to the road, we mark them
 		if (!isParcelWithoutStreetAllowed) {
-			parcelsCreated = MarkParcelAttributeFromPosition.markParcelsConnectedToRoad(parcelsCreated, islet, roadFile);
+			parcelsVacantLotCreated = MarkParcelAttributeFromPosition.markParcelsConnectedToRoad(parcelsVacantLotCreated, islet, roadFile);
 			parcelsDensifCreated = MarkParcelAttributeFromPosition.markParcelsConnectedToRoad(parcelsDensifCreated, islet, roadFile);
 		}
 		// exporting output shapefiles and countings
 		List<SimpleFeature> vacantParcelU = Arrays.stream(parcelsDensifCreated.toArray(new SimpleFeature[0]))
 				.filter(feat -> feat.getAttribute(MarkParcelAttributeFromPosition.getMarkFieldName()).equals(1)).collect(Collectors.toList());
-		Collec.exportSFC(parcelsCreated, new File(outFolder, "parcelDentCreusesDensified.shp"), false);
+		Collec.exportSFC(parcelsVacantLot, new File(outFolder, "parcelVacantLot.shp"), false);
+		Collec.exportSFC(parcelsVacantLotCreated, new File(outFolder, "parcelVacantLotDensified.shp"), false);
 		Collec.exportSFC(vacantParcelU, new File(outFolder, "parcelPossiblyDensified.shp"), false);
 		
-		long nbDentCreuse = Arrays.stream(parcelsDentCreuseZone.toArray(new SimpleFeature[0])).filter(feat -> feat.getAttribute(splitField).equals(1)).count();
-		long nbdentCreusesParcels = Arrays.stream(parcelsCreated.toArray(new SimpleFeature[0]))
+		long nbVacantLot = Arrays.stream(parcelsVacantLot.toArray(new SimpleFeature[0])).filter(feat -> feat.getAttribute(splitField).equals(1)).count();
+		long nbVacantLotParcels = Arrays.stream(parcelsVacantLotCreated.toArray(new SimpleFeature[0]))
 				.filter(feat -> feat.getAttribute(MarkParcelAttributeFromPosition.getMarkFieldName()).equals(1)).count();
-		System.out.println("number of dent creuses "+ nbDentCreuse);
-		System.out.println("possible to have "+ nbdentCreusesParcels + " buildable parcels out of it");
+		System.out.println("number of vacant lots "+ nbVacantLot);
+		System.out.println("possible to have "+ nbVacantLotParcels + " buildable parcels out of it");
 		System.out.println();
 		System.out.println("possible to have " + vacantParcelU.size() + " densifiable parcels");
 		
+		ShapefileDataStore sds = new ShapefileDataStore(zoningFile.toURI().toURL());
+		SimpleFeatureCollection zoning = sds.getFeatureSource().getFeatures();
+		long nbParcelsInUrbanizableZones = Arrays.stream(parcels.toArray(new SimpleFeature[0]))
+				.filter(feat -> FrenchZoningFields
+						.isUrbanZoneUsuallyAdmitResidentialConstruction(Collec.getSimpleFeatureFromSFC((Geometry) feat.getDefaultGeometry(), zoning)))
+				.count();
+		sds.dispose();
+		
 		// saving the stats in a .csv file
-		String[] firstline = {"DEPCOM","number of dent creuses","parcels simulated in dent creuses","parcels simulated by densification"};
-		Object[] line = {nbDentCreuse, nbdentCreusesParcels,vacantParcelU.size()};
-		Hashtable<String,Object[]> l = new Hashtable<String,Object[]>();
+		String[] firstline = { "parcels in urbanizable zones", "DEPCOM", "number of vacant lots", "parcels simulated in vacant lots",
+				"parcels simulated by densification" };
+		Object[] line = { nbParcelsInUrbanizableZones, nbVacantLot, nbVacantLotParcels, vacantParcelU.size() };
+		Hashtable<String, Object[]> l = new Hashtable<String,Object[]>();
 		l.put(ParcelAttribute.getCityCodeFromParcels(parcelsDensifCreated), line);
 		Csv.generateCsvFile(l, outFolder, "densificationStudyResult", firstline, true);
 		Csv.needFLine = false;

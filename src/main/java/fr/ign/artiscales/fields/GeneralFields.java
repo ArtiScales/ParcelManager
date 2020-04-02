@@ -11,13 +11,16 @@ import fr.ign.artiscales.parcelFunction.ParcelSchema;
 
 public class GeneralFields {
 
+	static String zoneGenericNameField = "TYPEZONE";
+	static String zonePreciseNameField = "LIBELLE";
+
 	/**
 	 * This method returns the parcels of a given collection that have been simulated.
 	 * It selects the parcels if the length of the filed value for the <i>SECTION</i> information is upper than 2 (French Parcel have a two letters section, and Parcel Manager creates longer section names)
 	 * Other methods can be set to determine if a parcel has been simulated.
 	 * @param sfc
-	 *            : parcel collection to sort
-	 * @return the parcel collection with only the simulated parcels
+	 *            Parcel collection to sort
+	 * @return The parcel {@link SimpleFeatureCollection} with only the simulated parcels
 	 * @throws IOException
 	 */
 	public static SimpleFeatureCollection getParcelLikeFrenchWithSimulatedFileds(SimpleFeatureCollection sfc) throws IOException  {
@@ -31,13 +34,12 @@ public class GeneralFields {
 	}
 	
 	/**
-	 * This method allows to determine if a parcel has been simulated.
-	 * It looks if the length of filed value for the <i>SECTION</i> information is upper than 2 (French Parcel have a two letters section, and Parcel Manager creates longer section names)
-	 * Other methods can be set to determine if a parcel has been simulated.
-	 * @param sfc
-	 *            : parcel collection to sort
-	 * @return the parcel collection with only the simulated parcels
-	 * @throws IOException
+	 * This method allows to determine if a parcel has been simulated. It looks if the length of filed value for the <i>SECTION</i> information is upper than 2 (French Parcel have
+	 * a two letters section, and Parcel Manager creates longer section names). Other methods can be set to determine if a parcel has been simulated.
+	 * 
+	 * @param feature
+	 *            : {@link SimpleFeature} parcel
+	 * @return True if the parcel section looks like it has been simulated.
 	 */
 	public static boolean isParcelLikeFrenchHasSimulatedFileds(SimpleFeature feature) {
 		if (((String) feature.getAttribute(ParcelSchema.getMinParcelSectionField())) != null
@@ -45,5 +47,21 @@ public class GeneralFields {
 			return true;
 		}
 		return false;
+	}
+	
+	public static String getZoneGenericNameField() {
+		return zoneGenericNameField;
+	}
+
+	public static void setZoneGenericNameField(String zoneNameField) {
+		GeneralFields.zoneGenericNameField = zoneNameField;
+	}
+
+	public static String getZonePreciseNameField() {
+		return zonePreciseNameField;
+	}
+
+	public static void setZonePreciseNameField(String zonePreciseNameField) {
+		GeneralFields.zonePreciseNameField = zonePreciseNameField;
 	}
 }

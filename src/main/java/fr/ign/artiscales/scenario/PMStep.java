@@ -29,13 +29,13 @@ import fr.ign.cogit.geoToolsFunctions.vectors.Geom;
 import fr.ign.cogit.parameter.ProfileUrbanFabric;
 
 /**
- * Object representing each step of a Parcel Manager scenario. This object is automaticaly set by the PMScenario object Please read the technical documentation on
- * {@link https://github.com/ArtiScales/ParcelManager/blob/master/src/main/resources/doc/scenarioCreation.md}
+ * Object representing each step of a Parcel Manager scenario. This object is automatically set by the PMScenario object.
+ * 
+ * @see <a href="https://github.com/ArtiScales/ParcelManager/blob/master/src/main/resources/doc/scenarioCreation.md">scenarioCreation.md</a> 
  * 
  * @author Maxime Colomb
  *
  */
-
 public class PMStep {
 	public PMStep(String goal, String parcelProcess, String zone, String communityNumber, String communityType, String urbanFabricType) {
 		this.goal = goal;
@@ -53,16 +53,6 @@ public class PMStep {
 	 * Set the path of the different files for a PMStep to be executed. The method is used by PMScenario in a static way because it has no reasons to change within a PM simulation,
 	 * except for the parcel file that must be updated after each PMStep to make the new PMStep simulation on an already simulated parcel plan
 	 * 
-	 * @param parcelFile
-	 * @param isletFile
-	 * @param zoningFile
-	 * @param tmpFolder
-	 * @param buildingFile
-	 * @param predicateFile
-	 * @param communityFile
-	 * @param polygonIntersection
-	 * @param outFolder
-	 * @param profileFolder
 	 */
 	public static void setFiles(File parcelFile, File isletFile, File zoningFile, File tmpFolder, File buildingFile, File roadFile, File predicateFile,
 			File polygonIntersection, File outFolder, File profileFolder) {
@@ -82,14 +72,20 @@ public class PMStep {
 	String goal, parcelProcess, zone, communityNumber, communityType, urbanFabricType;
 	List<String> communityNumbers = new ArrayList<String>(); 
 	
-	static File PARCELFILE, ISLETFILE, ZONINGFILE, TMPFOLDER, BUILDINGFILE, ROADFILE, PREDICATEFILE, 
+	private static File PARCELFILE, ISLETFILE, ZONINGFILE, TMPFOLDER, BUILDINGFILE, ROADFILE, PREDICATEFILE, 
 	POLYGONINTERSECTION, OUTFOLDER, PROFILEFOLDER;
-	static boolean GENERATEATTRIBUTES = true;
-	static boolean SAVEINTERMEDIATERESULT = false; 
-	static String parcelType = "french";
-	
-	public PMStep() {
-	}
+	/**
+	 * If true, run method to re-assign fields value
+	 */
+	private static boolean GENERATEATTRIBUTES = true;
+	/**
+	 * Type of parcel fields to re-assign
+	 */
+	private static String parcelType = "french";
+	/**
+	 * If true, save a shapefile containing only the simulated parcels in the temporary folder for every goal simulated.
+	 */
+	private static boolean SAVEINTERMEDIATERESULT = false; 
 
 	/**
 	 * Execute the current PM Step.
@@ -243,7 +239,7 @@ public class PMStep {
 	}
 	
 	/**
-	 * Generate the bound of the parcels that are simulated by the current PMStep. Uses the marked parcels by the {@link #getSimulationParcels()} method. 
+	 * Generate the bound of the parcels that are simulated by the current PMStep. Uses the marked parcels by the {@link #getSimulationParcels(SimpleFeatureCollection)} method. 
 	 * @return A geometry of the simulated parcels 
 	 * @throws IOException
 	 * @throws Exception

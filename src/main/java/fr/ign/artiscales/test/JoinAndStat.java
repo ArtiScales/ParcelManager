@@ -27,10 +27,11 @@ public class JoinAndStat {
 
 	public static void main(String[] args) throws IOException, NoSuchAuthorityCodeException, FactoryException {
 		ShapefileDataStore sds = new ShapefileDataStore(new File("/home/ubuntu/Documents/nikoTheseCarto/bdR.shp").toURI().toURL());
-		File csvFile = new File("/home/ubuntu/Documents/nikoTheseCarto/tableur.csv");
+		File csvFile = new File("/home/ubuntu/Documents/nikoTheseCarto/newAttempt.csv");
 		CSVReader reader = new CSVReader(new FileReader(csvFile));
 		String[] firstline = reader.readNext();
 		int cpIndice = Attribute.getIndice(firstline, "cp");
+		reader.close();
 		DefaultFeatureCollection result = new DefaultFeatureCollection();
 
 		// create the builder
@@ -40,38 +41,40 @@ public class JoinAndStat {
 		sfTypeBuilder.setName("counted");
 		sfTypeBuilder.add("the_geom", Polygon.class);
 		sfTypeBuilder.add("count", Integer.class);
+		sfTypeBuilder.add("NameCity", String.class);
 		sfTypeBuilder.setDefaultGeometry("the_geom");
 
 		SimpleFeatureType featureType = sfTypeBuilder.buildFeatureType();
 		SimpleFeatureBuilder build = new SimpleFeatureBuilder(featureType);
-		List<String[]> read = reader.readAll();
-		for (String[] r : read) {
-			System.out.println(r[0]);
-		}
-		SimpleFeatureIterator it = sds.getFeatureSource().getFeatures().features();
-		try {
+		
+		try (SimpleFeatureIterator it = sds.getFeatureSource().getFeatures().features();) {
 			while (it.hasNext()) {
-				reader = new CSVReader(new FileReader(csvFile));
+				CSVReader r = new CSVReader(new FileReader(csvFile));
+				r.readNext();
+				List<String[]> read = r.readAll();
 				SimpleFeature com = it.next();
-//				System.out.println(com.getAttribute("cpCode_pos"));
 				int count = 0;
 				for (String[] line : read) {
-
-//
-//					if (line[cpIndice].equals(com.getAttribute("cpCode_pos"))) {
-//						System.out.println("pluis");
-//						count++;
-//					}
+					if (line[cpIndice].equals(String.valueOf(com.getAttribute("cpCode_pos")))) {
+						count++;
+					}
 				}
 				build.add(com.getDefaultGeometry());
 				build.set("count", count);
+				String comname = (String) com.getAttribute("NOM_COM"); 
+				if (comname.startsWith("MARSEILLE-")) {
+					System.out.println(comname);
+					comname = comname.replace("MARSEILLE-", "");
+					System.out.println(comname);
+
+				}
+				build.set("NameCity", comname);
 				result.add(build.buildFeature(null));
+				r.close();
 			}
 		} catch (Exception problem) {
 			problem.printStackTrace();
-		} finally {
-			it.close();
-		}
+		} 
 		reader.close();
 		sds.dispose();
 		Collec.exportSFC(result, new File("/home/ubuntu/Documents/nikoTheseCarto/count.shp"));

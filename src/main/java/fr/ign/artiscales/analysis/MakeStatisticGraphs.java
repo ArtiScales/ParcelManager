@@ -18,11 +18,11 @@ import org.opengis.feature.simple.SimpleFeature;
 
 import fr.ign.artiscales.fields.GeneralFields;
 
+/**
+ * Class to automate the creation of stat graphs
+ */
 public class MakeStatisticGraphs {
 
-//	/**
-//	 * Class to automate the creation of stat graphs
-//	 */
 //	public static void main(String[] args) throws IOException {
 //		makeAreaGraph(new File("/tmp/parcelCuted-consolid.shp"), new File("/tmp/"));
 //	}
@@ -30,7 +30,8 @@ public class MakeStatisticGraphs {
 	/**
 	 * Automate the generation of graphs about area of fresh parcel cuts
 	 * 
-	 * @param args
+	 * @param freshParcelCut
+	 * @param folderOut
 	 * @throws IOException
 	 */	
 	public static void makeAreaGraph(File freshParcelCut, File folderOut) throws IOException {
@@ -43,11 +44,10 @@ public class MakeStatisticGraphs {
 	}
 
 	/**
-	 * Process to sort which parcels have been cuted, and get the bounds of the distribution
-	 * @warning Developed for French Parcels - section is always a two character 
+	 * Process to sort which parcels have been cut, and get the bounds of the distribution.
+	 * WARNING - Developed for French Parcels - section is always a two character 
 	 * @param parcelOut the parcel to sort and plot
 	 * @param nameDistrib the name of the distribution
-	 * @param filed which can be used to filter the features of the parcel collection. Can be null
 	 * @return a Graph object  
 	 * @throws IOException
 	 */
@@ -80,13 +80,19 @@ public class MakeStatisticGraphs {
 
 	/**
 	 * Generate a histogram graph
-	 * @param graph : area graph object with sorted distribution and bounds
-	 * @param graphDepotFolder : folder where every stats are stocked
-	 * @param title : title of the graph
-	 * @param x : Name of the distribution
-	 * @param xTitle: title of the x dimention
-	 * @param yTitle: title of the y dimention
-	 * @param range : number of categories
+	 * 
+	 * @param graph
+	 *            area graph object with sorted distribution and bounds
+	 * @param graphDepotFolder
+	 *            folder where every stats are stocked
+	 * @param title
+	 *            title of the graph
+	 * @param xTitle
+	 *            title of the x dimention
+	 * @param yTitle
+	 *            title of the y dimention
+	 * @param range
+	 *            number of categories
 	 * @throws IOException
 	 */
 	public static void makeGraphHisto(AreaGraph graph, File graphDepotFolder, String title, String xTitle, String yTitle, int range)

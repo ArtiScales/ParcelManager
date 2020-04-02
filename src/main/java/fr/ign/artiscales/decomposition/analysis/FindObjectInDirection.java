@@ -52,15 +52,13 @@ public class FindObjectInDirection {
 	}
 
 	/**
-	 * Find an object in the collection collectionToSelect in a direction
-	 * perpendicular to bound (a LineString object) in a direction opposite to
-	 * parcel
+	 * Find an object in the collection collectionToSelect in a direction perpendicular to bound (a LineString object) in a direction opposite to parcel
 	 * 
-	 * @param bound
-	 * @param parcel
+	 * @param linestringFeature
+	 * @param oppositeDirectionFeature
 	 * @param collectionToSelect
 	 * @param maximumDistance
-	 * @return
+	 * @return a perpendicular parcel
 	 */
 	public static Optional<SimpleFeature> find(SimpleFeature linestringFeature, SimpleFeature oppositeDirectionFeature,
 	    SimpleFeatureCollection collectionToSelect, double maximumDistance) {

@@ -11,8 +11,8 @@ import org.opengis.feature.simple.SimpleFeatureType;
 import org.opengis.feature.type.AttributeDescriptor;
 import org.opengis.referencing.FactoryException;
 import org.opengis.referencing.NoSuchAuthorityCodeException;
-import org.opengis.referencing.crs.CoordinateReferenceSystem;
 
+import fr.ign.artiscales.fields.FrenchParcelFields;
 import fr.ign.cogit.geoToolsFunctions.Attribute;
 import fr.ign.cogit.geoToolsFunctions.vectors.Collec;
 
@@ -30,9 +30,8 @@ public class ParcelSchema {
 	
 	public static SimpleFeatureBuilder getSFBMinParcel() throws NoSuchAuthorityCodeException, FactoryException {
 		SimpleFeatureTypeBuilder sfTypeBuilder = new SimpleFeatureTypeBuilder();
-		CoordinateReferenceSystem sourceCRS = CRS.decode("EPSG:2154");
 		sfTypeBuilder.setName("minParcel");
-		sfTypeBuilder.setCRS(sourceCRS);
+		sfTypeBuilder.setCRS(CRS.decode("EPSG:2154"));
 		sfTypeBuilder.add("the_geom", Polygon.class);
 		sfTypeBuilder.setDefaultGeometry("the_geom");
 		sfTypeBuilder.add(minParcelSectionField, String.class);
@@ -58,16 +57,15 @@ public class ParcelSchema {
 		}
 		//if looks like french parcel
 		else if (Collec.isSimpleFeatureContainsAttribute(feat, "CODE_DEP")) {
-			builder.set(ParcelSchema.getMinParcelCommunityFiled(), ((String) feat.getAttribute("CODE_DEP")).concat((String) feat.getAttribute("CODE_COM")));
+			builder.set(ParcelSchema.getMinParcelCommunityField(), ((String) feat.getAttribute("CODE_DEP")).concat((String) feat.getAttribute("CODE_COM")));
 		}
 		return builder;
 	}
 	
 	public static SimpleFeatureBuilder getSFBMinParcelSplit() throws NoSuchAuthorityCodeException, FactoryException {
 		SimpleFeatureTypeBuilder sfTypeBuilder = new SimpleFeatureTypeBuilder();
-		CoordinateReferenceSystem sourceCRS = CRS.decode("EPSG:2154");
 		sfTypeBuilder.setName("minParcelSplit");
-		sfTypeBuilder.setCRS(sourceCRS);
+		sfTypeBuilder.setCRS( CRS.decode("EPSG:2154"));
 		sfTypeBuilder.add("the_geom", Polygon.class);
 		sfTypeBuilder.setDefaultGeometry("the_geom");
 		sfTypeBuilder.add(minParcelSectionField, String.class);
@@ -99,7 +97,7 @@ public class ParcelSchema {
 		}
 		//if looks like french parcel
 		else if (Collec.isSimpleFeatureContainsAttribute(feat, "CODE_DEP")) {
-			builder.set(ParcelSchema.getMinParcelCommunityFiled(), ((String) feat.getAttribute("CODE_DEP")).concat((String) feat.getAttribute("CODE_COM")));
+			builder.set(ParcelSchema.getMinParcelCommunityField(), ((String) feat.getAttribute("CODE_DEP")).concat((String) feat.getAttribute("CODE_COM")));
 		}
 		return builder;
 	}
@@ -112,14 +110,13 @@ public class ParcelSchema {
 
 	public static SimpleFeatureBuilder getSFBFrenchZoning() throws NoSuchAuthorityCodeException, FactoryException {
 		SimpleFeatureTypeBuilder sfTypeBuilder = new SimpleFeatureTypeBuilder();
-		CoordinateReferenceSystem sourceCRS = CRS.decode("EPSG:2154");
 		sfTypeBuilder.setName("frenchZoning");
-		sfTypeBuilder.setCRS(sourceCRS);
+		sfTypeBuilder.setCRS(CRS.decode("EPSG:2154"));
 		sfTypeBuilder.add("the_geom", Polygon.class);
 		sfTypeBuilder.setDefaultGeometry("the_geom");
 		sfTypeBuilder.add("LIBELLE", String.class);
 		sfTypeBuilder.add("TYPEZONE", String.class);
-		sfTypeBuilder.add("TYPLEPLAN", String.class);
+		sfTypeBuilder.add("TYPEPLAN", String.class);
 		sfTypeBuilder.add("INSEE", String.class);
 		return new SimpleFeatureBuilder(sfTypeBuilder.buildFeatureType());
 	}
@@ -132,9 +129,8 @@ public class ParcelSchema {
 
 	public static SimpleFeatureBuilder getSFBFrenchParcel() throws NoSuchAuthorityCodeException, FactoryException {
 		SimpleFeatureTypeBuilder sfTypeBuilder = new SimpleFeatureTypeBuilder();
-		CoordinateReferenceSystem sourceCRS = CRS.decode("EPSG:2154");
 		sfTypeBuilder.setName("frenchParcel");
-		sfTypeBuilder.setCRS(sourceCRS);
+		sfTypeBuilder.setCRS(CRS.decode("EPSG:2154"));
 		sfTypeBuilder.add("the_geom", Polygon.class);
 		sfTypeBuilder.setDefaultGeometry("the_geom");
 		sfTypeBuilder.add("CODE", String.class);
@@ -164,9 +160,8 @@ public class ParcelSchema {
 
 	public static SimpleFeatureBuilder getSFBFrenchParcelSplit() throws NoSuchAuthorityCodeException, FactoryException {
 		SimpleFeatureTypeBuilder sfTypeBuilder = new SimpleFeatureTypeBuilder();
-		CoordinateReferenceSystem sourceCRS = CRS.decode("EPSG:2154");
 		sfTypeBuilder.setName("frenchParcelSplit");
-		sfTypeBuilder.setCRS(sourceCRS);
+		sfTypeBuilder.setCRS(CRS.decode("EPSG:2154"));
 		sfTypeBuilder.add("the_geom", Polygon.class);
 		sfTypeBuilder.setDefaultGeometry("the_geom");
 		sfTypeBuilder.add("CODE", String.class);
@@ -210,9 +205,8 @@ public class ParcelSchema {
 	/////////////////////
 	public static SimpleFeatureBuilder getSFBParcelAsAS() throws NoSuchAuthorityCodeException, FactoryException {
 		SimpleFeatureTypeBuilder sfTypeBuilder = new SimpleFeatureTypeBuilder();
-		CoordinateReferenceSystem sourceCRS = CRS.decode("EPSG:2154");
 		sfTypeBuilder.setName("parcelAsAS");
-		sfTypeBuilder.setCRS(sourceCRS);
+		sfTypeBuilder.setCRS(CRS.decode("EPSG:2154"));
 		sfTypeBuilder.add("the_geom", Polygon.class);
 		sfTypeBuilder.setDefaultGeometry("the_geom");
 		sfTypeBuilder.add("CODE", String.class);
@@ -270,7 +264,7 @@ public class ParcelSchema {
 	public static SimpleFeatureBuilder setSFBParcelAsASWithFrenchParcelFeat(SimpleFeature feat, SimpleFeatureType schema, String geometryOutputName) {
 		SimpleFeatureBuilder finalParcelBuilder = new SimpleFeatureBuilder(schema);
 		finalParcelBuilder.set(geometryOutputName, (Geometry) feat.getDefaultGeometry());
-		finalParcelBuilder.set("CODE", ParcelAttribute.makeFrenchParcelCode(feat));
+		finalParcelBuilder.set("CODE", FrenchParcelFields.makeFrenchParcelCode(feat));
 		finalParcelBuilder.set("CODE_DEP", feat.getAttribute("CODE_DEP"));
 		finalParcelBuilder.set("CODE_COM", feat.getAttribute("CODE_COM"));
 		finalParcelBuilder.set("COM_ABS", feat.getAttribute("COM_ABS"));
@@ -293,9 +287,8 @@ public class ParcelSchema {
 	/////////////////////
 	public static SimpleFeatureBuilder getSFBParcelAsASSplit() throws NoSuchAuthorityCodeException, FactoryException {
 		SimpleFeatureTypeBuilder sfTypeBuilder = new SimpleFeatureTypeBuilder();
-		CoordinateReferenceSystem sourceCRS = CRS.decode("EPSG:2154");
 		sfTypeBuilder.setName("parcelAsASSplit");
-		sfTypeBuilder.setCRS(sourceCRS);
+		sfTypeBuilder.setCRS(CRS.decode("EPSG:2154"));
 		sfTypeBuilder.add("the_geom", Polygon.class);
 		sfTypeBuilder.setDefaultGeometry("the_geom");
 		sfTypeBuilder.add("CODE", String.class);
@@ -347,7 +340,6 @@ public class ParcelSchema {
 
 	public static SimpleFeatureBuilder getSFBSchemaWithMultiPolygon(SimpleFeatureType schema) {
 		SimpleFeatureTypeBuilder sfTypeBuilder = new SimpleFeatureTypeBuilder();
-		CoordinateReferenceSystem sourceCRS = schema.getCoordinateReferenceSystem();
 		String geomName = schema.getGeometryDescriptor().getLocalName();
 		for (AttributeDescriptor attr : schema.getAttributeDescriptors()) {
 			if (attr.getLocalName().equals(geomName))
@@ -355,7 +347,7 @@ public class ParcelSchema {
 			sfTypeBuilder.add(attr);
 		}
 		sfTypeBuilder.setName(schema.getName());
-		sfTypeBuilder.setCRS(sourceCRS);
+		sfTypeBuilder.setCRS(schema.getCoordinateReferenceSystem());
 		sfTypeBuilder.add(geomName, MultiPolygon.class);
 		sfTypeBuilder.setDefaultGeometry(geomName);
 		return new SimpleFeatureBuilder(sfTypeBuilder.buildFeatureType());
@@ -372,7 +364,7 @@ public class ParcelSchema {
 	}
 	
 	/**
-	 * Create a builder out of a SimpleFeatureCollection's schema and add a mark field of type <b>int</i>. The mark name can be set with the method {@link fr.ign.cogit.parcelFunction.MarkParcelAttributeFromPosition#setMarkFieldName(String)}.
+	 * Create a builder out of a SimpleFeatureCollection's schema and add a mark field of type <b>int</i>. The mark name can be set with the method {@link fr.ign.artiscales.parcelFunction.MarkParcelAttributeFromPosition#setMarkFieldName(String)}.
 	 * @param schema
 	 * @return a SimpleFeatureBuilder felative to the schema + a marking field
 	 */
@@ -404,11 +396,11 @@ public class ParcelSchema {
 		ParcelSchema.minParcelSectionField = minParcelSectionField;
 	}
 
-	public static String getMinParcelCommunityFiled() {
-		return minParcelCommunityField;
-	}
-
 	public static void setMinParcelCommunityField(String minParcelCommunityField) {
 		ParcelSchema.minParcelCommunityField = minParcelCommunityField;
+	}
+
+	public static String getMinParcelCommunityField() {
+		return minParcelCommunityField;
 	}
 }

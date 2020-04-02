@@ -78,23 +78,23 @@ public class ParcelSplit {
    * Splitting parcel processus. It get the usual parcel schema and add the "split" field in order to determine in the parcel will be splited or not. All the parcels bigger than
    * the maximal area are split.
    * @deprecated
-   * @param parcelIn
-   *          : collection of parcels
+   * @param parcelsIn
+   *          {@link SimpleFeatureCollection} of parcels
    * @param tmpFolder
-   *          : a folder to store temporary files
+   *          A folder to store temporary files
    * @param maximalArea
-   *          : area of the parcel under which the parcel won't be anymore cut
+   *          Area of the parcel under which the parcel won't be anymore cut
    * @param maximalWidth
-   *          : width of the parcel under which the parcel won't be anymore cut
+   *          Width of the parcel under which the parcel won't be anymore cut
    * @param epsilon
-   *          :
+   *          
    * @param extBlock
    * @param decompositionLevelWithoutStreet
-   *          : number of last iteration row for which no street network is generated
+   *          Number of last iteration row for which no street network is generated
    * @param streetWidth
-   *          : with of the street composing the street network
+   *          With of the street composing the street network
    * @param forceStreetAccess
-   *          : force the access to the road for each parcel. Not working good yet.
+   *          Force the access to the road for each parcel. Not working good yet.
    * @return a collection of subdivised parcels
    * @throws Exception
    */
@@ -139,24 +139,21 @@ public class ParcelSplit {
    * Overload to split a single parcel
    * 
    * @param toSplit
-   *          : collection of parcels
+   *          {@link SimpleFeatureCollection} of parcels
    * @param maximalArea
-   *          : area of the parcel under which the parcel won't be anymore cut
+   *          Area of the parcel under which the parcel won't be anymore cut
    * @param maximalWidth
-   *          : width of the parcel under which the parcel won't be anymore cut
-   * @param epsilon
-   *          :
+   *          Width of the parcel under which the parcel won't be anymore cut
+   * @param streetEpsilon
    * @param extBlock
    * @param streetWidth
-   *          : with of the street composing the street network
+   *          With of the street composing the street network
    * @param decompositionLevelWithoutStreet
-   *          : number of last iteration row for which no street network is generated
+   *          Number of last iteration row for which no street network is generated
    * @param forceStreetAccess
-   *          : force the access to the road for each parcel. Not working good yet.
+   *          Force the access to the road for each parcel. Not working good yet.
    * @param tmpFolder
-   *          : a folder to store temporary files
-   * @param addArg
-   *          : add the parent parcels attributes to the new cuted parcels by re-working them
+   *          A folder to store temporary files
    * @return a collection of subdivised parcels
    * @throws Exception
    */
@@ -178,31 +175,29 @@ public class ParcelSplit {
    * GeOxygene format because the functions that must translate them doesn't work yet.
    * 
    * @param toSplit
-   *          : collection of parcels
+   *          {@link SimpleFeatureCollection} of parcels
    * @param maximalArea
-   *          : area of the parcel under which the parcel won't be anymore cut
+   *          Area of the parcel under which the parcel won't be anymore cut
    * @param maximalWidth
-   *          : width of the parcel under which the parcel won't be anymore cut
-   * @param epsilon
-   *          :
+   *          Width of the parcel under which the parcel won't be anymore cut
+   * @param streetEpsilon
+   * @param noise
    * @param extBlock
    * @param streetWidth
-   *          : with of the street composing the street network
+   *          With of the street composing the street network
    * @param decompositionLevelWithoutStreet
-   *          : number of last iteration row for which no street network is generated
+   *          Number of last iteration row for which no street network is generated
    * @param forceStreetAccess
-   *          : force the access to the road for each parcel. Not working good yet.
+   *          Force the access to the road for each parcel. Not working good yet.
    * @param tmpFolder
-   *          : a folder to store temporary files
-   * @param addArg
-   *          : add the parent parcels attributes to the new cuted parcels by re-working them
+   *          A folder to store temporary files
    * @return a collection of subdivised parcels
    * @throws Exception
    */
   public static SimpleFeatureCollection splitParcels(SimpleFeatureCollection toSplit, double maximalArea, double maximalWidth, double streetEpsilon, double noise,
-      List<LineString> extBlock, double streetWidth, boolean forceStreetAccess, int decompositionLevelWithoutStreet, File tmpFile) throws Exception {
+      List<LineString> extBlock, double streetWidth, boolean forceStreetAccess, int decompositionLevelWithoutStreet, File tmpFolder) throws Exception {
 		return splitParcels(toSplit, maximalArea, maximalWidth, streetEpsilon, noise, extBlock, streetWidth, 999, streetWidth, forceStreetAccess,
-				decompositionLevelWithoutStreet, tmpFile);
+				decompositionLevelWithoutStreet, tmpFolder);
   }
 	  public static SimpleFeatureCollection splitParcels(SimpleFeatureCollection toSplit, double maximalArea, double maximalWidth, double streetEpsilon, double noise,
 		      List<LineString> extBlock, double smallStreetWidth, int largeStreetLevel, double largeStreetWidth, boolean forceStreetAccess, int decompositionLevelWithoutStreet, File tmpFile) throws Exception {

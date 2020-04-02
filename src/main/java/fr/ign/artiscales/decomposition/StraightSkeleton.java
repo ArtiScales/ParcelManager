@@ -222,7 +222,6 @@ public class StraightSkeleton {
    * Convertit une liste de sommets formant un cycle en arrêtes.
    * 
    * @param dpl
-   * @return
    */
   public static List<Edge> fromDPLToEdges(Coordinate[] dpl) {
     int nbPoints = dpl.length;

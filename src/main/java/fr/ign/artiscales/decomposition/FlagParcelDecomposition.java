@@ -176,7 +176,7 @@ public class FlagParcelDecomposition {
    *          the maximal width
    * @param roadWidth
    *          the road width
-   * @param isLandExterior
+   * @param islandExterior
    *          the exterior of this island to assess road access
    */
   public FlagParcelDecomposition(Polygon p, SimpleFeatureCollection buildings, double maximalArea, double maximalWidth, double roadWidth, List<LineString> islandExterior) {
@@ -202,7 +202,7 @@ public class FlagParcelDecomposition {
    *          the maximal width
    * @param roadWidth
    *          the road width
-   * @param isLandExterior
+   * @param islandExterior
    *          the exterior of this island to assess road access
    */
   public FlagParcelDecomposition(Polygon p, SimpleFeatureCollection buildings, SimpleFeatureCollection roads, double maximalArea, double maximalWidth, double roadWidth, List<LineString> islandExterior) {
@@ -521,7 +521,7 @@ private Pair<Geometry,Geometry> getIntersectionDifference(Geometry a, Geometry b
    * The buffer length is calculated with an attribute field. The default name of the field is <i>LARGEUR</i> and can be set with the {@link #setWidthFieldAttribute(String)} method. 
    * If no field is found, a default value of 7.5 meters is used (this default value can be set with the {@link #setDefaultWidthRoad(double)} method). 
    * @param roads collection of road
-   * @return
+   * @return The list of the surrounding buffered road segments.
    */
 	public static List<Geometry> getRoadPolygon(SimpleFeatureCollection roads) {
 		// List<Geometry> roadGeom = Arrays.stream(Collec.snapDatas(roads, poly.buffer(5)).toArray(new SimpleFeature[0]))
@@ -551,8 +551,9 @@ private Pair<Geometry,Geometry> getIntersectionDifference(Geometry a, Geometry b
 	 * If no roads have been found and a road shapefile has been set, we look if a road shapefile has been set and if the given road is nearby
 	 * 
 	 * @param poly
-	 * @param geometry
-	 * @return
+	 * @param roads
+	 * @param ext
+	 * @return true is the polygon has a road access
 	 * @throws Exception
 	 * @throws IOException
 	 */
@@ -570,7 +571,6 @@ private Pair<Geometry,Geometry> getIntersectionDifference(Geometry a, Geometry b
   
   /**
    * Get the islet external perimeter
-   * @return
    */
   public MultiLineString getExtAsGeom() {
     return getListAsGeom(this.getExt());
