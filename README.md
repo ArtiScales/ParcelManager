@@ -4,6 +4,7 @@ Library providing functions, algorithms and workflows to operate various parcel 
 Documentation can be found on a coming article and on the PhD thesis of Maxime Colomb.
 The easiest way of using this library is to create scenarios using .json files ([see here](https://github.com/ArtiScales/ParcelManager/blob/master/src/main/resources/doc/scenarioCreation.md)).
 Based on the function from the library [ArtiScales-tools](https://github.com/ArtiScales/ArtiScales-tools) (no stable version yet) and on the GeoTools library.
+JavaDoc is available [here](https://artiscales.github.io/javadoc/ParcelManager/).
 
 Still under developpement.
 
