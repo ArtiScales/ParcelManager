@@ -45,7 +45,7 @@ public class ConsolidationDivision {
 
 	/**
 	 * Method that merges the contiguous marked parcels into zones and then split those zones with a given parcel division algorithm (by default, the Oriented Bounding Box)
-	 * overload of {@link #consolidationDivision(SimpleFeatureCollection, File, double, double, double, double, int, double, int)} for a single road size usage
+	 * overload of {@link #consolidationDivision(SimpleFeatureCollection, File, double, double, double, double, int, double, int)} for a single road size.
 	 * @param parcels
 	 *            The parcels to be merged and cut. Must be marked with the SPLIT filed (see markParcelIntersectMUPOutput for example, with the method concerning MUP-City's output)
 	 * @param tmpFolder
@@ -70,7 +70,7 @@ public class ConsolidationDivision {
 	}
 	
 	/**
-	 * Method that merges the contiguous marked parcels into zones and then split those zones with a given parcel division algorithm (by default, the Oriented Bounding Box)
+	 * Method that merges the contiguous marked parcels into zones and then split those zones with a given parcel division algorithm (by default, the Oriented Bounding Box).
 	 * 
 	 * @param parcels
 	 *            The parcels to be merged and cut. Must be marked with the SPLIT filed (see markParcelIntersectMUPOutput for example, with the method concerning MUP-City's output)

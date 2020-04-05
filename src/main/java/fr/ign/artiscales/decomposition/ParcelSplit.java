@@ -16,8 +16,8 @@ import org.opengis.feature.Feature;
 import org.opengis.feature.FeatureVisitor;
 import org.opengis.feature.simple.SimpleFeature;
 
+import fr.ign.artiscales.fields.artiscales.ArtiScalesSchemas;
 import fr.ign.artiscales.parcelFunction.MarkParcelAttributeFromPosition;
-import fr.ign.artiscales.parcelFunction.ParcelSchema;
 import fr.ign.cogit.geoToolsFunctions.vectors.Geom;
 
 public class ParcelSplit {
@@ -51,7 +51,7 @@ public class ParcelSplit {
 
     // putting the need of splitting into attribute
 
-    SimpleFeatureBuilder sfBuilder = ParcelSchema.getSFBParcelAsASSplit();
+    SimpleFeatureBuilder sfBuilder = ArtiScalesSchemas.getSFBParcelAsASSplit();
 
     DefaultFeatureCollection toSplit = new DefaultFeatureCollection();
 
@@ -102,7 +102,7 @@ public class ParcelSplit {
       List<LineString> extBlock, int decompositionLevelWithoutStreet, double streetWidth, boolean forceStreetAccess) throws Exception {
 
     // create a new collection
-    SimpleFeatureBuilder sfBuilder = ParcelSchema.getSFBParcelAsASSplit();
+    SimpleFeatureBuilder sfBuilder = ArtiScalesSchemas.getSFBParcelAsASSplit();
     DefaultFeatureCollection toSplit = new DefaultFeatureCollection();
 
     // iterate on the parcels

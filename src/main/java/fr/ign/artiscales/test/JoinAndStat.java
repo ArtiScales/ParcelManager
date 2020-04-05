@@ -16,7 +16,6 @@ import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.feature.simple.SimpleFeatureType;
 import org.opengis.referencing.FactoryException;
 import org.opengis.referencing.NoSuchAuthorityCodeException;
-import org.opengis.referencing.crs.CoordinateReferenceSystem;
 
 import com.opencsv.CSVReader;
 
@@ -36,8 +35,7 @@ public class JoinAndStat {
 
 		// create the builder
 		SimpleFeatureTypeBuilder sfTypeBuilder = new SimpleFeatureTypeBuilder();
-		CoordinateReferenceSystem sourceCRS = CRS.decode("EPSG:2154");
-		sfTypeBuilder.setCRS(sourceCRS);
+		sfTypeBuilder.setCRS(CRS.decode("EPSG:2154"));
 		sfTypeBuilder.setName("counted");
 		sfTypeBuilder.add("the_geom", Polygon.class);
 		sfTypeBuilder.add("count", Integer.class);

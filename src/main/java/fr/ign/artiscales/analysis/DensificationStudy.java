@@ -11,7 +11,7 @@ import org.geotools.data.simple.SimpleFeatureCollection;
 import org.locationtech.jts.geom.Geometry;
 import org.opengis.feature.simple.SimpleFeature;
 
-import fr.ign.artiscales.fields.FrenchZoningFields;
+import fr.ign.artiscales.fields.french.FrenchZoningSchemas;
 import fr.ign.artiscales.goal.Densification;
 import fr.ign.artiscales.parcelFunction.MarkParcelAttributeFromPosition;
 import fr.ign.artiscales.parcelFunction.ParcelAttribute;
@@ -119,7 +119,7 @@ public class DensificationStudy {
 		ShapefileDataStore sds = new ShapefileDataStore(zoningFile.toURI().toURL());
 		SimpleFeatureCollection zoning = sds.getFeatureSource().getFeatures();
 		long nbParcelsInUrbanizableZones = Arrays.stream(parcels.toArray(new SimpleFeature[0]))
-				.filter(feat -> FrenchZoningFields
+				.filter(feat -> FrenchZoningSchemas
 						.isUrbanZoneUsuallyAdmitResidentialConstruction(Collec.getSimpleFeatureFromSFC((Geometry) feat.getDefaultGeometry(), zoning)))
 				.count();
 		sds.dispose();
@@ -129,7 +129,7 @@ public class DensificationStudy {
 				"parcels simulated by densification" };
 		Object[] line = { nbParcelsInUrbanizableZones, nbVacantLot, nbVacantLotParcels, vacantParcelU.size() };
 		Hashtable<String, Object[]> l = new Hashtable<String,Object[]>();
-		l.put(ParcelAttribute.getCityCodeFromParcels(parcelsDensifCreated), line);
+		l.put(ParcelAttribute.getCityCodeOfParcels(parcelsDensifCreated), line);
 		Csv.generateCsvFile(l, outFolder, "densificationStudyResult", firstline, true);
 		Csv.needFLine = false;
 	}

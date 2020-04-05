@@ -25,8 +25,8 @@ import org.opengis.referencing.FactoryException;
 import org.opengis.referencing.NoSuchAuthorityCodeException;
 
 import fr.ign.artiscales.decomposition.FlagParcelDecomposition;
-import fr.ign.artiscales.fields.FrenchZoningFields;
 import fr.ign.artiscales.fields.GeneralFields;
+import fr.ign.artiscales.fields.french.FrenchZoningSchemas;
 import fr.ign.cogit.geoToolsFunctions.vectors.Collec;
 import fr.ign.cogit.geoToolsFunctions.vectors.Geom;
 
@@ -536,7 +536,7 @@ public class MarkParcelAttributeFromPosition {
 		//if features have the schema that the one intended to set, we bypass 
 		if (featureSchema.equals(parcels.getSchema())) {
 			Arrays.stream(parcels.toArray(new SimpleFeature[0])).forEach(feat -> {
-				if (isAlreadyMarked(feat) != 0 && FrenchZoningFields
+				if (isAlreadyMarked(feat) != 0 && FrenchZoningSchemas
 						.isUrbanZoneUsuallyAdmitResidentialConstruction(Collec.getSimpleFeatureFromSFC((Geometry) feat.getDefaultGeometry(), zonings))) {
 					feat.setAttribute(markFieldName, 1);
 				} else {
@@ -553,7 +553,7 @@ public class MarkParcelAttributeFromPosition {
 			while (it.hasNext()) {
 				SimpleFeature feat = it.next();
 				featureBuilder = ParcelSchema.setSFBMinParcelSplitWithFeat(feat,featureBuilder, featureSchema, 0);
-				if (isAlreadyMarked(feat) != 0 && FrenchZoningFields
+				if (isAlreadyMarked(feat) != 0 && FrenchZoningSchemas
 						.isUrbanZoneUsuallyAdmitResidentialConstruction(Collec.getSimpleFeatureFromSFC((Geometry) feat.getDefaultGeometry(), zonings))) {
 					featureBuilder.set(markFieldName, 1);
 				} 
@@ -568,12 +568,12 @@ public class MarkParcelAttributeFromPosition {
 
 	public static SimpleFeatureCollection markParcelOfCommunityType(SimpleFeatureCollection parcels, String attribute)
 			throws NoSuchAuthorityCodeException, FactoryException {
-		return markParcelOfCommunity(parcels, "armature", attribute);
+		return markParcelOfCommunity(parcels, ParcelAttribute.getCommunityTypeFieldName(), attribute);
 	}
 
 	public static SimpleFeatureCollection markParcelOfCommunityNumber(SimpleFeatureCollection parcels, String attribute)
 			throws NoSuchAuthorityCodeException, FactoryException {
-		return markParcelOfCommunity(parcels, "INSEE", attribute);
+		return markParcelOfCommunity(parcels, ParcelSchema.getMinParcelCommunityField(), attribute);
 	}
 
 	public static SimpleFeatureCollection markParcelOfCommunity(SimpleFeatureCollection parcels, String fieldName, String attribute) throws NoSuchAuthorityCodeException, FactoryException {

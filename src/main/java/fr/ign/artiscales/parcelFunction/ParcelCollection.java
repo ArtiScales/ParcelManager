@@ -31,6 +31,7 @@ import org.opengis.filter.expression.PropertyName;
 import org.opengis.referencing.FactoryException;
 import org.opengis.referencing.NoSuchAuthorityCodeException;
 
+import fr.ign.artiscales.fields.artiscales.ArtiScalesSchemas;
 import fr.ign.cogit.FeaturePolygonizer;
 import fr.ign.cogit.geoToolsFunctions.Schemas;
 import fr.ign.cogit.geoToolsFunctions.vectors.Collec;
@@ -176,7 +177,7 @@ public class ParcelCollection {
 	
 	/**
 	 * Add a given collection of parcels to another collection of parcel, for which the schema is kept.
-	 * 
+	 * @deprecated
 	 * @param parcelIn
 	 *            Parcels that receive the other parcels
 	 * @param parcelAdd
@@ -189,7 +190,7 @@ public class ParcelCollection {
 		try (SimpleFeatureIterator parcelAddIt = parcelAdd.features()) {
 			while (parcelAddIt.hasNext()) {
 				SimpleFeature featAdd = parcelAddIt.next();
-				SimpleFeatureBuilder fit = ParcelSchema.setSFBParcelAsASWithFeat(featAdd);
+				SimpleFeatureBuilder fit = ArtiScalesSchemas.setSFBParcelAsASWithFeat(featAdd);
 				result.add(fit.buildFeature(null));
 			}
 		} catch (Exception problem) {
@@ -326,6 +327,7 @@ public class ParcelCollection {
 //	}
 /**
  * WARNING: NOT SURE IT'S WORKING
+ * @deprecated
  * @param parcelTot
  * @param parcelCuted
  * @param parcelToNotAdd
@@ -342,7 +344,7 @@ public class ParcelCollection {
 		try (SimpleFeatureIterator parcelCutedIt = parcelCuted.features()) {
 			while (parcelCutedIt.hasNext()) {
 				SimpleFeature featCut = parcelCutedIt.next();
-				SimpleFeatureBuilder fit = ParcelSchema.setSFBParcelAsASWithFeat(featCut, schema);
+				SimpleFeatureBuilder fit = ArtiScalesSchemas.setSFBParcelAsASWithFeat(featCut, schema);
 				result.add(fit.buildFeature(null));
 			}
 		} catch (Exception problem) {
@@ -359,7 +361,7 @@ public class ParcelCollection {
 					}
 				}
 				if (add) {
-					SimpleFeatureBuilder fit = ParcelSchema.setSFBParcelAsASWithFeat(featTot, schema);
+					SimpleFeatureBuilder fit = ArtiScalesSchemas.setSFBParcelAsASWithFeat(featTot, schema);
 					result.add(fit.buildFeature(null));
 				}
 			}

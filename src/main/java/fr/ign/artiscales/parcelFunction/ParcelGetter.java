@@ -22,9 +22,11 @@ import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.filter.Filter;
 import org.opengis.filter.FilterFactory2;
 
-import fr.ign.artiscales.fields.FrenchParcelFields;
-import fr.ign.artiscales.fields.FrenchZoningFields;
 import fr.ign.artiscales.fields.GeneralFields;
+import fr.ign.artiscales.fields.artiscales.ArtiScalesSchemas;
+import fr.ign.artiscales.fields.french.FrenchParcelFields;
+import fr.ign.artiscales.fields.french.FrenchParcelSchemas;
+import fr.ign.artiscales.fields.french.FrenchZoningSchemas;
 import fr.ign.cogit.FeaturePolygonizer;
 import fr.ign.cogit.geoToolsFunctions.vectors.Collec;
 import fr.ign.cogit.geoToolsFunctions.vectors.Geom;
@@ -51,7 +53,7 @@ public class ParcelGetter {
 		ShapefileDataStore zonesSDS = new ShapefileDataStore(zoningFile.toURI().toURL());
 		SimpleFeatureCollection zonesSFCBig = zonesSDS.getFeatureSource().getFeatures();
 		SimpleFeatureCollection zonesSFC = Collec.cropSFC(zonesSFCBig, parcelles);
-		List<String> listZones = FrenchZoningFields.getUsualNames(zone);
+		List<String> listZones = FrenchZoningSchemas.getUsualNames(zone);
 
 		DefaultFeatureCollection zoneSelected = new DefaultFeatureCollection();
 		try(SimpleFeatureIterator itZonez = zonesSFC.features()) {
@@ -182,26 +184,35 @@ public class ParcelGetter {
 	}
 
 	/**
-	 * Get parcels out of a parcel collection with the zip code of them parcels
-	 * Zipcodes are not directly contained in a field of the collection but is composed of two fields. Their values are set by default but it's possible to change them with the methods {@link #setCodeComFiled(String) setCodeComFiled} and {@link #setCodeDepFiled(String) setCodeDepFiled}
-	 * @param parcelIn : input parcel collection
-	 * @param val : value of the zipcode
-	 * @return a simple feature collection of parcels having the <i>val</i> value.
-	 * 	 * @throws IOException
+	 * Get parcels out of a parcel collection with the zip code of them parcels. Zipcodes are not directly contained in a field of the collection but is composed of two fields.
+	 * Their values are set by default but it's possible to change them with the methods {@link #setCodeComFiled(String) setCodeComFiled} and {@link #setCodeDepFiled(String).
+	 * setCodeDepFiled}
+	 * 
+	 * @param parcelIn
+	 *            : input parcel collection
+	 * @param val
+	 *            : value of the zipcode
+	 * @return a simple feature collection of parcels having the <i>val</i> value. * @throws IOException
+	 * @throws IOException
 	 */
 	public static SimpleFeatureCollection getFrenchParcelByZip(SimpleFeatureCollection parcelIn, String val) throws IOException {
 		return getParcelByZip(parcelIn, val, codeDepFiled, codeComFiled);
 	}
 
 	/**
-	 * Get parcels out of a parcel collection with the zip code of them parcels
-	 * zipcode is not directly contained in a field of the collection but is composed of two fields (usually a state-like code and a community code)
-	 * @param parcelIn : input parcel collection
-	 * @param val : value of the zipcode
-	 * @param firstFieldName : first part of the field name which compose zipcode field name
-	 * @param secondFieldName : second part of the field name which compose zipcode field name
+	 * Get parcels out of a parcel collection with the zip code of them parcels. zipcode is not directly contained in a field of the collection but is composed of two fields
+	 * (usually a state-like code and a community code).
+	 * 
+	 * @param parcelIn
+	 *            : input parcel collection
+	 * @param val
+	 *            : value of the zipcode
+	 * @param firstFieldName
+	 *            : first part of the field name which compose zipcode field name
+	 * @param secondFieldName
+	 *            : second part of the field name which compose zipcode field name
 	 * @return a simple feature collection of parcels having the <i>val</i> value.
-	 * 	 * @throws IOException
+	 * @throws IOException
 	 */
 	public static SimpleFeatureCollection getParcelByZip(SimpleFeatureCollection parcelIn, String val, String firstFieldName, String secondFieldName) throws IOException {
 		DefaultFeatureCollection result = new DefaultFeatureCollection();
@@ -400,7 +411,7 @@ public class ParcelGetter {
 			List<String> codeParcelsTot = new ArrayList<String>();
 
 			// auto parcel feature builder
-			SimpleFeatureBuilder sfSimpleBuilder = ParcelSchema.getSFBFrenchParcel();
+			SimpleFeatureBuilder sfSimpleBuilder = FrenchParcelSchemas.getSFBFrenchParcel();
 			DefaultFeatureCollection write = new DefaultFeatureCollection();
 
 			// for every made up polygons out of zoning and parcels
@@ -474,7 +485,7 @@ public class ParcelGetter {
 		// Vectors.snapDatas(shpDSBati.getFeatureSource().getFeatures(),
 		// Vectors.unionSFC(parcels));
 
-		SimpleFeatureBuilder finalParcelBuilder = ParcelSchema.getSFBParcelAsAS();
+		SimpleFeatureBuilder finalParcelBuilder = ArtiScalesSchemas.getSFBParcelAsAS();
 		DefaultFeatureCollection newParcel = new DefaultFeatureCollection();
 
 		// int tot = parcels.size();

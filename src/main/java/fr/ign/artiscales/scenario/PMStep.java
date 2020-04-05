@@ -16,7 +16,7 @@ import org.opengis.referencing.FactoryException;
 import org.opengis.referencing.NoSuchAuthorityCodeException;
 
 import fr.ign.artiscales.analysis.DensificationStudy;
-import fr.ign.artiscales.fields.FrenchParcelFields;
+import fr.ign.artiscales.fields.french.FrenchParcelFields;
 import fr.ign.artiscales.goal.ConsolidationDivision;
 import fr.ign.artiscales.goal.Densification;
 import fr.ign.artiscales.goal.ZoneDivision;
@@ -150,7 +150,6 @@ public class PMStep {
 			case "french":
 				System.out.println("we set attribute as a french parcel");
 				parcelCut = FrenchParcelFields.setOriginalFrenchParcelAttributes(parcelCut, shpDSParcel.getFeatureSource().getFeatures());
-
 				break;
 			}
 		}
@@ -204,20 +203,20 @@ public class PMStep {
 			}
 		} 
 		// if multiple communities are present in the parcel collection
-		else if(ParcelAttribute.getCityCodesFromParcels(parcelIn).size() > 1) {
-			for (String cityCode : ParcelAttribute.getCityCodesFromParcels(parcelIn)) {
+		else if(ParcelAttribute.getCityCodesOfParcels(parcelIn).size() > 1) {
+			for (String cityCode : ParcelAttribute.getCityCodesOfParcels(parcelIn)) {
 				communityNumbers.add(cityCode);
 			}
 			((DefaultFeatureCollection) parcel).addAll(parcelIn);
 		} 
 		// if a type of community has been set  
 		else if (communityType != null && communityType != "") {
-			communityNumbers.addAll(ParcelAttribute.getCityCodesFromParcels(parcelIn));
+			communityNumbers.addAll(ParcelAttribute.getCityCodesOfParcels(parcelIn));
 			parcel = DataUtilities.collection(ParcelGetter.getParcelByTypo(communityType, parcelIn, ZONINGFILE));
 		} 
 		// if the input parcel is just what needs to be simulated
 		else {
-			communityNumbers.addAll(ParcelAttribute.getCityCodesFromParcels(parcelIn));
+			communityNumbers.addAll(ParcelAttribute.getCityCodesOfParcels(parcelIn));
 			parcel = DataUtilities.collection(parcelIn);
 		}
 		

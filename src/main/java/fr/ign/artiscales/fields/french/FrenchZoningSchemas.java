@@ -1,11 +1,13 @@
-package fr.ign.artiscales.fields;
+package fr.ign.artiscales.fields.french;
 
 import java.util.ArrayList;
 import java.util.List;
 
 import org.opengis.feature.simple.SimpleFeature;
 
-public class FrenchZoningFields {
+import fr.ign.artiscales.fields.GeneralFields;
+
+public class FrenchZoningSchemas {
 
 	/**
 	 * Decide the possibility of urbanization of an urban zoning feature according to the French urban planning habits. The <i>zoneNameField<i> field must be <b>U</b> or alike and the

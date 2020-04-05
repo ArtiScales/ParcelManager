@@ -19,13 +19,19 @@ import org.opengis.referencing.FactoryException;
 import org.opengis.referencing.NoSuchAuthorityCodeException;
 
 import fr.ign.artiscales.fields.GeneralFields;
+import fr.ign.artiscales.fields.french.FrenchParcelFields;
+import fr.ign.artiscales.fields.french.FrenchParcelSchemas;
 import fr.ign.artiscales.parcelFunction.MarkParcelAttributeFromPosition;
 import fr.ign.artiscales.parcelFunction.ParcelSchema;
-import fr.ign.cogit.geoToolsFunctions.Attribute;
 import fr.ign.cogit.geoToolsFunctions.Csv;
 import fr.ign.cogit.geoToolsFunctions.vectors.Collec;
 import fr.ign.cogit.geoToolsFunctions.vectors.Geom;
-
+/**
+ * Street/generated surface ratio. Only developped for french parcels. 
+ * 
+ * @author Maxime Colomb
+ *
+ */
 public class StatParcelStreetRatio {
 
 	public static void main(String[] args) throws Exception {
@@ -64,7 +70,7 @@ public class StatParcelStreetRatio {
 		DefaultFeatureCollection zone = new DefaultFeatureCollection();
 		Geometry multiGeom = Geom.unionSFC(selectedParcels);
 		
-		SimpleFeatureBuilder sfBuilderZone = ParcelSchema.getSFBFrenchZoning();
+		SimpleFeatureBuilder sfBuilderZone = FrenchParcelSchemas.getSFBFrenchZoning();
 		for (int i = 0; i < multiGeom.getNumGeometries(); i++) {
 			Geometry zoneGeom = multiGeom.getGeometryN(i);
 			sfBuilderZone.add(zoneGeom);
@@ -74,7 +80,7 @@ public class StatParcelStreetRatio {
 				while (it.hasNext()) {
 					SimpleFeature feat = it.next();
 					if (zoneGeom.contains(((Geometry) feat.getDefaultGeometry()))) {
-						sfBuilderZone.set(ParcelSchema.getMinParcelCommunityField(), Attribute.makeINSEECode(feat));
+						sfBuilderZone.set(ParcelSchema.getMinParcelCommunityField(), FrenchParcelFields.makeINSEECode(feat));
 						sfBuilderZone.set(GeneralFields.getZonePreciseNameField(), feat.getAttribute(ParcelSchema.getMinParcelSectionField()));
 						break;
 					}

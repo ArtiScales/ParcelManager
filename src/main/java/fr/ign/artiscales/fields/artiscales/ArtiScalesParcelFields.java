@@ -1,4 +1,4 @@
-package fr.ign.artiscales.fields;
+package fr.ign.artiscales.fields.artiscales;
 
 import java.io.File;
 import java.io.IOException;
@@ -14,9 +14,8 @@ import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.referencing.FactoryException;
 import org.opengis.referencing.NoSuchAuthorityCodeException;
 
-import fr.ign.artiscales.parcelFunction.ParcelSchema;
+import fr.ign.artiscales.fields.french.FrenchParcelFields;
 import fr.ign.artiscales.parcelFunction.ParcelState;
-import fr.ign.cogit.geoToolsFunctions.Attribute;
 
 public class ArtiScalesParcelFields {
 	/**
@@ -31,18 +30,16 @@ public class ArtiScalesParcelFields {
 	 * @param polygonIntersectionFile
 	 *            A shapefile containing outputs of MUP-City. Can be empty
 	 * @return The parcel set with the right attributes
-	 * @throws FactoryException 
 	 * @throws IOException 
+	 * @throws FactoryException 
 	 * @throws NoSuchAuthorityCodeException 
-	 * @throws Exception
 	 */
-	public static SimpleFeatureCollection fixParcelAttributes(SimpleFeatureCollection parcels, File buildingFile, File communityFile,
-			File polygonIntersectionFile, File zoningFile, boolean allOrCell) throws NoSuchAuthorityCodeException, IOException, FactoryException  {
-		SimpleFeatureCollection parcelsFrenched = FrenchParcelFields.fixParcelAttributes(parcels, communityFile);
+	public static SimpleFeatureCollection fixParcelAttributes(SimpleFeatureCollection parcels, SimpleFeatureCollection originalParcels, File buildingFile,
+			File polygonIntersectionFile, File zoningFile, boolean allOrCell) throws NoSuchAuthorityCodeException, FactoryException, IOException   {
+		SimpleFeatureCollection parcelsFrenched = FrenchParcelFields.setOriginalFrenchParcelAttributes(parcels, originalParcels);
 		DefaultFeatureCollection parcelFinal = new DefaultFeatureCollection();
-
 		int i = 0;
-		SimpleFeatureBuilder featureBuilder = ParcelSchema.getSFBParcelAsAS();
+		SimpleFeatureBuilder featureBuilder = ArtiScalesSchemas.getSFBParcelAsAS();
 		ShapefileDataStore shpDSCells = new ShapefileDataStore(polygonIntersectionFile.toURI().toURL());
 		SimpleFeatureCollection cellsSFS = shpDSCells.getFeatureSource().getFeatures();
 		try (SimpleFeatureIterator parcelIt = parcelsFrenched.features()){
@@ -53,7 +50,7 @@ public class ArtiScalesParcelFields {
 				featureBuilder.set("the_geom", parcel.getDefaultGeometry());
 
 				String section = (String) parcel.getAttribute("SECTION");
-				featureBuilder.set("INSEE", Attribute.makeINSEECode(parcel));
+				featureBuilder.set("INSEE", FrenchParcelFields.makeINSEECode(parcel));
 				featureBuilder.set("CODE_DEP", parcel.getAttribute("CODE_DEP"));
 				featureBuilder.set("CODE_COM", parcel.getAttribute("CODE_COM"));
 				featureBuilder.set("SECTION", section);

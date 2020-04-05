@@ -125,10 +125,6 @@ public class FlagParcelDecomposition {
 //    iterator.close();
 //    buildingsDS.dispose();
 //    parcelDS.dispose();
-//
-//    FeaturePolygonizer.saveGeometries(finalResult, new File(shapeFileOut), "Polygon");
-//    // finalResult.stream().forEach(p->System.out.println(p));
-//    // ShapefileWriter.write(featCollOut, shapeFileOut, CRS.decode("EPSG:2154"));
 //  }
   
 

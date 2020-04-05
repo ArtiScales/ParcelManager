@@ -23,6 +23,7 @@ import org.opengis.filter.FilterFactory2;
 import fr.ign.artiscales.decomposition.ParcelSplit;
 import fr.ign.artiscales.fields.GeneralFields;
 import fr.ign.artiscales.parcelFunction.MarkParcelAttributeFromPosition;
+import fr.ign.artiscales.parcelFunction.ParcelAttribute;
 import fr.ign.artiscales.parcelFunction.ParcelCollection;
 import fr.ign.artiscales.parcelFunction.ParcelSchema;
 import fr.ign.cogit.FeaturePolygonizer;
@@ -134,16 +135,16 @@ public class ZoneDivision {
 		// parcel geometry name for all
 		String geomName = parcels.getSchema().getGeometryDescriptor().getLocalName();
 		final Geometry geomZone = Geom.unionSFC(initialZone);
-
+	final 	SimpleFeatureBuilder finalParcelBuilder = ParcelSchema.getSFBMinParcel();
 		// sort in two different collections, the ones that matters and the ones that will besaved for future purposes
 		DefaultFeatureCollection parcelsInZone = new DefaultFeatureCollection();
-		// parcels to save for after
+		// parcels to save for after and convert them to the minimal attribute
 		DefaultFeatureCollection savedParcels = new DefaultFeatureCollection();
 		Arrays.stream(parcels.toArray(new SimpleFeature[0])).forEach(parcel -> {
 			if (((Geometry) parcel.getDefaultGeometry()).intersects(geomZone)) {
-				parcelsInZone.add(parcel);
+				parcelsInZone.add(ParcelSchema.setSFBMinParcelWithFeat(parcel, finalParcelBuilder.getFeatureType()).buildFeature(null));
 			} else {
-				savedParcels.add(parcel);
+				savedParcels.add(ParcelSchema.setSFBMinParcelWithFeat(parcel, finalParcelBuilder.getFeatureType()).buildFeature(null));
 			}
 		});
 		// complete the void left by the existing roads from the zones
@@ -217,10 +218,10 @@ public class ZoneDivision {
 		}
 		
 		// Parcel subdivision
-		SimpleFeatureCollection splitedZoneParcels  = new DefaultFeatureCollection();
+		SimpleFeatureCollection splitedParcels  = new DefaultFeatureCollection();
 		switch (PROCESS) {
 		case "OBB":
-			splitedZoneParcels = ParcelSplit.splitParcels(goOdZone, maximalArea, maximalWidth, roadEpsilon, noise, null, smallStreetWidth,
+			splitedParcels = ParcelSplit.splitParcels(goOdZone, maximalArea, maximalWidth, roadEpsilon, noise, null, smallStreetWidth,
 					largeStreetLevel, largeStreetWidth, false, decompositionLevelWithoutStreet, tmpFolder);
 			break;
 		case "SS":
@@ -232,16 +233,18 @@ public class ZoneDivision {
 		}
 		
 		//merge the small parcels to bigger ones
-		splitedZoneParcels = ParcelCollection.mergeTooSmallParcels(splitedZoneParcels, (int) minimalArea);
-		//get the section numbers 
-		int i = 0;
+		splitedParcels = ParcelCollection.mergeTooSmallParcels(splitedParcels, (int) minimalArea);
+		Collec.exportSFC(splitedParcels, new File("/tmp/maa"));
+
 		DefaultFeatureCollection result = new DefaultFeatureCollection();
-		SimpleFeatureBuilder finalParcelBuilder = ParcelSchema.getSFBMinParcel();
-		try (SimpleFeatureIterator itZoneParcel = splitedZoneParcels.features()) {
-			while (itZoneParcel.hasNext()) {
-				SimpleFeature parcel = itZoneParcel.next();
+		
+		int num = 0;
+		//fix attribute for the simulated parcels
+		try (SimpleFeatureIterator itParcel = splitedParcels.features()) {
+			while (itParcel.hasNext()) {
+				SimpleFeature parcel = itParcel.next();
 				Geometry parcelGeom = (Geometry) parcel.getDefaultGeometry();
-				finalParcelBuilder.set(geomName, parcel.getDefaultGeometry());
+				finalParcelBuilder.set(geomName, parcelGeom);
 				// get the section name
 				String section = "";
 				try (SimpleFeatureIterator goOdZoneIt = goOdZone.features()) {
@@ -256,21 +259,25 @@ public class ZoneDivision {
 					problem.printStackTrace();
 				}
 				finalParcelBuilder.set(ParcelSchema.getMinParcelSectionField(), section);
+				finalParcelBuilder.set(ParcelSchema.getMinParcelCommunityField(), ParcelAttribute.getCommunityCodeFromSFC(parcelsInZone, parcel));
+				finalParcelBuilder.set(ParcelSchema.getMinParcelNumberField(), String.valueOf(num++));
 				result.add(finalParcelBuilder.buildFeature(null));
 			}
 		} catch (Exception problem) {
 			problem.printStackTrace();
 		} 
+		
 		if (SAVEINTERMEDIATERESULT || DEBUG) {
 			Collec.exportSFC(result, new File(tmpFolder,"parcelZoneDivisionOnly"), OVERWRITESHAPEFILES);
 			OVERWRITESHAPEFILES = false;
 		}
 		// add the saved parcels
 		SimpleFeatureType schemaParcel = finalParcelBuilder.getFeatureType();
+		int i = 0;
 		try (SimpleFeatureIterator itSavedParcels = savedParcels.features()){
 			while (itSavedParcels.hasNext()) {
-				finalParcelBuilder = ParcelSchema.setSFBMinParcelWithFeat(itSavedParcels.next(), schemaParcel);
-				result.add(finalParcelBuilder.buildFeature(Integer.toString(i++)));
+				SimpleFeatureBuilder parcelBuilder = ParcelSchema.setSFBMinParcelWithFeat(itSavedParcels.next(), schemaParcel);
+				result.add(parcelBuilder.buildFeature(Integer.toString(i++)));
 			}
 		} catch (Exception problem) {
 			problem.printStackTrace();
