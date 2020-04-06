@@ -110,7 +110,8 @@ public class ConsolidationDivision {
 		////////////////
 
 		Arrays.stream(parcels.toArray(new SimpleFeature[0])).forEach(parcel -> {
-			if (parcel.getAttribute(MarkParcelAttributeFromPosition.getMarkFieldName()).equals(1)) {
+			if (parcel.getAttribute(MarkParcelAttributeFromPosition.getMarkFieldName()) != null
+					&& (String.valueOf(parcel.getAttribute(MarkParcelAttributeFromPosition.getMarkFieldName()))).equals("1")) {
 				parcelToMerge.add(parcel);
 				parcelSaved.remove(parcel);
 			}

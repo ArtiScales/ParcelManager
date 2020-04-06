@@ -15,7 +15,7 @@ import fr.ign.artiscales.parcelFunction.ParcelGetter;
 import fr.ign.artiscales.parcelFunction.ParcelState;
 import fr.ign.cogit.geoToolsFunctions.vectors.Collec;
 
-public class Test {
+public class GenTest {
 
 	// /////////////////////////
 	// //////// try the parcelGenMotif method

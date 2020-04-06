@@ -20,12 +20,15 @@ public class PMScenario {
 	private File zoningFile, buildingFile, roadFile, polygonIntersection, predicateFile, parcelFile, isletFile, profileFolder, tmpFolder, outFolder;
 
 	private List<PMStep> stepList = new ArrayList<PMStep>();
-
-	boolean fileSet = false;
+	private boolean fileSet = false;
+	/**
+	 * If true, the parcels simulated for each steps will be the input of the next step. If false, the simulation will operate on the input parcel for each steps
+	 */
+	private static boolean REUSESIMULATEDPARCELSs = true;
 	/**
 	 * If true, save a shapefile containing only the simulated parcels in the temporary folder for every goal simulated.
 	 */
-	static boolean SAVEINTERMEDIATERESULT = false; 
+	private static boolean SAVEINTERMEDIATERESULT = false; 
 
 //	public static void main(String[] args) throws Exception {
 //		PMScenario pm = new PMScenario(
@@ -105,7 +108,7 @@ public class PMScenario {
 							communityType = parser.getText();
 						}
 					}
-					if (token == JsonToken.FIELD_NAME && parser.getCurrentName().equals("buildingType")) {
+					if (token == JsonToken.FIELD_NAME && parser.getCurrentName().equals("urbanFabricType")) {
 						token = parser.nextToken();
 						if (token == JsonToken.VALUE_STRING) {
 							buildingType = parser.getText();
@@ -193,7 +196,11 @@ public class PMScenario {
 	public void executeStep() throws Exception {
 		for (PMStep pmstep : getStepList()) {
 			System.out.println("try " + pmstep);
-			PMStep.setParcel(pmstep.execute());
+			if (REUSESIMULATEDPARCELSs) {
+				PMStep.setParcel(pmstep.execute());
+			} else {
+				pmstep.execute();
+			}
 		}
 	}
 
@@ -219,6 +226,14 @@ public class PMScenario {
 
 	public static void setSaveIntermediateResult(boolean saveIntermediateResult) {
 		SAVEINTERMEDIATERESULT = saveIntermediateResult;
+	}
+
+	public boolean isReuseSimulatedParcels() {
+		return REUSESIMULATEDPARCELSs;
+	}
+
+	public static void setReuseSimulatedParcels(boolean reuseSimulatedParcel) {
+		REUSESIMULATEDPARCELSs = reuseSimulatedParcel;
 	}
 
 }

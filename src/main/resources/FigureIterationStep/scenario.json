@@ -1,0 +1,20 @@
+{
+	"rootfile": "src/main/resources/FigureIterationStep/",
+	"outFolder": "src/main/resources/FigureIterationStep/out",
+	"steps": [
+		{
+			"goal": "consolid",
+			"parcelProcess": "OBB",
+			"urbanFabricType": "smallHouse"
+		},
+		{
+			"goal": "consolid",
+			"parcelProcess": "OBB",
+			"urbanFabricType": "smallCollective"
+		},
+		{
+			"goal": "consolid",
+			"parcelProcess": "OBB",
+			"urbanFabricType": "largeCollective"
+		}]
+}

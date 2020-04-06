@@ -47,6 +47,8 @@ public class PMStep {
 		ZoneDivision.SAVEINTERMEDIATERESULT = SAVEINTERMEDIATERESULT;
 		Densification.SAVEINTERMEDIATERESULT = SAVEINTERMEDIATERESULT;
 		ConsolidationDivision.SAVEINTERMEDIATERESULT = SAVEINTERMEDIATERESULT;
+		ZoneDivision.DEBUG = DEBUG;
+		ConsolidationDivision.DEBUG = DEBUG;				
 	}
 
 	/**
@@ -86,7 +88,10 @@ public class PMStep {
 	 * If true, save a shapefile containing only the simulated parcels in the temporary folder for every goal simulated.
 	 */
 	private static boolean SAVEINTERMEDIATERESULT = false; 
-
+	/**
+	 * If true, will save all the intermediate results in the temporary folder
+	 */
+	private static boolean DEBUG = false;
 	/**
 	 * Execute the current PM Step.
 	 * @return The ShapeFile containing the whole parcels of the given collection, where the simulated parcel have replaced the former parcels. 
@@ -144,7 +149,7 @@ public class PMStep {
 				System.out.println(goal + ": unrekognized goal (must be either \"totalZone\", \"dens\" or \"consolid\"");
 			}
 		}
-		File output = new File(OUTFOLDER, "parcelCuted-" + goal + ".shp");
+		File output = new File(OUTFOLDER, "parcelCuted-" + goal + "-"+ urbanFabricType + ".shp");
 		if (GENERATEATTRIBUTES) {
 			switch (parcelType) {
 			case "french":
@@ -291,5 +296,21 @@ public class PMStep {
 
 	public static void setGENERATEATTRIBUTES(boolean gENERATEATTRIBUTES) {
 		GENERATEATTRIBUTES = gENERATEATTRIBUTES;
+	}
+
+	public static String getParcelType() {
+		return parcelType;
+	}
+
+	public static void setParcelType(String parcelType) {
+		PMStep.parcelType = parcelType;
+	}
+
+	public static boolean isDEBUG() {
+		return DEBUG;
+	}
+
+	public static void setDEBUG(boolean dEBUG) {
+		DEBUG = dEBUG;
 	}
 }
