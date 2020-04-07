@@ -91,7 +91,7 @@ public class Densification {
 						&& feat.getAttribute(MarkParcelAttributeFromPosition.getMarkFieldName()).equals(1)
 						&& ((Geometry) feat.getDefaultGeometry()).getArea() > maximalAreaSplitParcel) {
 					//we get the ilot lines
-					List<LineString> lines = Collec.fromSFCtoExteriorRingLines(isletCollection.subCollection(
+					List<LineString> lines = Collec.fromSFCtoListRingLines(isletCollection.subCollection(
 							ff.bbox(ff.property(feat.getFeatureType().getGeometryDescriptor().getLocalName()), feat.getBounds())));
 					// we falg cut the parcel
 					SimpleFeatureCollection tmp = ParcelSplitFlag.generateFlagSplitedParcels(feat, lines, tmpFolder,

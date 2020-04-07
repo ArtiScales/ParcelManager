@@ -28,7 +28,7 @@ public class FrenchParcelSchemas {
 		sfTypeBuilder.add("LIBELLE", String.class);
 		sfTypeBuilder.add("TYPEZONE", String.class);
 		sfTypeBuilder.add("TYPEPLAN", String.class);
-		sfTypeBuilder.add("INSEE", String.class);
+		sfTypeBuilder.add("DEPCOM", String.class);
 		return new SimpleFeatureBuilder(sfTypeBuilder.buildFeatureType());
 	}
 	

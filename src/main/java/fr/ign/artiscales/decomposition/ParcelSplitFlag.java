@@ -41,11 +41,10 @@ public class ParcelSplitFlag {
 		ShapefileDataStore sdsIlot = new ShapefileDataStore(inputUrbanBlock.toURI().toURL());
 		SimpleFeatureCollection collec = sdsIlot.getFeatureSource().getFeatures();
 		ShapefileDataStore sds = new ShapefileDataStore(inputShapeFile.toURI().toURL());
-		SimpleFeatureIterator it = sds.getFeatureSource().getFeatures().features();
-		try {
+		try (SimpleFeatureIterator it = sds.getFeatureSource().getFeatures().features()){
 			while (it.hasNext()) {
 				SimpleFeature feat = it.next();
-				List<LineString> lines = Collec.fromSFCtoExteriorRingLines(
+				List<LineString> lines = Collec.fromSFCtoListRingLines(
 						collec.subCollection(ff.bbox(ff.property(feat.getFeatureType().getGeometryDescriptor().getLocalName()), feat.getBounds())));
 				if (feat.getAttribute(MarkParcelAttributeFromPosition.getMarkFieldName()) != null
 						&& (int) feat.getAttribute(MarkParcelAttributeFromPosition.getMarkFieldName()) == 1) {
@@ -54,9 +53,7 @@ public class ParcelSplitFlag {
 			}
 		} catch (Exception problem) {
 			problem.printStackTrace();
-		} finally {
-			it.close();
-		}
+		} 
 		sds.dispose();
 		sdsIlot.dispose();
 	}

@@ -19,6 +19,8 @@ import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.feature.simple.SimpleFeatureType;
 import org.opengis.feature.type.AttributeDescriptor;
 import org.opengis.filter.FilterFactory2;
+import org.opengis.referencing.FactoryException;
+import org.opengis.referencing.NoSuchAuthorityCodeException;
 
 import fr.ign.artiscales.decomposition.ParcelSplit;
 import fr.ign.artiscales.fields.GeneralFields;
@@ -235,7 +237,6 @@ public class ZoneDivision {
 		//merge the small parcels to bigger ones
 		splitedParcels = ParcelCollection.mergeTooSmallParcels(splitedParcels, (int) minimalArea);
 		Collec.exportSFC(splitedParcels, new File("/tmp/maa"));
-
 		DefaultFeatureCollection result = new DefaultFeatureCollection();
 		
 		int num = 0;
@@ -287,23 +288,26 @@ public class ZoneDivision {
 
 	/**
 	 * Create a zone to cut by selecting features from a shapefile regarding a fixed value. Name of the field is by default set to <i>TYPEZONE</i> and must be changed if needed with the
-	 * {@link fr.ign.artiscales.fields.GeneralFields#setZoneGenericNameField(String)} method. Also takes a bounding SimpleFeatureCollection to bound the output
+	 * {@link fr.ign.artiscales.fields.GeneralFields#setZoneGenericNameField(String)} method. Also takes a bounding SimpleFeatureCollection to bound the output.
 	 * 
 	 * @param zoneToCutName
 	 *            Name of the zone to be cut
 	 * @param zoning
-	 *            Collection of zones to extract the wanted zone from (ussualy a zoning plan)
+	 *            Collection of zones to extract the wanted zone from (usually a zoning plan)
 	 * @param parcels
 	 *            Collection of parcel to bound the process on a wanted location
 	 * @return An extraction of the zoning collection
 	 * @throws IOException
+	 * @throws FactoryException 
+	 * @throws NoSuchAuthorityCodeException 
 	 */
 	public static SimpleFeatureCollection createZoneToCut(String zoneToCutName, SimpleFeatureCollection zoning, SimpleFeatureCollection parcels)
-			throws IOException {
+			throws IOException, NoSuchAuthorityCodeException, FactoryException {
 		// get the wanted zones from the zoning file
 		FilterFactory2 ff = CommonFactoryFinder.getFilterFactory2(GeoTools.getDefaultHints());
 		SimpleFeatureCollection initialZone = zoning.subCollection(ff.like(ff.property(GeneralFields.getZoneGenericNameField()), zoneToCutName))
 				.subCollection(ff.intersects(ff.property(zoning.getSchema().getGeometryDescriptor().getLocalName()), ff.literal(Geom.unionSFC(parcels))));
+		initialZone = MarkParcelAttributeFromPosition.markAllParcel(initialZone);
 		if (initialZone.isEmpty()) {
 			System.out.println("createZoneToCut(): zone is empty");
 		}

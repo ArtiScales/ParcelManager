@@ -1,0 +1,29 @@
+{
+	"rootfile": "/home/thema/Documents/MC/workspace/ParcelManager/src/main/resources/testData/",
+	"profileFolder": "/home/thema/Documents/MC/workspace/ParcelManager/src/main/resources/testData/profileBuildingType/",
+	"outFolder": "/tmp/",
+	"steps": [
+		{
+			"goal": "totalZone",
+			"parcelProcess": "OBB",
+			"zone": "AU",
+			"communityNumber": "25267",
+			"communityType": "periUrbain",
+			"urbanFabricType": "smallHouse"
+		},
+		{
+			"goal": "consolid",
+			"parcelProcess": "OBB",
+			"zone": "NC",
+			"communityNumber": "25267",
+			"communityType": "periUrbain",
+			"urbanFabricType": "smallHouse"
+		},
+		{
+			"goal": "dens",
+			"zone": "U",
+			"communityNumber": "25267",
+			"communityType": "periUrbain",
+			"urbanFabricType": "smallHouse"
+		}]
+}

@@ -14,7 +14,6 @@ import org.geotools.factory.CommonFactoryFinder;
 import org.geotools.feature.DefaultFeatureCollection;
 import org.geotools.feature.simple.SimpleFeatureBuilder;
 import org.locationtech.jts.geom.Geometry;
-import org.locationtech.jts.geom.LineString;
 import org.locationtech.jts.geom.Polygon;
 import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.feature.simple.SimpleFeatureType;
@@ -40,15 +39,20 @@ import fr.ign.cogit.geoToolsFunctions.vectors.Geom;
 public class MarkParcelAttributeFromPosition {
 	
 //	public static void main(String[] args) throws Exception {
-//		File parcelsMarkedF = new File("/home/ubuntu/PMtest/SeineEtMarne/PARCELLE03.SHP");
+//		File parcelsMarkedF = new File("/home/ubuntu/workspace/ParcelManager/src/main/resources/testData/out/parcelTotZone.shp");
+//		File roadFile = new File("/home/ubuntu/workspace/ParcelManager/src/main/resources/testData/road.shp");
+//		File isletFileF = new File("/tmp/Islet.shp");
 //		long startTime = System.currentTimeMillis();
-//
 //		ShapefileDataStore sdsParcel = new ShapefileDataStore(parcelsMarkedF.toURI().toURL());
-//		SimpleFeatureCollection parcelsMarked = sdsParcel.getFeatureSource().getFeatures();
-//		markAllParcel(parcelsMarked);
+//		SimpleFeatureCollection parcels = sdsParcel.getFeatureSource().getFeatures();
+//		ShapefileDataStore sdsIslet = new ShapefileDataStore(isletFileF.toURI().toURL());
+//		SimpleFeatureCollection islet = sdsIslet.getFeatureSource().getFeatures();
+//		markParcelsConnectedToRoad(parcels, islet, roadFile);
 //		sdsParcel.dispose();
 //		long stopTime = System.currentTimeMillis();
 //		System.out.println(stopTime - startTime);
+//		sdsIslet.dispose();
+//		sdsParcel.dispose();
 //	}
 	
 	/**
@@ -78,15 +82,13 @@ public class MarkParcelAttributeFromPosition {
 		SimpleFeatureCollection roads = Collec.snapDatas(sds.getFeatureSource().getFeatures(), parcels);
 		final SimpleFeatureType featureSchema = ParcelSchema.getSFBMinParcelSplit().getFeatureType();
 		DefaultFeatureCollection result = new DefaultFeatureCollection();
-		
 		//if features have the schema that the one intended to set, we bypass
 		if (featureSchema.equals(parcels.getSchema())) {
 			Arrays.stream(parcels.toArray(new SimpleFeature[0])).forEach(feat -> {
 				try {
 					Geometry geomFeat = (Geometry) feat.getDefaultGeometry();
-					if (isAlreadyMarked(feat) != 0 && FlagParcelDecomposition.isParcelHasRoadAccess((Polygon) Geom.getPolygon(geomFeat), Collec.snapDatas(roads, geomFeat),
-							geomFeat.getFactory().createMultiLineString(
-									new LineString[] { ((Polygon) Geom.getPolygon(Geom.unionSFC(Collec.snapDatas(islet, geomFeat)))).getExteriorRing() }))) {
+					if (isAlreadyMarked(feat) != 0 && FlagParcelDecomposition.isParcelHasRoadAccess((Polygon) Geom.getPolygon(geomFeat),
+							Collec.snapDatas(roads, geomFeat), Collec.fromSFCtoRingMultiLines(Collec.snapDatas(islet, geomFeat)))) {
 						feat.setAttribute(markFieldName, 1);
 					} else {
 						feat.setAttribute(markFieldName, 0);
@@ -107,8 +109,7 @@ public class MarkParcelAttributeFromPosition {
 				Geometry geomFeat = (Geometry) feat.getDefaultGeometry();
 				featureBuilder = ParcelSchema.setSFBMinParcelSplitWithFeat(feat,featureBuilder, featureSchema, 0);
 				if (isAlreadyMarked(feat) != 0 &&  FlagParcelDecomposition.isParcelHasRoadAccess((Polygon) Geom.getPolygon(geomFeat), Collec.snapDatas(roads, geomFeat),
-						geomFeat.getFactory().createMultiLineString(
-								new LineString[] { ((Polygon) Geom.getPolygon(Geom.unionSFC(Collec.snapDatas(islet, geomFeat)))).getExteriorRing() }))) {
+						Collec.fromSFCtoRingMultiLines(Collec.snapDatas(islet, geomFeat)))) {
 					featureBuilder.set(markFieldName, 1);
 				} 
 				result.add(featureBuilder.buildFeature(null));
@@ -704,14 +705,27 @@ public class MarkParcelAttributeFromPosition {
 		return result.collection();
 	}
 
-	public static SimpleFeatureCollection markAllParcel(SimpleFeatureCollection parcels) throws NoSuchAuthorityCodeException, FactoryException, IOException {
-		final SimpleFeatureType featureSchema = ParcelSchema.getSFBMinParcelSplit().getFeatureType();
+	/**
+	 * Mark every {@link SimpleFeature} form a {@link SimpleFeatureCollection} on a new {@link #markFieldName} field with a 1 (true). Untested if the collection already contains
+	 * the {@link #markFieldName} field.
+	 * 
+	 * @param sfcIn
+	 *            input {@link SimpleFeatureCollection}
+	 * @return input {@link SimpleFeatureCollection} with a new {@link #markFieldName} field with only 1 (true) in it.
+	 * @throws NoSuchAuthorityCodeException
+	 * @throws FactoryException
+	 * @throws IOException
+	 */
+	public static SimpleFeatureCollection markAllParcel(SimpleFeatureCollection sfcIn) throws NoSuchAuthorityCodeException, FactoryException, IOException {
 		DefaultFeatureCollection result = new DefaultFeatureCollection();
-		SimpleFeatureBuilder featureBuilder = ParcelSchema.getSFBMinParcelSplit();
-		try (SimpleFeatureIterator it = parcels.features()) {
+		SimpleFeatureBuilder featureBuilder = ParcelSchema.addSplitField(sfcIn.getSchema());
+		try (SimpleFeatureIterator it = sfcIn.features()) {
 			while (it.hasNext()) {
 				SimpleFeature feat = it.next();
-				featureBuilder = ParcelSchema.setSFBMinParcelSplitWithFeat(feat,featureBuilder, featureSchema, 1);
+				for (AttributeDescriptor attr : feat.getFeatureType().getAttributeDescriptors()) {
+					featureBuilder.set(attr.getName(), feat.getAttribute(attr.getName()));
+				}
+				featureBuilder.set(markFieldName, 1);
 				result.add(featureBuilder.buildFeature(null));
 			}
 		} catch (Exception e) {

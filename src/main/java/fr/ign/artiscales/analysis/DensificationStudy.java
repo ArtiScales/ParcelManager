@@ -34,8 +34,9 @@ public class DensificationStudy {
 
 	public static void main(String[] args) throws Exception {
 		PMStep.setGENERATEATTRIBUTES(false);
-		PMScenario pmScen = new PMScenario(new File("/home/ubuntu/PMtest/Densification/SetM/jsonEx.json"), new File("/tmp"));
+		PMScenario pmScen = new PMScenario(new File("src/main/resources/DensificationStudy/scenario.json"), new File("/tmp"));
 		pmScen.executeStep();
+		
 ////		run a densification study on a single community
 //		File rootFolder = new File("/home/ubuntu/PMtest/Densification/");
 //		File parcelFile = new File(rootFolder, "torcy.shp");
