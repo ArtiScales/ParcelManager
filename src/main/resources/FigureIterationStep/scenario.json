@@ -16,5 +16,10 @@
 			"goal": "consolid",
 			"parcelProcess": "OBB",
 			"urbanFabricType": "largeCollective"
+		},
+		{
+			"goal": "consolid",
+			"parcelProcess": "OBB",
+			"urbanFabricType": "detachedHouse"
 		}]
 }

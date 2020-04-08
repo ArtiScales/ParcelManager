@@ -28,6 +28,7 @@ import com.opencsv.CSVReader;
 
 import fr.ign.artiscales.fields.GeneralFields;
 import fr.ign.artiscales.fields.french.FrenchZoningSchemas;
+import fr.ign.cogit.geoToolsFunctions.Attribute;
 import fr.ign.cogit.geoToolsFunctions.vectors.Collec;
 import fr.ign.cogit.geoToolsFunctions.vectors.Geom;
 
@@ -90,22 +91,12 @@ public class ParcelState {
 		if(!predicateFile.exists()) {
 			return false;
 		}
-		int nInsee = 0;
-		int nArt3 = 0;
 		// get rule file
 		CSVReader rule = new CSVReader(new FileReader(predicateFile));
-
 		// seek for attribute numbers
 		String[] firstLine = rule.readNext();
-		for (int i = 0; i < firstLine.length; i++) {
-			String s = firstLine[i];
-			if (s.equals("insee")) {
-				nInsee = i;
-			} else if (s.equals("art_3")) {
-				nArt3 = i;
-			}
-		}
-
+		int nInsee = Attribute.getIndice(firstLine, "insee");
+		int nArt3 = Attribute.getIndice(firstLine, "art_3");
 		for (String[] line : rule.readAll()) {
 			if (insee.equals(line[nInsee])) {
 				if (line[nArt3].equals("1")) {

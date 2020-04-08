@@ -152,7 +152,7 @@ public class StatParcelStreetRatio {
 			problem.printStackTrace();
 		} 
 		sdsRoad.dispose();
-		Csv.generateCsvFile(stat, folderOutStat, "streetRatioParcelZone", false, firstLine);
+		Csv.generateCsvFile(stat, folderOutStat, "streetRatioParcelZone", true, firstLine);
 		return ratio;
 	}
 

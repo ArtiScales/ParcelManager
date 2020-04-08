@@ -2,7 +2,7 @@ package fr.ign.artiscales.analysis;
 
 import java.io.File;
 import java.util.Arrays;
-import java.util.Hashtable;
+import java.util.HashMap;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -129,7 +129,7 @@ public class DensificationStudy {
 		String[] firstline = { "parcels in urbanizable zones", "DEPCOM", "number of vacant lots", "parcels simulated in vacant lots",
 				"parcels simulated by densification" };
 		Object[] line = { nbParcelsInUrbanizableZones, nbVacantLot, nbVacantLotParcels, vacantParcelU.size() };
-		Hashtable<String, Object[]> l = new Hashtable<String,Object[]>();
+		HashMap<String, Object[]> l = new HashMap<String,Object[]>();
 		l.put(ParcelAttribute.getCityCodeOfParcels(parcelsDensifCreated), line);
 		Csv.generateCsvFile(l, outFolder, "densificationStudyResult", firstline, true);
 		Csv.needFLine = false;

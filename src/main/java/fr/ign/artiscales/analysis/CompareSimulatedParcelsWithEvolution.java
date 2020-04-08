@@ -4,7 +4,7 @@ import java.io.File;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Hashtable;
+import java.util.HashMap;
 import java.util.List;
 
 import org.geotools.data.shapefile.ShapefileDataStore;
@@ -12,12 +12,12 @@ import org.geotools.data.simple.SimpleFeatureCollection;
 import org.locationtech.jts.geom.Geometry;
 
 import fr.ign.artiscales.parcelFunction.ParcelCollection;
+import fr.ign.artiscales.scenario.PMScenario;
+import fr.ign.artiscales.scenario.PMStep;
 import fr.ign.cogit.geoToolsFunctions.Csv;
 import fr.ign.cogit.geoToolsFunctions.vectors.Collec;
 import fr.ign.cogit.geoToolsFunctions.vectors.Shp;
 import fr.ign.cogit.geometryGeneration.CityGeneration;
-import fr.ign.artiscales.scenario.PMScenario;
-import fr.ign.artiscales.scenario.PMStep;
 
 
 /**
@@ -44,10 +44,10 @@ public class CompareSimulatedParcelsWithEvolution {
 		File scenarioFile = new File(rootFolder, "jsonEx.json");
 		
 		// Mark and export the parcels that have changed between the two set of time
-//		ParcelCollection.markDiffParcel(file1, file2, rootFolder, tmpFolder);
-//
-//		// create ilots for parcel densification in case they haven't been generated before
-//		CityGeneration.createUrbanIslet(file1, rootFolder);
+		ParcelCollection.markDiffParcel(file1, file2, rootFolder, tmpFolder);
+
+		// create ilots for parcel densification in case they haven't been generated before
+		CityGeneration.createUrbanIslet(file1, rootFolder);
 		
 		PMScenario.setSaveIntermediateResult(true);
 		PMStep.setGENERATEATTRIBUTES(false);
@@ -76,7 +76,7 @@ public class CompareSimulatedParcelsWithEvolution {
 			
 			// make statistic graphs
 			List<AreaGraph> lAG = new ArrayList<AreaGraph>();
-			Hashtable<String, Object[]> csvData = new Hashtable<String, Object[]>();
+			HashMap<String, Object[]> csvData = new HashMap<String, Object[]>();
 			
 			//simulated parcels crop
 			ShapefileDataStore sdsSimulatedParcel = new ShapefileDataStore(simulatedFile.toURI().toURL());

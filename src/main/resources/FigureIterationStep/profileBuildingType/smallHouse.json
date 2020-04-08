@@ -5,6 +5,7 @@
 	"streetWidth": "7",	
 	"maximalArea": "420",
 	"minimalArea": "100",
+	"maximalWidth": "7",
 	"nameBuildingType": "smallHouse",
 	"lenDriveway": "3"
 }

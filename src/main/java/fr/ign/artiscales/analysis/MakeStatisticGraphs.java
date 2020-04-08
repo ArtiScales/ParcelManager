@@ -14,7 +14,6 @@ import org.knowm.xchart.CategoryChart;
 import org.knowm.xchart.CategoryChartBuilder;
 import org.knowm.xchart.Histogram;
 import org.locationtech.jts.geom.Geometry;
-import org.opengis.feature.simple.SimpleFeature;
 
 import fr.ign.artiscales.fields.GeneralFields;
 
@@ -31,15 +30,13 @@ public class MakeStatisticGraphs {
 	 * Automate the generation of graphs about area of fresh parcel cuts
 	 * 
 	 * @param freshParcelCut
-	 * @param folderOut
+	 * @param outFolder
 	 * @throws IOException
 	 */	
-	public static void makeAreaGraph(File freshParcelCut, File folderOut) throws IOException {
+	public static void makeAreaGraph(File freshParcelCut, File outFolder) throws IOException {
 		ShapefileDataStore sds = new ShapefileDataStore(freshParcelCut.toURI().toURL());
-		SimpleFeatureCollection sfc = GeneralFields.getParcelLikeFrenchWithSimulatedFileds(sds.getFeatureSource().getFeatures());
-		AreaGraph areaGraph = sortValuesAndCategorize(sfc, "area");
-		makeGraphHisto(areaGraph, folderOut, "Distribution de la surface des parcelles subdivisées", "Surface d'une parcelle (m2)",
-				"Nombre de parcelles", 10);
+		makeGraphHisto(sortValuesAndCategorize(GeneralFields.getParcelWithSimulatedFileds(sds.getFeatureSource().getFeatures()), "area"), outFolder,
+				"Distribution de la surface des parcelles subdivisées - "+freshParcelCut.getName(), "Surface d'une parcelle (m2)", "Nombre de parcelles", 10);
 		sds.dispose();
 	}
 
@@ -53,15 +50,12 @@ public class MakeStatisticGraphs {
 	 */
 	public static AreaGraph sortValuesAndCategorize(SimpleFeatureCollection parcelOut, String nameDistrib) throws IOException {
 		List<Double> areaParcel = new ArrayList<Double>();
-		
 		//get the bounds
 		double aMax = 0;
 		double aMin = 100000000;
-		SimpleFeatureIterator parcelIt = parcelOut.features();
-		try {
+		try (SimpleFeatureIterator parcelIt = parcelOut.features()) {
 			while (parcelIt.hasNext()) {
-				SimpleFeature feat = parcelIt.next();
-				double area = ((Geometry) feat.getDefaultGeometry()).getArea();
+				double area = ((Geometry) parcelIt.next().getDefaultGeometry()).getArea();
 				areaParcel.add(area);
 				if (area < aMin) {
 					aMin = area;
@@ -72,9 +66,7 @@ public class MakeStatisticGraphs {
 			}
 		} catch (Exception problem) {
 			problem.printStackTrace();
-		} finally {
-			parcelIt.close();
-		}
+		} 
 		return new AreaGraph(areaParcel, aMin, aMax,nameDistrib);
 	}
 
@@ -120,7 +112,7 @@ public class MakeStatisticGraphs {
 		chart.getStyler().setXAxisDecimalPattern("####");
 		chart.getStyler().setXAxisLogarithmicDecadeOnly(true);
 		chart.getStyler().setYAxisLogarithmicDecadeOnly(true);
-		BitmapEncoder.saveBitmap(chart, graphDepotFolder + "/" + xTitle + yTitle, BitmapFormat.PNG);
+		BitmapEncoder.saveBitmap(chart, graphDepotFolder + "/" + title , BitmapFormat.PNG);
 
 	}
 }

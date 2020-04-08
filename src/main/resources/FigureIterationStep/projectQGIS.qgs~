@@ -56,10 +56,10 @@
   <mapcanvas name="theMapCanvas" annotationsVisible="1">
     <units>meters</units>
     <extent>
-      <xmin>936064.22456229978706688</xmin>
-      <ymin>6686709.12723048403859138</ymin>
-      <xmax>937178.02256230020429939</xmax>
-      <ymax>6687454.50123048201203346</ymax>
+      <xmin>936247.3049312838120386</xmin>
+      <ymin>6687167.7782989339902997</ymin>
+      <xmax>937361.10293128422927111</xmax>
+      <ymax>6687913.15229893196374178</ymax>
     </extent>
     <rotation>0</rotation>
     <destinationsrs>
@@ -1053,7 +1053,7 @@ def my_form_open(dialog, layer, feature):
     <maplayer maxScale="0" simplifyDrawingHints="1" simplifyMaxScale="1" wkbType="MultiPolygon" geometry="Polygon" refreshOnNotifyMessage="" autoRefreshEnabled="0" readOnly="0" simplifyAlgorithm="0" simplifyDrawingTol="1" refreshOnNotifyEnabled="0" hasScaleBasedVisibilityFlag="0" simplifyLocal="1" minScale="1e+8" type="vector" labelsEnabled="0" autoRefreshTime="0" styleCategories="AllStyleCategories">
       <extent>
         <xmin>936318.93000000005122274</xmin>
-        <ymin>6687192.62000000011175871</ymin>
+        <ymin>6687230.05999999959021807</ymin>
         <xmax>937315.72999999998137355</xmax>
         <ymax>6688011.63999999966472387</ymax>
       </extent>

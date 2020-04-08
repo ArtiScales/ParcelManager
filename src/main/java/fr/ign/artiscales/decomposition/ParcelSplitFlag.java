@@ -59,14 +59,14 @@ public class ParcelSplitFlag {
 	}
 
 	public static SimpleFeatureCollection generateFlagSplitedParcels(SimpleFeature feat, List<LineString> extLines, File tmpFolder,
-			File buildingFile, Double maximalAreaSplitParcel, Double maximalWidthSplitParcel, Double lenDriveway, boolean isArt3AllowsIsolatedParcel)
+			File buildingFile, Double maximalAreaSplitParcel, Double maximalWidthSplitParcel, Double lenDriveway, boolean allowIsolatedParcel)
 			throws Exception {
 		return generateFlagSplitedParcels(feat, extLines, tmpFolder, buildingFile, null, maximalAreaSplitParcel, maximalWidthSplitParcel, 
-				lenDriveway, isArt3AllowsIsolatedParcel);
+				lenDriveway, allowIsolatedParcel);
 	}
 	
 	public static SimpleFeatureCollection generateFlagSplitedParcels(SimpleFeature feat, List<LineString> extLines, File tmpFolder,
-			File buildingFile, File roadFile, Double maximalAreaSplitParcel, Double maximalWidthSplitParcel, Double lenDriveway, boolean isArt3AllowsIsolatedParcel)
+			File buildingFile, File roadFile, Double maximalAreaSplitParcel, Double maximalWidthSplitParcel, Double lenDriveway, boolean allowIsolatedParcel)
 			throws Exception {
 		ShapefileDataStore buildingDS = new ShapefileDataStore(buildingFile.toURI().toURL());
 		List<Polygon> surfaces = Util.getPolygons((Geometry) feat.getDefaultGeometry());
@@ -87,7 +87,7 @@ public class ParcelSplitFlag {
 		}
 		List<Polygon> decomp = fpd.decompParcel(0);
 		// if the size of the collection is 1, no flag cut has been done. We check if we can normal cut it, if allowed
-		if (decomp.size() == 1 && isArt3AllowsIsolatedParcel) {
+		if (decomp.size() == 1 && allowIsolatedParcel) {
 			System.out.println("normal decomp instead of flagg decomp allowed and done");
 			return ParcelSplit.splitParcels(feat, maximalAreaSplitParcel, maximalWidthSplitParcel, 0, 0, extLines, 0, false, 8, tmpFolder);
 		}

@@ -62,14 +62,14 @@ public class Densification {
 	 *            threshold of parcel connection to road under which the OBB algorithm stops to decompose parcels
 	 * @param lenDriveway
 	 *            lenght of the driveway to connect a parcel through another parcel to the road
-	 * @param isArt3AllowsIsolatedParcel
+	 * @param allowIsolatedParcel
 	 *            true if the simulated parcels have the right to be isolated from the road, false otherwise.
 	 * @return The input parcel {@link SimpleFeatureCollection} with the marked parcels replaced by the simulated parcels. All parcels have the
 	 *         {@link fr.ign.artiscales.parcelFunction.ParcelSchema#getSFBMinParcel()} schema. * @throws Exception
 	 */
 	public static SimpleFeatureCollection densification(SimpleFeatureCollection parcelCollection, SimpleFeatureCollection isletCollection,
 			File tmpFolder, File buildingFile, File roadFile, double maximalAreaSplitParcel, double minimalAreaSplitParcel, double maximalWidthSplitParcel,
-			double lenDriveway, boolean isArt3AllowsIsolatedParcel) throws Exception {
+			double lenDriveway, boolean allowIsolatedParcel) throws Exception {
 		// if parcels doesn't contains the markParcelAttribute field or have no marked parcels 
 		if (!Collec.isCollecContainsAttribute(parcelCollection, MarkParcelAttributeFromPosition.getMarkFieldName())
 				|| Arrays.stream(parcelCollection.toArray(new SimpleFeature[0]))
@@ -96,7 +96,7 @@ public class Densification {
 					// we falg cut the parcel
 					SimpleFeatureCollection tmp = ParcelSplitFlag.generateFlagSplitedParcels(feat, lines, tmpFolder,
 							buildingFile, roadFile, maximalAreaSplitParcel, maximalWidthSplitParcel, lenDriveway,
-							isArt3AllowsIsolatedParcel);
+							allowIsolatedParcel);
 					// if the cut parcels are inferior to the minimal size, we cancel all and add the initial parcel
 					boolean add = true;
 					try (SimpleFeatureIterator parcelIt = tmp.features()){
@@ -173,16 +173,16 @@ public class Densification {
 	 *            threshold of parcel connection to road under which the OBB algorithm stops to decompose parcels
 	 * @param lenDriveway
 	 *            lenght of the driveway to connect a parcel through another parcel to the road
-	 * @param isArt3AllowsIsolatedParcel
+	 * @param allowIsolatedParcel
 	 *            true if the simulated parcels have the right to be isolated from the road, false otherwise.
 	 * @return The input parcel {@link SimpleFeatureCollection} with the marked parcels replaced by the simulated parcels. All parcels have the
 	 *         {@link fr.ign.artiscales.parcelFunction.ParcelSchema#getSFBMinParcel()} schema. * @throws Exception
 	 */
 	public static SimpleFeatureCollection densification(SimpleFeatureCollection parcelCollection, SimpleFeatureCollection isletCollection,
 			File tmpFolder, File buildingFile, double maximalAreaSplitParcel, double minimalAreaSplitParcel, double maximalWidthSplitParcel,
-			double lenDriveway, boolean isArt3AllowsIsolatedParcel) throws Exception {
+			double lenDriveway, boolean allowIsolatedParcel) throws Exception {
 		return densification(parcelCollection, isletCollection, tmpFolder, buildingFile, null, maximalAreaSplitParcel, minimalAreaSplitParcel,
-				maximalWidthSplitParcel, lenDriveway, isArt3AllowsIsolatedParcel);
+				maximalWidthSplitParcel, lenDriveway, allowIsolatedParcel);
 	}
 	
 	/**
@@ -204,17 +204,17 @@ public class Densification {
 	 *            Shapefile representing the roads (optional).
 	 * @param profileFile
 	 *            File containing the .json description of the urban scene profile planed to be simulated on this zone.
-	 * @param isArt3AllowsIsolatedParcel
+	 * @param allowIsolatedParcel
 	 *            true if the simulated parcels have the right to be isolated from the road, false otherwise.
 	 * @return The input parcel {@link SimpleFeatureCollection} with the marked parcels replaced by the simulated parcels. All parcels have the
 	 *         {@link fr.ign.artiscales.parcelFunction.ParcelSchema#getSFBMinParcel()} schema. * @throws Exception
 	 */
 	public static SimpleFeatureCollection densification(SimpleFeatureCollection parcelCollection, SimpleFeatureCollection isletCollection,
-			File tmpFolder, File buildingFile, File roadFile, File profileFile, boolean isArt3AllowsIsolatedParcel) throws Exception {
+			File tmpFolder, File buildingFile, File roadFile, File profileFile, boolean allowIsolatedParcel) throws Exception {
 		ProfileUrbanFabric profile = ProfileUrbanFabric.convertJSONtoProfile(profileFile);
 		return densification(parcelCollection, isletCollection, tmpFolder, buildingFile, roadFile,
 				profile.getMaximalArea(), profile.getMinimalArea(), profile.getMaximalWidth(), profile.getLenDriveway(),
-				isArt3AllowsIsolatedParcel);
+				allowIsolatedParcel);
 	}
 	
 	/**
@@ -235,18 +235,18 @@ public class Densification {
 	 *            Shapefile representing the roads (optional).
 	 * @param profile
 	 *            ProfileUrbanFabric of the simulated urban scene.
-	 * @param isArt3AllowsIsolatedParcel
+	 * @param allowIsolatedParcel
 	 *            true if the simulated parcels have the right to be isolated from the road, false otherwise.
 	 * @return The input parcel {@link SimpleFeatureCollection} with the marked parcels replaced by the simulated parcels. All parcels have the
 	 *         {@link fr.ign.artiscales.parcelFunction.ParcelSchema#getSFBMinParcel()} schema.
 	 * @throws Exception
 	 */
 	public static SimpleFeatureCollection densificationOrNeighborhood(SimpleFeatureCollection parcelCollection, SimpleFeatureCollection isletCollection,
-			File tmpFolder, File buildingFile, File roadFile, ProfileUrbanFabric profile, boolean isArt3AllowsIsolatedParcel) throws Exception {
+			File tmpFolder, File buildingFile, File roadFile, ProfileUrbanFabric profile, boolean allowIsolatedParcel) throws Exception {
 		// We flagcut the parcels which size is inferior to 4x the max parcel size
 		SimpleFeatureCollection parcelDensified = densification(MarkParcelAttributeFromPosition.markParcelsInf(parcelCollection, (int) profile.getMaximalArea()*4), isletCollection, tmpFolder, buildingFile, roadFile,
 				profile.getMaximalArea(), profile.getMinimalArea(), profile.getMaximalWidth(), profile.getLenDriveway(),
-				isArt3AllowsIsolatedParcel);
+				allowIsolatedParcel);
 		//if parcels are too big, we try to create neighborhoods inside them with the consolidation algorithm
 		//We first re-mark the parcels that were marked. 
 		parcelDensified = MarkParcelAttributeFromPosition.markAlreadyMarkedParcels(parcelDensified, parcelCollection);

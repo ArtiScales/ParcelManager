@@ -11,23 +11,41 @@ import fr.ign.artiscales.parcelFunction.ParcelSchema;
 
 public class GeneralFields {
 
+	/**
+	 * Represent the general permission of the zones. Its default name is '<b>TYPEZONE</b>' and can be of three different types:
+	 * <ul>
+	 * <li><b>U</b>: Already urbanized land,</li>
+	 * <li><b>AU</b>: Not urbanized land but open to new developments,</li>
+	 * <li><b>N</b>: Not urbanized land and not open to new developments.</li>
+	 * </ul>
+	 */
 	static String zoneGenericNameField = "TYPEZONE";
+	/**
+	 * Precise special rules on a zone. Its default name is '<b>LIBELLE</b>'
+	 */
 	static String zonePreciseNameField = "LIBELLE";
+	/**
+	 * Type of parcels. Mostly defines their attributes the call of the schemas for re-assignation. Its default value is 'french'.
+	 */
+	static String parcelFieldType = "french";
 
 	/**
-	 * This method returns the parcels of a given collection that have been simulated.
-	 * It selects the parcels if the length of the filed value for the <i>SECTION</i> information is upper than 2 (French Parcel have a two letters section, and Parcel Manager creates longer section names)
-	 * Other methods can be set to determine if a parcel has been simulated.
+	 * This method returns the parcels of a given collection that have been simulated. The type of fields must be precise and that can change the specific rule. In the case of
+	 * French Parcels, it selects the parcels if the length of the filed value for the <i>SECTION</i> information is upper than 2 (French Parcel have a two letters section, and
+	 * Parcel Manager creates longer section names) Other methods can be set to determine if a parcel has been simulated.
+	 * 
 	 * @param sfc
 	 *            Parcel collection to sort
 	 * @return The parcel {@link SimpleFeatureCollection} with only the simulated parcels
 	 * @throws IOException
 	 */
-	public static SimpleFeatureCollection getParcelLikeFrenchWithSimulatedFileds(SimpleFeatureCollection sfc) throws IOException  {
+	public static SimpleFeatureCollection getParcelWithSimulatedFileds(SimpleFeatureCollection sfc) throws IOException  {
 		DefaultFeatureCollection result = new DefaultFeatureCollection();
 		Arrays.stream(sfc.toArray(new SimpleFeature[0])).forEach(parcel -> {
-			if (isParcelLikeFrenchHasSimulatedFileds(parcel)) {
+			if (parcelFieldType.equals("french")) {
+				if (isParcelLikeFrenchHasSimulatedFileds(parcel)) {
 					result.add(parcel);
+				}
 			}
 		});
 		return result.collection();
@@ -63,5 +81,13 @@ public class GeneralFields {
 
 	public static void setZonePreciseNameField(String zonePreciseNameField) {
 		GeneralFields.zonePreciseNameField = zonePreciseNameField;
+	}
+
+	public static String getParcelFieldType() {
+		return parcelFieldType;
+	}
+
+	public static void setParcelFieldType(String fieldType) {
+		GeneralFields.parcelFieldType = fieldType;
 	}
 }

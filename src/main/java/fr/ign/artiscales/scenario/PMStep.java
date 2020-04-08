@@ -16,6 +16,7 @@ import org.opengis.referencing.FactoryException;
 import org.opengis.referencing.NoSuchAuthorityCodeException;
 
 import fr.ign.artiscales.analysis.DensificationStudy;
+import fr.ign.artiscales.fields.GeneralFields;
 import fr.ign.artiscales.fields.french.FrenchParcelFields;
 import fr.ign.artiscales.goal.ConsolidationDivision;
 import fr.ign.artiscales.goal.Densification;
@@ -81,10 +82,6 @@ public class PMStep {
 	 */
 	private static boolean GENERATEATTRIBUTES = true;
 	/**
-	 * Type of parcel fields to re-assign
-	 */
-	private static String parcelType = "french";
-	/**
 	 * If true, save a shapefile containing only the simulated parcels in the temporary folder for every goal simulated.
 	 */
 	private static boolean SAVEINTERMEDIATERESULT = false; 
@@ -101,7 +98,7 @@ public class PMStep {
 		//convert the parcel to a common type
 		ShapefileDataStore shpDSParcel = new ShapefileDataStore(PARCELFILE.toURI().toURL());
 		SimpleFeatureCollection parcel = DataUtilities.collection(shpDSParcel.getFeatureSource().getFeatures());
-		switch (parcelType) {
+		switch (GeneralFields.getParcelFieldType()) {
 		case "french":
 			parcel = FrenchParcelFields.frenchParcelToMinParcel(parcel);
 			break;
@@ -151,7 +148,7 @@ public class PMStep {
 		}
 		File output = new File(OUTFOLDER, "parcelCuted-" + goal + "-"+ urbanFabricType + ".shp");
 		if (GENERATEATTRIBUTES) {
-			switch (parcelType) {
+			switch (GeneralFields.getParcelFieldType()) {
 			case "french":
 				System.out.println("we set attribute as a french parcel");
 				parcelCut = FrenchParcelFields.setOriginalFrenchParcelAttributes(parcelCut, shpDSParcel.getFeatureSource().getFeatures());
@@ -296,14 +293,6 @@ public class PMStep {
 
 	public static void setGENERATEATTRIBUTES(boolean gENERATEATTRIBUTES) {
 		GENERATEATTRIBUTES = gENERATEATTRIBUTES;
-	}
-
-	public static String getParcelType() {
-		return parcelType;
-	}
-
-	public static void setParcelType(String parcelType) {
-		PMStep.parcelType = parcelType;
 	}
 
 	public static boolean isDEBUG() {

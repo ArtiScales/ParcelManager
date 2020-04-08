@@ -1,10 +1,11 @@
 {
-	"largeStreetWidth": "19",
 	"largeStreetLevel": "2",
 	"decompositionLevelWithoutStreet": "0",
+	"largeStreetWidth": "20",
 	"streetWidth": "12",	
 	"maximalArea":"5500",	
-	"minimalArea":"600",
+	"minimalArea":"800",
+	"maximalWidth": "15",
 	"nameBuildingType":"midBlockFlat",
-	"lenDriveway":"13"
+	"lenDriveway":"12"
 }
