@@ -13,7 +13,6 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.data.simple.SimpleFeatureIterator;
 import org.locationtech.jts.geom.Geometry;
-import org.locationtech.jts.geom.GeometryCollection;
 import org.locationtech.jts.geom.LineString;
 import org.locationtech.jts.geom.MultiLineString;
 import org.locationtech.jts.geom.Polygon;
@@ -439,12 +438,7 @@ private Pair<Geometry,Geometry> getIntersectionDifference(Geometry a, Geometry b
         continue;
       }
       // We list the segments of the polygon with road access
-      // List<LineString> lExtekrior = getSegments(polyWithRoadAcces.getExteriorRing());
-      List<LineString> lExterior = new ArrayList<LineString>();
-  	  GeometryCollection lala = Geom.generateLineStringFromPolygon(polyWithRoadAcces);
-	  for (int j = 0; j < lala.getNumGeometries(); j++) {
-		lExterior.add((LineString) lala.getGeometryN(j));
-	  }
+       List<LineString> lExterior = Geom.getSegments(polyWithRoadAcces.getExteriorRing());
       // We keep the ones that does not intersect the buffer of new no-road-access polygon and the 
       List<LineString> lExteriorToKeep = lExterior.stream().filter(x -> (!buffer.contains(x)))
     		  .filter(x -> (!this.getExtAsGeom().buffer(0.1).contains(x) && !isRoadPolygonIntersectsLine(roads,x)))

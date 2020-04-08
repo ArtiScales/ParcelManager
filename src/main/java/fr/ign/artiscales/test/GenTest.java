@@ -43,7 +43,7 @@ public class GenTest {
 		File profileFolder = new File(rootFolder, "profileBuildingType");
 		File outFolder = new File(rootFolder, "out");
 		File statFolder = new File(outFolder, "stat");
-
+		statFolder.mkdirs();
 		ShapefileDataStore shpDSParcel = new ShapefileDataStore(parcelFile.toURI().toURL());
 		SimpleFeatureCollection parcel = ParcelGetter.getFrenchParcelByZip(shpDSParcel.getFeatureSource().getFeatures(), "25267");
 		ProfileUrbanFabric profile = ProfileUrbanFabric.convertJSONtoProfile(new File(profileFolder, "detachedHouse.json"));
@@ -107,7 +107,6 @@ public class GenTest {
 		SimpleFeatureCollection finaux3 = FrenchParcelFields.setOriginalFrenchParcelAttributes(salut, parcel);
 		Collec.exportSFC(finaux3, new File(outFolder, "parcelDensification.shp"));
 		MakeStatisticGraphs.makeAreaGraph(new File(outFolder, "parcelDensification.shp"), statFolder);
-		System.out.println(ParcelState.isArt3AllowsIsolatedParcel(parcMarked.features().next(), predicateFile));
 
 		shpDSParcel.dispose();
 	}
