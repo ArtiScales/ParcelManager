@@ -284,7 +284,7 @@ public class MarkParcelAttributeFromPosition {
 	public static SimpleFeatureCollection markRandomParcels(SimpleFeatureCollection parcels, String zoningType,
 			File zoningFile, double minSize, int nbParcelToMark) throws NoSuchAuthorityCodeException, FactoryException {
 		if (zoningFile != null && zoningType != null) {
-			parcels = markParcelIntersectZoningType(parcels, zoningType, zoningFile);
+			parcels = markParcelIntersectGenericZoningType(parcels, zoningType, zoningFile);
 		}
 		List<SimpleFeature> list = Arrays.stream(parcels.toArray(new SimpleFeature[0])).filter(feat -> 
 		((Geometry)feat.getDefaultGeometry()).getArea() > minSize).collect(Collectors.toList());
@@ -464,6 +464,7 @@ public class MarkParcelAttributeFromPosition {
 
 	/**
 	 * Mark parcels that intersects a certain type of zoning.
+	 * TODO revoir le marquage pour prendre en compte les zones secondaires
 	 * 
 	 * @param parcels
 	 *            Input parcel {@link SimpleFeatureCollection}
@@ -477,7 +478,7 @@ public class MarkParcelAttributeFromPosition {
 	 * @throws IOException
 	 * @throws Exception
 	 */
-	public static SimpleFeatureCollection markParcelIntersectZoningType(SimpleFeatureCollection parcels, String zoningType, File zoningFile) throws NoSuchAuthorityCodeException, FactoryException {
+	public static SimpleFeatureCollection markParcelIntersectGenericZoningType(SimpleFeatureCollection parcels, String zoningType, File zoningFile) throws NoSuchAuthorityCodeException, FactoryException {
 		final SimpleFeatureType featureSchema = ParcelSchema.getSFBMinParcelSplit().getFeatureType();
 		DefaultFeatureCollection result = new DefaultFeatureCollection();
 		

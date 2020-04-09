@@ -24,7 +24,7 @@ import fr.ign.cogit.parameter.ProfileUrbanFabric;
  * @author Maxime Colomb
  *
  */
-public class GenTest {
+public class GeneralTest {
 
 	// /////////////////////////
 	// //////// try the parcelGenMotif method
@@ -32,7 +32,7 @@ public class GenTest {
 	public static void main(String[] args) throws Exception {
 
 		File tmpFolder = new File("/tmp/");
-		File rootFolder = new File("src/main/resources/testData/");
+		File rootFolder = new File("src/main/resources/GeneralTest/");
 
 		File roadFile = new File(rootFolder, "road.shp");
 		File zoningFile = new File(rootFolder, "zoning.shp");
@@ -46,7 +46,9 @@ public class GenTest {
 		statFolder.mkdirs();
 		ShapefileDataStore shpDSParcel = new ShapefileDataStore(parcelFile.toURI().toURL());
 		SimpleFeatureCollection parcel = ParcelGetter.getFrenchParcelByZip(shpDSParcel.getFeatureSource().getFeatures(), "25267");
-		ProfileUrbanFabric profile = ProfileUrbanFabric.convertJSONtoProfile(new File(profileFolder, "detachedHouse.json"));
+		ProfileUrbanFabric profileDetached = ProfileUrbanFabric.convertJSONtoProfile(new File(profileFolder, "detachedHouse.json"));
+		ProfileUrbanFabric profileSmallHouse = ProfileUrbanFabric.convertJSONtoProfile(new File(profileFolder, "smallHouse.json"));
+		ProfileUrbanFabric profilelargeCollective = ProfileUrbanFabric.convertJSONtoProfile(new File(profileFolder, "largeCollective.json"));
 
 		/////////////////////////
 		// zoneTotRecomp
@@ -64,9 +66,9 @@ public class GenTest {
 			System.exit(1);
 		}
 		ZoneDivision.SAVEINTERMEDIATERESULT = true;
-		SimpleFeatureCollection parcelCuted = ZoneDivision.zoneDivision(zone, parcel, tmpFolder, zoningFile, profile.getMaximalArea(),
-				profile.getMinimalArea(), profile.getMaximalWidth(), profile.getStreetWidth(), profile.getLargeStreetLevel(),
-				profile.getLargeStreetWidth(), profile.getDecompositionLevelWithoutStreet());
+		SimpleFeatureCollection parcelCuted = ZoneDivision.zoneDivision(zone, parcel, tmpFolder, zoningFile, profilelargeCollective.getMaximalArea(),
+				profilelargeCollective.getMinimalArea(), profilelargeCollective.getMaximalWidth(), profilelargeCollective.getStreetWidth(), profilelargeCollective.getLargeStreetLevel(),
+				profilelargeCollective.getLargeStreetWidth(), profilelargeCollective.getDecompositionLevelWithoutStreet());
 		Collec.exportSFC(parcelCuted, new File(tmpFolder, "parcelTotZoneTmp.shp"));
 		SimpleFeatureCollection finaux = FrenchParcelFields.setOriginalFrenchParcelAttributes(parcelCuted, parcel);
 		Collec.exportSFC(finaux, new File(outFolder, "parcelTotZone.shp"));
@@ -83,14 +85,14 @@ public class GenTest {
 		System.out.println("/////////////////////////");
 		ConsolidationDivision.DEBUG = true;
 		ConsolidationDivision.SAVEINTERMEDIATERESULT = true;
-		SimpleFeatureCollection testmp = MarkParcelAttributeFromPosition.markParcelIntersectPolygonIntersection(finaux, polygonIntersection);
-		SimpleFeatureCollection test = MarkParcelAttributeFromPosition.markParcelIntersectZoningType(testmp, "NC", zoningFile);
-		SimpleFeatureCollection cuted = ConsolidationDivision.consolidationDivision(test, tmpFolder, profile.getMaximalArea(),
-				profile.getMinimalArea(), profile.getMaximalWidth(), profile.getStreetWidth(), profile.getLargeStreetLevel(),
-				profile.getLargeStreetWidth(), profile.getDecompositionLevelWithoutStreet());
-		SimpleFeatureCollection finaux2 = FrenchParcelFields.setOriginalFrenchParcelAttributes(cuted, parcel);
-		Collec.exportSFC(finaux2, new File(outFolder, "ParcelConsolidRecomp.shp"));
-		StatParcelStreetRatio.streetRatioParcels(test, finaux2, statFolder, roadFile);
+		SimpleFeatureCollection intersected = MarkParcelAttributeFromPosition.markParcelIntersectPolygonIntersection(finaux, polygonIntersection);
+		SimpleFeatureCollection normalZone = MarkParcelAttributeFromPosition.markParcelIntersectGenericZoningType(intersected, "NC", zoningFile);
+		SimpleFeatureCollection cutedNormalZone = ConsolidationDivision.consolidationDivision(normalZone, tmpFolder, profileDetached.getMaximalArea(),
+				profileDetached.getMinimalArea(), profileDetached.getMaximalWidth(), profileDetached.getStreetWidth(), profileDetached.getLargeStreetLevel(),
+				profileDetached.getLargeStreetWidth(), profileDetached.getDecompositionLevelWithoutStreet());
+		SimpleFeatureCollection finalNormalZone = FrenchParcelFields.setOriginalFrenchParcelAttributes(cutedNormalZone, parcel);
+		Collec.exportSFC(finalNormalZone, new File(outFolder, "ParcelConsolidRecomp.shp"));
+		StatParcelStreetRatio.streetRatioParcels(normalZone, finalNormalZone, statFolder, roadFile);
 		MakeStatisticGraphs.makeAreaGraph(new File(outFolder, "ParcelConsolidRecomp.shp"), statFolder);
 
 		/////////////////////////
@@ -99,10 +101,10 @@ public class GenTest {
 		System.out.println("/////////////////////////");
 		System.out.println("parcelDensification");
 		System.out.println("/////////////////////////");
-		SimpleFeatureCollection parcMarked = MarkParcelAttributeFromPosition.markParcelIntersectPolygonIntersection(finaux2, polygonIntersection);
-		SimpleFeatureCollection toDensify = MarkParcelAttributeFromPosition.markParcelIntersectZoningType(parcMarked, "U", zoningFile);
-		SimpleFeatureCollection salut = Densification.densification(toDensify, CityGeneration.createUrbanIslet(finaux2), tmpFolder, buildingFile,
-				new File("/tmp/road.shp"), profile.getMaximalArea(), profile.getMinimalArea(), profile.getMaximalWidth(), profile.getLenDriveway(),
+		SimpleFeatureCollection parcMarked = MarkParcelAttributeFromPosition.markParcelIntersectPolygonIntersection(finalNormalZone, polygonIntersection);
+		SimpleFeatureCollection toDensify = MarkParcelAttributeFromPosition.markParcelIntersectGenericZoningType(parcMarked, "U", zoningFile);
+		SimpleFeatureCollection salut = Densification.densification(toDensify, CityGeneration.createUrbanIslet(finalNormalZone), tmpFolder, buildingFile,
+				new File("/tmp/road.shp"), profileSmallHouse.getMaximalArea(), profileSmallHouse.getMinimalArea(), profileSmallHouse.getMaximalWidth(), profileSmallHouse.getLenDriveway(),
 				ParcelState.isArt3AllowsIsolatedParcel(parcMarked.features().next(), predicateFile));
 		SimpleFeatureCollection finaux3 = FrenchParcelFields.setOriginalFrenchParcelAttributes(salut, parcel);
 		Collec.exportSFC(finaux3, new File(outFolder, "parcelDensification.shp"));

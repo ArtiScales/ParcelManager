@@ -229,9 +229,9 @@ public class PMStep {
 		// parcel marking with an attribute selection (mainly zoning plan, but it can be other files)
 		if (ZONINGFILE != null && ZONINGFILE.exists() && zone != null && zone != "") {
 			if (parcel.size() > 0) {
-				parcel = MarkParcelAttributeFromPosition.markParcelIntersectZoningType(parcel, zone, ZONINGFILE);
+				parcel = MarkParcelAttributeFromPosition.markParcelIntersectGenericZoningType(parcel, zone, ZONINGFILE);
 			} else {
-				parcel = MarkParcelAttributeFromPosition.markParcelIntersectZoningType(parcel, zone, ZONINGFILE);
+				parcel = MarkParcelAttributeFromPosition.markParcelIntersectGenericZoningType(parcel, zone, ZONINGFILE);
 			}
 		}
 		System.out.println();
