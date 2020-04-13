@@ -251,28 +251,9 @@ public class ParcelState {
 		return bestEval;
 	}
 
-	public static boolean isParcelInCell(SimpleFeature parcelIn, SimpleFeatureCollection cellsCollection)
-			throws Exception {
-		Geometry geom = (Geometry) parcelIn.getDefaultGeometry();
-		cellsCollection = Collec.snapDatas(cellsCollection, geom);
-		boolean result = false;
-		// import of the cells of MUP-City outputs
-		try (SimpleFeatureIterator cellsCollectionIt = cellsCollection.features()) {
-			while (cellsCollectionIt.hasNext()) {
-				if (((Geometry) cellsCollectionIt.next().getDefaultGeometry()).intersects(geom)) {
-					result = true;
-					break;
-				}
-			}
-		} catch (Exception problem) {
-			problem.printStackTrace();
-		}
-		return result;
-	}
-
 	/**
 	 * Return a single Zone Generic Name that a parcels intersect. If the parcel intersects multiple, we select the one that covers the most area
-	 * 
+	 * @deprecated
 	 * @param parcelIn
 	 * @param zoningFile
 	 * @return Zone Generic Name that a parcels intersect
@@ -287,7 +268,7 @@ public class ParcelState {
 
 	/**
 	 * return the Zone Generic Name that a parcels intersect result is sorted by the largest intersected zone to the lowest
-	 * 
+	 * @deprecated
 	 * @param parcelIn
 	 * @param zoningFile
 	 * @return A list of the multiple parcel intersected, sorted by area of occupation

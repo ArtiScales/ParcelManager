@@ -33,3 +33,6 @@ src/main/resources/*/out/*
 *.qgs
 *.qgs~
 *.qix
+
+# not necessary test
+src/main/resources/smallTest/*

@@ -75,26 +75,60 @@ public class ConsolidationDivision {
 	 * @param parcels
 	 *            The parcels to be merged and cut. Must be marked with the SPLIT filed (see markParcelIntersectMUPOutput for example, with the method concerning MUP-City's output)
 	 * @param tmpFolder
-	 *            : A temporary folder where will be saved intermediate results
+	 *            A temporary folder where will be saved intermediate results
 	 * @param maximalArea
-	 *            : Area under which a parcel won"t be anymore cut
+	 *            Area under which a parcel won"t be anymore cut
 	 * @param minimalArea
-	 *            : Area under which a polygon won't be kept as a parcel
+	 *            Area under which a polygon won't be kept as a parcel
 	 * @param maximalWidth
-	 *            : The width of parcel connection to street network under which the parcel won"t be anymore cut
+	 *            The width of parcel connection to street network under which the parcel won"t be anymore cut
 	 * @param smallStreetWidth
-	 *            : the width of small street network segments
+	 *            The width of small street network segments
 	 * @param largeStreetLevel
-	 *            : level of decomposition after which the streets are considered as large streets
+	 *            Level of decomposition after which the streets are considered as large streets
 	 * @param largeStreetWidth
-	 *            : the width of large street network segments
+	 *            The width of large street network segments
 	 * @param decompositionLevelWithoutStreet
-	 *            : Number of the final row on which street generation doesn't apply
+	 *            Number of the final row on which street generation doesn't apply
 	 * @return the set of parcel with decomposition
 	 * @throws Exception
 	 */
 	public static SimpleFeatureCollection consolidationDivision(SimpleFeatureCollection parcels, File tmpFolder, double maximalArea,
-			double minimalArea, double maximalWidth, double smallStreetWidth, int largeStreetLevel, double largeStreetWidth, int decompositionLevelWithoutStreet) throws Exception {
+			double minimalArea, double maximalWidth, double smallStreetWidth, int largeStreetLevel, double largeStreetWidth,
+			int decompositionLevelWithoutStreet) throws Exception {
+		return consolidationDivision(parcels, tmpFolder, null, maximalArea, minimalArea, maximalWidth, smallStreetWidth, largeStreetLevel,
+				largeStreetWidth, decompositionLevelWithoutStreet);
+	}
+		
+	/**
+	 * Method that merges the contiguous marked parcels into zones and then split those zones with a given parcel division algorithm (by default, the Oriented Bounding Box).
+	 * 
+	 * @param parcels
+	 *            The parcels to be merged and cut. Must be marked with the SPLIT filed (see markParcelIntersectMUPOutput for example, with the method concerning MUP-City's output)
+	 * @param tmpFolder
+	 *            A temporary folder where will be saved intermediate results
+	 * @param polygonIntersection
+	 *            Optional polygon layer that was used to process to the selection of parcels with their intersection. Used to keep only the intersecting simulated parcels.
+	 * @param maximalArea
+	 *            Area under which a parcel won"t be anymore cut
+	 * @param minimalArea
+	 *            Area under which a polygon won't be kept as a parcel
+	 * @param maximalWidth
+	 *            The width of parcel connection to street network under which the parcel won"t be anymore cut
+	 * @param smallStreetWidth
+	 *            The width of small street network segments
+	 * @param largeStreetLevel
+	 *            Level of decomposition after which the streets are considered as large streets
+	 * @param largeStreetWidth
+	 *            The width of large street network segments
+	 * @param decompositionLevelWithoutStreet
+	 *            Number of the final row on which street generation doesn't apply
+	 * @return the set of parcel with decomposition
+	 * @throws Exception
+	 */
+	public static SimpleFeatureCollection consolidationDivision(SimpleFeatureCollection parcels, File tmpFolder, File polygonIntersection,
+			double maximalArea, double minimalArea, double maximalWidth, double smallStreetWidth, int largeStreetLevel, double largeStreetWidth,
+			int decompositionLevelWithoutStreet) throws Exception {
 
 		DefaultFeatureCollection parcelSaved = new DefaultFeatureCollection();
 		parcelSaved.addAll(parcels);
@@ -237,6 +271,16 @@ public class ConsolidationDivision {
 			Collec.exportSFC(result, new File(tmpFolder, "step4.shp"));
 			System.out.println("done step 4");
 		}
+		
+//		//If the selection of parcel was based on a polygon intersection file, we keep only the intersection parcels
+//		//TODO avec une emprise plus large que juste les parcelles : regarder du côté de morpholim pour un calculer un buffer suffisant ?)
+//		if (polygonIntersection != null && polygonIntersection.exists()) {
+//			ShapefileDataStore sdsInter = new ShapefileDataStore(polygonIntersection.toURI().toURL());
+//			SimpleFeatureCollection sfc = sdsInter.getFeatureSource().getFeatures();
+//			
+//			
+//			sdsInter.dispose();
+//		}
 		return result;
 	}
 

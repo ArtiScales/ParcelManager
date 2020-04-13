@@ -1,12 +1,15 @@
 package fr.ign.artiscales.fields;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.feature.DefaultFeatureCollection;
 import org.opengis.feature.simple.SimpleFeature;
 
+import fr.ign.artiscales.fields.french.FrenchZoningSchemas;
 import fr.ign.artiscales.parcelFunction.ParcelSchema;
 
 public class GeneralFields {
@@ -28,7 +31,7 @@ public class GeneralFields {
 	 * Type of parcels. Mostly defines their attributes the call of the schemas for re-assignation. Its default value is 'french'.
 	 */
 	static String parcelFieldType = "french";
-
+	static String zoneCommunityCode = "DEPCOM";
 	/**
 	 * This method returns the parcels of a given collection that have been simulated. The type of fields must be precise and that can change the specific rule. In the case of
 	 * French Parcels, it selects the parcels if the length of the filed value for the <i>SECTION</i> information is upper than 2 (French Parcel have a two letters section, and
@@ -50,6 +53,22 @@ public class GeneralFields {
 		});
 		return result.collection();
 	}
+	
+	/**
+	 * Trivial method to get the genericZone list of a type
+	 * @param genericZone the given generic zone
+	 * @return the given list( as final)
+	 */
+	public static List<String> getGenericZoneUsualNames(String genericZone) {
+		List<String> genericZoneUsualNames = new ArrayList<String>();
+		switch (GeneralFields.getParcelFieldType()) {
+		case "french":
+			genericZoneUsualNames = FrenchZoningSchemas.getUsualNames(genericZone);
+			break;
+		}
+		return genericZoneUsualNames;
+	}
+
 	
 	/**
 	 * This method allows to determine if a parcel has been simulated. It looks if the length of filed value for the <i>SECTION</i> information is upper than 2 (French Parcel have
@@ -89,5 +108,13 @@ public class GeneralFields {
 
 	public static void setParcelFieldType(String fieldType) {
 		GeneralFields.parcelFieldType = fieldType;
+	}
+
+	public static String getZoneCommunityCode() {
+		return zoneCommunityCode;
+	}
+
+	public static void setZoneCommunityCode(String zoneCommunityCode) {
+		GeneralFields.zoneCommunityCode = zoneCommunityCode;
 	}
 }

@@ -16,6 +16,7 @@ import org.opengis.referencing.NoSuchAuthorityCodeException;
 
 import fr.ign.artiscales.fields.french.FrenchParcelFields;
 import fr.ign.artiscales.parcelFunction.ParcelState;
+import fr.ign.cogit.geoToolsFunctions.vectors.Collec;
 
 public class ArtiScalesParcelFields {
 	/**
@@ -93,7 +94,7 @@ public class ArtiScalesParcelFields {
 				if (!newlyGenerate && parcel.getAttribute("DoWeSimul") != null) {
 					featureBuilder.set("DoWeSimul", parcel.getAttribute("DoWeSimul"));
 					featureBuilder.set("eval", parcel.getAttribute("eval"));
-				} else if ((allOrCell && newlyGenerate) || (ParcelState.isParcelInCell(parcel, cellsSFS) && !iPB)) {
+				} else if ((allOrCell && newlyGenerate) || (Collec.isFeatIntersectsSFC(parcel, cellsSFS) && !iPB)) {
 					featureBuilder.set("DoWeSimul", "true");
 					featureBuilder.set("eval", ParcelState.getEvalInParcel(parcel, polygonIntersectionFile));
 				} else {

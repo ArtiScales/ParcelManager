@@ -33,21 +33,21 @@ public class CompareSimulatedParcelsWithEvolution {
 		Instant start = Instant.now();
 		
 		//definition of the shapefiles representing two set of parcel
-		File rootFolder = new File("/home/ubuntu/PMtest/SeineEtMarne/");
-		File outFolder = new File("/home/ubuntu/PMtest/SeineEtMarne/out");
-		File tmpFolder = new File("/home/ubuntu/PMtest/SeineEtMarne/out/");
+		File rootFolder = new File("src/main/resources/ParcelComparison/");
+		File outFolder = new File(rootFolder,  "out");
+		File tmpFolder = new File("/tmp/");
 		outFolder.mkdirs();
-		File file1 = new File(rootFolder, "PARCELLE03.SHP");
-		File file2 = new File(rootFolder, "PARCELLE12In.shp");
+		File file1 = new File(rootFolder, "parcel2003.shp");
+		File file2 = new File(rootFolder, "parcel2012.shp");
 		
 		//definition of a parameter file 
-		File scenarioFile = new File(rootFolder, "jsonEx.json");
+		File scenarioFile = new File(rootFolder, "scenario.json");
 		
-		// Mark and export the parcels that have changed between the two set of time
-		ParcelCollection.markDiffParcel(file1, file2, rootFolder, tmpFolder);
-
-		// create ilots for parcel densification in case they haven't been generated before
-		CityGeneration.createUrbanIslet(file1, rootFolder);
+//		// Mark and export the parcels that have changed between the two set of time
+//		ParcelCollection.markDiffParcel(file1, file2, outFolder, tmpFolder);
+//
+//		// create ilots for parcel densification in case they haven't been generated before
+//		CityGeneration.createUrbanIslet(file1, rootFolder);
 		
 		PMScenario.setSaveIntermediateResult(true);
 		PMStep.setGENERATEATTRIBUTES(false);

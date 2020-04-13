@@ -3,22 +3,22 @@
 	"outFolder": "src/main/resources/FigureIterationStep/out",
 	"steps": [
 		{
-			"goal": "consolid",
+			"goal": "consolidationDivision",
 			"parcelProcess": "OBB",
 			"urbanFabricType": "smallHouse"
 		},
 		{
-			"goal": "consolid",
+			"goal": "consolidationDivision",
 			"parcelProcess": "OBB",
 			"urbanFabricType": "smallCollective"
 		},
 		{
-			"goal": "consolid",
+			"goal": "consolidationDivision",
 			"parcelProcess": "OBB",
 			"urbanFabricType": "largeCollective"
 		},
 		{
-			"goal": "consolid",
+			"goal": "consolidationDivision",
 			"parcelProcess": "OBB",
 			"urbanFabricType": "detachedHouse"
 		}]

@@ -59,25 +59,22 @@ public class PMScenario {
 					predicateFile = new File(rootFolder, "predicate.csv");
 					parcelFile = new File(rootFolder, "parcel.shp");
 					isletFile = new File(rootFolder, "islet.shp");
-					profileFolder = new File(rootFolder, "profileBuildingType");
+					profileFolder = new File(rootFolder, "profileUrbanFabric");
 				}
 			}
-
+			
+			//if the line is an array, it describes a PMSetp
 			if (token == JsonToken.FIELD_NAME && "steps".equals(parser.getCurrentName())) {
 				token = parser.nextToken();
 				String goal = "";
 				String parcelProcess = "";
-				String zone = "";
+				String genericZone = "";
+				String preciseZone = "";
 				String communityNumber = "";
 				String communityType = "";
-				String buildingType = "";
-
+				String urbanFabric = "";
 				while (token != JsonToken.END_ARRAY) {
 					token = parser.nextToken();
-
-					// must i recreate a json object ? or can I map this object directly into a new java object? Maybe, but tired of searching
-					// System.out.println(token + " - " + parser.getCurrentName());
-
 					if (token == JsonToken.FIELD_NAME && parser.getCurrentName().equals("goal")) {
 						token = parser.nextToken();
 						if (token == JsonToken.VALUE_STRING) {
@@ -90,10 +87,16 @@ public class PMScenario {
 							parcelProcess = parser.getText();
 						}
 					}
-					if (token == JsonToken.FIELD_NAME && parser.getCurrentName().equals("zone")) {
+					if (token == JsonToken.FIELD_NAME && parser.getCurrentName().equals("genericZone")) {
 						token = parser.nextToken();
 						if (token == JsonToken.VALUE_STRING) {
-							zone = parser.getText();
+							genericZone = parser.getText();
+						}
+					}
+					if (token == JsonToken.FIELD_NAME && parser.getCurrentName().equals("preciseZone")) {
+						token = parser.nextToken();
+						if (token == JsonToken.VALUE_STRING) {
+							preciseZone = parser.getText();
 						}
 					}
 					if (token == JsonToken.FIELD_NAME && parser.getCurrentName().equals("communityNumber")) {
@@ -111,15 +114,16 @@ public class PMScenario {
 					if (token == JsonToken.FIELD_NAME && parser.getCurrentName().equals("urbanFabricType")) {
 						token = parser.nextToken();
 						if (token == JsonToken.VALUE_STRING) {
-							buildingType = parser.getText();
+							urbanFabric = parser.getText();
 						}
 					}
 					if (token == JsonToken.END_OBJECT) {
 						List<PMStep> list = getStepList();
-						PMStep step = new PMStep(goal, parcelProcess, zone, communityNumber, communityType,
-								buildingType);
+						PMStep step = new PMStep(goal, parcelProcess, genericZone, preciseZone, communityNumber, communityType,
+								urbanFabric);
 						list.add(step);
 						setStepList(list);
+						goal = parcelProcess = genericZone = preciseZone = communityNumber = communityType = urbanFabric = "";
 					}
 				}
 			}

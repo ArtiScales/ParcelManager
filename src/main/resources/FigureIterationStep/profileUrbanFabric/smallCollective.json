@@ -1,0 +1,11 @@
+{
+	"largeStreetLevel": "4",
+	"decompositionLevelWithoutStreet": "2",
+	"largeStreetWidth": "15",
+	"streetWidth": "9",
+	"maximalArea": "1200",
+	"minimalArea": "400",
+	"maximalWidth": "12",
+	"nameBuildingType": "multiFamilyHouse",
+	"lenDriveway": "7"
+}

@@ -102,17 +102,16 @@ public class ParcelGetter {
 	 *            Name of the searched typology
 	 * @param parcels
 	 *            Collection of parcels
-	 * @param communityFile
+	 * @param zoningFile
 	 *            ShapeFile of the communities with a filed describing their typology
 	 * @return parcels which are included in the communities of a given typology
 	 * @throws IOException
 	 */
-	public static SimpleFeatureCollection getParcelByTypo(String typo, SimpleFeatureCollection parcels, File communityFile)
+	public static SimpleFeatureCollection getParcelByTypo(String typo, SimpleFeatureCollection parcels, File zoningFile)
 			throws IOException {
 
-		ShapefileDataStore communitiesSDS = new ShapefileDataStore(communityFile.toURI().toURL());
-		SimpleFeatureCollection communitiesSFCBig = communitiesSDS.getFeatureSource().getFeatures();
-		SimpleFeatureCollection communitiesSFC = Collec.cropSFC(communitiesSFCBig, parcels);
+		ShapefileDataStore zoningSDS = new ShapefileDataStore(zoningFile.toURI().toURL());
+		SimpleFeatureCollection zoningSFC = Collec.cropSFC(zoningSDS.getFeatureSource().getFeatures(), parcels);
 
 		FilterFactory2 ff = CommonFactoryFinder.getFilterFactory2(GeoTools.getDefaultHints());
 		DefaultFeatureCollection result = new DefaultFeatureCollection();
@@ -125,7 +124,7 @@ public class ParcelGetter {
 					continue;
 				}
 				Filter filter = ff.like(ff.property(typologyField), typo);
-				try (SimpleFeatureIterator itTypo = communitiesSFC.subCollection(filter).features()){
+				try (SimpleFeatureIterator itTypo = zoningSFC.subCollection(filter).features()){
 					while (itTypo.hasNext()) {
 						SimpleFeature typoFeat = itTypo.next();
 						Geometry typoGeom = (Geometry) typoFeat.getDefaultGeometry();
@@ -154,7 +153,7 @@ public class ParcelGetter {
 		} catch (Exception problem) {
 			problem.printStackTrace();
 		}
-		communitiesSDS.dispose();
+		zoningSDS.dispose();
 		return result.collection();
 	}
 
@@ -240,10 +239,14 @@ public class ParcelGetter {
 	 * @return a simple feature collection of parcels having the <i>val</i> value.
 	 * @throws IOException
 	 */
-	public static SimpleFeatureCollection getParcelByZip(SimpleFeatureCollection parcelIn, String val) throws IOException {
+	public static SimpleFeatureCollection getParcelByCommunityCode(SimpleFeatureCollection parcelIn, String val) throws IOException {
 		//we check if the field for zipcodes is present, otherwise we try national types of parcels 
-		if(!Collec.isCollecContainsAttribute(parcelIn, ParcelSchema.getMinParcelCommunityField())) {
-			return getFrenchParcelByZip(parcelIn, val);
+		if (!Collec.isCollecContainsAttribute(parcelIn, ParcelSchema.getMinParcelCommunityField())) {
+			switch (GeneralFields.getParcelFieldType()) {
+			case "french":
+				System.out.println("zob");
+				return getFrenchParcelByZip(parcelIn, val);
+			}
 		}
 		DefaultFeatureCollection result = new DefaultFeatureCollection();
 		Arrays.stream(parcelIn.toArray(new SimpleFeature[0])).forEach(feat -> {

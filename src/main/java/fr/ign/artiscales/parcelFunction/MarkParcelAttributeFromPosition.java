@@ -53,13 +53,24 @@ public class MarkParcelAttributeFromPosition {
 //		System.out.println(stopTime - startTime);
 //		sdsIslet.dispose();
 //		sdsParcel.dispose();
+//	
+//	File parcelsMarkedF = new File("/home/ubuntu/workspace/ParcelManager/src/main/resources/smallTest/parcel.shp");
+//	File zoningFile = new File("/home/ubuntu/workspace/ParcelManager/src/main/resources/smallTest/zoning.shp");
+//	long startTime = System.currentTimeMillis();
+//	ShapefileDataStore sdsParcel = new ShapefileDataStore(parcelsMarkedF.toURI().toURL());
+//	SimpleFeatureCollection parcels = sdsParcel.getFeatureSource().getFeatures();
+//	Collec.exportSFC(markParcelIntersectZoningWithoutPreciseZonings(parcels, "AU", Arrays.asList("AU2"), zoningFile), new File("/tmp/d"));
+//	sdsParcel.dispose();
+//	long stopTime = System.currentTimeMillis();
+//	System.out.println(stopTime - startTime);
+//	sdsParcel.dispose();
+//	
 //	}
 	
 	/**
 	 * Name of the field containing the parcel's mark 
 	 */
 	static String markFieldName = "SPLIT";
-
 
 	/**
 	 * Mark the parcels that have a connection to the road network, represented either by the void of parcels or road lines (optional)
@@ -257,9 +268,10 @@ public class MarkParcelAttributeFromPosition {
 	 * @return {@link SimpleFeatureCollection} of the input parcels with random marked parcels on the {@link #markFieldName} field.
 	 * @throws NoSuchAuthorityCodeException
 	 * @throws FactoryException
+	 * @throws IOException 
 	 */
-	public static SimpleFeatureCollection markRandomParcels(SimpleFeatureCollection parcels, int minSize,
-			int nbParcelToMark) throws NoSuchAuthorityCodeException, FactoryException {
+	public static SimpleFeatureCollection markRandomParcels(SimpleFeatureCollection parcels, int minSize, int nbParcelToMark)
+			throws NoSuchAuthorityCodeException, FactoryException, IOException {
 		return markRandomParcels(parcels, null, null, minSize, nbParcelToMark);
 	}
 
@@ -280,11 +292,12 @@ public class MarkParcelAttributeFromPosition {
 	 * @return {@link SimpleFeatureCollection} of the input parcels with random marked parcels on the {@link #markFieldName} field.
 	 * @throws NoSuchAuthorityCodeException
 	 * @throws FactoryException
+	 * @throws IOException 
 	 */
-	public static SimpleFeatureCollection markRandomParcels(SimpleFeatureCollection parcels, String zoningType,
-			File zoningFile, double minSize, int nbParcelToMark) throws NoSuchAuthorityCodeException, FactoryException {
-		if (zoningFile != null && zoningType != null) {
-			parcels = markParcelIntersectGenericZoningType(parcels, zoningType, zoningFile);
+	public static SimpleFeatureCollection markRandomParcels(SimpleFeatureCollection parcels, String genericZone,
+			File zoningFile, double minSize, int nbParcelToMark) throws NoSuchAuthorityCodeException, FactoryException, IOException {
+		if (zoningFile != null && genericZone != null) {
+			parcels = markParcelIntersectGenericZoningType(parcels, genericZone, zoningFile);
 		}
 		List<SimpleFeature> list = Arrays.stream(parcels.toArray(new SimpleFeature[0])).filter(feat -> 
 		((Geometry)feat.getDefaultGeometry()).getArea() > minSize).collect(Collectors.toList());
@@ -463,12 +476,11 @@ public class MarkParcelAttributeFromPosition {
 	}
 
 	/**
-	 * Mark parcels that intersects a certain type of zoning.
-	 * TODO revoir le marquage pour prendre en compte les zones secondaires
+	 * Mark parcels that intersects a certain type of <i>generic zone</i>.
 	 * 
 	 * @param parcels
 	 *            Input parcel {@link SimpleFeatureCollection}
-	 * @param zoningType
+	 * @param genericZone
 	 *            The big kind of the zoning (either not constructible (NC), urbanizable (U) or to be urbanize (TBU). Other keywords can be tolerate
 	 * @param zoningFile
 	 *            A shapefile containing the zoning plan
@@ -478,15 +490,19 @@ public class MarkParcelAttributeFromPosition {
 	 * @throws IOException
 	 * @throws Exception
 	 */
-	public static SimpleFeatureCollection markParcelIntersectGenericZoningType(SimpleFeatureCollection parcels, String zoningType, File zoningFile) throws NoSuchAuthorityCodeException, FactoryException {
+	public static SimpleFeatureCollection markParcelIntersectGenericZoningType(SimpleFeatureCollection parcels, String genericZone,
+			File zoningFile) throws NoSuchAuthorityCodeException, FactoryException, IOException {
 		final SimpleFeatureType featureSchema = ParcelSchema.getSFBMinParcelSplit().getFeatureType();
 		DefaultFeatureCollection result = new DefaultFeatureCollection();
-		
-		//if features have the schema that the one intended to set, we bypass 
+		ShapefileDataStore shpDSZone = new ShapefileDataStore(zoningFile.toURI().toURL());
+		SimpleFeatureCollection zoningSFC = shpDSZone.getFeatureSource().getFeatures();
+		List<String> genericZoneUsualNames = GeneralFields.getGenericZoneUsualNames(genericZone);
+		// if features have the schema that the one intended to set, we bypass
 		if (featureSchema.equals(parcels.getSchema())) {
 			Arrays.stream(parcels.toArray(new SimpleFeature[0])).forEach(feat -> {
 				try {
-					if (isAlreadyMarked(feat) != 0 && ParcelState.parcelInBigZone(zoningFile, feat).equals(zoningType) ) {
+					if (isAlreadyMarked(feat) != 0 && genericZoneUsualNames.contains(
+							Collec.getFieldFromSFC((Geometry) feat.getDefaultGeometry(), zoningSFC, GeneralFields.getZoneGenericNameField()))) {
 						feat.setAttribute(markFieldName, 1);
 					} else {
 						feat.setAttribute(markFieldName, 0);
@@ -502,15 +518,131 @@ public class MarkParcelAttributeFromPosition {
 		try (SimpleFeatureIterator it = parcels.features()) {
 			while (it.hasNext()) {
 				SimpleFeature feat = it.next();
-				featureBuilder = ParcelSchema.setSFBMinParcelSplitWithFeat(feat,featureBuilder, featureSchema, 0);
-				if (isAlreadyMarked(feat) != 0 && ParcelState.parcelInBigZone(zoningFile, feat).equals(zoningType)) {
+				featureBuilder = ParcelSchema.setSFBMinParcelSplitWithFeat(feat, featureBuilder, featureSchema, 0);
+				if (isAlreadyMarked(feat) != 0 && genericZoneUsualNames
+						.contains(Collec.getFieldFromSFC((Geometry) feat.getDefaultGeometry(), zoningSFC, GeneralFields.getZoneGenericNameField()))) {
 					featureBuilder.set(markFieldName, 1);
-				} 
+				}
 				result.add(featureBuilder.buildFeature(null));
 			}
 		} catch (Exception e) {
 			System.out.println(e);
 		}
+		return result;
+	}
+
+	/**
+	 * Mark parcels that intersects a certain type of a <i>generic zone</i> but not mark them if they are from a given list of <i>precise zone</i>.
+	 * 
+	 * @param parcels
+	 *            Input parcel {@link SimpleFeatureCollection}
+	 * @param genericZone
+	 *            The big kind of the zoning (either not constructible (NC), urbanizable (U) or to be urbanize (TBU). Other keywords can be tolerate
+	 * @param preciseZone
+	 *            List of precise zone to not take into account
+	 * @param zoningFile
+	 *            A shapefile containing the zoning plan
+	 * @return {@link SimpleFeatureCollection} of the input parcels with marked parcels on the {@link #markFieldName} field.
+	 * @return
+	 * @throws NoSuchAuthorityCodeException
+	 * @throws FactoryException
+	 * @throws IOException
+	 */
+	public static SimpleFeatureCollection markParcelIntersectZoningWithoutPreciseZonings(SimpleFeatureCollection parcels, String genericZone,
+			List<String> preciseZone, File zoningFile) throws NoSuchAuthorityCodeException, FactoryException, IOException {
+		final SimpleFeatureType featureSchema = ParcelSchema.getSFBMinParcelSplit().getFeatureType();
+		DefaultFeatureCollection result = new DefaultFeatureCollection();
+		SimpleFeatureBuilder featureBuilder = ParcelSchema.getSFBMinParcelSplit();
+
+		List<String> genericZoneUsualNames = GeneralFields.getGenericZoneUsualNames(genericZone);
+
+		ShapefileDataStore shpDSZone = new ShapefileDataStore(zoningFile.toURI().toURL());
+		SimpleFeatureCollection zoningSFC = shpDSZone.getFeatureSource().getFeatures();
+
+		try (SimpleFeatureIterator it = parcels.features()) {
+			while (it.hasNext()) {
+				SimpleFeature feat = it.next();
+				featureBuilder = ParcelSchema.setSFBMinParcelSplitWithFeat(feat, featureBuilder, featureSchema, 0);
+				if (isAlreadyMarked(feat) != 0
+						&& genericZoneUsualNames.contains(
+								Collec.getFieldFromSFC((Geometry) feat.getDefaultGeometry(), zoningSFC, GeneralFields.getZoneGenericNameField()))
+						&& !preciseZone.contains(
+								Collec.getFieldFromSFC((Geometry) feat.getDefaultGeometry(), zoningSFC, GeneralFields.getZonePreciseNameField()))) {
+					featureBuilder.set(markFieldName, 1);
+				}
+				result.add(featureBuilder.buildFeature(null));
+			}
+		} catch (Exception e) {
+			System.out.println(e);
+		}
+		shpDSZone.dispose();
+		return result;
+	}
+	
+	/**
+	 * Mark parcels that intersects a certain type of Generic zoning.
+	 * 
+	 * @param parcels
+	 *            Input parcel {@link SimpleFeatureCollection}
+	 * @param genericZoning
+	 *            The generic type the zoning (either not constructible (NC), urbanizable (U) or to be urbanize (TBU). Other keywords can be tolerate
+	 * @param preciseZoningType
+	 *            The precise zoning type. Can be anything.
+	 * @param zoningFile
+	 *            A shapefile containing the zoning plan
+	 * @return {@link SimpleFeatureCollection} of the input parcels with marked parcels on the {@link #markFieldName} field.
+	 * @throws FactoryException
+	 * @throws NoSuchAuthorityCodeException
+	 * @throws IOException
+	 * @throws Exception
+	 */
+	public static SimpleFeatureCollection markParcelIntersectPreciseZoningType(SimpleFeatureCollection parcels, String genericZone, String preciseZone, File zoningFile) throws NoSuchAuthorityCodeException, FactoryException, IOException {
+		final SimpleFeatureType featureSchema = ParcelSchema.getSFBMinParcelSplit().getFeatureType();
+		
+		// Get the zoning usual names
+		List<String> genericZoneUsualNames = GeneralFields.getGenericZoneUsualNames(genericZone);
+				
+		DefaultFeatureCollection result = new DefaultFeatureCollection();
+		ShapefileDataStore shpDSZone = new ShapefileDataStore(zoningFile.toURI().toURL());
+		SimpleFeatureCollection zoningSFC = shpDSZone.getFeatureSource().getFeatures();
+		// if features have the schema that the one intended to set, we bypass
+		if (featureSchema.equals(parcels.getSchema())) {
+			Arrays.stream(parcels.toArray(new SimpleFeature[0])).forEach(feat -> {
+				try {
+					if (isAlreadyMarked(feat) != 0
+							&& genericZoneUsualNames.contains(Collec.getFieldFromSFC((Geometry) feat.getDefaultGeometry(), zoningSFC, GeneralFields.getZoneGenericNameField()))
+							&& preciseZone.equals(Collec.getFieldFromSFC((Geometry) feat.getDefaultGeometry(), zoningSFC,
+									GeneralFields.getZonePreciseNameField()))) {
+						feat.setAttribute(markFieldName, 1);
+					} else {
+						feat.setAttribute(markFieldName, 0);
+					}
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+				result.add(feat);
+			});
+			return result;
+		}
+		SimpleFeatureBuilder featureBuilder = ParcelSchema.getSFBMinParcelSplit();
+		try (SimpleFeatureIterator it = parcels.features()) {
+			while (it.hasNext()) {
+				SimpleFeature feat = it.next();
+
+				featureBuilder = ParcelSchema.setSFBMinParcelSplitWithFeat(feat, featureBuilder, featureSchema, 0);
+				if (isAlreadyMarked(feat) != 0
+						&& genericZoneUsualNames.contains(
+								Collec.getFieldFromSFC((Geometry) feat.getDefaultGeometry(), zoningSFC, GeneralFields.getZoneGenericNameField()))
+						&& preciseZone.equals(
+								Collec.getFieldFromSFC((Geometry) feat.getDefaultGeometry(), zoningSFC, GeneralFields.getZonePreciseNameField()))) {
+					featureBuilder.set(markFieldName, 1);
+				}
+				result.add(featureBuilder.buildFeature(null));
+			}
+		} catch (Exception e) {
+			System.out.println(e);
+		}
+		shpDSZone.dispose();
 		return result;
 	}
 	
@@ -734,4 +866,5 @@ public class MarkParcelAttributeFromPosition {
 		}
 		return result.collection();
 	}
+
 }

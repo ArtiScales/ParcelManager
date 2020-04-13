@@ -137,8 +137,8 @@ public class ZoneDivision {
 		// parcel geometry name for all
 		String geomName = parcels.getSchema().getGeometryDescriptor().getLocalName();
 		final Geometry geomZone = Geom.unionSFC(initialZone);
-	final 	SimpleFeatureBuilder finalParcelBuilder = ParcelSchema.getSFBMinParcel();
-		// sort in two different collections, the ones that matters and the ones that will besaved for future purposes
+		final SimpleFeatureBuilder finalParcelBuilder = ParcelSchema.getSFBMinParcel();
+		// sort in two different collections, the ones that matters and the ones that will be saved for future purposes
 		DefaultFeatureCollection parcelsInZone = new DefaultFeatureCollection();
 		// parcels to save for after and convert them to the minimal attribute
 		DefaultFeatureCollection savedParcels = new DefaultFeatureCollection();
@@ -236,7 +236,6 @@ public class ZoneDivision {
 		
 		//merge the small parcels to bigger ones
 		splitedParcels = ParcelCollection.mergeTooSmallParcels(splitedParcels, (int) minimalArea);
-		Collec.exportSFC(splitedParcels, new File("/tmp/maa"));
 		DefaultFeatureCollection result = new DefaultFeatureCollection();
 		
 		int num = 0;
@@ -286,31 +285,41 @@ public class ZoneDivision {
 		return result;
 	}
 
+	public static SimpleFeatureCollection createZoneToCut(String genericZone, SimpleFeatureCollection zoning, SimpleFeatureCollection parcels)
+			throws IOException, NoSuchAuthorityCodeException, FactoryException {
+		return createZoneToCut(genericZone, null, zoning, parcels);
+	}
+	
 	/**
-	 * Create a zone to cut by selecting features from a shapefile regarding a fixed value. Name of the field is by default set to <i>TYPEZONE</i> and must be changed if needed with the
-	 * {@link fr.ign.artiscales.fields.GeneralFields#setZoneGenericNameField(String)} method. Also takes a bounding SimpleFeatureCollection to bound the output.
+	 * Create a zone to cut by selecting features from a shapefile regarding a fixed value. Name of the field is by default set to <i>TYPEZONE</i> and must be changed if needed
+	 * with the {@link fr.ign.artiscales.fields.GeneralFields#setZoneGenericNameField(String)} method. Also takes a bounding SimpleFeatureCollection to bound the output.
 	 * 
-	 * @param zoneToCutName
-	 *            Name of the zone to be cut
+	 * @param genericZone
+	 *            Name of the generic zone to be cut
+	 * @param preciseZone
+	 *            Name of the precise zone to be cut. Can be null
 	 * @param zoning
-	 *            Collection of zones to extract the wanted zone from (usually a zoning plan)
+	 *            {@link SimpleFeatureCollection} of zones to extract the wanted zone from (usually a zoning plan)
 	 * @param parcels
-	 *            Collection of parcel to bound the process on a wanted location
+	 *            {@link SimpleFeatureCollection} of parcel to bound the process on a wanted location
 	 * @return An extraction of the zoning collection
 	 * @throws IOException
-	 * @throws FactoryException 
-	 * @throws NoSuchAuthorityCodeException 
+	 * @throws FactoryException
+	 * @throws NoSuchAuthorityCodeException
 	 */
-	public static SimpleFeatureCollection createZoneToCut(String zoneToCutName, SimpleFeatureCollection zoning, SimpleFeatureCollection parcels)
+	public static SimpleFeatureCollection createZoneToCut(String genericZone,String preciseZone, SimpleFeatureCollection zoning, SimpleFeatureCollection parcels)
 			throws IOException, NoSuchAuthorityCodeException, FactoryException {
 		// get the wanted zones from the zoning file
 		FilterFactory2 ff = CommonFactoryFinder.getFilterFactory2(GeoTools.getDefaultHints());
-		SimpleFeatureCollection initialZone = zoning.subCollection(ff.like(ff.property(GeneralFields.getZoneGenericNameField()), zoneToCutName))
+		SimpleFeatureCollection finalZone = zoning.subCollection(ff.like(ff.property(GeneralFields.getZoneGenericNameField()), genericZone))
 				.subCollection(ff.intersects(ff.property(zoning.getSchema().getGeometryDescriptor().getLocalName()), ff.literal(Geom.unionSFC(parcels))));
-		initialZone = MarkParcelAttributeFromPosition.markAllParcel(initialZone);
-		if (initialZone.isEmpty()) {
+		if (preciseZone != null && preciseZone != "") {
+			finalZone  = finalZone.subCollection(ff.like(ff.property(GeneralFields.getZonePreciseNameField()), preciseZone));
+		}
+		finalZone = MarkParcelAttributeFromPosition.markAllParcel(finalZone);
+		if (finalZone.isEmpty()) {
 			System.out.println("createZoneToCut(): zone is empty");
 		}
-		return initialZone;
+		return finalZone;
 	}
 }

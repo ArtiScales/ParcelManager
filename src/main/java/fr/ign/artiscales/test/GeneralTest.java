@@ -59,7 +59,7 @@ public class GeneralTest {
 		ZoneDivision.DEBUG = true;
 		ShapefileDataStore shpDSZone = new ShapefileDataStore(zoningFile.toURI().toURL());
 		SimpleFeatureCollection featuresZones = shpDSZone.getFeatureSource().getFeatures();
-		SimpleFeatureCollection zone = ZoneDivision.createZoneToCut("AU", featuresZones, parcel);
+		SimpleFeatureCollection zone = ZoneDivision.createZoneToCut("AU",null, featuresZones, parcel);
 		// If no zones, we won't bother
 		if (zone.isEmpty()) {
 			System.out.println("parcelGenZone : no zones to be cut");
@@ -102,7 +102,7 @@ public class GeneralTest {
 		System.out.println("parcelDensification");
 		System.out.println("/////////////////////////");
 		SimpleFeatureCollection parcMarked = MarkParcelAttributeFromPosition.markParcelIntersectPolygonIntersection(finalNormalZone, polygonIntersection);
-		SimpleFeatureCollection toDensify = MarkParcelAttributeFromPosition.markParcelIntersectGenericZoningType(parcMarked, "U", zoningFile);
+		SimpleFeatureCollection toDensify = MarkParcelAttributeFromPosition.markParcelIntersectFrenchConstructibleZoningType(parcMarked, zoningFile);
 		SimpleFeatureCollection salut = Densification.densification(toDensify, CityGeneration.createUrbanIslet(finalNormalZone), tmpFolder, buildingFile,
 				new File("/tmp/road.shp"), profileSmallHouse.getMaximalArea(), profileSmallHouse.getMinimalArea(), profileSmallHouse.getMaximalWidth(), profileSmallHouse.getLenDriveway(),
 				ParcelState.isArt3AllowsIsolatedParcel(parcMarked.features().next(), predicateFile));
