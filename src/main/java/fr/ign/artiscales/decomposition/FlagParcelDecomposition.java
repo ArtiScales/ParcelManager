@@ -1,6 +1,5 @@
 package fr.ign.artiscales.decomposition;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -11,7 +10,6 @@ import java.util.stream.Collectors;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.geotools.data.simple.SimpleFeatureCollection;
-import org.geotools.data.simple.SimpleFeatureIterator;
 import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.geom.LineString;
 import org.locationtech.jts.geom.MultiLineString;
@@ -19,8 +17,8 @@ import org.locationtech.jts.geom.Polygon;
 import org.locationtech.jts.geom.PrecisionModel;
 import org.locationtech.jts.operation.union.CascadedPolygonUnion;
 import org.locationtech.jts.precision.GeometryPrecisionReducer;
-import org.opengis.feature.simple.SimpleFeature;
 
+import fr.ign.artiscales.parcelFunction.ParcelState;
 import fr.ign.cogit.FeaturePolygonizer;
 import fr.ign.cogit.geoToolsFunctions.vectors.Collec;
 import fr.ign.cogit.geoToolsFunctions.vectors.Geom;
@@ -43,8 +41,7 @@ public class FlagParcelDecomposition {
 
   // We remove some parts that may have a too small area < 25
   public static double TOO_SMALL_PARCEL_AREA = 25;
-  private static String widthFieldAttribute = "LARGEUR";
-  private static double defaultWidthRoad = 7.5;
+
 
 //  public static void main(String[] args) throws Exception {
 //
@@ -127,13 +124,14 @@ public class FlagParcelDecomposition {
 //  }
   
 
-  private double maximalArea, maximalWidth, roadWidth;
+  private double maximalArea, maximalWidth, drivewayWidth;
   Polygon polygonInit;
   SimpleFeatureCollection buildings;
   SimpleFeatureCollection roads;
   // This line represents the exterior of an urban island (it serves to determine
   // if a parcel has road access)
   private List<LineString> ext = null;
+  private Geometry exclusionZone = null;
   
   /**
    * Flag decomposition algorithm
@@ -155,7 +153,7 @@ public class FlagParcelDecomposition {
     this.maximalWidth = maximalWidth;
     this.polygonInit = p;
     this.buildings = buildings;
-    this.roadWidth = roadWidth;
+    this.drivewayWidth = roadWidth;
   }
 
   /**
@@ -169,19 +167,20 @@ public class FlagParcelDecomposition {
    *          the maximalArea for a parcel
    * @param maximalWidth
    *          the maximal width
-   * @param roadWidth
-   *          the road width
+   * @param drivewayWidth
+   *          the width of driveways
    * @param islandExterior
    *          the exterior of this island to assess road access
    */
-  public FlagParcelDecomposition(Polygon p, SimpleFeatureCollection buildings, double maximalArea, double maximalWidth, double roadWidth, List<LineString> islandExterior) {
+  public FlagParcelDecomposition(Polygon p, SimpleFeatureCollection buildings, double maximalArea, double maximalWidth, double drivewayWidth, List<LineString> islandExterior, Geometry exclusionZone) {
     super();
     this.maximalArea = maximalArea;
     this.maximalWidth = maximalWidth;
     this.polygonInit = p;
     this.buildings = buildings;
-    this.roadWidth = roadWidth;
+    this.drivewayWidth = drivewayWidth;
     this.setExt(islandExterior);
+    this.exclusionZone = exclusionZone;
   }
 
   /**
@@ -195,20 +194,50 @@ public class FlagParcelDecomposition {
    *          the maximalArea for a parcel
    * @param maximalWidth
    *          the maximal width
-   * @param roadWidth
-   *          the road width
+   * @param drivewayWidth
+   *          the width of driveways
    * @param islandExterior
    *          the exterior of this island to assess road access
    */
-  public FlagParcelDecomposition(Polygon p, SimpleFeatureCollection buildings, SimpleFeatureCollection roads, double maximalArea, double maximalWidth, double roadWidth, List<LineString> islandExterior) {
+  public FlagParcelDecomposition(Polygon p, SimpleFeatureCollection buildings, SimpleFeatureCollection roads, double maximalArea, double maximalWidth, double drivewayWidth, List<LineString> islandExterior) {
     super();
     this.maximalArea = maximalArea;
     this.maximalWidth = maximalWidth;
     this.polygonInit = p;
     this.buildings = buildings;
     this.roads = roads;
-    this.roadWidth = roadWidth;
+    this.drivewayWidth = drivewayWidth;
     this.setExt(islandExterior);
+  }
+  
+  	/**
+	 * Flag decomposition algorithm
+	 * 
+	 * @param p
+	 *            the initial polygon to decompose
+	 * @param buildings
+	 *            the buildings that will constraint the possibility of adding a road
+	 * @param maximalArea
+	 *            the maximalArea for a parcel
+	 * @param maximalWidth
+	 *            the maximal width
+	 * @param drivewayWidth
+	 *            the width of driveways
+	 * @param islandExterior
+	 *            the exterior of this island to assess road access
+	 * @param exclusionZone
+	 *            a zone to find roads from empty parcels area
+	 */
+  public FlagParcelDecomposition(Polygon p, SimpleFeatureCollection buildings, SimpleFeatureCollection roads, double maximalArea, double maximalWidth, double drivewayWidth, List<LineString> islandExterior, Geometry exclusionZone) {
+    super();
+    this.maximalArea = maximalArea;
+    this.maximalWidth = maximalWidth;
+    this.polygonInit = p;
+    this.buildings = buildings;
+    this.roads = roads;
+    this.drivewayWidth = drivewayWidth;
+    this.setExt(islandExterior);
+    this.exclusionZone = exclusionZone;
   }
   
   /**
@@ -308,7 +337,7 @@ public class FlagParcelDecomposition {
 
       boucleside: for (Pair<MultiLineString, Polygon> side : listMap) {
         // The geometry road
-        Geometry road = side.getKey().buffer(this.roadWidth);
+        Geometry road = side.getKey().buffer(this.drivewayWidth);
         Polygon polygon = side.getValue();
 //        System.out.println("ROAD");
 //        System.out.println(road);
@@ -483,7 +512,7 @@ private Pair<Geometry,Geometry> getIntersectionDifference(Geometry a, Geometry b
   }
   
   public boolean hasRoadAccess(Polygon poly){
-	return isParcelHasRoadAccess(poly, roads, poly.getFactory().createMultiLineString(ext.toArray(new LineString[ext.size()])));
+	return ParcelState.isParcelHasRoadAccess(poly, roads, poly.getFactory().createMultiLineString(ext.toArray(new LineString[ext.size()])),exclusionZone);
   }
   
 //  public boolean hasRoadAccess(Polygon poly) {
@@ -495,63 +524,9 @@ private Pair<Geometry,Geometry> getIntersectionDifference(Geometry a, Geometry b
   }
   
 	public static boolean isRoadPolygonIntersectsLine(SimpleFeatureCollection roads, LineString ls) {
-		return roads != null && Geom.unionGeom(getRoadPolygon(roads)).contains(ls);
+		return roads != null && Geom.unionGeom(ParcelState.getRoadPolygon(roads)).contains(ls);
 	}
 	
-  /**
-   * Get a list of the surrounding buffered road segments.
-   * 
-   * The buffer length is calculated with an attribute field. The default name of the field is <i>LARGEUR</i> and can be set with the {@link #setWidthFieldAttribute(String)} method. 
-   * If no field is found, a default value of 7.5 meters is used (this default value can be set with the {@link #setDefaultWidthRoad(double)} method). 
-   * @param roads collection of road
-   * @return The list of the surrounding buffered road segments.
-   */
-	public static List<Geometry> getRoadPolygon(SimpleFeatureCollection roads) {
-		// List<Geometry> roadGeom = Arrays.stream(Collec.snapDatas(roads, poly.buffer(5)).toArray(new SimpleFeature[0]))
-		// .map(g -> ((Geometry) g.getDefaultGeometry()).buffer((double) g.getAttribute("LARGEUR"))).collect(Collectors.toList());
-		List<Geometry> roadGeom = new ArrayList<Geometry>();
-		SimpleFeatureIterator roadSnapIt = roads.features();
-		try {
-			while (roadSnapIt.hasNext()) {
-				SimpleFeature feat = roadSnapIt.next();
-				roadGeom.add(((Geometry) feat.getDefaultGeometry())
-						.buffer((Collec.isCollecContainsAttribute(roads, widthFieldAttribute) ? (double) feat.getAttribute(widthFieldAttribute) + 2.5
-								: defaultWidthRoad)));
-			}
-		} catch (Exception problem) {
-			problem.printStackTrace();
-		} finally {
-			roadSnapIt.close();
-		}
-		return roadGeom;
-  }
-	
-	/**
-	 * Indicate if the given polygon is near the {@link org.locationtech.jts.geom.Polygon#getExteriorRing() shell} of a given Polygon object. This object is the islandExterior
-	 * argument out of {@link #FlagParcelDecomposition(Polygon, SimpleFeatureCollection, double, double, double, List) the FlagParcelDecomposition constructor} or if not set, the
-	 * bounds of the {@link #polygonInit initial polygon}.
-	 * 
-	 * If no roads have been found and a road shapefile has been set, we look if a road shapefile has been set and if the given road is nearby
-	 * 
-	 * @param poly
-	 * @param roads
-	 * @param ext
-	 * @return true is the polygon has a road access
-	 * @throws Exception
-	 * @throws IOException
-	 */
-	public static boolean isParcelHasRoadAccess(Polygon poly, SimpleFeatureCollection roads, MultiLineString ext) {
-//		if (poly.intersects((((Polygon) ext).getExteriorRing()).buffer(0.5))) {
-		if (poly.intersects(ext.buffer(0.5))) {
-			return true;
-		}
-		// System.out.println(Geom.unionGeom(getRoadPolygon(roads)));
-		if (roads != null && poly.intersects(Geom.unionGeom(getRoadPolygon(roads)))) {
-			return true;
-		}
-		return false;
-	}
-  
   /**
    * Get the islet external perimeter
    */
@@ -578,20 +553,4 @@ private Pair<Geometry,Geometry> getIntersectionDifference(Geometry a, Geometry b
     // FIXME this code doesn't change a thing? If it would (with the use of setExt()), the road could be generated to the exterior of the polygon, possibly leading to nowhere? 
 	  this.polygonInit.getFactory().createMultiLineString(new LineString[] { this.polygonInit.getExteriorRing() });
   }
-
-public static String getWidthFieldAttribute() {
-	return widthFieldAttribute;
-}
-
-public static void setWidthFieldAttribute(String widthFieldAttribute) {
-	FlagParcelDecomposition.widthFieldAttribute = widthFieldAttribute;
-}
-
-public static double getDefaultWidthRoad() {
-	return defaultWidthRoad;
-}
-
-public static void setDefaultWidthRoad(double defaultWidthRoad) {
-	FlagParcelDecomposition.defaultWidthRoad = defaultWidthRoad;
-}
 }

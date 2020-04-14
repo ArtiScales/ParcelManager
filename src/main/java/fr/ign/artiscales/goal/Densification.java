@@ -69,7 +69,7 @@ public class Densification {
 	 */
 	public static SimpleFeatureCollection densification(SimpleFeatureCollection parcelCollection, SimpleFeatureCollection isletCollection,
 			File tmpFolder, File buildingFile, File roadFile, double maximalAreaSplitParcel, double minimalAreaSplitParcel, double maximalWidthSplitParcel,
-			double lenDriveway, boolean allowIsolatedParcel) throws Exception {
+			double lenDriveway, boolean allowIsolatedParcel, Geometry exclusionZone) throws Exception {
 		// if parcels doesn't contains the markParcelAttribute field or have no marked parcels 
 		if (!Collec.isCollecContainsAttribute(parcelCollection, MarkParcelAttributeFromPosition.getMarkFieldName())
 				|| Arrays.stream(parcelCollection.toArray(new SimpleFeature[0]))
@@ -96,7 +96,7 @@ public class Densification {
 					// we falg cut the parcel
 					SimpleFeatureCollection tmp = ParcelSplitFlag.generateFlagSplitedParcels(feat, lines, tmpFolder,
 							buildingFile, roadFile, maximalAreaSplitParcel, maximalWidthSplitParcel, lenDriveway,
-							allowIsolatedParcel);
+							allowIsolatedParcel, exclusionZone);
 					// if the cut parcels are inferior to the minimal size, we cancel all and add the initial parcel
 					boolean add = true;
 					try (SimpleFeatureIterator parcelIt = tmp.features()){
@@ -148,6 +148,41 @@ public class Densification {
 			OVERWRITESHAPEFILES = false;
 		}
 		return resultParcels.collection();
+	}
+	
+	/**
+	 * Apply the densification goal on a set of marked parcels.
+	 *
+	 * overload of the {@link #densification(SimpleFeatureCollection, SimpleFeatureCollection, File, File, File, double, double, double, double, boolean)} method if we choose to
+	 * not use a road Shapefile and no geometry of exclusion
+	 * 
+	 * @param parcelCollection
+	 *            SimpleFeatureCollection of marked parcels.
+	 * @param isletCollection
+	 *            SimpleFeatureCollection containing the morphological islet. Can be generated with the
+	 *            {@link fr.ign.cogit.geometryGeneration.CityGeneration#createUrbanIslet(File, File)} method.
+	 * @param tmpFolder
+	 *            folder to store temporary files
+	 * @param buildingFile
+	 *            Shapefile representing the buildings
+	 * @param maximalAreaSplitParcel
+	 *            threshold of parcel area above which the OBB algorithm stops to decompose parcels
+	 * @param minimalAreaSplitParcel
+	 *            threshold under which the parcels is not kept. If parcel simulated is under this goal will keep the unsimulated parcel.
+	 * @param maximalWidthSplitParcel
+	 *            threshold of parcel connection to road under which the OBB algorithm stops to decompose parcels
+	 * @param lenDriveway
+	 *            lenght of the driveway to connect a parcel through another parcel to the road
+	 * @param allowIsolatedParcel
+	 *            true if the simulated parcels have the right to be isolated from the road, false otherwise.
+	 * @return The input parcel {@link SimpleFeatureCollection} with the marked parcels replaced by the simulated parcels. All parcels have the
+	 *         {@link fr.ign.artiscales.parcelFunction.ParcelSchema#getSFBMinParcel()} schema. * @throws Exception
+	 */
+	public static SimpleFeatureCollection densification(SimpleFeatureCollection parcelCollection, SimpleFeatureCollection isletCollection,
+			File tmpFolder, File buildingFile, File roadFile, double maximalAreaSplitParcel, double minimalAreaSplitParcel, double maximalWidthSplitParcel,
+			double lenDriveway, boolean allowIsolatedParcel) throws Exception {
+		return densification(parcelCollection, isletCollection, tmpFolder, buildingFile, null, maximalAreaSplitParcel, minimalAreaSplitParcel,
+				maximalWidthSplitParcel, lenDriveway, allowIsolatedParcel,null);
 	}
 	
 	/**

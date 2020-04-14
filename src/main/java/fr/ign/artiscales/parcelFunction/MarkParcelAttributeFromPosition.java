@@ -23,7 +23,6 @@ import org.opengis.filter.expression.PropertyName;
 import org.opengis.referencing.FactoryException;
 import org.opengis.referencing.NoSuchAuthorityCodeException;
 
-import fr.ign.artiscales.decomposition.FlagParcelDecomposition;
 import fr.ign.artiscales.fields.GeneralFields;
 import fr.ign.artiscales.fields.french.FrenchZoningSchemas;
 import fr.ign.cogit.geoToolsFunctions.vectors.Collec;
@@ -98,7 +97,7 @@ public class MarkParcelAttributeFromPosition {
 			Arrays.stream(parcels.toArray(new SimpleFeature[0])).forEach(feat -> {
 				try {
 					Geometry geomFeat = (Geometry) feat.getDefaultGeometry();
-					if (isAlreadyMarked(feat) != 0 && FlagParcelDecomposition.isParcelHasRoadAccess((Polygon) Geom.getPolygon(geomFeat),
+					if (isAlreadyMarked(feat) != 0 && ParcelState.isParcelHasRoadAccess((Polygon) Geom.getPolygon(geomFeat),
 							Collec.snapDatas(roads, geomFeat), Collec.fromSFCtoRingMultiLines(Collec.snapDatas(islet, geomFeat)))) {
 						feat.setAttribute(markFieldName, 1);
 					} else {
@@ -119,7 +118,7 @@ public class MarkParcelAttributeFromPosition {
 				SimpleFeature feat = it.next();
 				Geometry geomFeat = (Geometry) feat.getDefaultGeometry();
 				featureBuilder = ParcelSchema.setSFBMinParcelSplitWithFeat(feat,featureBuilder, featureSchema, 0);
-				if (isAlreadyMarked(feat) != 0 &&  FlagParcelDecomposition.isParcelHasRoadAccess((Polygon) Geom.getPolygon(geomFeat), Collec.snapDatas(roads, geomFeat),
+				if (isAlreadyMarked(feat) != 0 &&  ParcelState.isParcelHasRoadAccess((Polygon) Geom.getPolygon(geomFeat), Collec.snapDatas(roads, geomFeat),
 						Collec.fromSFCtoRingMultiLines(Collec.snapDatas(islet, geomFeat)))) {
 					featureBuilder.set(markFieldName, 1);
 				} 

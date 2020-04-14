@@ -31,6 +31,7 @@ import fr.ign.artiscales.parcelFunction.ParcelSchema;
 import fr.ign.artiscales.parcelFunction.ParcelState;
 import fr.ign.cogit.geoToolsFunctions.vectors.Collec;
 import fr.ign.cogit.geoToolsFunctions.vectors.Geom;
+import fr.ign.cogit.geometryGeneration.CityGeneration;
 import fr.ign.cogit.parameter.ProfileUrbanFabric;
 
 /**
@@ -63,10 +64,9 @@ public class PMStep {
 	 * except for the parcel file that must be updated after each PMStep to make the new PMStep simulation on an already simulated parcel plan
 	 * 
 	 */
-	public static void setFiles(File parcelFile, File isletFile, File zoningFile, File tmpFolder, File buildingFile, File roadFile, File predicateFile,
+	public static void setFiles(File parcelFile, File zoningFile, File tmpFolder, File buildingFile, File roadFile, File predicateFile,
 			File polygonIntersection, File outFolder, File profileFolder) {
 		PARCELFILE = parcelFile;
-		ISLETFILE = isletFile;
 		ZONINGFILE = zoningFile;
 		TMPFOLDER = tmpFolder;
 		tmpFolder.mkdirs();
@@ -142,11 +142,9 @@ public class PMStep {
 				shpDSZone.dispose();
 				break;
 			case "densification":
-				ShapefileDataStore shpDSIlot = new ShapefileDataStore(ISLETFILE.toURI().toURL());
-				((DefaultFeatureCollection) parcelCut).addAll(Densification.densification(parcelMarkedComm, shpDSIlot.getFeatureSource().getFeatures(), TMPFOLDER, BUILDINGFILE, ROADFILE, profile.getMaximalArea(),
+				((DefaultFeatureCollection) parcelCut).addAll(Densification.densification(parcelMarkedComm, CityGeneration.createUrbanIslet(parcelMarkedComm), TMPFOLDER, BUILDINGFILE, ROADFILE, profile.getMaximalArea(),
 						profile.getMinimalArea(), profile.getMaximalWidth(), profile.getLenDriveway(),
-						ParcelState.isArt3AllowsIsolatedParcel(parcel.features().next(), PREDICATEFILE)));
-				shpDSIlot.dispose();
+						ParcelState.isArt3AllowsIsolatedParcel(parcel.features().next(), PREDICATEFILE), Geom.createBufferBorder(parcelMarkedComm)));
 				break;
 			case "consolidationDivision":
 				ConsolidationDivision.PROCESS = parcelProcess;

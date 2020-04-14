@@ -18,6 +18,8 @@ import org.geotools.data.simple.SimpleFeatureIterator;
 import org.geotools.factory.CommonFactoryFinder;
 import org.geotools.util.factory.GeoTools;
 import org.locationtech.jts.geom.Geometry;
+import org.locationtech.jts.geom.MultiLineString;
+import org.locationtech.jts.geom.Polygon;
 import org.locationtech.jts.geom.PrecisionModel;
 import org.locationtech.jts.precision.GeometryPrecisionReducer;
 import org.opengis.feature.simple.SimpleFeature;
@@ -59,6 +61,88 @@ public class ParcelState {
 //		}
 //		sds.dispose();
 //	}
+	  private static String widthFieldAttribute = "LARGEUR";
+	  private static double defaultWidthRoad = 7.5;
+	
+	/**
+	 * Get a list of the surrounding buffered road segments.
+	 * 
+	 * The buffer length is calculated with an attribute field. The default name of the field is <i>LARGEUR</i> and can be set with the {@link #setWidthFieldAttribute(String)}
+	 * method. If no field is found, a default value of 7.5 meters is used (this default value can be set with the {@link #setDefaultWidthRoad(double)} method).
+	 * 
+	 * @param roads
+	 *            collection of road
+	 * @return The list of the surrounding buffered road segments.
+	 */
+	public static List<Geometry> getRoadPolygon(SimpleFeatureCollection roads) {
+		// List<Geometry> roadGeom = Arrays.stream(Collec.snapDatas(roads, poly.buffer(5)).toArray(new SimpleFeature[0]))
+		// .map(g -> ((Geometry) g.getDefaultGeometry()).buffer((double) g.getAttribute("LARGEUR"))).collect(Collectors.toList());
+		List<Geometry> roadGeom = new ArrayList<Geometry>();
+		SimpleFeatureIterator roadSnapIt = roads.features();
+		try {
+			while (roadSnapIt.hasNext()) {
+				SimpleFeature feat = roadSnapIt.next();
+				roadGeom.add(((Geometry) feat.getDefaultGeometry())
+						.buffer((Collec.isCollecContainsAttribute(roads, widthFieldAttribute) ? (double) feat.getAttribute(widthFieldAttribute) + 2.5
+								: defaultWidthRoad)));
+			}
+		} catch (Exception problem) {
+			problem.printStackTrace();
+		} finally {
+			roadSnapIt.close();
+		}
+		return roadGeom;
+	}
+
+	/**
+	 * Indicate if the given polygon is near the {@link org.locationtech.jts.geom.Polygon#getExteriorRing() shell} of a given Polygon object. This object is the islandExterior
+	 * argument out of {@link #FlagParcelDecomposition(Polygon, SimpleFeatureCollection, double, double, double, List) the FlagParcelDecomposition constructor} or if not set, the
+	 * bounds of the {@link #polygonInit initial polygon}.
+	 * 
+	 * If no roads have been found and a road shapefile has been set, we look if a road shapefile has been set and if the given road is nearby
+	 * 
+	 * @param poly
+	 * @param roads
+	 * @param ext
+	 * @return true is the polygon has a road access
+	 * @throws Exception
+	 * @throws IOException
+	 */
+	public static boolean isParcelHasRoadAccess(Polygon poly, SimpleFeatureCollection roads, MultiLineString ext) {
+		return isParcelHasRoadAccess(poly, roads, ext, null);
+	}
+
+	/**
+	 * Indicate if the given polygon is near the {@link org.locationtech.jts.geom.Polygon#getExteriorRing() shell} of a given Polygon object. This object is the islandExterior
+	 * argument out of {@link #FlagParcelDecomposition(Polygon, SimpleFeatureCollection, double, double, double, List) the FlagParcelDecomposition constructor} or if not set, the
+	 * bounds of the {@link #polygonInit initial polygon}.
+	 * 
+	 * If no roads have been found and a road shapefile has been set, we look if a road shapefile has been set and if the given road is nearby
+	 * 
+	 * @param poly
+	 * @param roads
+	 * @param ext
+	 * @param disabledBuffer
+	 *            a {@link Geometry} that cannot be considered as absence of road
+	 * @return true is the polygon has a road access
+	 * @throws Exception
+	 * @throws IOException
+	 */
+	public static boolean isParcelHasRoadAccess(Polygon poly, SimpleFeatureCollection roads, MultiLineString ext, Geometry disabledBuffer) {
+
+		// if (poly.intersects((((Polygon) ext).getExteriorRing()).buffer(0.5))) {
+		if (poly.intersects(ext.buffer(0.5))) {
+			if (disabledBuffer != null && poly.intersects(disabledBuffer.buffer(0.5))) {
+				return false;
+			}
+			return true;
+		}
+		// System.out.println(Geom.unionGeom(getRoadPolygon(roads)));
+		if (roads != null && poly.intersects(Geom.unionGeom(getRoadPolygon(roads)))) {
+			return true;
+		}
+		return false;
+	}
 
 	/**
 	 * return false if the parcel mandatory needs a contact with the road to be urbanized. return true otherwise TODO haven't done it for the zones because I only found communities
@@ -484,5 +568,21 @@ public class ParcelState {
 			result.add("null");
 		}
 		return result;
+	}
+	
+	public static String getWidthFieldAttribute() {
+		return widthFieldAttribute;
+	}
+
+	public static void setWidthFieldAttribute(String widthFieldAttribute) {
+		ParcelState.widthFieldAttribute = widthFieldAttribute;
+	}
+
+	public static double getDefaultWidthRoad() {
+		return defaultWidthRoad;
+	}
+
+	public static void setDefaultWidthRoad(double defaultWidthRoad) {
+		ParcelState.defaultWidthRoad = defaultWidthRoad;
 	}
 }
