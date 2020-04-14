@@ -20,6 +20,7 @@ import org.opengis.referencing.NoSuchAuthorityCodeException;
 import fr.ign.artiscales.analysis.DensificationStudy;
 import fr.ign.artiscales.fields.GeneralFields;
 import fr.ign.artiscales.fields.french.FrenchParcelFields;
+import fr.ign.artiscales.fields.french.FrenchZoningSchemas;
 import fr.ign.artiscales.goal.ConsolidationDivision;
 import fr.ign.artiscales.goal.Densification;
 import fr.ign.artiscales.goal.ZoneDivision;
@@ -247,7 +248,8 @@ public class PMStep {
 			parcel = MarkParcelAttributeFromPosition.markParcelIntersectPolygonIntersection(parcel, POLYGONINTERSECTION);
 		}
 		// parcel marking with a zoning plan (possible to be hacked for any attribute feature selection by setting the field name to the genericZoning scenario parameter) 
-		if (ZONINGFILE != null && ZONINGFILE.exists()) {
+		if (ZONINGFILE != null && ZONINGFILE.exists() && genericZone != null && !genericZone.equals("")) {
+			genericZone = FrenchZoningSchemas.normalizeNameFrenchBigZone(genericZone);
 			// we proceed for each cities (in )
 			for (String nb : communityNumbers) {
 				String place = nb + "-" + genericZone;
@@ -255,6 +257,7 @@ public class PMStep {
 					if (cachePlaceSimulates.startsWith(place)) {
 						System.out.println("Warning: " + place + " already simulated");
 						alreadySimuled = true;
+						break;
 					}
 				}
 				// if that zone has never been simulated, we proceed as usual
@@ -274,9 +277,10 @@ public class PMStep {
 				// the zone has already been simulated : must be a small part defined by the preciseZone field
 				else {
 					if (genericZone != null && genericZone != "" && (preciseZone == null || preciseZone == "")) {
+						List<String> sparedPreciseZones = cachePlacesSimulates.stream().filter(x -> x.startsWith(place)).map(x -> x.split("-")[2]).collect(Collectors.toList());
+						System.out.println("sparedPreciseZones" + sparedPreciseZones);
 						parcel = MarkParcelAttributeFromPosition.markParcelIntersectZoningWithoutPreciseZonings(parcel, genericZone,
-								cachePlacesSimulates.stream().filter(x -> x.startsWith(place)).map(x -> x.split("-")[2]).collect(Collectors.toList()),
-								ZONINGFILE);
+								sparedPreciseZones, ZONINGFILE);
 						cachePlacesSimulates.add(place + "-" + preciseZone);
 					} else if (genericZone != null && genericZone != "" && preciseZone != null && preciseZone != "") {
 						parcel = MarkParcelAttributeFromPosition.markParcelIntersectPreciseZoningType(parcel, genericZone, preciseZone, ZONINGFILE);

@@ -26,4 +26,5 @@ This field is the only one used during the Parcel Manager simulations</li>
 </ul>
 
 Parcel Manager has always been used in a French context, so we have only implemented the French attribute style. We also implemented attributes for ArtiScales simulations, which extends the French Parcels attribute and add specific fields. 
-It is nevertheless possible and easy for a programmer to implement new parcel styles and replace the french methods with it in the workflows. 
+It is nevertheless possible and easy for a programmer to implement new parcel styles and replace the french methods with it in the workflows.
+The *** fields.GeneralField.parcelFieldType *** value must be changed and methods using this value must be fulfilled. 

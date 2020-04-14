@@ -61,7 +61,7 @@ public class GeneralFields {
 	 */
 	public static List<String> getGenericZoneUsualNames(String genericZone) {
 		List<String> genericZoneUsualNames = new ArrayList<String>();
-		switch (GeneralFields.getParcelFieldType()) {
+		switch (parcelFieldType) {
 		case "french":
 			genericZoneUsualNames = FrenchZoningSchemas.getUsualNames(genericZone);
 			break;

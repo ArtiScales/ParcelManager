@@ -14,7 +14,7 @@ It is possible to set every files with the following names:
   * ***communityFile***: shapefile representing the community limits. It must have a field containing the city's code (<i>INSEE</i> by default) (can be ***NULL***).
   * ***predicateFile***: .csv file containing the rules of the (see xxx in the ArtiScales project to correctly set those rules) (can be ***NULL***).
   * ***polygonIntersection***: shapefile containing polygons which represent an interest for the parcel to be urbanized (can be ***NULL***).
-  * ***profileFolder***: folder where the building profile must be stored under .json names (see xxx for doc about those folders)
+  * ***profileUrbanFabric***: folder where the urban fabric profile are stored under .json names <!-- (see xxx for doc about those folders)-->
   * ***outFolder***: folder where the result are stored
 
 It is also possible to set a root folder where every files are store. 
@@ -30,10 +30,11 @@ The parameter ***step*** must contain a .json table with all the following argum
 
 * ***communityNumber***
 * ***communityType***
-* ***zone***
+* ***genericZone***
+* ***preciseZone***
 * ***goal***
 * ***parcelProcess***
-* ***buildingType***
+* ***urbanFabric***
 
 <h3>Parcel selection</h3>
 It is possible to set two different types of parcel selection regarding their inclusion in a part of the zoning plan or a community. 
@@ -45,19 +46,31 @@ If those two parameters are not set, every parcels are selected and taken into a
 
 <h3>Parcel marks</h3>
 It is often needed to mark a set of parcels in order to declare that their reshaping must happen.
-The field *SPLIT* is used as default.
-It is possible to use different method to mark the parcels. 
-The parameter ***zone*** is used to select a type of zoning (declared with the ***zoningFile*** shapefile).
-It is also possible to mark the parcel using the superposition with a set of polygons. 
+The field *SPLIT* is used as default but can be changed with the *parcelFunction.MarkParcelAttributeFromPosition.setMarkFieldName(String)* function.
+The first way to mark the parcel is to use a set of polygons. 
 Every parcels that intersects the set of polygons from the ***polygonIntersection*** shapefile are marked.
+
+<h3>Integration of zoning plans</h3>
+It is also possible to use attribute information with a shapefile, such as a zoning plan, to mark the parcels.
+The ***zoningFile*** shapefile supports a special integration.
+The parameter ***genericZone*** is used to select a type of zoning and can recover multiple zone names using dedicated functions, such as *fields.FrenchZoningSchemas.normalizeNameFrenchBigZone()*. 
+More particular zones are set using the parameter  ***preciseZone***. 
+The setting of a ***preciseZone*** parameter doesn't exempt to set a ***genericZone***. 
+Thus, if a ***genericZone*** is set without ***preciseZone***, every zones will be simulated. 
+If we define a step for a ***preciseZone*** and a second step for the rest of its ***genericZone***, the results of the ***preciseZone*** step will not be part of the second step simulation.
+Though, make sure that the ***preciseZone*** step is declared before the ***preciseZone***.
+
+
+It is possible to hack this method by using another kind of shapefile and put in on the ***zoningFile***, change the default value of the ***genericZone*** field name with the *fields.GeneralFields.setZoneGenericNameField(String)* method and set a ***genericZone*** value. 
+
 
 <h3>Parcel Manager algorithms</h3>
 Different algorithm are available in Parcel Manager.
 The parameter ***goal*** can be set with one of those three values:
 
-* ***totalZone***: They take a total zone as an input and decompose it as a big zone
-* ***consolid***: Takes a set of marked parcels as an input and decompose them as contiguious zones
-* ***dens***: Takes a set of marked parcels as an input and try to densify them with the **parcel flag** process
+* ***zoneDivision***: They take a total zone as an input and decompose it as a big zone
+* ***consolidationDivision***: Takes a set of marked parcels as an input and decompose them as contiguious zones
+* ***densification***: Takes a set of marked parcels as an input and try to densify them with the **parcel flag** process
 
 <h3>Parcel Manager process</h3>
 Diferrent process can be used to divise parcels.
@@ -67,9 +80,9 @@ The parameter ***parcelProcess*** can be set with one of those three values:
 * ***SS***: use the straight skeleton method
 * ***MS***: use the median line skeleton method
 
-<h3>Building profiles</h3>
+<h3>Urban Fabric profiles</h3>
 
-It is possible to set different type of parcel tissues that would lead to the construction of buildings. 
-The java object **parameter.ProfileBuilding** from the ArtiScales-tools project is used. 
-The ***buildingType*** parameter defines the profile of the parcels parameters.
+It is possible to set different type of urban fabric that would lead to the construction of buildings. 
+The java object **parameter.ProfileUrbanFabric** from the ArtiScales-tools project is used. 
+The ***urbanFabric*** parameter defines the profile of the parcels parameters.
 
