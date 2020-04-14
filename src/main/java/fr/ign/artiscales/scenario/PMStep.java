@@ -81,7 +81,7 @@ public class PMStep {
 	private String goal, parcelProcess, communityNumber, communityType , urbanFabricType , genericZone, preciseZone;
 	List<String> communityNumbers = new ArrayList<String>(); 
 	
-	private static File PARCELFILE, ISLETFILE, ZONINGFILE, TMPFOLDER, BUILDINGFILE, ROADFILE, PREDICATEFILE, 
+	private static File PARCELFILE, ZONINGFILE, TMPFOLDER, BUILDINGFILE, ROADFILE, PREDICATEFILE, 
 	POLYGONINTERSECTION, OUTFOLDER, PROFILEFOLDER;
 	private static List<String> cachePlacesSimulates = new ArrayList<String>();
 	private boolean alreadySimuled = false;
@@ -153,7 +153,7 @@ public class PMStep {
 						profile.getDecompositionLevelWithoutStreet()));
 				break;
 			case "densificationStudy":
-				DensificationStudy.runDensificationStudy(parcelMarkedComm, ISLETFILE, BUILDINGFILE, ROADFILE, ZONINGFILE, TMPFOLDER, OUTFOLDER,
+				DensificationStudy.runDensificationStudy(parcelMarkedComm, BUILDINGFILE, ROADFILE, ZONINGFILE, TMPFOLDER, OUTFOLDER,
 						ParcelState.isArt3AllowsIsolatedParcel(parcel.features().next(), PREDICATEFILE), profile);
 				break;
 			default:

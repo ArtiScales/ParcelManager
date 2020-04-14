@@ -19,6 +19,7 @@ import fr.ign.artiscales.scenario.PMScenario;
 import fr.ign.artiscales.scenario.PMStep;
 import fr.ign.cogit.geoToolsFunctions.Csv;
 import fr.ign.cogit.geoToolsFunctions.vectors.Collec;
+import fr.ign.cogit.geometryGeneration.CityGeneration;
 import fr.ign.cogit.parameter.ProfileUrbanFabric;
 
 /**
@@ -71,11 +72,10 @@ public class DensificationStudy {
 	 * @param profile
 	 * @throws Exception
 	 */
-	public static void runDensificationStudy(SimpleFeatureCollection parcels, File isletFile, File buildingFile, File roadFile, File zoningFile,
+	public static void runDensificationStudy(SimpleFeatureCollection parcels, File buildingFile, File roadFile, File zoningFile,
 			File tmpFolder, File outFolder, boolean isParcelWithoutStreetAllowed, ProfileUrbanFabric profile) throws Exception {
 
-		ShapefileDataStore sdsIslet = new ShapefileDataStore(isletFile.toURI().toURL());
-		SimpleFeatureCollection islet = sdsIslet.getFeatureSource().getFeatures();
+		SimpleFeatureCollection islet = CityGeneration.createUrbanIslet(parcels);
 
 		String splitField = MarkParcelAttributeFromPosition.getMarkFieldName();
 		// get total unbuilt parcels from the urbanized zones

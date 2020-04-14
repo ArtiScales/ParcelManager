@@ -190,6 +190,11 @@ public class ZoneDivision {
 		Geometry geomSelectedZone = Geom.unionSFC(goOdZone);
 		File[] polyFiles = { fParcelsInAU, fZone };
 		List<Polygon> polygons = FeaturePolygonizer.getPolygons(polyFiles);
+		
+		// apparently less optimized... 
+		// List<Geometry> geomList = Arrays.stream(parcels.toArray(new SimpleFeature[0])).map(x -> (Geometry) x.getDefaultGeometry()).collect(Collectors.toList());
+		// geomList.addAll(Arrays.stream(parcels.toArray(new SimpleFeature[0])).map(x -> (Geometry) x.getDefaultGeometry()).collect(Collectors.toList()));
+		// List<Polygon> polygons = FeaturePolygonizer.getPolygons(geomList);
 
 		// big loop on each generated geometry to save the parts that are not contained in the zones. We add them to the savedParcels collection.
 		for (Geometry poly : polygons) {

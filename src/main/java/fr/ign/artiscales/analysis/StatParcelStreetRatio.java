@@ -19,12 +19,12 @@ import org.opengis.filter.FilterFactory2;
 import org.opengis.referencing.FactoryException;
 import org.opengis.referencing.NoSuchAuthorityCodeException;
 
-import fr.ign.artiscales.decomposition.FlagParcelDecomposition;
 import fr.ign.artiscales.fields.GeneralFields;
 import fr.ign.artiscales.fields.french.FrenchParcelFields;
 import fr.ign.artiscales.fields.french.FrenchParcelSchemas;
 import fr.ign.artiscales.parcelFunction.MarkParcelAttributeFromPosition;
 import fr.ign.artiscales.parcelFunction.ParcelSchema;
+import fr.ign.artiscales.parcelFunction.ParcelState;
 import fr.ign.cogit.geoToolsFunctions.Csv;
 import fr.ign.cogit.geoToolsFunctions.vectors.Collec;
 import fr.ign.cogit.geoToolsFunctions.vectors.Geom;
@@ -139,7 +139,7 @@ public class StatParcelStreetRatio {
 				tab[3] = Double.toString(pNew);
 				tab[4] = Double.toString(pNew / iniA);
 				long nbParcelsWithContactToRoad = Arrays.stream(df.toArray(new SimpleFeature[0]))
-						.filter(feat -> FlagParcelDecomposition.isParcelHasRoadAccess((Polygon) Geom.getPolygon((Geometry) feat.getDefaultGeometry()),
+						.filter(feat -> ParcelState.isParcelHasRoadAccess((Polygon) Geom.getPolygon((Geometry) feat.getDefaultGeometry()),
 								Collec.snapDatas(roads, ((Geometry) feat.getDefaultGeometry())),
 								Collec.fromSFCtoRingMultiLines(Collec.snapDatas(islets,(Geometry) z.getDefaultGeometry())))).count();
 				tab[5] = String.valueOf(((double) nbParcelsWithContactToRoad / (double) df.size()));

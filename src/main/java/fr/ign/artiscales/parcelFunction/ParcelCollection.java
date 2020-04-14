@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Map.Entry;
 import java.util.SortedMap;
 import java.util.TreeMap;
+import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
@@ -414,7 +415,7 @@ public class ParcelCollection {
 	 *            : Folder where are stored the result shapefiles
 	 * @throws IOException
 	 */
-	public static void markDiffParcel(File parcelRefFile, File parcelToCompareFile, File parcelOutFolder, File tmpFolder) throws IOException {
+	public static void markDiffParcel(File parcelRefFile, File parcelToCompareFile, File parcelOutFolder) throws IOException {
 		ShapefileDataStore sds = new ShapefileDataStore(parcelToCompareFile.toURI().toURL());
 		SimpleFeatureCollection parcelToSort = sds.getFeatureSource().getFeatures();
 		ShapefileDataStore sdsRef = new ShapefileDataStore(parcelRefFile.toURI().toURL());
@@ -447,8 +448,11 @@ public class ParcelCollection {
 				} 
 				//we check if the parcel has been intentionally deleted by generating new polygons (same technique of area comparison, but with a way smaller error bound)
 				// if it has been cleaned, we don't add it to no additional parcels 
-				File[] polyFiles = {Collec.exportSFC(parcelsIntersectRef, new File(tmpFolder, "parcelsIntersectRef.shp")),Geom.exportGeom(geomPRef, new File(tmpFolder, "geom.shp"))};
-				List<Polygon> polygons = FeaturePolygonizer.getPolygons(polyFiles);
+
+				List<Geometry> geomList = Arrays.stream(parcelsIntersectRef.toArray(new SimpleFeature[0])).map(x -> (Geometry) x.getDefaultGeometry())
+						.collect(Collectors.toList());
+				geomList.add(geomPRef);
+				List<Polygon> polygons = FeaturePolygonizer.getPolygons(geomList);
 				for (Polygon polygon : polygons) {
 					if ((polygon.getArea() > geomArea* 0.9 && polygon.getArea() < geomArea * 1.1) && polygon.buffer(0.5).contains(geomPRef) ) {
 						continue refParcel;
