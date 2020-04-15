@@ -69,7 +69,7 @@ public class ParcelSplitFlag {
 		List<Polygon> surfaces = Util.getPolygons((Geometry) feat.getDefaultGeometry());
 		// as the road shapefile can be left as null, we differ the FlagParcelDecomposition constructor
 		FlagParcelDecomposition fpd;
-		if (roadFile != null & roadFile.exists()) {
+		if (roadFile != null && roadFile.exists()) {
 			ShapefileDataStore roadSDS = new ShapefileDataStore(roadFile.toURI().toURL());
 			Geometry geom = ((Geometry) feat.getDefaultGeometry()).buffer(10);
 			fpd = new FlagParcelDecomposition(surfaces.get(0),

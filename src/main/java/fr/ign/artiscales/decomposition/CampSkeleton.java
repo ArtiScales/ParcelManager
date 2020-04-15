@@ -138,7 +138,7 @@ public class CampSkeleton {
     // Pour chaque face du squelette
     for (Face f : new HashSet<>(out.faces.values())) {
       // On créer une face de la carte topo
-      Face fTopo = new Face();
+    	fr.ign.artiscales.decomposition.graph.Face fTopo = new fr.ign.artiscales.decomposition.graph.Face();
       fTopo.setPolygon(convertFace(f.points, factory));
       // On récupère les arrête de la face
       LoopL<SharedEdge> lSE = f.edges;
@@ -183,7 +183,7 @@ public class CampSkeleton {
                 graph.getNodes().add(n);
               }
               // On génère l'arc
-              Edge a = new Edge(graph.getNodes().get(indexP1), graph.getNodes().get(indexP2),
+              fr.ign.artiscales.decomposition.graph.Edge a = new fr.ign.artiscales.decomposition.graph.Edge(graph.getNodes().get(indexP1), graph.getNodes().get(indexP2),
                   factory.createLineString(new Coordinate[] { graph.getNodes().get(indexP1).getCoordinate(), graph.getNodes().get(indexP2).getCoordinate() }));
               // On ajoute l'arc
               graph.getEdges().add(a);
@@ -192,7 +192,7 @@ public class CampSkeleton {
             }
             // On affecte le côté d'où se trouve la face
             // Normalement la carte topo met ça à jour du côté de la face
-            Edge a = graph.getEdges().get(indexArc);
+            fr.ign.artiscales.decomposition.graph.Edge a = graph.getEdges().get(indexArc);
             boolean isOnRight = (f.equals(se.right));
             boolean isOnLeft = (f.equals(se.left));
             if (isOnRight) {
@@ -312,7 +312,7 @@ public class CampSkeleton {
    * 
    * @return extrait les arcs extérieurs du polygone
    */
-  public List<Edge> getExteriorEdges() {
+  public List<fr.ign.artiscales.decomposition.graph.Edge> getExteriorEdges() {
     return this.graph.getEdges().stream().filter(p -> (p.getRight() == null) ^ (p.getLeft() == null)).collect(Collectors.toList());
   }
 
@@ -320,7 +320,7 @@ public class CampSkeleton {
    * 
    * @return extrait les arcs générés lors du calcul du squelette droit
    */
-  public List<Edge> getInteriorEdges() {
+  public List<fr.ign.artiscales.decomposition.graph.Edge> getInteriorEdges() {
     return this.graph.getEdges().stream().filter(p -> (p.getRight() != null) && (p.getLeft() != null)).collect(Collectors.toList());
   }
 
@@ -328,7 +328,7 @@ public class CampSkeleton {
    * 
    * @return extrait les arcs générés ne touchant pas la frontière du polygone
    */
-  public List<Edge> getIncludedEdges() {
+  public List<fr.ign.artiscales.decomposition.graph.Edge> getIncludedEdges() {
     Geometry geom = p.buffer(-0.5);
     return this.graph.getEdges().stream().filter(p -> geom.contains(p.getGeometry())).collect(Collectors.toList());
   }

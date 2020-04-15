@@ -40,7 +40,7 @@ public class GeneralTest {
 		File polygonIntersection = new File(rootFolder, "polygonIntersection.shp");
 		File predicateFile = new File(rootFolder, "predicate.csv");
 		File parcelFile = new File(rootFolder, "parcel.shp");
-		File profileFolder = new File(rootFolder, "profileBuildingType");
+		File profileFolder = new File(rootFolder, "profileUrbanFabric");
 		File outFolder = new File(rootFolder, "out");
 		File statFolder = new File(outFolder, "stat");
 		statFolder.mkdirs();
