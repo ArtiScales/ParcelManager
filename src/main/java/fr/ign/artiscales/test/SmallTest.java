@@ -12,6 +12,6 @@ public class SmallTest {
 		PMStep.setDEBUG(true);
 		PMScenario pm = new PMScenario(new File("src/main/resources/smallTest/scenario.json"), new File("/tmp/"));
 		pm.executeStep();
-		System.out.println(System.currentTimeMillis() - start );
+		System.out.println(System.currentTimeMillis() - start);
 	}
 }

@@ -1,0 +1,23 @@
+{
+	"largeStreetWidth": "25",
+	"largeStreetLevel": "3",
+	"maximalArea": "1000",
+	"minimalArea": "300",
+	"decompositionLevelWithoutStreet": "1",
+	"maxwid": "10",
+	"areaMin": "1",
+	"nbStoreysAttic": "99",
+	"fctOpt": "",
+	"maxheight": "7",
+	"nameBuildingType": "multiFamilyHouse",
+	"lenDriveway": "3",
+	"streetWidth": "13",
+	"areaMax": "210",
+	"intersection": "false",
+	"minlen": "7",
+	"nbCuboid": "3",
+	"minwid": "7",
+	"minheight": "3.5",
+	"maxlen": "17",
+	"maximalWidth": "7"
+}

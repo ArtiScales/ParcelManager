@@ -21,9 +21,13 @@ public class FrenchZoningSchemas {
 	 * @return true if the urban zone is urbanizable, wrong otherwise.
 	 */
 	public static boolean isUrbanZoneUsuallyAdmitResidentialConstruction(SimpleFeature zone) {
+		if (zone == null) {
+			return false;
+		}
 		String libelle = ((String) zone.getAttribute(GeneralFields.getZonePreciseNameField())).toLowerCase();
-		if (normalizeNameFrenchBigZone((String) zone.getAttribute(GeneralFields.getZoneGenericNameField())).equals("U") && (libelle.equals("u") || libelle.startsWith("ua")
-				|| libelle.startsWith("ub") || libelle.startsWith("uc") || libelle.startsWith("ud") || libelle.startsWith("c"))) {
+		if (normalizeNameFrenchBigZone((String) zone.getAttribute(GeneralFields.getZoneGenericNameField())).equals("U")
+				&& (libelle.equals("u") || libelle.startsWith("ua") || libelle.startsWith("ub") || libelle.startsWith("uc")
+						|| libelle.startsWith("ud") || libelle.startsWith("c"))) {
 			return true;
 		}
 		return false;

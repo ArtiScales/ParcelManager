@@ -511,6 +511,15 @@ private Pair<Geometry,Geometry> getIntersectionDifference(Geometry a, Geometry b
     return geom.getLength();
   }
   
+	/**
+	 * Indicate if the given polygon is near the {@link org.locationtech.jts.geom.Polygon#getExteriorRing() shell} of a given Polygon object. This object is the islandExterior
+	 * argument out of {@link #FlagParcelDecomposition(Polygon, SimpleFeatureCollection, double, double, double, List, Geometry)} the FlagParcelDecomposition constructor or if not
+	 * set, the bounds of the {@link #polygonInit initial polygon}.
+	 * 
+	 * If no roads have been found and a road shapefile has been set, we look if a road shapefile has been set and if the given road is nearby
+	 * 
+	 * @param poly
+	 */
   public boolean hasRoadAccess(Polygon poly){
 	return ParcelState.isParcelHasRoadAccess(poly, roads, poly.getFactory().createMultiLineString(ext.toArray(new LineString[ext.size()])),exclusionZone);
   }

@@ -34,16 +34,17 @@ import org.opengis.referencing.NoSuchAuthorityCodeException;
 
 import fr.ign.artiscales.fields.artiscales.ArtiScalesSchemas;
 import fr.ign.cogit.FeaturePolygonizer;
+import fr.ign.cogit.geoToolsFunctions.Attribute;
 import fr.ign.cogit.geoToolsFunctions.Schemas;
 import fr.ign.cogit.geoToolsFunctions.vectors.Collec;
 import fr.ign.cogit.geoToolsFunctions.vectors.Geom;
 
 public class ParcelCollection {
 
-	public static void main(String[] args) throws Exception {
-		ShapefileDataStore sds = new ShapefileDataStore(new File("/tmp/lala.shp").toURI().toURL());
-		SimpleFeatureCollection sfc = sds.getFeatureSource().getFeatures();
-		Collec.exportSFC(mergeTooSmallParcels(sfc,100),new File("/tmp/lalaMerged.shp"));
+//	public static void main(String[] args) throws Exception {
+//		ShapefileDataStore sds = new ShapefileDataStore(new File("/tmp/lala.shp").toURI().toURL());
+//		SimpleFeatureCollection sfc = sds.getFeatureSource().getFeatures();
+//		Collec.exportSFC(mergeTooSmallParcels(sfc,100),new File("/tmp/lalaMerged.shp"));
 //		markDiffParcel(new File("/tmp/lala.shp"), new File("/tmp/lala2.shp"), new File("/tmp/delRoad"), new File("/tmp/"));
 //
 //		ShapefileDataStore sds = new ShapefileDataStore(new File("/tmp/lala.shp").toURI().toURL());
@@ -53,7 +54,7 @@ public class ParcelCollection {
 //		long stopTime2 = System.nanoTime();
 //		System.out.println("two took "+(stopTime2 - startTime2));
 //		Collec.exportSFC(mergeTooSmallParcels(sfc,20),new File("/tmp/lalaMerged.shp"));
-	}
+//	}
 	
 	/**
 	 * This algorithm merges parcels when they are under an area threshold. It seek the surrounding parcel that share the largest side with the small parcel and merge their
@@ -138,7 +139,7 @@ public class ParcelCollection {
 					// System.out.println("idToMerge: " + idToMerge + " " + ParcelAttribute.sysoutFrenchParcel(feat));
 					// if the big parcel has already been merged with a small parcel, we skip it and will return to that small parcel in a future iteration
 					if (ids.contains(idToMerge)) {
-						result.add(ParcelSchema.setSFBSchemaWithMultiPolygon(feat).buildFeature(null));
+						result.add(ParcelSchema.setSFBSchemaWithMultiPolygon(feat).buildFeature(Attribute.makeUniqueId()));
 						continue;
 					}
 					ids.add(idToMerge);
@@ -170,7 +171,7 @@ public class ParcelCollection {
 				}
 				// no else - if the small parcel doesn't touch any other parcels, we left it as a blank space and will be left as a public space
 			} else {
-				result.add(ParcelSchema.setSFBSchemaWithMultiPolygon(feat).buildFeature(null));
+				result.add(ParcelSchema.setSFBSchemaWithMultiPolygon(feat).buildFeature(Attribute.makeUniqueId()));
 			}
 		}
 		return result;
@@ -192,7 +193,7 @@ public class ParcelCollection {
 			while (parcelAddIt.hasNext()) {
 				SimpleFeature featAdd = parcelAddIt.next();
 				SimpleFeatureBuilder fit = ArtiScalesSchemas.setSFBParcelAsASWithFeat(featAdd);
-				result.add(fit.buildFeature(null));
+				result.add(fit.buildFeature(Attribute.makeUniqueId()));
 			}
 		} catch (Exception problem) {
 			problem.printStackTrace();
@@ -401,21 +402,31 @@ public class ParcelCollection {
 	 * 
 	 * This method creates four shapefiles in the tmpFolder:
 	 * <ul>
-	 * <li><b>same.shp</b> contains the reference parcels that have not evolved</li> 
+	 * <li><b>same.shp</b> contains the reference parcels that have not evolved</li>
 	 * <li><b>notSame.shp</b> contains the reference parcels that have changed</li>
-	 * <li><b>polygonIntersection.shp</b> contains the <i>notSame.shp</i> parcels with a reduction buffer, used for a precise intersection with other parcel. It is used for Parcel Manager scenarios</li>
+	 * <li><b>polygonIntersection.shp</b> contains the <i>notSame.shp</i> parcels with a reduction buffer, used for a precise intersection with other parcel in Parcel Manager
+	 * scenarios</li>
 	 * <li><b>evolvedParcel.shp</b> contains only the compared parcels that have evolved</li>
-	 *  </ul>
+	 * </ul>
 	 * 
 	 * @param parcelRefFile
-	 *            : The reference parcel plan
+	 *            The reference parcel plan
 	 * @param parcelToCompareFile
-	 *            : The parcel plan to compare
+	 *            The parcel plan to compare
 	 * @param parcelOutFolder
-	 *            : Folder where are stored the result shapefiles
+	 *            Folder where are stored the result shapefiles
 	 * @throws IOException
 	 */
 	public static void markDiffParcel(File parcelRefFile, File parcelToCompareFile, File parcelOutFolder) throws IOException {
+		File fSame = new File(parcelOutFolder, "same.shp");
+		File fEvolved = new File(parcelOutFolder, "evolvedParcel.shp");
+		File fNotSame = new File(parcelOutFolder, "notSame.shp");
+		File fInter = new File(parcelOutFolder, "polygonIntersection.shp");
+		if (fSame.exists() && fEvolved.exists() && fInter.exists() && fNotSame.exists() && fInter.exists() ) {
+			System.out.println("markDiffParcel(...) already calculated");
+			return ;
+		}
+		
 		ShapefileDataStore sds = new ShapefileDataStore(parcelToCompareFile.toURI().toURL());
 		SimpleFeatureCollection parcelToSort = sds.getFeatureSource().getFeatures();
 		ShapefileDataStore sdsRef = new ShapefileDataStore(parcelRefFile.toURI().toURL());
@@ -436,7 +447,7 @@ public class ParcelCollection {
 				SimpleFeatureCollection parcelsIntersectRef = parcelToSort.subCollection(ff.intersects(pName, ff.literal(geomPRef)));
 				try (SimpleFeatureIterator itParcelIntersectRef = parcelsIntersectRef.features()) {
 					while (itParcelIntersectRef.hasNext()) {
-						double inter = geomPRef.intersection((Geometry) itParcelIntersectRef.next().getDefaultGeometry()).getArea();
+						double inter = Geom.scaledGeometryReductionIntersection(Arrays.asList(geomPRef,(Geometry) itParcelIntersectRef.next().getDefaultGeometry())).getArea();
 						// if there are parcel intersection and a similar area, we conclude that parcel haven't changed. We put it in the \"same\" collection and stop the search
 						if (inter > 0.95 * geomArea && inter < 1.05 * geomArea) {
 							same.add(pRef);
@@ -461,18 +472,18 @@ public class ParcelCollection {
 				notSame.add(pRef);
 				SimpleFeatureBuilder intersecPolygon = Schemas.getBasicSchemaMultiPolygon("intersectionPolygon");
 				intersecPolygon.set("the_geom", ((Geometry) pRef.getDefaultGeometry()).buffer(-2));
-				polygonIntersection.add(intersecPolygon.buildFeature(null));
+				polygonIntersection.add(intersecPolygon.buildFeature(Attribute.makeUniqueId()));
 			}
 		} catch (Exception problem) {
 			problem.printStackTrace();
 		} 
-		Collec.exportSFC(same, new File(parcelOutFolder, "same.shp"));
-		Collec.exportSFC(notSame, new File(parcelOutFolder, "notSame.shp"));
-		Collec.exportSFC(polygonIntersection, new File(parcelOutFolder, "polygonIntersection.shp"));
+		Collec.exportSFC(same, fSame);
+		Collec.exportSFC(notSame, fNotSame);
+		Collec.exportSFC(polygonIntersection, fInter);
 		
 		//export the compared parcels that have changed
 		SimpleFeatureCollection evolvedParcel = parcelToSort.subCollection(ff.intersects(pName, ff.literal(Geom.unionSFC(polygonIntersection))));
-		Collec.exportSFC(evolvedParcel, new File(parcelOutFolder, "evolvedParcel.shp"));
+		Collec.exportSFC(evolvedParcel, fEvolved);
 		
 		sds.dispose();
 		sdsRef.dispose();

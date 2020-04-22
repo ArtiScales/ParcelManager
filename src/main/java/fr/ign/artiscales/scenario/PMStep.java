@@ -5,7 +5,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import org.geotools.data.DataUtilities;
 import org.geotools.data.shapefile.ShapefileDataStore;
@@ -75,6 +74,7 @@ public class PMStep {
 		POLYGONINTERSECTION = polygonIntersection;
 		PREDICATEFILE = predicateFile;
 		OUTFOLDER = outFolder;
+		(new File(OUTFOLDER, "debug")).mkdirs();
 		PROFILEFOLDER = profileFolder;
 	}
 
@@ -122,7 +122,6 @@ public class PMStep {
 			parcelMarked = getSimulationParcels(parcel);
 		}
 		shpDSZone.dispose();
-
 		if (DEBUG)
 			Collec.exportSFC(parcelMarked, new File(TMPFOLDER, "parcelMarked" + this.getZoneStudied()));
 		SimpleFeatureCollection parcelCut = new DefaultFeatureCollection();
@@ -136,14 +135,18 @@ public class PMStep {
 			switch (goal) {
 			case "zoneDivision":
 				ZoneDivision.PROCESS = parcelProcess;
-				((DefaultFeatureCollection) parcelCut).addAll(ZoneDivision.zoneDivision(parcelMarked, parcel, TMPFOLDER, ZONINGFILE,
+				parcelCut = ZoneDivision.zoneDivision(parcelMarkedComm, parcel, TMPFOLDER, ZONINGFILE,
 						profile.getMaximalArea(), profile.getMinimalArea(), profile.getMaximalWidth(), profile.getStreetWidth(),
-						profile.getLargeStreetLevel(), profile.getLargeStreetWidth(), profile.getDecompositionLevelWithoutStreet()));
-				shpDSZone.dispose();
+						profile.getLargeStreetLevel(), profile.getLargeStreetWidth(), profile.getDecompositionLevelWithoutStreet());
+				parcel = parcelCut;
 				break;
 			case "densification":
 				((DefaultFeatureCollection) parcelCut).addAll(Densification.densification(parcelMarkedComm, CityGeneration.createUrbanIslet(parcelMarkedComm), TMPFOLDER, BUILDINGFILE, ROADFILE, profile.getMaximalArea(),
 						profile.getMinimalArea(), profile.getMaximalWidth(), profile.getLenDriveway(),
+						ParcelState.isArt3AllowsIsolatedParcel(parcel.features().next(), PREDICATEFILE), Geom.createBufferBorder(parcelMarkedComm)));
+				break;
+			case "densificationOrNeighborhood":
+				((DefaultFeatureCollection) parcelCut).addAll(Densification.densificationOrNeighborhood(parcelMarkedComm, CityGeneration.createUrbanIslet(parcelMarkedComm), TMPFOLDER, BUILDINGFILE, ROADFILE, profile,
 						ParcelState.isArt3AllowsIsolatedParcel(parcel.features().next(), PREDICATEFILE), Geom.createBufferBorder(parcelMarkedComm)));
 				break;
 			case "consolidationDivision":
@@ -157,7 +160,7 @@ public class PMStep {
 						ParcelState.isArt3AllowsIsolatedParcel(parcel.features().next(), PREDICATEFILE), profile);
 				break;
 			default:
-				System.out.println(goal + ": unrekognized goal (must be either \"totalZone\", \"dens\" or \"consolid\"");
+				System.out.println(goal + ": unrekognized goal");
 			}
 		}
 		File output = new File(OUTFOLDER, "parcelCuted-" + goal + "-"+ urbanFabricType + ".shp");
@@ -191,13 +194,10 @@ public class PMStep {
 	 * 
 	 * If none of this informations are set, the algorithm selects all the parcels.
 	 * 
-	 * TODO find a way to either select parcels nearby the communities to avoid the simulation to think city's parcels are surrounded with mega giant freeways 
-	 * 
 	 * @return The parcel collection with a mark for the interesting parcels to simulate.
 	 * @throws IOException 
 	 * @throws FactoryException 
 	 * @throws NoSuchAuthorityCodeException 
-	 * @throws Exception
 	 */
 	public SimpleFeatureCollection getSimulationParcels(SimpleFeatureCollection parcelIn) throws IOException, NoSuchAuthorityCodeException, FactoryException  {
 		
@@ -241,10 +241,16 @@ public class PMStep {
 			communityNumbers.addAll(ParcelAttribute.getCityCodesOfParcels(parcelIn));
 			parcel = DataUtilities.collection(parcelIn);
 		}
+		
+		if (DEBUG)
+			Collec.exportSFC(parcel, new File(OUTFOLDER, "selectedParcels.shp"));		
+		
 		// parcel marking with input polygons 
 		if (POLYGONINTERSECTION != null && POLYGONINTERSECTION.exists()) {
 			parcel = MarkParcelAttributeFromPosition.markParcelIntersectPolygonIntersection(parcel, POLYGONINTERSECTION);
 		}
+		Collec.exportSFC(parcel, new File(OUTFOLDER, "debug/intersected.shp"));		
+
 		// parcel marking with a zoning plan (possible to be hacked for any attribute feature selection by setting the field name to the genericZoning scenario parameter) 
 		if (ZONINGFILE != null && ZONINGFILE.exists() && genericZone != null && !genericZone.equals("")) {
 			genericZone = FrenchZoningSchemas.normalizeNameFrenchBigZone(genericZone);
@@ -269,17 +275,31 @@ public class PMStep {
 					else if (genericZone != null && genericZone != "" && preciseZone != null && preciseZone != "") {
 						parcel = MarkParcelAttributeFromPosition.markParcelIntersectPreciseZoningType(parcel, genericZone, preciseZone, ZONINGFILE);
 						cachePlacesSimulates.add(place + "-" + preciseZone);
-						Collec.exportSFC(parcel, new File("/tmp/sasasa"));
 					}
 				}
 				// the zone has already been simulated : must be a small part defined by the preciseZone field
 				else {
+					// if a precise zone hasn't been specified
 					if (genericZone != null && genericZone != "" && (preciseZone == null || preciseZone == "")) {
-						List<String> sparedPreciseZones = cachePlacesSimulates.stream().filter(x -> x.startsWith(place)).map(x -> x.split("-")[2]).collect(Collectors.toList());
-						System.out.println("sparedPreciseZones" + sparedPreciseZones);
-						parcel = MarkParcelAttributeFromPosition.markParcelIntersectZoningWithoutPreciseZonings(parcel, genericZone,
-								sparedPreciseZones, ZONINGFILE);
-						cachePlacesSimulates.add(place + "-" + preciseZone);
+						// if previous zones have had a precise zone calculated, we list them
+						List<String> preciseZones = new ArrayList<String>();
+						for (String pl : cachePlacesSimulates) {
+							if (pl.startsWith(place)) {
+								String[] p = pl.split("-");
+								if (p.length == 3 && pl.startsWith(place)) {
+									preciseZones.add(p[2]);
+								}
+							}
+						}
+						if (!preciseZones.isEmpty()) {
+							Collec.exportSFC(parcel, new File(OUTFOLDER, "debug/beforeMarkParcelIntersectZoningWithoutPreciseZonings.shp"));
+							parcel = MarkParcelAttributeFromPosition.markParcelIntersectZoningWithoutPreciseZonings(parcel, genericZone, preciseZones,
+									ZONINGFILE);					
+							System.out.println("sparedPreciseZones: " + preciseZones);
+						} else {
+							parcel = MarkParcelAttributeFromPosition.markParcelIntersectGenericZoningType(parcel, genericZone, ZONINGFILE);
+						}
+						cachePlacesSimulates.add(place);
 					} else if (genericZone != null && genericZone != "" && preciseZone != null && preciseZone != "") {
 						parcel = MarkParcelAttributeFromPosition.markParcelIntersectPreciseZoningType(parcel, genericZone, preciseZone, ZONINGFILE);
 						cachePlacesSimulates.add(place + "-" + preciseZone);
@@ -293,7 +313,7 @@ public class PMStep {
 		// compare to the cached simulation to ensure that there's no double
 		System.out.println();
 		DefaultFeatureCollection result = DataUtilities.collection(parcel);
-	
+
 		//if the result is only zones, we return only the interesting parcels 
 		if (goal.equals("zoneDivision")) {
 			result = new DefaultFeatureCollection();
@@ -312,12 +332,16 @@ public class PMStep {
 	}
 	
 	/**
-	 * Generate the bound of the parcels that are simulated by the current PMStep. Uses the marked parcels by the {@link #getSimulationParcels(SimpleFeatureCollection)} method. 
-	 * @return A geometry of the simulated parcels 
+	 * Generate the bound of the parcels that are simulated by the current PMStep. Uses the marked parcels by the {@link #getSimulationParcels(SimpleFeatureCollection)} method.
+	 * Flush the cache.
+	 * 
+	 * @return A geometry of the simulated parcels
 	 * @throws IOException
-	 * @throws Exception
+	 * @throws FactoryException
+	 * @throws NoSuchAuthorityCodeException
 	 */
-	public Geometry getBoundsOfZone() throws IOException, Exception {
+	public Geometry getBoundsOfZone() throws IOException, NoSuchAuthorityCodeException, FactoryException {
+		cachePlacesSimulates = new ArrayList<String>();
 		DefaultFeatureCollection zone = new DefaultFeatureCollection();
 		ShapefileDataStore sds = new ShapefileDataStore(PARCELFILE.toURI().toURL());
 		Arrays.stream(getSimulationParcels(sds.getFeatureSource().getFeatures()).toArray(new SimpleFeature[0])).forEach(parcel -> {

@@ -19,6 +19,7 @@ import fr.ign.artiscales.scenario.PMScenario;
 import fr.ign.artiscales.scenario.PMStep;
 import fr.ign.cogit.geoToolsFunctions.Csv;
 import fr.ign.cogit.geoToolsFunctions.vectors.Collec;
+import fr.ign.cogit.geoToolsFunctions.vectors.Geom;
 import fr.ign.cogit.geometryGeneration.CityGeneration;
 import fr.ign.cogit.parameter.ProfileUrbanFabric;
 
@@ -62,7 +63,6 @@ public class DensificationStudy {
 	/**
 	 * Densification study. Can be used as a goal in scenarios
 	 * @param parcels
-	 * @param isletFile
 	 * @param buildingFile
 	 * @param roadFile
 	 * @param zoningFile
@@ -80,14 +80,15 @@ public class DensificationStudy {
 		String splitField = MarkParcelAttributeFromPosition.getMarkFieldName();
 		// get total unbuilt parcels from the urbanized zones
 		SimpleFeatureCollection parcelsVacantLot = MarkParcelAttributeFromPosition
-				.markParcelIntersectFrenchConstructibleZoningType(MarkParcelAttributeFromPosition.markUnBuiltParcel(parcels, buildingFile), zoningFile);
+				.markParcelIntersectFrenchConstructibleZoningType(MarkParcelAttributeFromPosition.markUnBuiltParcel(parcels, buildingFile),
+						zoningFile);
 		SimpleFeatureCollection parcelsVacantLotCreated = Densification.densificationOrNeighborhood(parcelsVacantLot, islet, tmpFolder, buildingFile,
-				roadFile, profile, isParcelWithoutStreetAllowed);
+				roadFile, profile, isParcelWithoutStreetAllowed, Geom.createBufferBorder(parcels));
 		// simulate the densification of built parcels in the given zone
 		SimpleFeatureCollection parcelsDensifZone = MarkParcelAttributeFromPosition
 				.markParcelIntersectFrenchConstructibleZoningType(MarkParcelAttributeFromPosition.markBuiltParcel(parcels, buildingFile), zoningFile);
 		SimpleFeatureCollection parcelsDensifCreated = Densification.densificationOrNeighborhood(parcelsDensifZone, islet, tmpFolder, buildingFile,
-				roadFile, profile, isParcelWithoutStreetAllowed);
+				roadFile, profile, isParcelWithoutStreetAllowed, Geom.createBufferBorder(parcels));
 
 		// change split name to show if they can be built
 		MarkParcelAttributeFromPosition.setMarkFieldName("BUILDABLE");

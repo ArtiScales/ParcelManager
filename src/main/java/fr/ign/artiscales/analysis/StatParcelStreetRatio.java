@@ -25,6 +25,7 @@ import fr.ign.artiscales.fields.french.FrenchParcelSchemas;
 import fr.ign.artiscales.parcelFunction.MarkParcelAttributeFromPosition;
 import fr.ign.artiscales.parcelFunction.ParcelSchema;
 import fr.ign.artiscales.parcelFunction.ParcelState;
+import fr.ign.cogit.geoToolsFunctions.Attribute;
 import fr.ign.cogit.geoToolsFunctions.Csv;
 import fr.ign.cogit.geoToolsFunctions.vectors.Collec;
 import fr.ign.cogit.geoToolsFunctions.vectors.Geom;
@@ -98,7 +99,7 @@ public class StatParcelStreetRatio {
 			} catch (Exception problem) {
 				problem.printStackTrace();
 			}
-			zone.add(sfBuilderZone.buildFeature(null));
+			zone.add(sfBuilderZone.buildFeature(Attribute.makeUniqueId()));
 		}
 		return streetRatioParcelZone(zone, cutParcel, folderOutStat, roadFile);
 	}

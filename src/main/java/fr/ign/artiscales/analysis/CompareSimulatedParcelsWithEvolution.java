@@ -32,23 +32,24 @@ public class CompareSimulatedParcelsWithEvolution {
 	public static void main(String[] args) throws Exception {
 		Instant start = Instant.now();
 		
-		//definition of the shapefiles representing two set of parcel
+		// definition of the shapefiles representing two set of parcel
 		File rootFolder = new File("src/main/resources/ParcelComparison/");
-		File outFolder = new File(rootFolder,  "out");
+		File outFolder = new File(rootFolder, "out");
 		outFolder.mkdirs();
-		File file1 = new File(rootFolder, "parcel2003.shp");
-		File file2 = new File(rootFolder, "parcel2012.shp");
-		
-		//definition of a parameter file 
+		File fileParcelPast = new File(rootFolder, "parcel2003.shp");
+		File fileParcelNow = new File(rootFolder, "parcel2018.shp");
+
+		// definition of a parameter file
 		File scenarioFile = new File(rootFolder, "scenario.json");
 		
 		// Mark and export the parcels that have changed between the two set of time
-		ParcelCollection.markDiffParcel(file1, file2, outFolder);
+		ParcelCollection.markDiffParcel(fileParcelPast, fileParcelNow, outFolder);
 
 		// create ilots for parcel densification in case they haven't been generated before
-		CityGeneration.createUrbanIslet(file1, rootFolder);
+		CityGeneration.createUrbanIslet(fileParcelPast, rootFolder);
 		
 		PMScenario.setSaveIntermediateResult(true);
+		PMStep.setDEBUG(true);
 		PMStep.setGENERATEATTRIBUTES(false);
 		PMScenario pm = new PMScenario(scenarioFile, outFolder);
 		pm.executeStep();
@@ -64,7 +65,7 @@ public class CompareSimulatedParcelsWithEvolution {
 		File simulatedFile = new File(outFolder, "simulatedParcels.shp");
 		Shp.mergeVectFiles(lF, simulatedFile);
 	
-		PMStep.setParcel(file1);
+		PMStep.setParcel(fileParcelPast);
 		PMStep.setPOLYGONINTERSECTION(null);
 		System.out.println("++++++++++analysis by zones++++++++++");
 		//we proceed with an analysis made for each steps
@@ -89,12 +90,12 @@ public class CompareSimulatedParcelsWithEvolution {
 			sdsSimulatedParcel.dispose();
 
 			//evolved parcel crop
-			ShapefileDataStore sdsEvolvedParcel = new ShapefileDataStore(new File(rootFolder, "evolvedParcel.shp").toURI().toURL());
+			ShapefileDataStore sdsEvolvedParcel = new ShapefileDataStore(new File(outFolder, "evolvedParcel.shp").toURI().toURL());
 			SimpleFeatureCollection sfcEvolvedParcel = Collec.snapDatas(sdsEvolvedParcel.getFeatureSource().getFeatures(), geom);
-			Collec.exportSFC(sfcEvolvedParcel, new File(zoneOutFolder,"EvolvedParcel"));
-			AreaGraph areaEvolvedParcels = MakeStatisticGraphs.sortValuesAndCategorize(sfcEvolvedParcel,"Area of Evolved Parcels");
-			MakeStatisticGraphs.makeGraphHisto(areaEvolvedParcels,zoneOutFolder , "Distribution on zone:"+step.getZoneStudied(), "Surface of evolved",
-					"Nombre 2", 10);
+			Collec.exportSFC(sfcEvolvedParcel, new File(zoneOutFolder, "EvolvedParcel"));
+			AreaGraph areaEvolvedParcels = MakeStatisticGraphs.sortValuesAndCategorize(sfcEvolvedParcel, "Area of Evolved Parcels");
+			MakeStatisticGraphs.makeGraphHisto(areaEvolvedParcels, zoneOutFolder, "Distribution on zone:" + step.getZoneStudied(),
+					"Surface of evolved", "Nombre 2", 10);
 			lAG.add(areaEvolvedParcels);
 			csvData.put("EvolvedParcels", areaEvolvedParcels.getSortedDistribution().toArray());
 			sdsEvolvedParcel.dispose();

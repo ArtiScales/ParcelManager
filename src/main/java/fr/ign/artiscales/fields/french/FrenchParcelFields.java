@@ -15,6 +15,7 @@ import org.opengis.referencing.NoSuchAuthorityCodeException;
 
 import fr.ign.artiscales.fields.GeneralFields;
 import fr.ign.artiscales.parcelFunction.ParcelSchema;
+import fr.ign.cogit.geoToolsFunctions.Attribute;
 import fr.ign.cogit.geoToolsFunctions.vectors.Collec;
 
 public class FrenchParcelFields {
@@ -36,7 +37,7 @@ public class FrenchParcelFields {
 		try (SimpleFeatureIterator parcelIt = parcels.features()){
 			while (parcelIt.hasNext()) {
 				SimpleFeature parcel = parcelIt.next();
-				result.add(ParcelSchema.setSFBMinParcelWithFeat(parcel, builder, parcel.getFeatureType()).buildFeature(null));
+				result.add(ParcelSchema.setSFBMinParcelWithFeat(parcel, builder, parcel.getFeatureType()).buildFeature(Attribute.makeUniqueId()));
 			}
 		} catch (Exception problem) {
 			problem.printStackTrace();
@@ -69,7 +70,12 @@ public class FrenchParcelFields {
 				} 
 				else {
 					iniParcel = Collec.getSimpleFeatureFromSFC((Geometry) parcel.getDefaultGeometry(), initialParcels);
-					insee = makeINSEECode(iniParcel);
+					try {
+						insee = makeINSEECode(iniParcel);
+					} catch (Exception c) {
+						insee = "";
+						System.out.println("rr " + iniParcel);
+					}
 				}
 				featureBuilder.set("the_geom", parcel.getDefaultGeometry());
 				String section = (String) iniParcel.getAttribute(ParcelSchema.getMinParcelSectionField());
@@ -83,8 +89,7 @@ public class FrenchParcelFields {
 				featureBuilder.set("FEUILLE", iniParcel.getAttribute("FEUILLE"));
 				featureBuilder.set("NOM_COM", iniParcel.getAttribute("NOM_COM"));
 				featureBuilder.set("CODE_ARR", iniParcel.getAttribute("CODE_ARR"));
-				parcelFinal.add(featureBuilder.buildFeature(null));
-				
+				parcelFinal.add(featureBuilder.buildFeature(Attribute.makeUniqueId()));
 			}
 		} catch (Exception problem) {
 			problem.printStackTrace();

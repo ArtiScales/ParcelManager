@@ -19,12 +19,13 @@ import org.locationtech.jts.geom.Polygon;
 import fr.ign.cogit.geoToolsFunctions.vectors.Geom;
 
 public class OBBBlockDecomposition {
-  /**
-   * Determine the width of the parcel on road.
-   * 
-   * @param p
-   * @return
-   */
+  	/**
+	 * Determine the width of the parcel on road.
+	 * 
+	 * @param p
+	 *            input {@link Polygon}
+	 * @return width of the parcel on road
+	 */
   private static double frontSideWidth(Polygon p, List<LineString> ext) {
 	MultiLineString l = null;
 	try {
@@ -51,7 +52,6 @@ public class OBBBlockDecomposition {
    * @param shortDirectionSplit
    *          : it is split by the short edges or by the long edge.
    * @return A list of split polygons
-   * @throws Exception
    */
   public static List<Polygon> computeSplittingPolygon(Polygon pol, List<LineString> ext, boolean shortDirectionSplit, double noise, double smallRoadWidth, int largeRoadLevel, double largeRoadWidth,
       int decompositionLevelWithRoad, int decompositionLevel) {
@@ -104,7 +104,6 @@ public class OBBBlockDecomposition {
    * @return The splitting of Polygon1 with Polygon2
    */
   public static List<Polygon> split(Polygon poly1, Polygon poly2) {
-//    Geometry intersection = poly1.intersection(poly2);
 	  Geometry intersection = Geom.scaledGeometryReductionIntersection(Arrays.asList(poly1, poly2));
     if (intersection instanceof Polygon)
       return Arrays.asList((Polygon) intersection);

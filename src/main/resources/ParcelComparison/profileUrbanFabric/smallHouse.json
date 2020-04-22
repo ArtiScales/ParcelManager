@@ -1,0 +1,23 @@
+{
+	"largeStreetWidth": "18",
+	"largeStreetLevel": "6",
+	"maximalArea": "400",
+	"minimalArea": "100",
+	"decompositionLevelWithoutStreet": "4",
+	"maxwid": "10",
+	"areaMin": "1",
+	"nbStoreysAttic": "99",
+	"fctOpt": "",
+	"maxheight": "7",
+	"nameBuildingType": "smallHouse",
+	"lenDriveway": "3",
+	"streetWidth": "10",
+	"areaMax": "210",
+	"intersection": "false",
+	"minlen": "7",
+	"nbCuboid": "3",
+	"minwid": "7",
+	"minheight": "3.5",
+	"maxlen": "17",
+	"maximalWidth": "7"
+}

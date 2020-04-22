@@ -29,6 +29,7 @@ import fr.ign.artiscales.parcelFunction.ParcelAttribute;
 import fr.ign.artiscales.parcelFunction.ParcelCollection;
 import fr.ign.artiscales.parcelFunction.ParcelSchema;
 import fr.ign.cogit.FeaturePolygonizer;
+import fr.ign.cogit.geoToolsFunctions.Attribute;
 import fr.ign.cogit.geoToolsFunctions.vectors.Collec;
 import fr.ign.cogit.geoToolsFunctions.vectors.Geom;
 
@@ -62,7 +63,7 @@ public class ZoneDivision {
 	 * Merge and recut a specific zone. Cut first the surrounding parcels to keep them unsplit, then split the zone parcel and remerge them all into the original parcel file A bit
 	 * complicated algorithm to deal with non-existing pieces of parcels (as road).
 	 * 
-	 * @overwrite for a single road size.
+	 * overwrite for a single road size.
 	 * @param initialZone
 	 *            Zone which will be used to cut parcels. Will cut parcels that intersects them and keep their infos. Will then fill the empty spaces in between the zones and feed
 	 *            it to the OBB algorithm.
@@ -87,10 +88,10 @@ public class ZoneDivision {
 	 * @throws Exception
 	 */
 	public static SimpleFeatureCollection zoneDivision(SimpleFeatureCollection initialZone, SimpleFeatureCollection parcels, File tmpFolder,
-			File zoningFile, double maximalArea, double minimalArea, double maximalWidth, double streetWidth, int decompositionLevelWithoutRoad)
+			File zoningFile, double maximalArea, double minimalArea, double maximalWidth, double streetWidth, int decompositionLevelWithoutStreet)
 			throws Exception {
 		return zoneDivision(initialZone, parcels, tmpFolder, zoningFile, maximalArea, minimalArea, maximalWidth, streetWidth, 999, streetWidth,
-				decompositionLevelWithoutRoad);
+				decompositionLevelWithoutStreet);
 	}
 
 	/**
@@ -113,14 +114,15 @@ public class ZoneDivision {
 	 * @param maximalWidth
 	 *            The width of parcel connection to street network under which the parcel won"t be anymore cut
 	 * @param smallStreetWidth
-	 *            : the width of small street network segments
+	 *            The width of small street network segments
 	 * @param largeStreetLevel
-	 *            : level of decomposition after which the streets are considered as large streets
+	 *            Level of decomposition after which the streets are considered as large streets
 	 * @param largeStreetWidth
-	 *            : the width of large street network segments
+	 *            The width of large street network segments
 	 * @param decompositionLevelWithoutStreet
-	 *            : Number of the final row on which street generation doesn't apply
-	 * @return
+	 *            Number of the final row on which street generation doesn't apply
+	 * @return The input parcel {@link SimpleFeatureCollection} with the marked parcels replaced by the simulated parcels. All parcels have the
+	 *         {@link fr.ign.artiscales.parcelFunction.ParcelSchema#getSFBMinParcel()} schema.
 	 * @throws Exception
 	 */
 	public static SimpleFeatureCollection zoneDivision(SimpleFeatureCollection initialZone, SimpleFeatureCollection parcels, File tmpFolder,
@@ -144,9 +146,9 @@ public class ZoneDivision {
 		DefaultFeatureCollection savedParcels = new DefaultFeatureCollection();
 		Arrays.stream(parcels.toArray(new SimpleFeature[0])).forEach(parcel -> {
 			if (((Geometry) parcel.getDefaultGeometry()).intersects(geomZone)) {
-				parcelsInZone.add(ParcelSchema.setSFBMinParcelWithFeat(parcel, finalParcelBuilder.getFeatureType()).buildFeature(null));
+				parcelsInZone.add(ParcelSchema.setSFBMinParcelWithFeat(parcel, finalParcelBuilder.getFeatureType()).buildFeature(Attribute.makeUniqueId()));
 			} else {
-				savedParcels.add(ParcelSchema.setSFBMinParcelWithFeat(parcel, finalParcelBuilder.getFeatureType()).buildFeature(null));
+				savedParcels.add(ParcelSchema.setSFBMinParcelWithFeat(parcel, finalParcelBuilder.getFeatureType()).buildFeature(Attribute.makeUniqueId()));
 			}
 		});
 		// complete the void left by the existing roads from the zones
@@ -167,10 +169,13 @@ public class ZoneDivision {
 					List<Geometry> geomsZone = Geom.getPolygons(intersection);
 					for (Geometry geomPartZone : geomsZone) {
 						Geometry geom = GeometryPrecisionReducer.reduce(geomPartZone, new PrecisionModel(100));
-						sfBuilder.set(geomName, geom);
-						sfBuilder.set(ParcelSchema.getMinParcelSectionField(), "New" + numZone + "Section");
-						sfBuilder.set(MarkParcelAttributeFromPosition.getMarkFieldName(), 1);
-						goOdZone.add(sfBuilder.buildFeature(null));
+						// avoid silvers (plants the code)
+						if (geom.getArea() > 10) {
+							sfBuilder.set(geomName, geom);
+							sfBuilder.set(ParcelSchema.getMinParcelSectionField(), "New" + numZone + "Section");
+							sfBuilder.set(MarkParcelAttributeFromPosition.getMarkFieldName(), 1);
+							goOdZone.add(sfBuilder.buildFeature(Attribute.makeUniqueId()));
+						}
 					}
 				}
 			}
@@ -211,7 +216,7 @@ public class ZoneDivision {
 									continue;
 								originalSFB.set(attr.getName(), feat.getAttribute(attr.getName()));
 							}
-							savedParcels.add(originalSFB.buildFeature(null));
+							savedParcels.add(originalSFB.buildFeature(Attribute.makeUniqueId()));
 						}
 					}
 				} catch (Exception problem) {
@@ -266,7 +271,7 @@ public class ZoneDivision {
 				finalParcelBuilder.set(ParcelSchema.getMinParcelSectionField(), section);
 				finalParcelBuilder.set(ParcelSchema.getMinParcelCommunityField(), ParcelAttribute.getCommunityCodeFromSFC(parcelsInZone, parcel));
 				finalParcelBuilder.set(ParcelSchema.getMinParcelNumberField(), String.valueOf(num++));
-				result.add(finalParcelBuilder.buildFeature(null));
+				result.add(finalParcelBuilder.buildFeature(Attribute.makeUniqueId()));
 			}
 		} catch (Exception problem) {
 			problem.printStackTrace();
@@ -278,11 +283,10 @@ public class ZoneDivision {
 		}
 		// add the saved parcels
 		SimpleFeatureType schemaParcel = finalParcelBuilder.getFeatureType();
-		int i = 0;
 		try (SimpleFeatureIterator itSavedParcels = savedParcels.features()){
 			while (itSavedParcels.hasNext()) {
 				SimpleFeatureBuilder parcelBuilder = ParcelSchema.setSFBMinParcelWithFeat(itSavedParcels.next(), schemaParcel);
-				result.add(parcelBuilder.buildFeature(Integer.toString(i++)));
+				result.add(parcelBuilder.buildFeature(Attribute.makeUniqueId()));
 			}
 		} catch (Exception problem) {
 			problem.printStackTrace();

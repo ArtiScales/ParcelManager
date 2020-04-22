@@ -28,6 +28,7 @@ import fr.ign.artiscales.fields.french.FrenchParcelFields;
 import fr.ign.artiscales.fields.french.FrenchParcelSchemas;
 import fr.ign.artiscales.fields.french.FrenchZoningSchemas;
 import fr.ign.cogit.FeaturePolygonizer;
+import fr.ign.cogit.geoToolsFunctions.Attribute;
 import fr.ign.cogit.geoToolsFunctions.vectors.Collec;
 import fr.ign.cogit.geoToolsFunctions.vectors.Geom;
 
@@ -52,7 +53,7 @@ public class ParcelGetter {
 			throws IOException {
 		ShapefileDataStore zonesSDS = new ShapefileDataStore(zoningFile.toURI().toURL());
 		SimpleFeatureCollection zonesSFCBig = zonesSDS.getFeatureSource().getFeatures();
-		SimpleFeatureCollection zonesSFC = Collec.cropSFC(zonesSFCBig, parcelles);
+		SimpleFeatureCollection zonesSFC = Collec.snapDatas(zonesSFCBig, parcelles);
 		List<String> listZones = FrenchZoningSchemas.getUsualNames(zone);
 
 		DefaultFeatureCollection zoneSelected = new DefaultFeatureCollection();
@@ -111,7 +112,7 @@ public class ParcelGetter {
 			throws IOException {
 
 		ShapefileDataStore zoningSDS = new ShapefileDataStore(zoningFile.toURI().toURL());
-		SimpleFeatureCollection zoningSFC = Collec.cropSFC(zoningSDS.getFeatureSource().getFeatures(), parcels);
+		SimpleFeatureCollection zoningSFC = Collec.snapDatas(zoningSDS.getFeatureSource().getFeatures(), parcels);
 
 		FilterFactory2 ff = CommonFactoryFinder.getFilterFactory2(GeoTools.getDefaultHints());
 		DefaultFeatureCollection result = new DefaultFeatureCollection();
@@ -203,23 +204,22 @@ public class ParcelGetter {
 	 * (usually a state-like code and a community code).
 	 * 
 	 * @param parcelIn
-	 *            : input parcel collection
+	 *            Input parcel collection
 	 * @param val
-	 *            : value of the zipcode
+	 *            Value of the zipcode
 	 * @param firstFieldName
-	 *            : first part of the field name which compose zipcode field name
+	 *            First part of the field name which compose zipcode field name
 	 * @param secondFieldName
-	 *            : second part of the field name which compose zipcode field name
+	 *            Second part of the field name which compose zipcode field name
 	 * @return a simple feature collection of parcels having the <i>val</i> value.
 	 * @throws IOException
 	 */
-	public static SimpleFeatureCollection getParcelByZip(SimpleFeatureCollection parcelIn, String val, String firstFieldName, String secondFieldName) throws IOException {
+	public static SimpleFeatureCollection getParcelByZip(SimpleFeatureCollection parcelIn, String val, String firstFieldName, String secondFieldName) throws IOException  {
 		DefaultFeatureCollection result = new DefaultFeatureCollection();
 		try (SimpleFeatureIterator it = parcelIn.features()) {
 			while (it.hasNext()) {
 				SimpleFeature feat = it.next();
-				String zipCode = ((String) feat.getAttribute(firstFieldName)).concat(((String) feat.getAttribute(secondFieldName)));
-				if (zipCode.equals(val)) {
+				if (((String) feat.getAttribute(firstFieldName)).concat(((String) feat.getAttribute(secondFieldName))).equals(val)) {
 					result.add(feat);
 				}
 			}
@@ -230,7 +230,7 @@ public class ParcelGetter {
 	}
 	
 	/**
-	 * Get parcels out of a parcel collection with the zip code of them parcels
+	 * Get parcels out of a parcel collection with the zip code of them parcels.
 	 * 
 	 * @param parcelIn
 	 *            Input {@link SimpleFeatureCollection} of parcel
@@ -240,11 +240,14 @@ public class ParcelGetter {
 	 * @throws IOException
 	 */
 	public static SimpleFeatureCollection getParcelByCommunityCode(SimpleFeatureCollection parcelIn, String val) throws IOException {
-		//we check if the field for zipcodes is present, otherwise we try national types of parcels 
+		// we check if the field for zipcodes is present, otherwise we try national types of parcels
+		if (parcelIn == null || parcelIn.isEmpty()) {
+			return null;
+		}
 		if (!Collec.isCollecContainsAttribute(parcelIn, ParcelSchema.getMinParcelCommunityField())) {
 			switch (GeneralFields.getParcelFieldType()) {
 			case "french":
-				System.out.println("zob");
+				System.out.println("madevraitpa");
 				return getFrenchParcelByZip(parcelIn, val);
 			}
 		}
@@ -262,7 +265,7 @@ public class ParcelGetter {
 	/**
 	 * prepare the parcel SimpleFeatureCollection and add necessary attributes and informations for an ArtiScales Simulation overload to run on every cities contained into the
 	 * parcel file, simulate a single community and automatically cut all parcels regarding to the zoning file
-	 * 
+	 * @deprecated
 	 * @param currentFile
 	 * @param buildingFile
 	 *            Shapefile containing the building features
@@ -281,7 +284,7 @@ public class ParcelGetter {
 	/**
 	 * prepare the parcel SimpleFeatureCollection and add necessary attributes and informations for an ArtiScales Simulation overload to simulate a single community and
 	 * automatically cut all parcels regarding to the zoning file
-	 * 
+	 * @deprecated
 	 * @param buildingFile
 	 *            Shapefile containing the building features
 	 * @param zoningFile
@@ -450,7 +453,7 @@ public class ParcelGetter {
 								codeParcelsTot.add(code);
 							}
 							sfSimpleBuilder.set("CODE", code);
-							write.add(sfSimpleBuilder.buildFeature(null));
+							write.add(sfSimpleBuilder.buildFeature(Attribute.makeUniqueId()));
 							// this could be nicer but it doesn't work
 							// for (int i = 0; i < codeParcelsTot.size(); i++) {
 							// if (codeParcelsTot.get(i).substring(0, 13).equals(code)) {
@@ -461,7 +464,7 @@ public class ParcelGetter {
 							// sfSimpleBuilder.set("NUMERO", num);
 							// sfSimpleBuilder.set("CODE", code);
 							// codeParcelsTot.add(code);
-							// write.add(sfSimpleBuilder.buildFeature(null));
+							// write.add(sfSimpleBuilder.buildFeature(Attribute.makeUniqueId()));
 
 						}
 					}
@@ -529,7 +532,7 @@ public class ParcelGetter {
 					finalParcelBuilder.set("U", u);
 					finalParcelBuilder.set("AU", au);
 					finalParcelBuilder.set("NC", nc);
-					newParcel.add(finalParcelBuilder.buildFeature(null));
+					newParcel.add(finalParcelBuilder.buildFeature(Attribute.makeUniqueId()));
 				}
 			}
 

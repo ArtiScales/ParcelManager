@@ -18,6 +18,7 @@ import org.opengis.feature.simple.SimpleFeature;
 
 import fr.ign.artiscales.fields.artiscales.ArtiScalesSchemas;
 import fr.ign.artiscales.parcelFunction.MarkParcelAttributeFromPosition;
+import fr.ign.cogit.geoToolsFunctions.Attribute;
 import fr.ign.cogit.geoToolsFunctions.vectors.Geom;
 
 public class ParcelSplit {
@@ -27,22 +28,23 @@ public class ParcelSplit {
    * split.
    * @deprecated
    * @param parcelIn
-   *          : collection of parcels
+   *          Collection of parcels
    * @param tmpFolder
-   *          : a folder to store temporary files
+   *          A folder to store temporary files
    * @param maximalArea
-   *          : area of the parcel under which the parcel won't be anymore cut
+   *          Area of the parcel under which the parcel won't be anymore cut
    * @param maximalWidth
-   *          : width of the parcel under which the parcel won't be anymore cut
+   *          Width of the parcel under which the parcel won't be anymore cut
    * @param epsilon
-   *          :
+   *          Random noise
    * @param extBlock
+   * 		  Exterior lines	
    * @param streetWidth
-   *          : with of the street composing the street network
+   *          Width of the street composing the street network
    * @param decompositionLevelWithoutStreet
-   *          : number of last iteration row for which no street network is generated
+   *          Number of last iteration row for which no street network is generated
    * @param forceStreetAccess
-   *          : force the access to the road for each parcel. Not working good yet.
+   *          Force the access to the road for each parcel. Not working good yet.
    * @return a collection of subdivised parcels
    * @throws Exception
    */
@@ -201,7 +203,6 @@ public class ParcelSplit {
   }
 	  public static SimpleFeatureCollection splitParcels(SimpleFeatureCollection toSplit, double maximalArea, double maximalWidth, double streetEpsilon, double noise,
 		      List<LineString> extBlock, double smallStreetWidth, int largeStreetLevel, double largeStreetWidth, boolean forceStreetAccess, int decompositionLevelWithoutStreet, File tmpFile) throws Exception {
-	  
     // Configure memory datastore
     final MemoryDataStore memory = new MemoryDataStore();
     memory.createSchema(toSplit.getSchema());
@@ -229,7 +230,7 @@ public class ParcelSplit {
 		    .decompose(polygon, extBlock, maximalArea, maximalWidth, noise, streetEpsilon, smallStreetWidth, decompositionLevelWithLargeRoad ,
 									largeStreetWidth, forceStreetAccess, decompositionLevelWithRoad, decompositionLevelWithoutStreet)
 		  	.childrenStream().forEach(p-> {
-            SimpleFeature newFeature = builder.buildFeature(null);
+            SimpleFeature newFeature = builder.buildFeature(Attribute.makeUniqueId());
             newFeature.setDefaultGeometry(p.getKey());
             memory.addFeature(newFeature);
           });

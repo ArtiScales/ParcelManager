@@ -15,6 +15,7 @@ import fr.ign.artiscales.decomposition.ParcelSplit;
 import fr.ign.artiscales.parcelFunction.MarkParcelAttributeFromPosition;
 import fr.ign.artiscales.parcelFunction.ParcelCollection;
 import fr.ign.artiscales.parcelFunction.ParcelSchema;
+import fr.ign.cogit.geoToolsFunctions.Attribute;
 import fr.ign.cogit.geoToolsFunctions.vectors.Collec;
 import fr.ign.cogit.geoToolsFunctions.vectors.Geom;
 
@@ -169,7 +170,7 @@ public class ConsolidationDivision {
 			sfBuilder.set(ParcelSchema.getMinParcelSectionField(), Integer.toString(i));
 			sfBuilder.set(ParcelSchema.getMinParcelCommunityField(),
 					Collec.getFieldFromSFC(multiGeom.getGeometryN(i), parcels, ParcelSchema.getMinParcelCommunityField()));
-			mergedParcels.add(sfBuilder.buildFeature(null));
+			mergedParcels.add(sfBuilder.buildFeature(Attribute.makeUniqueId()));
 		}
 		if (DEBUG) {
 			Collec.exportSFC(mergedParcels.collection(), new File(tmpFolder, "step2.shp"));
@@ -225,7 +226,7 @@ public class ConsolidationDivision {
 						sfBuilderFinalParcel.set(ParcelSchema.getMinParcelNumberField(), String.valueOf(i++));
 						sfBuilderFinalParcel.set(ParcelSchema.getMinParcelCommunityField(),
 								feat.getAttribute(ParcelSchema.getMinParcelCommunityField()));
-						cutParcels.add(sfBuilderFinalParcel.buildFeature(null));
+						cutParcels.add(sfBuilderFinalParcel.buildFeature(Attribute.makeUniqueId()));
 					}
 					it.close();
 				} catch (Exception e) {
@@ -233,7 +234,7 @@ public class ConsolidationDivision {
 				}
 			} else {
 				// parcel not big enough, we directly put it in the collection
-				cutParcels.add(sfBuilderFinalParcel.buildFeature(null, new Object[] { feat.getDefaultGeometry() }));
+				cutParcels.add(sfBuilderFinalParcel.buildFeature(Attribute.makeUniqueId(), new Object[] { feat.getDefaultGeometry() }));
 			}
 		});
 		
@@ -253,7 +254,7 @@ public class ConsolidationDivision {
 		SimpleFeatureType schema = ParcelSchema.getSFBMinParcel().getFeatureType();
 		Arrays.stream(cutBigParcels.toArray(new SimpleFeature[0])).forEach(feat -> {
 			SimpleFeatureBuilder SFBParcel = ParcelSchema.setSFBMinParcelWithFeat(feat, schema);
-			result.add(SFBParcel.buildFeature(null));
+			result.add(SFBParcel.buildFeature(Attribute.makeUniqueId()));
 		});
 		
 		if(SAVEINTERMEDIATERESULT) {
@@ -264,7 +265,7 @@ public class ConsolidationDivision {
 		// add initial non cut parcel to final parcels 
 		Arrays.stream(parcelSaved.toArray(new SimpleFeature[0])).forEach(feat -> {
 			SimpleFeatureBuilder SFBParcel = ParcelSchema.setSFBMinParcelWithFeat(feat, schema);
-			result.add(SFBParcel.buildFeature(null));
+			result.add(SFBParcel.buildFeature(Attribute.makeUniqueId()));
 		});
 		
 		if (DEBUG) {

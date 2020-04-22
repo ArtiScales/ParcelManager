@@ -24,7 +24,7 @@ public class PMScenario {
 	/**
 	 * If true, the parcels simulated for each steps will be the input of the next step. If false, the simulation will operate on the input parcel for each steps
 	 */
-	private static boolean REUSESIMULATEDPARCELSs = true;
+	private static boolean REUSESIMULATEDPARCELS = true;
 	/**
 	 * If true, save a shapefile containing only the simulated parcels in the temporary folder for every goal simulated.
 	 */
@@ -148,7 +148,7 @@ public class PMScenario {
 					fileSet = true;
 				}
 			}
-			if (token == JsonToken.FIELD_NAME && "polygonIntersection".equals(parser.getCurrentName())) {
+			if (token == JsonToken.FIELD_NAME && "polygonIntersectionFile".equals(parser.getCurrentName())) {
 				token = parser.nextToken();
 				if (token == JsonToken.VALUE_STRING) {
 					polygonIntersection = new File(parser.getText());
@@ -192,7 +192,7 @@ public class PMScenario {
 	public void executeStep() throws Exception {
 		for (PMStep pmstep : getStepList()) {
 			System.out.println("try " + pmstep);
-			if (REUSESIMULATEDPARCELSs) {
+			if (REUSESIMULATEDPARCELS) {
 				PMStep.setParcel(pmstep.execute());
 			} else {
 				pmstep.execute();
@@ -225,11 +225,11 @@ public class PMScenario {
 	}
 
 	public boolean isReuseSimulatedParcels() {
-		return REUSESIMULATEDPARCELSs;
+		return REUSESIMULATEDPARCELS;
 	}
 
 	public static void setReuseSimulatedParcels(boolean reuseSimulatedParcel) {
-		REUSESIMULATEDPARCELSs = reuseSimulatedParcel;
+		REUSESIMULATEDPARCELS = reuseSimulatedParcel;
 	}
 
 }

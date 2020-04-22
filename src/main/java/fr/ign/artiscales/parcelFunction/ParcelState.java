@@ -95,41 +95,36 @@ public class ParcelState {
 	}
 
 	/**
-	 * Indicate if the given polygon is near the {@link org.locationtech.jts.geom.Polygon#getExteriorRing() shell} of a given Polygon object. This object is the islandExterior
-	 * argument out of {@link #FlagParcelDecomposition(Polygon, SimpleFeatureCollection, double, double, double, List) the FlagParcelDecomposition constructor} or if not set, the
-	 * bounds of the {@link #polygonInit initial polygon}.
-	 * 
-	 * If no roads have been found and a road shapefile has been set, we look if a road shapefile has been set and if the given road is nearby
+	 * Indicate if the given polygon has a proximity to the road, which can be represented by multiple ways. This could be a road shapefile or a {@link Geometry} representing the
+	 * exterior of a parcel plan.
 	 * 
 	 * @param poly
+	 *            input polygon
 	 * @param roads
+	 *            input road shapefile (can be null)
 	 * @param ext
+	 *            External polygon
 	 * @return true is the polygon has a road access
-	 * @throws Exception
-	 * @throws IOException
 	 */
 	public static boolean isParcelHasRoadAccess(Polygon poly, SimpleFeatureCollection roads, MultiLineString ext) {
 		return isParcelHasRoadAccess(poly, roads, ext, null);
 	}
 
 	/**
-	 * Indicate if the given polygon is near the {@link org.locationtech.jts.geom.Polygon#getExteriorRing() shell} of a given Polygon object. This object is the islandExterior
-	 * argument out of {@link #FlagParcelDecomposition(Polygon, SimpleFeatureCollection, double, double, double, List) the FlagParcelDecomposition constructor} or if not set, the
-	 * bounds of the {@link #polygonInit initial polygon}.
-	 * 
-	 * If no roads have been found and a road shapefile has been set, we look if a road shapefile has been set and if the given road is nearby
+	 * Indicate if the given polygon has a proximity to the road, which can be represented by multiple ways. This could be a road shapefile or a {@link Geometry} representing the
+	 * exterior of a parcel plan. Some empty {@link Geometry} can represent an exclusion zone which won't be taken as a road space when empty of parcels
 	 * 
 	 * @param poly
+	 *            input polygon
 	 * @param roads
+	 *            input road shapefile (can be null)
 	 * @param ext
+	 *            External polygon
 	 * @param disabledBuffer
-	 *            a {@link Geometry} that cannot be considered as absence of road
+	 *            A {@link Geometry} that cannot be considered as absence of road -can be null)
 	 * @return true is the polygon has a road access
-	 * @throws Exception
-	 * @throws IOException
 	 */
 	public static boolean isParcelHasRoadAccess(Polygon poly, SimpleFeatureCollection roads, MultiLineString ext, Geometry disabledBuffer) {
-
 		// if (poly.intersects((((Polygon) ext).getExteriorRing()).buffer(0.5))) {
 		if (poly.intersects(ext.buffer(0.5))) {
 			if (disabledBuffer != null && poly.intersects(disabledBuffer.buffer(0.5))) {
@@ -145,7 +140,7 @@ public class ParcelState {
 	}
 
 	/**
-	 * return false if the parcel mandatory needs a contact with the road to be urbanized. return true otherwise TODO haven't done it for the zones because I only found communities
+	 * Return false if the parcel mandatory needs a contact with the road to be urbanized. return true otherwise TODO haven't done it for the zones because I only found communities
 	 * that set the same rule regardless of the zone, but that could be done
 	 * 
 	 * @param feat

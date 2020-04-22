@@ -26,8 +26,6 @@ public class ArtiScalesParcelFields {
 	 *            Whole set of parcels
 	 * @param buildingFile
 	 *            A shapefile containing the builings of the zone.
-	 * @param communityFile
-	 *            A shapefile containing the communities of the zone.
 	 * @param polygonIntersectionFile
 	 *            A shapefile containing outputs of MUP-City. Can be empty
 	 * @return The parcel set with the right attributes

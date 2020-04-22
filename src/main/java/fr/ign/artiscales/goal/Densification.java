@@ -17,6 +17,7 @@ import org.opengis.filter.FilterFactory2;
 import fr.ign.artiscales.decomposition.ParcelSplitFlag;
 import fr.ign.artiscales.parcelFunction.MarkParcelAttributeFromPosition;
 import fr.ign.artiscales.parcelFunction.ParcelSchema;
+import fr.ign.cogit.geoToolsFunctions.Attribute;
 import fr.ign.cogit.geoToolsFunctions.vectors.Collec;
 import fr.ign.cogit.parameter.ProfileUrbanFabric;
 
@@ -64,6 +65,8 @@ public class Densification {
 	 *            lenght of the driveway to connect a parcel through another parcel to the road
 	 * @param allowIsolatedParcel
 	 *            true if the simulated parcels have the right to be isolated from the road, false otherwise.
+	 * @param exclusionZone
+	 *            Exclude a zone that won't be considered as a potential road connection. Useful to represent border of the parcel plan. Can be null.
 	 * @return The input parcel {@link SimpleFeatureCollection} with the marked parcels replaced by the simulated parcels. All parcels have the
 	 *         {@link fr.ign.artiscales.parcelFunction.ParcelSchema#getSFBMinParcel()} schema. * @throws Exception
 	 */
@@ -121,7 +124,7 @@ public class Densification {
 								sFBMinParcel.set(ParcelSchema.getMinParcelSectionField(), (String) feat.getAttribute(ParcelSchema.getMinParcelSectionField()) + "-Densifyed");
 								sFBMinParcel.set(ParcelSchema.getMinParcelNumberField(), String.valueOf(i++));
 								sFBMinParcel.set(ParcelSchema.getMinParcelCommunityField(), feat.getAttribute(ParcelSchema.getMinParcelCommunityField()));
-								SimpleFeature cutedParcel = sFBMinParcel.buildFeature(null);
+								SimpleFeature cutedParcel = sFBMinParcel.buildFeature(Attribute.makeUniqueId());
 								resultParcels.add(cutedParcel);
 								if (SAVEINTERMEDIATERESULT)
 									onlyCutedParcels.add(cutedParcel);
@@ -131,13 +134,13 @@ public class Densification {
 						} 
 					} else {
 						sFBMinParcel = ParcelSchema.setSFBMinParcelWithFeat(feat, sFBMinParcel.getFeatureType());
-						resultParcels.add(sFBMinParcel.buildFeature(null));
+						resultParcels.add(sFBMinParcel.buildFeature(Attribute.makeUniqueId()));
 					}
 				}
 				// if no simulation needed, we ad the normal parcel
 				else {
 					sFBMinParcel = ParcelSchema.setSFBMinParcelWithFeat(feat, sFBMinParcel.getFeatureType());
-					resultParcels.add(sFBMinParcel.buildFeature(null));
+					resultParcels.add(sFBMinParcel.buildFeature(Attribute.makeUniqueId()));
 				}
 			}
 		} catch (Exception e) {
@@ -272,22 +275,27 @@ public class Densification {
 	 *            ProfileUrbanFabric of the simulated urban scene.
 	 * @param allowIsolatedParcel
 	 *            true if the simulated parcels have the right to be isolated from the road, false otherwise.
+	 * @param exclusionZone
+	 *            Exclude a zone that won't be considered as a potential road connection. Useful to represent border of the parcel plan. Can be null.
 	 * @return The input parcel {@link SimpleFeatureCollection} with the marked parcels replaced by the simulated parcels. All parcels have the
 	 *         {@link fr.ign.artiscales.parcelFunction.ParcelSchema#getSFBMinParcel()} schema.
 	 * @throws Exception
 	 */
 	public static SimpleFeatureCollection densificationOrNeighborhood(SimpleFeatureCollection parcelCollection, SimpleFeatureCollection isletCollection,
-			File tmpFolder, File buildingFile, File roadFile, ProfileUrbanFabric profile, boolean allowIsolatedParcel) throws Exception {
+			File tmpFolder, File buildingFile, File roadFile, ProfileUrbanFabric profile, boolean allowIsolatedParcel, Geometry exclusionZone) throws Exception {
 		// We flagcut the parcels which size is inferior to 4x the max parcel size
 		SimpleFeatureCollection parcelDensified = densification(MarkParcelAttributeFromPosition.markParcelsInf(parcelCollection, (int) profile.getMaximalArea()*4), isletCollection, tmpFolder, buildingFile, roadFile,
 				profile.getMaximalArea(), profile.getMinimalArea(), profile.getMaximalWidth(), profile.getLenDriveway(),
-				allowIsolatedParcel);
+				allowIsolatedParcel, exclusionZone);
 		//if parcels are too big, we try to create neighborhoods inside them with the consolidation algorithm
-		//We first re-mark the parcels that were marked. 
-		parcelDensified = MarkParcelAttributeFromPosition.markAlreadyMarkedParcels(parcelDensified, parcelCollection);
-		SimpleFeatureCollection parcelZone= ConsolidationDivision.consolidationDivision(MarkParcelAttributeFromPosition.markParcelsSup(parcelDensified, (int) profile.getMaximalArea()*4), tmpFolder, 
-				profile.getMaximalArea(), profile.getMinimalArea(), profile.getMaximalWidth(), profile.getStreetWidth(),
-				profile.getDecompositionLevelWithoutStreet());
-		return parcelZone;
+		//We first re-mark the parcels that were marked.
+Collec.exportSFC(parcelDensified, new File("/tmp/intermediateFeatures.shp"));
+		parcelDensified = MarkParcelAttributeFromPosition.markParcelsSup(MarkParcelAttributeFromPosition.markAlreadyMarkedParcels(parcelDensified, parcelCollection), (int) profile.getMaximalArea()*4);
+Collec.exportSFC(parcelDensified, new File("/tmp/intermediateFeaturesMarked.shp"));
+		if (!MarkParcelAttributeFromPosition.isNoParcelMarked(parcelDensified, "DensificatedParcelOfHighArea")) {
+			parcelDensified = ConsolidationDivision.consolidationDivision(parcelDensified, tmpFolder, profile.getMaximalArea(),
+					profile.getMinimalArea(), profile.getMaximalWidth(), profile.getStreetWidth(), profile.getDecompositionLevelWithoutStreet());
+		}
+		return parcelDensified;
 	}
 }

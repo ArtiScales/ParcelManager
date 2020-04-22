@@ -25,6 +25,7 @@ import org.opengis.referencing.NoSuchAuthorityCodeException;
 
 import fr.ign.artiscales.fields.GeneralFields;
 import fr.ign.artiscales.fields.french.FrenchZoningSchemas;
+import fr.ign.cogit.geoToolsFunctions.Attribute;
 import fr.ign.cogit.geoToolsFunctions.vectors.Collec;
 import fr.ign.cogit.geoToolsFunctions.vectors.Geom;
 
@@ -122,12 +123,13 @@ public class MarkParcelAttributeFromPosition {
 						Collec.fromSFCtoRingMultiLines(Collec.snapDatas(islet, geomFeat)))) {
 					featureBuilder.set(markFieldName, 1);
 				} 
-				result.add(featureBuilder.buildFeature(null));
+				result.add(featureBuilder.buildFeature(Attribute.makeUniqueId()));
 			}
 		} catch (Exception e) {
 			System.out.println(e);
 		}
 		sds.dispose();
+		signalIfNoParcelMarked(result, "markParcelsConnectedToRoad");
 		return result.collection();
 		}
 	
@@ -170,11 +172,12 @@ public class MarkParcelAttributeFromPosition {
 				if (isAlreadyMarked(feat) != 0 && ((Geometry)feat.getDefaultGeometry()).getArea() <= size) {
 					featureBuilder.set(markFieldName, 1);
 				} 
-				result.add(featureBuilder.buildFeature(null));
+				result.add(featureBuilder.buildFeature(Attribute.makeUniqueId()));
 			}
 		} catch (Exception e) {
 			System.out.println(e);
 		}
+		signalIfNoParcelMarked(result, "markParcelsInf");
 		return result.collection();
 	}
 	
@@ -219,11 +222,12 @@ public class MarkParcelAttributeFromPosition {
 				if (isAlreadyMarked(feat) != 0 && ((Geometry)feat.getDefaultGeometry()).getArea() > size) {
 					featureBuilder.set(markFieldName, 1);
 				} 
-				result.add(featureBuilder.buildFeature(null));
+				result.add(featureBuilder.buildFeature(Attribute.makeUniqueId()));
 			}
 		} catch (Exception e) {
 			System.out.println(e);
 		}
+		signalIfNoParcelMarked(result, "markParcelsSup");
 		return result.collection();
 }
 	
@@ -282,7 +286,7 @@ public class MarkParcelAttributeFromPosition {
 	 *            Input parcel {@link SimpleFeatureCollection}
 	 * @param minSize
 	 *            Minimal size of parcels to be selected
-	 * @param zoningType
+	 * @param genericZone
 	 *            Type of the zoning plan to take into consideration
 	 * @param zoningFile
 	 *            Shapefile containing the zoning plan
@@ -308,7 +312,8 @@ public class MarkParcelAttributeFromPosition {
 			}
 			nbParcelToMark--;
 		}
-	return parcels;
+		signalIfNoParcelMarked(result, "markRandomParcels");
+		return parcels;
 	}
 	
 	/**
@@ -355,12 +360,13 @@ public class MarkParcelAttributeFromPosition {
 				if (isAlreadyMarked(feat) != 0 && !ParcelState.isAlreadyBuilt(Collec.snapDatas(buildings, (Geometry) feat.getDefaultGeometry()), feat, -1.0)) {
 					featureBuilder.set(markFieldName, 1);
 				} 
-				result.add(featureBuilder.buildFeature(null));
+				result.add(featureBuilder.buildFeature(Attribute.makeUniqueId()));
 			}
 		} catch (Exception e) {
 			System.out.println(e);
 		}
 		sds.dispose();
+		signalIfNoParcelMarked(result, "markUnBuiltParcel");
 		return result.collection();
 	}
 	
@@ -408,12 +414,13 @@ public class MarkParcelAttributeFromPosition {
 				if (isAlreadyMarked(feat) != 0 && ParcelState.isAlreadyBuilt(Collec.snapDatas(buildings, (Geometry) feat.getDefaultGeometry()), feat, -1.0)) {
 					featureBuilder.set(markFieldName, 1);
 				} 
-				result.add(featureBuilder.buildFeature(null));
+				result.add(featureBuilder.buildFeature(Attribute.makeUniqueId()));
 			}
 		} catch (Exception e) {
 			System.out.println(e);
 		}
 		sds.dispose();
+		signalIfNoParcelMarked(result, "markBuiltParcel");
 		return result.collection();
 	}
 	
@@ -437,16 +444,14 @@ public class MarkParcelAttributeFromPosition {
 		
 		DefaultFeatureCollection result = new DefaultFeatureCollection();
 		ShapefileDataStore sds = new ShapefileDataStore(polygonIntersectionFile.toURI().toURL());
-		Geometry geomPolygonIntersection = Geom.unionSFC(Collec.snapDatas(sds.getFeatureSource().getFeatures(), parcels));
-		sds.dispose();
-
+		SimpleFeatureCollection polyCollec = sds.getFeatureSource().getFeatures();
 		final SimpleFeatureType featureSchema = ParcelSchema.getSFBMinParcelSplit().getFeatureType();
 
 		//if features have the schema that the one intended to set, we bypass 
 		if (featureSchema.equals(parcels.getSchema())) {
 			Arrays.stream(parcels.toArray(new SimpleFeature[0])).forEach(feat -> {
 				try {
-					if (isAlreadyMarked(feat) != 0 && ((Geometry) feat.getDefaultGeometry()).intersects(geomPolygonIntersection)) {
+					if (isAlreadyMarked(feat) != 0 && ((Geometry) feat.getDefaultGeometry()).intersects(Geom.unionSFC(Collec.snapDatas(polyCollec, (Geometry) feat.getDefaultGeometry())))) {
 						feat.setAttribute(markFieldName, 1);
 					} else {
 						feat.setAttribute(markFieldName, 0);
@@ -463,14 +468,16 @@ public class MarkParcelAttributeFromPosition {
 			while (it.hasNext()) {
 				SimpleFeature feat = it.next();
 				featureBuilder = ParcelSchema.setSFBMinParcelSplitWithFeat(feat,featureBuilder, featureSchema, 0);
-				if (isAlreadyMarked(feat) != 0 && ((Geometry) feat.getDefaultGeometry()).intersects(geomPolygonIntersection)) {
+				if (isAlreadyMarked(feat) != 0 && ((Geometry) feat.getDefaultGeometry()).intersects(Geom.unionSFC(Collec.snapDatas(polyCollec, (Geometry) feat.getDefaultGeometry())))) {
 					featureBuilder.set(markFieldName, 1);
 				} 
-				result.add(featureBuilder.buildFeature(null));
+				result.add(featureBuilder.buildFeature(Attribute.makeUniqueId()));
 			}
 		} catch (Exception e) {
 			System.out.println(e);
 		}
+		sds.dispose();
+		signalIfNoParcelMarked(result, "markParcelIntersectPolygonIntersection");
 		return result.collection();
 	}
 
@@ -522,11 +529,12 @@ public class MarkParcelAttributeFromPosition {
 						.contains(Collec.getFieldFromSFC((Geometry) feat.getDefaultGeometry(), zoningSFC, GeneralFields.getZoneGenericNameField()))) {
 					featureBuilder.set(markFieldName, 1);
 				}
-				result.add(featureBuilder.buildFeature(null));
+				result.add(featureBuilder.buildFeature(Attribute.makeUniqueId()));
 			}
 		} catch (Exception e) {
 			System.out.println(e);
 		}
+		signalIfNoParcelMarked(result, "markParcelIntersectGenericZoningType");
 		return result;
 	}
 
@@ -542,7 +550,6 @@ public class MarkParcelAttributeFromPosition {
 	 * @param zoningFile
 	 *            A shapefile containing the zoning plan
 	 * @return {@link SimpleFeatureCollection} of the input parcels with marked parcels on the {@link #markFieldName} field.
-	 * @return
 	 * @throws NoSuchAuthorityCodeException
 	 * @throws FactoryException
 	 * @throws IOException
@@ -554,10 +561,9 @@ public class MarkParcelAttributeFromPosition {
 		SimpleFeatureBuilder featureBuilder = ParcelSchema.getSFBMinParcelSplit();
 
 		List<String> genericZoneUsualNames = GeneralFields.getGenericZoneUsualNames(genericZone);
-
 		ShapefileDataStore shpDSZone = new ShapefileDataStore(zoningFile.toURI().toURL());
 		SimpleFeatureCollection zoningSFC = shpDSZone.getFeatureSource().getFeatures();
-
+		
 		try (SimpleFeatureIterator it = parcels.features()) {
 			while (it.hasNext()) {
 				SimpleFeature feat = it.next();
@@ -569,12 +575,13 @@ public class MarkParcelAttributeFromPosition {
 								Collec.getFieldFromSFC((Geometry) feat.getDefaultGeometry(), zoningSFC, GeneralFields.getZonePreciseNameField()))) {
 					featureBuilder.set(markFieldName, 1);
 				}
-				result.add(featureBuilder.buildFeature(null));
+				result.add(featureBuilder.buildFeature(Attribute.makeUniqueId()));
 			}
 		} catch (Exception e) {
 			System.out.println(e);
 		}
 		shpDSZone.dispose();
+		signalIfNoParcelMarked(result, "markParcelIntersectZoningWithoutPreciseZonings");
 		return result;
 	}
 	
@@ -583,9 +590,9 @@ public class MarkParcelAttributeFromPosition {
 	 * 
 	 * @param parcels
 	 *            Input parcel {@link SimpleFeatureCollection}
-	 * @param genericZoning
+	 * @param genericZone
 	 *            The generic type the zoning (either not constructible (NC), urbanizable (U) or to be urbanize (TBU). Other keywords can be tolerate
-	 * @param preciseZoningType
+	 * @param preciseZone
 	 *            The precise zoning type. Can be anything.
 	 * @param zoningFile
 	 *            A shapefile containing the zoning plan
@@ -593,17 +600,18 @@ public class MarkParcelAttributeFromPosition {
 	 * @throws FactoryException
 	 * @throws NoSuchAuthorityCodeException
 	 * @throws IOException
-	 * @throws Exception
 	 */
-	public static SimpleFeatureCollection markParcelIntersectPreciseZoningType(SimpleFeatureCollection parcels, String genericZone, String preciseZone, File zoningFile) throws NoSuchAuthorityCodeException, FactoryException, IOException {
+	public static SimpleFeatureCollection markParcelIntersectPreciseZoningType(SimpleFeatureCollection parcels, String genericZone,
+			String preciseZone, File zoningFile) throws NoSuchAuthorityCodeException, FactoryException, IOException {
 		final SimpleFeatureType featureSchema = ParcelSchema.getSFBMinParcelSplit().getFeatureType();
-		
+
 		// Get the zoning usual names
 		List<String> genericZoneUsualNames = GeneralFields.getGenericZoneUsualNames(genericZone);
 				
 		DefaultFeatureCollection result = new DefaultFeatureCollection();
 		ShapefileDataStore shpDSZone = new ShapefileDataStore(zoningFile.toURI().toURL());
 		SimpleFeatureCollection zoningSFC = shpDSZone.getFeatureSource().getFeatures();
+		SimpleFeatureBuilder featureBuilder = ParcelSchema.getSFBMinParcelSplit();
 		// if features have the schema that the one intended to set, we bypass
 		if (featureSchema.equals(parcels.getSchema())) {
 			Arrays.stream(parcels.toArray(new SimpleFeature[0])).forEach(feat -> {
@@ -623,25 +631,25 @@ public class MarkParcelAttributeFromPosition {
 			});
 			return result;
 		}
-		SimpleFeatureBuilder featureBuilder = ParcelSchema.getSFBMinParcelSplit();
+		
 		try (SimpleFeatureIterator it = parcels.features()) {
 			while (it.hasNext()) {
 				SimpleFeature feat = it.next();
-
 				featureBuilder = ParcelSchema.setSFBMinParcelSplitWithFeat(feat, featureBuilder, featureSchema, 0);
 				if (isAlreadyMarked(feat) != 0
 						&& genericZoneUsualNames.contains(
 								Collec.getFieldFromSFC((Geometry) feat.getDefaultGeometry(), zoningSFC, GeneralFields.getZoneGenericNameField()))
-						&& preciseZone.equals(
-								Collec.getFieldFromSFC((Geometry) feat.getDefaultGeometry(), zoningSFC, GeneralFields.getZonePreciseNameField()))) {
+						&& preciseZone.toLowerCase().equals(
+								Collec.getFieldFromSFC((Geometry) feat.getDefaultGeometry(), zoningSFC, GeneralFields.getZonePreciseNameField()).toLowerCase())) {
 					featureBuilder.set(markFieldName, 1);
 				}
-				result.add(featureBuilder.buildFeature(null));
+				result.add(featureBuilder.buildFeature(Attribute.makeUniqueId()));
 			}
 		} catch (Exception e) {
 			System.out.println(e);
 		}
 		shpDSZone.dispose();
+		signalIfNoParcelMarked(result, "markParcelIntersectPreciseZoningType");
 		return result;
 	}
 	
@@ -660,22 +668,19 @@ public class MarkParcelAttributeFromPosition {
 	 */
 	public static SimpleFeatureCollection markParcelIntersectFrenchConstructibleZoningType(SimpleFeatureCollection parcels, File zoningFile) throws NoSuchAuthorityCodeException, FactoryException, IOException {
 		final SimpleFeatureType featureSchema = ParcelSchema.getSFBMinParcelSplit().getFeatureType();
-		
 		ShapefileDataStore sds = new ShapefileDataStore(zoningFile.toURI().toURL());
 		SimpleFeatureCollection zonings = sds.getFeatureSource().getFeatures();
-
 		DefaultFeatureCollection result = new DefaultFeatureCollection();
-		
 		//if features have the schema that the one intended to set, we bypass 
 		if (featureSchema.equals(parcels.getSchema())) {
-			Arrays.stream(parcels.toArray(new SimpleFeature[0])).forEach(feat -> {
-				if (isAlreadyMarked(feat) != 0 && FrenchZoningSchemas
-						.isUrbanZoneUsuallyAdmitResidentialConstruction(Collec.getSimpleFeatureFromSFC((Geometry) feat.getDefaultGeometry(), zonings))) {
-					feat.setAttribute(markFieldName, 1);
+			Arrays.stream(parcels.toArray(new SimpleFeature[0])).forEach(parcel -> {
+				if (isAlreadyMarked(parcel) != 0 && FrenchZoningSchemas
+						.isUrbanZoneUsuallyAdmitResidentialConstruction(Collec.getSimpleFeatureFromSFC((Geometry) parcel.getDefaultGeometry(), zonings))) {
+					parcel.setAttribute(markFieldName, 1);
 				} else {
-					feat.setAttribute(markFieldName, 0);
+					parcel.setAttribute(markFieldName, 0);
 				}
-				result.add(feat);
+				result.add(parcel);
 			});
 			sds.dispose();
 			return result.collection();
@@ -690,12 +695,13 @@ public class MarkParcelAttributeFromPosition {
 						.isUrbanZoneUsuallyAdmitResidentialConstruction(Collec.getSimpleFeatureFromSFC((Geometry) feat.getDefaultGeometry(), zonings))) {
 					featureBuilder.set(markFieldName, 1);
 				} 
-				result.add(featureBuilder.buildFeature(null));
+				result.add(featureBuilder.buildFeature(Attribute.makeUniqueId()));
 			}
 		} catch (Exception e) {
 			System.out.println(e);
 		}
 		sds.dispose();
+		signalIfNoParcelMarked(result, "markParcelIntersectFrenchConstructibleZoningType");
 		return result;
 	}
 
@@ -734,11 +740,12 @@ public class MarkParcelAttributeFromPosition {
 				if (isAlreadyMarked(feat) != 0 && feat.getAttribute(fieldName).equals(attribute)) {
 					featureBuilder.set(markFieldName, 1);
 				} 
-				result.add(featureBuilder.buildFeature(null));
+				result.add(featureBuilder.buildFeature(Attribute.makeUniqueId()));
 			}
 		} catch (Exception e) {
 			System.out.println(e);
 		}
+		signalIfNoParcelMarked(result, "markParcelOfCommunity");
 		return result;
 	}
 
@@ -779,14 +786,14 @@ public class MarkParcelAttributeFromPosition {
 				try (SimpleFeatureIterator itParcelsMarked = parcelsIntersectRef.features()) {
 					while (itParcelsMarked.hasNext()) {
 						SimpleFeature parcelMarked = itParcelsMarked.next();
-						double inter = geomParcelToMark.intersection((Geometry) parcelMarked.getDefaultGeometry()).getArea();
+						double inter = Geom.scaledGeometryReductionIntersection(Arrays.asList(geomParcelToMark, (Geometry) parcelMarked.getDefaultGeometry())).getArea();
 						// if there are parcel intersection and a similar area, we conclude that parcel haven't changed. We put it in the \"same\" collection and stop the search
 						if (inter > 0.95 * geomArea && inter < 1.05 * geomArea) {
 							for (AttributeDescriptor attr : parcelToMark.getFeatureType().getAttributeDescriptors()) {
 								builder.set(attr.getName(), parcelToMark.getAttribute(attr.getName()));
 							}
 							builder.set(markFieldName, parcelMarked.getAttribute(markFieldName));
-							result.add(builder.buildFeature(null));
+							result.add(builder.buildFeature(Attribute.makeUniqueId()));
 							continue toMarkParcel;
 						}
 
@@ -799,11 +806,12 @@ public class MarkParcelAttributeFromPosition {
 					builder.set(attr.getName(), parcelToMark.getAttribute(attr.getName()));
 				}
 				builder.set(markFieldName, 0);
-				result.add(builder.buildFeature(null));
+				result.add(builder.buildFeature(Attribute.makeUniqueId()));
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+		signalIfNoParcelMarked(result, "markAlreadyMarkedParcels");
 		return result;
 	}
 
@@ -829,11 +837,12 @@ public class MarkParcelAttributeFromPosition {
 				if (isAlreadyMarked(feat) != 0 && GeneralFields.isParcelLikeFrenchHasSimulatedFileds(feat)) {
 					featureBuilder.set(markFieldName, 1);
 				} 
-				result.add(featureBuilder.buildFeature(null));
+				result.add(featureBuilder.buildFeature(Attribute.makeUniqueId()));
 			}
 		} catch (Exception e) {
 			System.out.println(e);
 		}
+		signalIfNoParcelMarked(result, "markSimulatedParcel");
 		return result.collection();
 	}
 
@@ -858,12 +867,29 @@ public class MarkParcelAttributeFromPosition {
 					featureBuilder.set(attr.getName(), feat.getAttribute(attr.getName()));
 				}
 				featureBuilder.set(markFieldName, 1);
-				result.add(featureBuilder.buildFeature(null));
+				result.add(featureBuilder.buildFeature(Attribute.makeUniqueId()));
 			}
 		} catch (Exception e) {
 			System.out.println(e);
 		}
 		return result.collection();
 	}
+	
+	/**
+	 * Sysout if a set of parcels haven't been marked at all. Making that function a lil earlier could have saved me a lot of time
+	 * 
+	 * @param sfcIn
+	 *            Input {@link SimpleFeatureCollection}
+	 * @param methodName
+	 *            Name of the method to wave this name if no parcels have been marked
+	 */
+	public static void signalIfNoParcelMarked(SimpleFeatureCollection sfcIn, String methodName) {
+		if (isNoParcelMarked(sfcIn, methodName)) {
+			System.out.println(" ------ No parcels marked for " + methodName + " method ------");
+		}
+	}
 
+	public static boolean isNoParcelMarked(SimpleFeatureCollection sfcIn, String methodName) {
+		return Arrays.stream(sfcIn.toArray(new SimpleFeature[0])).filter(x -> (int) x.getAttribute(markFieldName) != 0).count() == 0;
+	}
 }
