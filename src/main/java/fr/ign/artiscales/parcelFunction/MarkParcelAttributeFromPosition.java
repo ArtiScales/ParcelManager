@@ -7,6 +7,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.geotools.data.DataUtilities;
 import org.geotools.data.shapefile.ShapefileDataStore;
 import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.data.simple.SimpleFeatureIterator;
@@ -607,12 +608,14 @@ public class MarkParcelAttributeFromPosition {
 
 		// Get the zoning usual names
 		List<String> genericZoneUsualNames = GeneralFields.getGenericZoneUsualNames(genericZone);
-				
 		DefaultFeatureCollection result = new DefaultFeatureCollection();
 		ShapefileDataStore shpDSZone = new ShapefileDataStore(zoningFile.toURI().toURL());
-		SimpleFeatureCollection zoningSFC = shpDSZone.getFeatureSource().getFeatures();
+		SimpleFeatureCollection zoningSFC = DataUtilities.collection(shpDSZone.getFeatureSource().getFeatures());
+		shpDSZone.dispose();
+
 		SimpleFeatureBuilder featureBuilder = ParcelSchema.getSFBMinParcelSplit();
 		// if features have the schema that the one intended to set, we bypass
+Collec.exportSFC(parcels, new File("/tmp/AvantBug"));
 		if (featureSchema.equals(parcels.getSchema())) {
 			Arrays.stream(parcels.toArray(new SimpleFeature[0])).forEach(feat -> {
 				try {
@@ -631,7 +634,7 @@ public class MarkParcelAttributeFromPosition {
 			});
 			return result;
 		}
-		
+System.out.println("ici c'est bon");				
 		try (SimpleFeatureIterator it = parcels.features()) {
 			while (it.hasNext()) {
 				SimpleFeature feat = it.next();
@@ -648,7 +651,8 @@ public class MarkParcelAttributeFromPosition {
 		} catch (Exception e) {
 			System.out.println(e);
 		}
-		shpDSZone.dispose();
+Collec.exportSFC(result, new File("/tmp/IlEnManque"));
+System.out.println("la ça l'est plus");
 		signalIfNoParcelMarked(result, "markParcelIntersectPreciseZoningType");
 		return result;
 	}
@@ -884,12 +888,12 @@ public class MarkParcelAttributeFromPosition {
 	 *            Name of the method to wave this name if no parcels have been marked
 	 */
 	public static void signalIfNoParcelMarked(SimpleFeatureCollection sfcIn, String methodName) {
-		if (isNoParcelMarked(sfcIn, methodName)) {
+		if (isNoParcelMarked(sfcIn)) {
 			System.out.println(" ------ No parcels marked for " + methodName + " method ------");
 		}
 	}
 
-	public static boolean isNoParcelMarked(SimpleFeatureCollection sfcIn, String methodName) {
+	public static boolean isNoParcelMarked(SimpleFeatureCollection sfcIn) {
 		return Arrays.stream(sfcIn.toArray(new SimpleFeature[0])).filter(x -> (int) x.getAttribute(markFieldName) != 0).count() == 0;
 	}
 }

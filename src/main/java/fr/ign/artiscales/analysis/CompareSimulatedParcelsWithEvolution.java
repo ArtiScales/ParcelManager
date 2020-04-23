@@ -49,10 +49,12 @@ public class CompareSimulatedParcelsWithEvolution {
 		CityGeneration.createUrbanIslet(fileParcelPast, rootFolder);
 		
 		PMScenario.setSaveIntermediateResult(true);
-		PMStep.setDEBUG(true);
+//		PMStep.setDEBUG(true);
 		PMStep.setGENERATEATTRIBUTES(false);
 		PMScenario pm = new PMScenario(scenarioFile, outFolder);
 		pm.executeStep();
+		System.out.println("++++++++++ Done with PMscenario ++++++++++");
+		System.out.println();
 		
 		List<File> lF = new	ArrayList<File>();
 
@@ -67,9 +69,12 @@ public class CompareSimulatedParcelsWithEvolution {
 	
 		PMStep.setParcel(fileParcelPast);
 		PMStep.setPOLYGONINTERSECTION(null);
-		System.out.println("++++++++++analysis by zones++++++++++");
+		System.out.println("++++++++++ Analysis by zones ++++++++++");
+		System.out.println("steps"+ pm.getStepList());
 		//we proceed with an analysis made for each steps
+		PMStep.cachePlacesSimulates.clear(); 
 		for (PMStep step : pm.getStepList()) {
+			System.out.println("for step " + step);
 			File zoneOutFolder = new File(outFolder,step.getZoneStudied());
 			zoneOutFolder.mkdirs();
 			Geometry geom = step.getBoundsOfZone();						

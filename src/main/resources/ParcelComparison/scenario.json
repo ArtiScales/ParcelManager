@@ -5,31 +5,27 @@
 	"outFolder": "src/main/resources/ParcelComparison/out/",
 	"steps": [
 		{
-			"goal": "zoneDivision",
+			"goal": "densificationOrNeighborhood",
 			"parcelProcess": "OBB",
 			"genericZone": "U",
 			"preciseZone":"UD",
-			"urbanFabricType": "largeCollective",
-			"communityNumber": "77061,77114,77152,77217,77222,77243,77285,77312,77317,77337,77389,77390,77470"
+			"urbanFabricType": "largeCollective"
+		},	
+		{
+			"goal": "densificationOrNeighborhood",
+			"genericZone": "U",
+			"urbanFabricType": "smallHouse"
 		},		
 		{
 			"goal": "consolidationDivision",
 			"parcelProcess": "OBB",
 			"genericZone": "AU",
-			"urbanFabricType": "smallHouse",
-			"communityNumber": "77061,77114,77152,77217,77222,77243,77285,77312,77317,77337,77389,77390,77470"
+			"urbanFabricType": "smallHouse"
 		},	
 		{
 			"goal": "consolidationDivision",
 			"parcelProcess": "OBB",
 			"genericZone": "NC",
-			"urbanFabricType": "smallHouse",
-			"communityNumber": "77061,77114,77152,77217,77222,77243,77285,77312,77317,77337,77389,77390,77470"
-		},	
-		{
-			"goal": "densificationOrNeighborhood",
-			"genericZone": "U",
-			"urbanFabricType": "smallHouse",
-			"communityNumber": "77061,77114,77152,77217,77222,77243,77285,77312,77317,77337,77389,77390,77470"
+			"urbanFabricType": "smallHouse"
 		}]
 }

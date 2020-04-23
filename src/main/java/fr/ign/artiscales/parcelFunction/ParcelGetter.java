@@ -247,7 +247,6 @@ public class ParcelGetter {
 		if (!Collec.isCollecContainsAttribute(parcelIn, ParcelSchema.getMinParcelCommunityField())) {
 			switch (GeneralFields.getParcelFieldType()) {
 			case "french":
-				System.out.println("madevraitpa");
 				return getFrenchParcelByZip(parcelIn, val);
 			}
 		}

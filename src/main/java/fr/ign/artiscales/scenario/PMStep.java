@@ -74,7 +74,6 @@ public class PMStep {
 		POLYGONINTERSECTION = polygonIntersection;
 		PREDICATEFILE = predicateFile;
 		OUTFOLDER = outFolder;
-		(new File(OUTFOLDER, "debug")).mkdirs();
 		PROFILEFOLDER = profileFolder;
 	}
 
@@ -83,8 +82,7 @@ public class PMStep {
 	
 	private static File PARCELFILE, ZONINGFILE, TMPFOLDER, BUILDINGFILE, ROADFILE, PREDICATEFILE, 
 	POLYGONINTERSECTION, OUTFOLDER, PROFILEFOLDER;
-	private static List<String> cachePlacesSimulates = new ArrayList<String>();
-	private boolean alreadySimuled = false;
+	public static List<String> cachePlacesSimulates = new ArrayList<String>();
 
 	/**
 	 * If true, run method to re-assign fields value
@@ -131,6 +129,7 @@ public class PMStep {
 		for (String communityNumber : communityNumbers) {
 			System.out.println("for community "+communityNumber);
 			SimpleFeatureCollection parcelMarkedComm = ParcelGetter.getParcelByCommunityCode(parcelMarked, communityNumber);
+			
 			// base is the goal : we choose one of the three goals
 			switch (goal) {
 			case "zoneDivision":
@@ -163,7 +162,7 @@ public class PMStep {
 				System.out.println(goal + ": unrekognized goal");
 			}
 		}
-		File output = new File(OUTFOLDER, "parcelCuted-" + goal + "-"+ urbanFabricType + ".shp");
+		File output = new File(OUTFOLDER, "parcelCuted-" + goal + "-"+ urbanFabricType + "-" + genericZone +"_" + preciseZone + ".shp");
 		if (GENERATEATTRIBUTES) {
 			switch (GeneralFields.getParcelFieldType()) {
 			case "french":
@@ -249,14 +248,15 @@ public class PMStep {
 		if (POLYGONINTERSECTION != null && POLYGONINTERSECTION.exists()) {
 			parcel = MarkParcelAttributeFromPosition.markParcelIntersectPolygonIntersection(parcel, POLYGONINTERSECTION);
 		}
-		Collec.exportSFC(parcel, new File(OUTFOLDER, "debug/intersected.shp"));		
-
+		SimpleFeatureCollection result = new DefaultFeatureCollection(); 
 		// parcel marking with a zoning plan (possible to be hacked for any attribute feature selection by setting the field name to the genericZoning scenario parameter) 
 		if (ZONINGFILE != null && ZONINGFILE.exists() && genericZone != null && !genericZone.equals("")) {
 			genericZone = FrenchZoningSchemas.normalizeNameFrenchBigZone(genericZone);
 			// we proceed for each cities (in )
-			for (String nb : communityNumbers) {
-				String place = nb + "-" + genericZone;
+			for (String communityNumber : communityNumbers) {
+				SimpleFeatureCollection parcelCity = ParcelGetter.getParcelByCommunityCode(parcel, communityNumber);
+				boolean alreadySimuled = false;
+				String place = communityNumber + "-" + genericZone;
 				for (String cachePlaceSimulates : cachePlacesSimulates) {
 					if (cachePlaceSimulates.startsWith(place)) {
 						System.out.println("Warning: " + place + " already simulated");
@@ -268,12 +268,12 @@ public class PMStep {
 				if (!alreadySimuled) {
 					// if a generic zone is set but no specific zone are
 					if (genericZone != null && genericZone != "" && (preciseZone == null || preciseZone == "")) {
-						parcel = MarkParcelAttributeFromPosition.markParcelIntersectGenericZoningType(parcel, genericZone, ZONINGFILE);
+						((DefaultFeatureCollection)result).addAll(MarkParcelAttributeFromPosition.markParcelIntersectGenericZoningType(parcelCity, genericZone, ZONINGFILE));
 						cachePlacesSimulates.add(place);
 					}
 					// if a specific zone is also set
 					else if (genericZone != null && genericZone != "" && preciseZone != null && preciseZone != "") {
-						parcel = MarkParcelAttributeFromPosition.markParcelIntersectPreciseZoningType(parcel, genericZone, preciseZone, ZONINGFILE);
+						((DefaultFeatureCollection)result).addAll(MarkParcelAttributeFromPosition.markParcelIntersectPreciseZoningType(parcelCity, genericZone, preciseZone, ZONINGFILE));
 						cachePlacesSimulates.add(place + "-" + preciseZone);
 					}
 				}
@@ -291,29 +291,38 @@ public class PMStep {
 								}
 							}
 						}
+						// if we found specific precise zones, we exclude them from the marking session
 						if (!preciseZones.isEmpty()) {
-							Collec.exportSFC(parcel, new File(OUTFOLDER, "debug/beforeMarkParcelIntersectZoningWithoutPreciseZonings.shp"));
-							parcel = MarkParcelAttributeFromPosition.markParcelIntersectZoningWithoutPreciseZonings(parcel, genericZone, preciseZones,
-									ZONINGFILE);					
+							((DefaultFeatureCollection) result).addAll(MarkParcelAttributeFromPosition
+									.markParcelIntersectZoningWithoutPreciseZonings(parcelCity, genericZone, preciseZones, ZONINGFILE));
 							System.out.println("sparedPreciseZones: " + preciseZones);
-						} else {
-							parcel = MarkParcelAttributeFromPosition.markParcelIntersectGenericZoningType(parcel, genericZone, ZONINGFILE);
+						} 
+						// if no precise zones have been found - this shouldn't happend - but we select zones with generic zoning
+						else {
+							System.out.println("no precise zones have been found - this shouldn't happend");
+							((DefaultFeatureCollection)result).addAll(MarkParcelAttributeFromPosition.markParcelIntersectGenericZoningType(parcelCity, genericZone, ZONINGFILE));
 						}
 						cachePlacesSimulates.add(place);
-					} else if (genericZone != null && genericZone != "" && preciseZone != null && preciseZone != "") {
-						parcel = MarkParcelAttributeFromPosition.markParcelIntersectPreciseZoningType(parcel, genericZone, preciseZone, ZONINGFILE);
+					} 
+					//a precise zone has been specified : we mark them parcels  
+					else if (genericZone != null && genericZone != "" && preciseZone != null && preciseZone != "") {
+						((DefaultFeatureCollection)result).addAll(MarkParcelAttributeFromPosition.markParcelIntersectPreciseZoningType(parcelCity, genericZone, preciseZone, ZONINGFILE));
 						cachePlacesSimulates.add(place + "-" + preciseZone);
 					} else {
 						System.out.println(
 								"getSimulationParcels: zone has already been simulated but not on a small part defined by the preciseZone field");
 					}
 				}
+				 if (parcelCity.isEmpty() || MarkParcelAttributeFromPosition.isNoParcelMarked(parcelCity)) {
+					cachePlacesSimulates.remove(place);
+					cachePlacesSimulates.remove(place + "-" + preciseZone);
+					//TODO find a proper way to remove the whole community?
+				 }
 			}
+		} else {
+			result=parcel;
 		}
-		// compare to the cached simulation to ensure that there's no double
-		System.out.println();
-		DefaultFeatureCollection result = DataUtilities.collection(parcel);
-
+		
 		//if the result is only zones, we return only the interesting parcels 
 		if (goal.equals("zoneDivision")) {
 			result = new DefaultFeatureCollection();
@@ -321,7 +330,7 @@ public class PMStep {
 				while (it.hasNext()) {
 					SimpleFeature feat = it.next();
 					if (feat.getAttribute(MarkParcelAttributeFromPosition.getMarkFieldName()).equals(1)) {
-						result.add(feat);
+						((DefaultFeatureCollection) result).add(feat);
 					}
 				}
 			} catch (Exception problem) {
@@ -341,15 +350,16 @@ public class PMStep {
 	 * @throws NoSuchAuthorityCodeException
 	 */
 	public Geometry getBoundsOfZone() throws IOException, NoSuchAuthorityCodeException, FactoryException {
-		cachePlacesSimulates = new ArrayList<String>();
 		DefaultFeatureCollection zone = new DefaultFeatureCollection();
 		ShapefileDataStore sds = new ShapefileDataStore(PARCELFILE.toURI().toURL());
-		Arrays.stream(getSimulationParcels(sds.getFeatureSource().getFeatures()).toArray(new SimpleFeature[0])).forEach(parcel -> {
+		SimpleFeatureCollection sfc = DataUtilities.collection(sds.getFeatureSource().getFeatures());
+		sds.dispose();
+		SimpleFeatureCollection zones = getSimulationParcels(sfc);
+		Arrays.stream(zones.toArray(new SimpleFeature[0])).forEach(parcel -> {
 			if (parcel.getAttribute(MarkParcelAttributeFromPosition.getMarkFieldName()).equals(1)) {
 				zone.add(parcel);
 			}
 		});
-		sds.dispose();
 		return Geom.unionSFC(zone);
 	}
 
