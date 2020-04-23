@@ -880,7 +880,7 @@ System.out.println("la ça l'est plus");
 	}
 	
 	/**
-	 * Sysout if a set of parcels haven't been marked at all. Making that function a lil earlier could have saved me a lot of time
+	 * Write on the console if a set of parcels haven't been marked at all. Making that function a lil earlier could have saved me a lot of time
 	 * 
 	 * @param sfcIn
 	 *            Input {@link SimpleFeatureCollection}
@@ -894,6 +894,9 @@ System.out.println("la ça l'est plus");
 	}
 
 	public static boolean isNoParcelMarked(SimpleFeatureCollection sfcIn) {
+		if (!Collec.isCollecContainsAttribute(sfcIn, markFieldName)) {
+			return true ;
+		}
 		return Arrays.stream(sfcIn.toArray(new SimpleFeature[0])).filter(x -> (int) x.getAttribute(markFieldName) != 0).count() == 0;
 	}
 }
