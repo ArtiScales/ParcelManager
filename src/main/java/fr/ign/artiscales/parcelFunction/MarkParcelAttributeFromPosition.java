@@ -686,6 +686,7 @@ System.out.println("la ça l'est plus");
 				}
 				result.add(parcel);
 			});
+			signalIfNoParcelMarked(result, "markParcelIntersectFrenchConstructibleZoningType");
 			sds.dispose();
 			return result.collection();
 		}

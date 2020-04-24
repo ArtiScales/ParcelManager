@@ -74,7 +74,7 @@ public class DensificationStudy {
 	 */
 	public static void runDensificationStudy(SimpleFeatureCollection parcels, File buildingFile, File roadFile, File zoningFile,
 			File tmpFolder, File outFolder, boolean isParcelWithoutStreetAllowed, ProfileUrbanFabric profile) throws Exception {
-
+		outFolder.mkdir();
 		SimpleFeatureCollection islet = CityGeneration.createUrbanIslet(parcels);
 
 		String splitField = MarkParcelAttributeFromPosition.getMarkFieldName();
@@ -82,13 +82,19 @@ public class DensificationStudy {
 		SimpleFeatureCollection parcelsVacantLot = MarkParcelAttributeFromPosition
 				.markParcelIntersectFrenchConstructibleZoningType(MarkParcelAttributeFromPosition.markUnBuiltParcel(parcels, buildingFile),
 						zoningFile);
+//		Collec.exportSFC(parcelsVacantLot, new File("/tmp/parcelsVacantLot"));
 		SimpleFeatureCollection parcelsVacantLotCreated = Densification.densificationOrNeighborhood(parcelsVacantLot, islet, tmpFolder, buildingFile,
 				roadFile, profile, isParcelWithoutStreetAllowed, Geom.createBufferBorder(parcels));
+//		Collec.exportSFC(parcelsVacantLotCreated, new File("/tmp/parcelsVacantLotCreated"));
+
 		// simulate the densification of built parcels in the given zone
 		SimpleFeatureCollection parcelsDensifZone = MarkParcelAttributeFromPosition
 				.markParcelIntersectFrenchConstructibleZoningType(MarkParcelAttributeFromPosition.markBuiltParcel(parcels, buildingFile), zoningFile);
+//		Collec.exportSFC(parcelsDensifZone, new File("/tmp/parcelsDensifZone"));
+
 		SimpleFeatureCollection parcelsDensifCreated = Densification.densificationOrNeighborhood(parcelsDensifZone, islet, tmpFolder, buildingFile,
 				roadFile, profile, isParcelWithoutStreetAllowed, Geom.createBufferBorder(parcels));
+//		Collec.exportSFC(parcelsDensifCreated, new File("/tmp/parcelsDensifCreated"));
 
 		// change split name to show if they can be built
 		MarkParcelAttributeFromPosition.setMarkFieldName("BUILDABLE");
@@ -134,5 +140,8 @@ public class DensificationStudy {
 		l.put(ParcelAttribute.getCityCodeOfParcels(parcelsDensifCreated), line);
 		Csv.generateCsvFile(l, outFolder, "densificationStudyResult", firstline, true);
 		Csv.needFLine = false;
+		
+		//redo normal mark name 
+		MarkParcelAttributeFromPosition.setMarkFieldName("SPLIT");
 	}
 }
