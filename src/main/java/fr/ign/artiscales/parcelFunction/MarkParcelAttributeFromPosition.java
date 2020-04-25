@@ -127,7 +127,7 @@ public class MarkParcelAttributeFromPosition {
 				result.add(featureBuilder.buildFeature(Attribute.makeUniqueId()));
 			}
 		} catch (Exception e) {
-			System.out.println(e);
+			e.printStackTrace();
 		}
 		sds.dispose();
 		signalIfNoParcelMarked(result, "markParcelsConnectedToRoad");
@@ -176,7 +176,7 @@ public class MarkParcelAttributeFromPosition {
 				result.add(featureBuilder.buildFeature(Attribute.makeUniqueId()));
 			}
 		} catch (Exception e) {
-			System.out.println(e);
+			e.printStackTrace();
 		}
 		signalIfNoParcelMarked(result, "markParcelsInf");
 		return result.collection();
@@ -226,7 +226,7 @@ public class MarkParcelAttributeFromPosition {
 				result.add(featureBuilder.buildFeature(Attribute.makeUniqueId()));
 			}
 		} catch (Exception e) {
-			System.out.println(e);
+			e.printStackTrace();
 		}
 		signalIfNoParcelMarked(result, "markParcelsSup");
 		return result.collection();
@@ -364,7 +364,7 @@ public class MarkParcelAttributeFromPosition {
 				result.add(featureBuilder.buildFeature(Attribute.makeUniqueId()));
 			}
 		} catch (Exception e) {
-			System.out.println(e);
+			e.printStackTrace();
 		}
 		sds.dispose();
 		signalIfNoParcelMarked(result, "markUnBuiltParcel");
@@ -418,7 +418,7 @@ public class MarkParcelAttributeFromPosition {
 				result.add(featureBuilder.buildFeature(Attribute.makeUniqueId()));
 			}
 		} catch (Exception e) {
-			System.out.println(e);
+			e.printStackTrace();
 		}
 		sds.dispose();
 		signalIfNoParcelMarked(result, "markBuiltParcel");
@@ -475,7 +475,7 @@ public class MarkParcelAttributeFromPosition {
 				result.add(featureBuilder.buildFeature(Attribute.makeUniqueId()));
 			}
 		} catch (Exception e) {
-			System.out.println(e);
+			e.printStackTrace();
 		}
 		sds.dispose();
 		signalIfNoParcelMarked(result, "markParcelIntersectPolygonIntersection");
@@ -533,7 +533,7 @@ public class MarkParcelAttributeFromPosition {
 				result.add(featureBuilder.buildFeature(Attribute.makeUniqueId()));
 			}
 		} catch (Exception e) {
-			System.out.println(e);
+			e.printStackTrace();
 		}
 		signalIfNoParcelMarked(result, "markParcelIntersectGenericZoningType");
 		return result;
@@ -579,7 +579,7 @@ public class MarkParcelAttributeFromPosition {
 				result.add(featureBuilder.buildFeature(Attribute.makeUniqueId()));
 			}
 		} catch (Exception e) {
-			System.out.println(e);
+			e.printStackTrace();
 		}
 		shpDSZone.dispose();
 		signalIfNoParcelMarked(result, "markParcelIntersectZoningWithoutPreciseZonings");
@@ -615,7 +615,6 @@ public class MarkParcelAttributeFromPosition {
 
 		SimpleFeatureBuilder featureBuilder = ParcelSchema.getSFBMinParcelSplit();
 		// if features have the schema that the one intended to set, we bypass
-Collec.exportSFC(parcels, new File("/tmp/AvantBug"));
 		if (featureSchema.equals(parcels.getSchema())) {
 			Arrays.stream(parcels.toArray(new SimpleFeature[0])).forEach(feat -> {
 				try {
@@ -634,7 +633,6 @@ Collec.exportSFC(parcels, new File("/tmp/AvantBug"));
 			});
 			return result;
 		}
-System.out.println("ici c'est bon");				
 		try (SimpleFeatureIterator it = parcels.features()) {
 			while (it.hasNext()) {
 				SimpleFeature feat = it.next();
@@ -649,10 +647,8 @@ System.out.println("ici c'est bon");
 				result.add(featureBuilder.buildFeature(Attribute.makeUniqueId()));
 			}
 		} catch (Exception e) {
-			System.out.println(e);
+			e.printStackTrace();
 		}
-Collec.exportSFC(result, new File("/tmp/IlEnManque"));
-System.out.println("la ça l'est plus");
 		signalIfNoParcelMarked(result, "markParcelIntersectPreciseZoningType");
 		return result;
 	}
@@ -665,12 +661,12 @@ System.out.println("la ça l'est plus");
 	 * @param zoningFile
 	 *            A shapefile containing the zoning plan
 	 * @return {@link SimpleFeatureCollection} of the input parcels with marked parcels on the {@link #markFieldName} field.
-	 * @throws FactoryException 
-	 * @throws NoSuchAuthorityCodeException 
+	 * @throws FactoryException
+	 * @throws NoSuchAuthorityCodeException
 	 * @throws IOException
-	 * @throws Exception
 	 */
-	public static SimpleFeatureCollection markParcelIntersectFrenchConstructibleZoningType(SimpleFeatureCollection parcels, File zoningFile) throws NoSuchAuthorityCodeException, FactoryException, IOException {
+	public static SimpleFeatureCollection markParcelIntersectFrenchConstructibleZoningType(SimpleFeatureCollection parcels, File zoningFile)
+			throws NoSuchAuthorityCodeException, FactoryException, IOException {
 		final SimpleFeatureType featureSchema = ParcelSchema.getSFBMinParcelSplit().getFeatureType();
 		ShapefileDataStore sds = new ShapefileDataStore(zoningFile.toURI().toURL());
 		SimpleFeatureCollection zonings = sds.getFeatureSource().getFeatures();
@@ -703,7 +699,7 @@ System.out.println("la ça l'est plus");
 				result.add(featureBuilder.buildFeature(Attribute.makeUniqueId()));
 			}
 		} catch (Exception e) {
-			System.out.println(e);
+			e.printStackTrace();
 		}
 		sds.dispose();
 		signalIfNoParcelMarked(result, "markParcelIntersectFrenchConstructibleZoningType");
@@ -748,7 +744,7 @@ System.out.println("la ça l'est plus");
 				result.add(featureBuilder.buildFeature(Attribute.makeUniqueId()));
 			}
 		} catch (Exception e) {
-			System.out.println(e);
+			e.printStackTrace();
 		}
 		signalIfNoParcelMarked(result, "markParcelOfCommunity");
 		return result;
@@ -845,7 +841,7 @@ System.out.println("la ça l'est plus");
 				result.add(featureBuilder.buildFeature(Attribute.makeUniqueId()));
 			}
 		} catch (Exception e) {
-			System.out.println(e);
+			e.printStackTrace();
 		}
 		signalIfNoParcelMarked(result, "markSimulatedParcel");
 		return result.collection();
@@ -875,7 +871,7 @@ System.out.println("la ça l'est plus");
 				result.add(featureBuilder.buildFeature(Attribute.makeUniqueId()));
 			}
 		} catch (Exception e) {
-			System.out.println(e);
+			e.printStackTrace();
 		}
 		return result.collection();
 	}
@@ -895,7 +891,7 @@ System.out.println("la ça l'est plus");
 	}
 
 	public static boolean isNoParcelMarked(SimpleFeatureCollection sfcIn) {
-		if (!Collec.isCollecContainsAttribute(sfcIn, markFieldName)) {
+		if (sfcIn == null || sfcIn.isEmpty() || !Collec.isCollecContainsAttribute(sfcIn, markFieldName)) {
 			return true ;
 		}
 		return Arrays.stream(sfcIn.toArray(new SimpleFeature[0])).filter(x -> (int) x.getAttribute(markFieldName) != 0).count() == 0;

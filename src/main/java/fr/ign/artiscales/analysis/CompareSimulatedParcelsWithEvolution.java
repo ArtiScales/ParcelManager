@@ -85,9 +85,9 @@ public class CompareSimulatedParcelsWithEvolution {
 			
 			//simulated parcels crop
 			ShapefileDataStore sdsSimulatedParcel = new ShapefileDataStore(simulatedFile.toURI().toURL());
-			SimpleFeatureCollection sfcSimulatedParcel = Collec.snapDatas(sdsSimulatedParcel.getFeatureSource().getFeatures(),geom);
-			Collec.exportSFC(sfcSimulatedParcel, new File(zoneOutFolder,"SimulatedParcel"));
-			AreaGraph areaSimulatedParcels = MakeStatisticGraphs.sortValuesAndCategorize(sfcSimulatedParcel,"Area of Simulated Parcels");
+			SimpleFeatureCollection sfcSimulatedParcel = Collec.snapDatas(sdsSimulatedParcel.getFeatureSource().getFeatures(), geom);
+			Collec.exportSFC(sfcSimulatedParcel, new File(zoneOutFolder, "SimulatedParcel"));
+			AreaGraph areaSimulatedParcels = MakeStatisticGraphs.sortValuesAndCategorize(sfcSimulatedParcel, "Area of Simulated Parcels");
 			MakeStatisticGraphs.makeGraphHisto(areaSimulatedParcels,zoneOutFolder , "Distribution on zone:"+step.getZoneStudied(), "Surface of simulated parcels",
 					"Nombre ", 10);
 			lAG.add(areaSimulatedParcels);

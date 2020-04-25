@@ -289,9 +289,7 @@ public class Densification {
 				allowIsolatedParcel, exclusionZone);
 		//if parcels are too big, we try to create neighborhoods inside them with the consolidation algorithm
 		//We first re-mark the parcels that were marked.
-Collec.exportSFC(parcelDensified, new File("/tmp/intermediateFeatures.shp"));
 		parcelDensified = MarkParcelAttributeFromPosition.markParcelsSup(MarkParcelAttributeFromPosition.markAlreadyMarkedParcels(parcelDensified, parcelCollection), (int) profile.getMaximalArea()*4);
-Collec.exportSFC(parcelDensified, new File("/tmp/intermediateFeaturesMarked.shp"));
 		if (!MarkParcelAttributeFromPosition.isNoParcelMarked(parcelDensified)) {
 			parcelDensified = ConsolidationDivision.consolidationDivision(parcelDensified, tmpFolder, profile.getMaximalArea(),
 					profile.getMinimalArea(), profile.getMaximalWidth(), profile.getStreetWidth(), profile.getDecompositionLevelWithoutStreet());

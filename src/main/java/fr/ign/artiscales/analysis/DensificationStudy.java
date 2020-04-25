@@ -76,7 +76,8 @@ public class DensificationStudy {
 			File tmpFolder, File outFolder, boolean isParcelWithoutStreetAllowed, ProfileUrbanFabric profile) throws Exception {
 		outFolder.mkdir();
 		SimpleFeatureCollection islet = CityGeneration.createUrbanIslet(parcels);
-
+		Geometry buffer = Geom.createBufferBorder(parcels);
+		
 		String splitField = MarkParcelAttributeFromPosition.getMarkFieldName();
 		// get total unbuilt parcels from the urbanized zones
 		SimpleFeatureCollection parcelsVacantLot = MarkParcelAttributeFromPosition
@@ -84,7 +85,7 @@ public class DensificationStudy {
 						zoningFile);
 //		Collec.exportSFC(parcelsVacantLot, new File("/tmp/parcelsVacantLot"));
 		SimpleFeatureCollection parcelsVacantLotCreated = Densification.densificationOrNeighborhood(parcelsVacantLot, islet, tmpFolder, buildingFile,
-				roadFile, profile, isParcelWithoutStreetAllowed, Geom.createBufferBorder(parcels));
+				roadFile, profile, isParcelWithoutStreetAllowed,buffer );
 //		Collec.exportSFC(parcelsVacantLotCreated, new File("/tmp/parcelsVacantLotCreated"));
 
 		// simulate the densification of built parcels in the given zone
@@ -93,7 +94,7 @@ public class DensificationStudy {
 //		Collec.exportSFC(parcelsDensifZone, new File("/tmp/parcelsDensifZone"));
 
 		SimpleFeatureCollection parcelsDensifCreated = Densification.densificationOrNeighborhood(parcelsDensifZone, islet, tmpFolder, buildingFile,
-				roadFile, profile, isParcelWithoutStreetAllowed, Geom.createBufferBorder(parcels));
+				roadFile, profile, isParcelWithoutStreetAllowed, buffer);
 //		Collec.exportSFC(parcelsDensifCreated, new File("/tmp/parcelsDensifCreated"));
 
 		// change split name to show if they can be built
@@ -133,7 +134,7 @@ public class DensificationStudy {
 		sds.dispose();
 		
 		// saving the stats in a .csv file
-		String[] firstline = { "parcels in urbanizable zones", "DEPCOM", "number of vacant lots", "parcels simulated in vacant lots",
+		String[] firstline = { "DEPCOM", "parcels in urbanizable zones", "number of vacant lots", "parcels simulated in vacant lots",
 				"parcels simulated by densification" };
 		Object[] line = { nbParcelsInUrbanizableZones, nbVacantLot, nbVacantLotParcels, vacantParcelU.size() };
 		HashMap<String, Object[]> l = new HashMap<String,Object[]>();
