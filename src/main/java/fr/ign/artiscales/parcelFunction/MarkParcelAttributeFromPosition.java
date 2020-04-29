@@ -90,6 +90,28 @@ public class MarkParcelAttributeFromPosition {
 	 * @throws IOException
 	 */
 	public static SimpleFeatureCollection markParcelsConnectedToRoad(SimpleFeatureCollection parcels, SimpleFeatureCollection islet, File roadFile) throws NoSuchAuthorityCodeException, FactoryException, IOException {
+		return markParcelsConnectedToRoad(parcels, islet, roadFile, null);
+	}
+	
+	/**
+	 * Mark the parcels that have a connection to the road network, represented either by the void of parcels or road lines (optional)
+	 * 
+	 * @param parcels
+	 *            Input parcel {@link SimpleFeatureCollection}
+	 * @param islet
+	 *            {@link SimpleFeatureCollection} containing the morphological islet. Can be generated with the
+	 *            {@link fr.ign.cogit.geometryGeneration.CityGeneration#createUrbanIslet(File, File)} method.
+	 * @param roadFile
+	 *            Shapefile containing the road segments
+	 * @param exclusionZone
+	 *            Zone to be excluded for not counting an empty parcel as a road
+	 * @return {@link SimpleFeatureCollection} of the input parcels with marked parcels on the {@link #markFieldName} field.
+	 * 
+	 * @throws NoSuchAuthorityCodeException
+	 * @throws FactoryException
+	 * @throws IOException
+	 */
+	public static SimpleFeatureCollection markParcelsConnectedToRoad(SimpleFeatureCollection parcels, SimpleFeatureCollection islet, File roadFile, Geometry exclusionZone) throws NoSuchAuthorityCodeException, FactoryException, IOException {
 		ShapefileDataStore sds = new ShapefileDataStore(roadFile.toURI().toURL());
 		SimpleFeatureCollection roads = Collec.snapDatas(sds.getFeatureSource().getFeatures(), parcels);
 		final SimpleFeatureType featureSchema = ParcelSchema.getSFBMinParcelSplit().getFeatureType();
@@ -100,7 +122,7 @@ public class MarkParcelAttributeFromPosition {
 				try {
 					Geometry geomFeat = (Geometry) feat.getDefaultGeometry();
 					if (isAlreadyMarked(feat) != 0 && ParcelState.isParcelHasRoadAccess((Polygon) Geom.getPolygon(geomFeat),
-							Collec.snapDatas(roads, geomFeat), Collec.fromSFCtoRingMultiLines(Collec.snapDatas(islet, geomFeat)))) {
+							Collec.snapDatas(roads, geomFeat), Collec.fromSFCtoRingMultiLines(Collec.snapDatas(islet, geomFeat)), exclusionZone)) {
 						feat.setAttribute(markFieldName, 1);
 					} else {
 						feat.setAttribute(markFieldName, 0);
@@ -120,10 +142,10 @@ public class MarkParcelAttributeFromPosition {
 				SimpleFeature feat = it.next();
 				Geometry geomFeat = (Geometry) feat.getDefaultGeometry();
 				featureBuilder = ParcelSchema.setSFBMinParcelSplitWithFeat(feat,featureBuilder, featureSchema, 0);
-				if (isAlreadyMarked(feat) != 0 &&  ParcelState.isParcelHasRoadAccess((Polygon) Geom.getPolygon(geomFeat), Collec.snapDatas(roads, geomFeat),
-						Collec.fromSFCtoRingMultiLines(Collec.snapDatas(islet, geomFeat)))) {
+				if (isAlreadyMarked(feat) != 0 && ParcelState.isParcelHasRoadAccess((Polygon) Geom.getPolygon(geomFeat),
+						Collec.snapDatas(roads, geomFeat), Collec.fromSFCtoRingMultiLines(Collec.snapDatas(islet, geomFeat)), exclusionZone)) {
 					featureBuilder.set(markFieldName, 1);
-				} 
+				}
 				result.add(featureBuilder.buildFeature(Attribute.makeUniqueId()));
 			}
 		} catch (Exception e) {

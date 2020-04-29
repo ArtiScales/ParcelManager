@@ -77,7 +77,6 @@ public class DensificationStudy {
 		outFolder.mkdir();
 		SimpleFeatureCollection islet = CityGeneration.createUrbanIslet(parcels);
 		Geometry buffer = Geom.createBufferBorder(parcels);
-		
 		String splitField = MarkParcelAttributeFromPosition.getMarkFieldName();
 		// get total unbuilt parcels from the urbanized zones
 		SimpleFeatureCollection parcelsVacantLot = MarkParcelAttributeFromPosition
@@ -85,8 +84,8 @@ public class DensificationStudy {
 						zoningFile);
 //		Collec.exportSFC(parcelsVacantLot, new File("/tmp/parcelsVacantLot"));
 		SimpleFeatureCollection parcelsVacantLotCreated = Densification.densificationOrNeighborhood(parcelsVacantLot, islet, tmpFolder, buildingFile,
-				roadFile, profile, isParcelWithoutStreetAllowed,buffer );
-//		Collec.exportSFC(parcelsVacantLotCreated, new File("/tmp/parcelsVacantLotCreated"));
+				roadFile, profile, isParcelWithoutStreetAllowed, buffer);
+		// Collec.exportSFC(parcelsVacantLotCreated, new File("/tmp/parcelsVacantLotCreated"));
 
 		// simulate the densification of built parcels in the given zone
 		SimpleFeatureCollection parcelsDensifZone = MarkParcelAttributeFromPosition
@@ -107,8 +106,8 @@ public class DensificationStudy {
 				.markUnBuiltParcel(MarkParcelAttributeFromPosition.markSimulatedParcel(parcelsDensifCreated), buildingFile);
 		// If the parcels have to be connected to the road, we mark them
 		if (!isParcelWithoutStreetAllowed) {
-			parcelsVacantLotCreated = MarkParcelAttributeFromPosition.markParcelsConnectedToRoad(parcelsVacantLotCreated, islet, roadFile);
-			parcelsDensifCreated = MarkParcelAttributeFromPosition.markParcelsConnectedToRoad(parcelsDensifCreated, islet, roadFile);
+			parcelsVacantLotCreated = MarkParcelAttributeFromPosition.markParcelsConnectedToRoad(parcelsVacantLotCreated, islet, roadFile, buffer);
+			parcelsDensifCreated = MarkParcelAttributeFromPosition.markParcelsConnectedToRoad(parcelsDensifCreated, islet, roadFile, buffer);
 		}
 		// exporting output shapefiles and countings
 		List<SimpleFeature> vacantParcelU = Arrays.stream(parcelsDensifCreated.toArray(new SimpleFeature[0]))
@@ -123,7 +122,7 @@ public class DensificationStudy {
 		System.out.println("number of vacant lots "+ nbVacantLot);
 		System.out.println("possible to have "+ nbVacantLotParcels + " buildable parcels out of it");
 		System.out.println();
-		System.out.println("possible to have " + vacantParcelU.size() + " densifiable parcels");
+		System.out.println("possible to have " + vacantParcelU.size() + " parcels with densification process");
 		
 		ShapefileDataStore sds = new ShapefileDataStore(zoningFile.toURI().toURL());
 		SimpleFeatureCollection zoning = sds.getFeatureSource().getFeatures();
@@ -132,7 +131,7 @@ public class DensificationStudy {
 						.isUrbanZoneUsuallyAdmitResidentialConstruction(Collec.getSimpleFeatureFromSFC((Geometry) feat.getDefaultGeometry(), zoning)))
 				.count();
 		sds.dispose();
-		
+
 		// saving the stats in a .csv file
 		String[] firstline = { "DEPCOM", "parcels in urbanizable zones", "number of vacant lots", "parcels simulated in vacant lots",
 				"parcels simulated by densification" };

@@ -125,12 +125,11 @@ public class PMStep {
 		SimpleFeatureCollection parcelCut = new DefaultFeatureCollection();
 		// get the wanted building profile
 		ProfileUrbanFabric profile = ProfileUrbanFabric.convertJSONtoProfile(new File(PROFILEFOLDER + "/" + urbanFabricType + ".json"));
-		// in case of lot of cities to simulate, we separate the execution to different
+		// in case of lot of cities to simulate, we separate the execution of PM simulations for each community
 		for (String communityNumber : communityNumbers) {
 			System.out.println("for community "+communityNumber);
 			SimpleFeatureCollection parcelMarkedComm = ParcelGetter.getParcelByCommunityCode(parcelMarked, communityNumber);
-			
-			// base is the goal : we choose one of the three goals
+			// we choose one of the different goals
 			switch (goal) {
 			case "zoneDivision":
 				ZoneDivision.PROCESS = parcelProcess;
@@ -162,7 +161,14 @@ public class PMStep {
 				System.out.println(goal + ": unrekognized goal");
 			}
 		}
+		// we add the parcels from the communities that haven't been simulated 
+		for(String communityCode : ParcelAttribute.getCityCodesOfParcels(parcel)) {
+			if (communityNumbers.contains(communityCode))
+				continue;
+			((DefaultFeatureCollection) parcelCut).addAll( ParcelGetter.getParcelByCommunityCode(parcel, communityCode));
+		}
 		File output = new File(OUTFOLDER, "parcelCuted-" + goal + "-"+ urbanFabricType + "-" + genericZone +"_" + preciseZone + ".shp");
+		//Attribute generation (optional)
 		if (GENERATEATTRIBUTES) {
 			switch (GeneralFields.getParcelFieldType()) {
 			case "french":
@@ -173,7 +179,6 @@ public class PMStep {
 		}
 		Collec.exportSFC(parcelCut, output);
 		shpDSParcel.dispose();
-
 		//if the step produces no output, we return the input parcels
 		if(!output.exists()) {
 			System.out.println("PMstep "+this.toString() +" returns nothing");

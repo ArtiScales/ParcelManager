@@ -156,8 +156,8 @@ public class ParcelState {
 	}
 
 	/**
-	 * return false if the parcel mandatory needs a contact with the road to be urbanized. return true otherwise TODO haven't done it for the zones because I only found communities
-	 * that set the same rule regardless of the zone, but that could be done
+	 * Return false if the parcel mandatory needs a contact with the road to be urbanized. return true otherwise TODO haven't done it for the zones because I only found communities
+	 * that set the same rule regardless of the zone, but that could be done.
 	 * 
 	 * @param insee
 	 *            The community number of the concerned city
@@ -167,9 +167,8 @@ public class ParcelState {
 	 * @throws IOException
 	 */
 	public static boolean isArt3AllowsIsolatedParcel(String insee, File predicateFile) throws IOException {
-		if(!predicateFile.exists()) {
+		if(!predicateFile.exists())
 			return false;
-		}
 		// get rule file
 		CSVReader rule = new CSVReader(new FileReader(predicateFile));
 		// seek for attribute numbers
@@ -192,8 +191,7 @@ public class ParcelState {
 	}
 
 	/**
-	 * This algorithm looks if a parcel is overlapped by a building and returns true
-	 * if they are.
+	 * This algorithm looks if a parcel is overlapped by a building and returns true if they are.
 	 * 
 	 * @param batiSFC
 	 * @param feature
