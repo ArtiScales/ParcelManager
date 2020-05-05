@@ -14,6 +14,7 @@ import org.opengis.referencing.FactoryException;
 import org.opengis.referencing.NoSuchAuthorityCodeException;
 
 import fr.ign.artiscales.fields.GeneralFields;
+import fr.ign.artiscales.parcelFunction.MarkParcelAttributeFromPosition;
 import fr.ign.artiscales.parcelFunction.ParcelSchema;
 import fr.ign.cogit.geoToolsFunctions.Attribute;
 import fr.ign.cogit.geoToolsFunctions.vectors.Collec;
@@ -32,15 +33,27 @@ public class FrenchParcelFields {
 	 * @throws IOException
 	 */
 	public static SimpleFeatureCollection frenchParcelToMinParcel(SimpleFeatureCollection parcels) throws NoSuchAuthorityCodeException, FactoryException, IOException {
-		SimpleFeatureBuilder builder = ParcelSchema.getSFBMinParcel();
 		DefaultFeatureCollection result = new DefaultFeatureCollection();
+		if (Collec.isCollecContainsAttribute(parcels, MarkParcelAttributeFromPosition.getMarkFieldName())){
+			SimpleFeatureBuilder builder = ParcelSchema.getSFBMinParcelSplit();
+			try (SimpleFeatureIterator parcelIt = parcels.features()){
+				while (parcelIt.hasNext()) {
+					SimpleFeature parcel = parcelIt.next();
+					result.add(ParcelSchema.setSFBMinParcelSplitWithFeat(parcel, builder, builder.getFeatureType(),(int) parcel.getAttribute(MarkParcelAttributeFromPosition.getMarkFieldName())).buildFeature(Attribute.makeUniqueId()));
+				}
+			} catch (Exception problem) {
+				problem.printStackTrace();
+			}	
+		} else {
+		SimpleFeatureBuilder builder = ParcelSchema.getSFBMinParcel();
 		try (SimpleFeatureIterator parcelIt = parcels.features()){
 			while (parcelIt.hasNext()) {
 				SimpleFeature parcel = parcelIt.next();
-				result.add(ParcelSchema.setSFBMinParcelWithFeat(parcel, builder, parcel.getFeatureType()).buildFeature(Attribute.makeUniqueId()));
+				result.add(ParcelSchema.setSFBMinParcelWithFeat(parcel, builder, builder.getFeatureType()).buildFeature(Attribute.makeUniqueId()));
 			}
 		} catch (Exception problem) {
 			problem.printStackTrace();
+		}
 		}
 		return result.collection();
 	}

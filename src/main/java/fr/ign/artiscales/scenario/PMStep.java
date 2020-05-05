@@ -79,6 +79,7 @@ public class PMStep {
 
 	private String goal, parcelProcess, communityNumber, communityType , urbanFabricType , genericZone, preciseZone;
 	List<String> communityNumbers = new ArrayList<String>(); 
+	private File lastOutput;
 	
 	private static File PARCELFILE, ZONINGFILE, TMPFOLDER, BUILDINGFILE, ROADFILE, PREDICATEFILE, 
 	POLYGONINTERSECTION, OUTFOLDER, PROFILEFOLDER;
@@ -122,7 +123,7 @@ public class PMStep {
 		shpDSZone.dispose();
 		if (DEBUG)
 			Collec.exportSFC(parcelMarked, new File(TMPFOLDER, "parcelMarked" + this.getZoneStudied()));
-		SimpleFeatureCollection parcelCut = new DefaultFeatureCollection();
+		SimpleFeatureCollection parcelCut = new DefaultFeatureCollection(null,ParcelSchema.getSFBMinParcel().getFeatureType());
 		// get the wanted building profile
 		ProfileUrbanFabric profile = ProfileUrbanFabric.convertJSONtoProfile(new File(PROFILEFOLDER + "/" + urbanFabricType + ".json"));
 		// in case of lot of cities to simulate, we separate the execution of PM simulations for each community
@@ -133,7 +134,7 @@ public class PMStep {
 			switch (goal) {
 			case "zoneDivision":
 				ZoneDivision.PROCESS = parcelProcess;
-				parcelCut = ZoneDivision.zoneDivision(parcelMarkedComm, parcel, TMPFOLDER, ZONINGFILE,
+				parcelCut = ZoneDivision.zoneDivision(parcelMarkedComm, parcel, TMPFOLDER, ZONINGFILE, profile.getRoadEpsilon(), profile.getNoise(),
 						profile.getMaximalArea(), profile.getMinimalArea(), profile.getMaximalWidth(), profile.getStreetWidth(),
 						profile.getLargeStreetLevel(), profile.getLargeStreetWidth(), profile.getDecompositionLevelWithoutStreet());
 				parcel = parcelCut;
@@ -149,7 +150,7 @@ public class PMStep {
 				break;
 			case "consolidationDivision":
 				ConsolidationDivision.PROCESS = parcelProcess;
-				((DefaultFeatureCollection) parcelCut).addAll(ConsolidationDivision.consolidationDivision(parcelMarkedComm, TMPFOLDER, profile.getMaximalArea(), profile.getMinimalArea(),
+				((DefaultFeatureCollection) parcelCut).addAll(ConsolidationDivision.consolidationDivision(parcelMarkedComm, ROADFILE, TMPFOLDER, profile.getRoadEpsilon(), profile.getNoise(), profile.getMaximalArea(), profile.getMinimalArea(),
 						profile.getMaximalWidth(), profile.getStreetWidth(), profile.getLargeStreetLevel(), profile.getLargeStreetWidth(),
 						profile.getDecompositionLevelWithoutStreet()));
 				break;
@@ -165,9 +166,10 @@ public class PMStep {
 		for(String communityCode : ParcelAttribute.getCityCodesOfParcels(parcel)) {
 			if (communityNumbers.contains(communityCode))
 				continue;
-			((DefaultFeatureCollection) parcelCut).addAll( ParcelGetter.getParcelByCommunityCode(parcel, communityCode));
+			((DefaultFeatureCollection) parcelCut)
+					.addAll(GeneralFields.transformSFCToMinParcel(ParcelGetter.getParcelByCommunityCode(parcel, communityCode)));
 		}
-		File output = new File(OUTFOLDER, "parcelCuted-" + goal + "-"+ urbanFabricType + "-" + genericZone +"_" + preciseZone + ".shp");
+		lastOutput = new File(OUTFOLDER, "parcelCuted-" + goal + "-"+ urbanFabricType + "-" + genericZone +"_" + preciseZone + ".shp");
 		//Attribute generation (optional)
 		if (GENERATEATTRIBUTES) {
 			switch (GeneralFields.getParcelFieldType()) {
@@ -177,14 +179,14 @@ public class PMStep {
 				break;
 			}
 		}
-		Collec.exportSFC(parcelCut, output);
+		Collec.exportSFC(parcelCut, lastOutput);
 		shpDSParcel.dispose();
 		//if the step produces no output, we return the input parcels
-		if(!output.exists()) {
+		if(!lastOutput.exists()) {
 			System.out.println("PMstep "+this.toString() +" returns nothing");
 			return PARCELFILE;
 		}
-		return output;
+		return lastOutput;
 	}
 	
 	/**
@@ -349,23 +351,23 @@ public class PMStep {
 	 * Generate the bound of the parcels that are simulated by the current PMStep. Uses the marked parcels by the {@link #getSimulationParcels(SimpleFeatureCollection)} method.
 	 * Flush the cache.
 	 * 
-	 * @return A geometry of the simulated parcels
+	 * @return A list of the geometries of the simulated parcels
 	 * @throws IOException
 	 * @throws FactoryException
 	 * @throws NoSuchAuthorityCodeException
 	 */
-	public Geometry getBoundsOfZone() throws IOException, NoSuchAuthorityCodeException, FactoryException {
-		DefaultFeatureCollection zone = new DefaultFeatureCollection();
+	public List<Geometry> getBoundsOfZone() throws IOException, NoSuchAuthorityCodeException, FactoryException {
 		ShapefileDataStore sds = new ShapefileDataStore(PARCELFILE.toURI().toURL());
 		SimpleFeatureCollection sfc = DataUtilities.collection(sds.getFeatureSource().getFeatures());
 		sds.dispose();
+		List<Geometry> lG = new ArrayList<Geometry>();
 		SimpleFeatureCollection zones = getSimulationParcels(sfc);
 		Arrays.stream(zones.toArray(new SimpleFeature[0])).forEach(parcel -> {
 			if (parcel.getAttribute(MarkParcelAttributeFromPosition.getMarkFieldName()).equals(1)) {
-				zone.add(parcel);
+				lG.add((Geometry) parcel.getDefaultGeometry());
 			}
 		});
-		return Geom.unionSFC(zone);
+		return lG;
 	}
 
 	public static void setParcel(File parcelFile) {
@@ -412,5 +414,13 @@ public class PMStep {
 	public String toString() {
 		return "PMStep [goal=" + goal + ", parcelProcess=" + parcelProcess + ", communityNumber=" + communityNumber + ", communityType="
 				+ communityType + ", urbanFabricType=" + urbanFabricType + ", genericZone=" + genericZone + ", preciseZone=" + preciseZone + "]";
+	}
+
+	public File getLastOutput() {
+		return lastOutput;
+	}
+
+	public void setLastOutput(File lastOutput) {
+		this.lastOutput = lastOutput;
 	}
 }

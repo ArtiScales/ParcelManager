@@ -11,6 +11,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map.Entry;
+import java.util.stream.Collectors;
 
 import org.geotools.data.shapefile.ShapefileDataStore;
 import org.geotools.data.simple.SimpleFeatureCollection;
@@ -18,6 +19,8 @@ import org.geotools.data.simple.SimpleFeatureIterator;
 import org.geotools.factory.CommonFactoryFinder;
 import org.geotools.util.factory.GeoTools;
 import org.locationtech.jts.geom.Geometry;
+import org.locationtech.jts.geom.GeometryFactory;
+import org.locationtech.jts.geom.LineString;
 import org.locationtech.jts.geom.MultiLineString;
 import org.locationtech.jts.geom.Polygon;
 import org.locationtech.jts.geom.PrecisionModel;
@@ -64,6 +67,18 @@ public class ParcelState {
 	  private static String widthFieldAttribute = "LARGEUR";
 	  private static double defaultWidthRoad = 7.5;
 	
+	public static int countParcelNeighborhood(Geometry parcelGeom, SimpleFeatureCollection parcels) {
+		int result = 0;
+		try (SimpleFeatureIterator parcelIt = parcels.features()) {
+			while (parcelIt.hasNext()) {
+				if (GeometryPrecisionReducer.reduce((Geometry) parcelIt.next().getDefaultGeometry(), new PrecisionModel(10)).buffer(1)
+						.intersects(GeometryPrecisionReducer.reduce(parcelGeom, new PrecisionModel(10)))) 
+					result++;
+			}
+		}
+		return result;
+	}
+
 	/**
 	 * Get a list of the surrounding buffered road segments.
 	 * 
@@ -78,8 +93,7 @@ public class ParcelState {
 		// List<Geometry> roadGeom = Arrays.stream(Collec.snapDatas(roads, poly.buffer(5)).toArray(new SimpleFeature[0]))
 		// .map(g -> ((Geometry) g.getDefaultGeometry()).buffer((double) g.getAttribute("LARGEUR"))).collect(Collectors.toList());
 		List<Geometry> roadGeom = new ArrayList<Geometry>();
-		SimpleFeatureIterator roadSnapIt = roads.features();
-		try {
+		try (SimpleFeatureIterator roadSnapIt = roads.features()){
 			while (roadSnapIt.hasNext()) {
 				SimpleFeature feat = roadSnapIt.next();
 				roadGeom.add(((Geometry) feat.getDefaultGeometry())
@@ -88,12 +102,62 @@ public class ParcelState {
 			}
 		} catch (Exception problem) {
 			problem.printStackTrace();
-		} finally {
-			roadSnapIt.close();
 		}
 		return roadGeom;
 	}
 
+  	/**
+	 * Determine the width of the parcel on road.
+	 * @param p
+	 *            input {@link Polygon}
+	 * @param exterior
+	 *            lines 
+	 * @return width of the parcel on road
+	 */
+	public static double getParcelFrontSideWidth(Polygon p, SimpleFeatureCollection roads, List<LineString> ext) {
+		MultiLineString l = null;
+		try {
+			l = p.getFactory().createMultiLineString(ext.toArray(new LineString[ext.size()]));
+			double len = p.buffer(0.2).intersection(l).getLength();
+			if (len > 0)
+				return len;
+			if (roads != null) {
+				MultiLineString road = Geom.getListAsGeom(
+						Arrays.stream(roads.toArray(new SimpleFeature[0])).filter(r -> ((Geometry) r.getDefaultGeometry()).intersects(p))
+								.flatMap(r -> Geom.getLineString((Geometry) r.getDefaultGeometry()).stream()).collect(Collectors.toList()),
+						new GeometryFactory());
+				len = p.buffer(0.2).intersection(road).getLength();
+				if (len > 0)
+					return len;
+				else
+					return 0;
+			} else
+				return 0;
+		} catch (Exception e) {
+			try {
+				l = p.getFactory().createMultiLineString(ext.toArray(new LineString[ext.size()]));
+				double len = p.buffer(0.4).intersection(l).getLength();
+				if (len > 0)
+					return len;
+				if (roads != null) {
+					List<LineString> list = Arrays.stream(roads.toArray(new SimpleFeature[0]))
+							.filter(r -> ((Geometry) r.getDefaultGeometry()).intersects(p))
+							.flatMap(r -> Geom.getLineString((Geometry) r.getDefaultGeometry()).stream()).collect(Collectors.toList());
+					MultiLineString road = Geom.getListAsGeom(list, new GeometryFactory());
+					len = p.buffer(0.4).intersection(road).getLength();
+					if (len > 0)
+						return len;
+					else
+						return 0;
+				} else
+					return 0;
+			} catch (Exception ee) {
+				return 0;
+			}
+		}
+	}
+
+	
 	/**
 	 * Indicate if the given polygon has a proximity to the road, which can be represented by multiple ways. This could be a road shapefile or a {@link Geometry} representing the
 	 * exterior of a parcel plan.
@@ -450,7 +514,7 @@ public class ParcelState {
 
 	/**
 	 * return the typologies that a parcels intersect
-	 * 
+	 * @deprecated
 	 * @param parcelIn
 	 * @param communityFile
 	 * @return the multiple parcel intersected, sorted by area of occupation

@@ -49,14 +49,12 @@ public class ParcelSchema {
 		builder.set(minParcelSectionField, feat.getAttribute(minParcelSectionField));
 		builder.set(minParcelNumberField, feat.getAttribute(minParcelNumberField));
 
-		//setting zipcode
-		if (Collec.isSimpleFeatureContainsAttribute(feat,minParcelCommunityField)) {
+		// setting zipcode
+		if (Collec.isSimpleFeatureContainsAttribute(feat,minParcelCommunityField))
 			builder.set(minParcelCommunityField, feat.getAttribute(minParcelCommunityField));
-		}
-		//if looks like French parcel
-		else if (Collec.isSimpleFeatureContainsAttribute(feat, "CODE_DEP")) {
+		// if looks like French parcel
+		else if (Collec.isSimpleFeatureContainsAttribute(feat, "CODE_DEP")) 
 			builder.set(ParcelSchema.getMinParcelCommunityField(), ((String) feat.getAttribute("CODE_DEP")).concat((String) feat.getAttribute("CODE_COM")));
-		}
 		return builder;
 	}
 	
@@ -70,7 +68,6 @@ public class ParcelSchema {
 		sfTypeBuilder.add(minParcelCommunityField, String.class);
 		sfTypeBuilder.add(minParcelNumberField, String.class);
 		sfTypeBuilder.add(MarkParcelAttributeFromPosition.getMarkFieldName(), Integer.class);
-
 		return new SimpleFeatureBuilder(sfTypeBuilder.buildFeatureType());
 	}
 
@@ -90,17 +87,13 @@ public class ParcelSchema {
 		builder.set(minParcelNumberField, feat.getAttribute(minParcelNumberField));
 
 		//setting zipcode
-		if (Collec.isSimpleFeatureContainsAttribute(feat,minParcelCommunityField)) {
+		if (Collec.isSimpleFeatureContainsAttribute(feat,minParcelCommunityField))
 			builder.set(minParcelCommunityField, feat.getAttribute(minParcelCommunityField));
-		}
 		//if looks like french parcel
-		else if (Collec.isSimpleFeatureContainsAttribute(feat, "CODE_DEP")) {
+		else if (Collec.isSimpleFeatureContainsAttribute(feat, "CODE_DEP")) 
 			builder.set(ParcelSchema.getMinParcelCommunityField(), ((String) feat.getAttribute("CODE_DEP")).concat((String) feat.getAttribute("CODE_COM")));
-		}
 		return builder;
 	}
-	
-
 
 	public static SimpleFeatureBuilder getSFBSchemaWithMultiPolygon(SimpleFeatureType schema) {
 		SimpleFeatureTypeBuilder sfTypeBuilder = new SimpleFeatureTypeBuilder();
@@ -119,11 +112,8 @@ public class ParcelSchema {
 	
 	public static SimpleFeatureBuilder setSFBSchemaWithMultiPolygon(SimpleFeature feat) {
 		SimpleFeatureBuilder builder = getSFBSchemaWithMultiPolygon(feat.getFeatureType());
-		for (AttributeDescriptor attr : feat.getFeatureType().getAttributeDescriptors()) {
-//			if (attr.getLocalName().equals("the_geom"))
-//				continue;
+		for (AttributeDescriptor attr : feat.getFeatureType().getAttributeDescriptors())
 			builder.set(attr.getName(), feat.getAttribute(attr.getName()));
-		}
 		return builder;
 	}
 	
@@ -134,9 +124,8 @@ public class ParcelSchema {
 	 */
 	public static SimpleFeatureBuilder addSplitField(SimpleFeatureType schema) {
 		SimpleFeatureTypeBuilder sfTypeBuilder = new SimpleFeatureTypeBuilder();
-		for (AttributeDescriptor attr : schema.getAttributeDescriptors()) {
+		for (AttributeDescriptor attr : schema.getAttributeDescriptors())
 			sfTypeBuilder.add(attr);
-		}
 		sfTypeBuilder.add(MarkParcelAttributeFromPosition.markFieldName, int.class);
 		sfTypeBuilder.setName(schema.getName());
 		sfTypeBuilder.setCRS(schema.getCoordinateReferenceSystem());

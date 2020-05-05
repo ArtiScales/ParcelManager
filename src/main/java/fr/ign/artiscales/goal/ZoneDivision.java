@@ -22,7 +22,7 @@ import org.opengis.filter.FilterFactory2;
 import org.opengis.referencing.FactoryException;
 import org.opengis.referencing.NoSuchAuthorityCodeException;
 
-import fr.ign.artiscales.decomposition.ParcelSplit;
+import fr.ign.artiscales.decomposition.OBBBlockDecomposition;
 import fr.ign.artiscales.fields.GeneralFields;
 import fr.ign.artiscales.parcelFunction.MarkParcelAttributeFromPosition;
 import fr.ign.artiscales.parcelFunction.ParcelAttribute;
@@ -32,6 +32,7 @@ import fr.ign.cogit.FeaturePolygonizer;
 import fr.ign.cogit.geoToolsFunctions.Attribute;
 import fr.ign.cogit.geoToolsFunctions.vectors.Collec;
 import fr.ign.cogit.geoToolsFunctions.vectors.Geom;
+import fr.ign.cogit.geometryGeneration.CityGeneration;
 
 /**
  * Simulation following this goal operates on a zone rather than on parcels. Zones are usually taken from a zoning plan and their integration is made with the
@@ -90,7 +91,7 @@ public class ZoneDivision {
 	public static SimpleFeatureCollection zoneDivision(SimpleFeatureCollection initialZone, SimpleFeatureCollection parcels, File tmpFolder,
 			File zoningFile, double maximalArea, double minimalArea, double maximalWidth, double streetWidth, int decompositionLevelWithoutStreet)
 			throws Exception {
-		return zoneDivision(initialZone, parcels, tmpFolder, zoningFile, maximalArea, minimalArea, maximalWidth, streetWidth, 999, streetWidth,
+		return zoneDivision(initialZone, parcels, tmpFolder, zoningFile, 0.5, 0, maximalArea, minimalArea, maximalWidth, streetWidth, 999, streetWidth,
 				decompositionLevelWithoutStreet);
 	}
 
@@ -126,15 +127,8 @@ public class ZoneDivision {
 	 * @throws Exception
 	 */
 	public static SimpleFeatureCollection zoneDivision(SimpleFeatureCollection initialZone, SimpleFeatureCollection parcels, File tmpFolder,
-			File zoningFile, double maximalArea, double minimalArea, double maximalWidth, double smallStreetWidth, int largeStreetLevel,
+			File zoningFile, double roadEpsilon, double noise, double maximalArea, double minimalArea, double maximalWidth, double smallStreetWidth, int largeStreetLevel,
 			double largeStreetWidth, int decompositionLevelWithoutStreet) throws Exception {
-		return zoneDivision(initialZone, parcels, tmpFolder, zoningFile, maximalArea, minimalArea, maximalWidth, smallStreetWidth, largeStreetLevel,
-				largeStreetWidth, decompositionLevelWithoutStreet, 0, 0);
-	}
-
-	public static SimpleFeatureCollection zoneDivision(SimpleFeatureCollection initialZone, SimpleFeatureCollection parcels, File tmpFolder,
-			File zoningFile, double maximalArea, double minimalArea, double maximalWidth, double smallStreetWidth, int largeStreetLevel, double largeStreetWidth, int decompositionLevelWithoutStreet, double roadEpsilon ,double noise)
-			throws Exception {
 
 		// parcel geometry name for all
 		String geomName = parcels.getSchema().getGeometryDescriptor().getLocalName();
@@ -231,10 +225,11 @@ public class ZoneDivision {
 		
 		// Parcel subdivision
 		SimpleFeatureCollection splitedParcels  = new DefaultFeatureCollection();
+		SimpleFeatureCollection isletCollection = CityGeneration.createUrbanIslet(parcels);
 		switch (PROCESS) {
 		case "OBB":
-			splitedParcels = ParcelSplit.splitParcels(goOdZone, maximalArea, maximalWidth, roadEpsilon, noise, null, smallStreetWidth,
-					largeStreetLevel, largeStreetWidth, false, decompositionLevelWithoutStreet, tmpFolder);
+			splitedParcels = OBBBlockDecomposition.splitParcels(goOdZone, null, maximalArea, maximalWidth, roadEpsilon, noise, 	Collec.fromPolygonSFCtoListRingLines(isletCollection), smallStreetWidth,
+					largeStreetLevel, largeStreetWidth, true, decompositionLevelWithoutStreet);
 			break;
 		case "SS":
 			System.out.println("not implemented yet");

@@ -1,5 +1,6 @@
 package fr.ign.artiscales.decomposition;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -9,6 +10,8 @@ import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
+import org.geotools.data.DataUtilities;
+import org.geotools.data.shapefile.ShapefileDataStore;
 import org.geotools.data.simple.SimpleFeatureCollection;
 import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.geom.LineString;
@@ -17,6 +20,7 @@ import org.locationtech.jts.geom.Polygon;
 import org.locationtech.jts.geom.PrecisionModel;
 import org.locationtech.jts.operation.union.CascadedPolygonUnion;
 import org.locationtech.jts.precision.GeometryPrecisionReducer;
+import org.opengis.feature.simple.SimpleFeature;
 
 import fr.ign.artiscales.parcelFunction.ParcelState;
 import fr.ign.cogit.FeaturePolygonizer;
@@ -41,87 +45,99 @@ public class FlagParcelDecomposition {
 
   // We remove some parts that may have a too small area < 25
   public static double TOO_SMALL_PARCEL_AREA = 25;
+  
+	// public static void main(String[] args) throws Exception {
+	// /////////////////////////
+	// //////// try the generateFlagSplitedParcels method
+	// /////////////////////////
+	// File rootFolder = new File("src/main/resources/GeneralTest/");
+	//
+	// // Input 1/ the input parcelles to split
+	// File inputShapeFile = new File("/tmp/marked.shp");
+	// // Input 2 : the buildings that mustnt intersects the allowed roads (facultatif)
+	// File inputBuildingFile = new File(rootFolder, "building.shp");
+	// // Input 3 (facultative) : the exterior of the urban block (it serves to determiner the multicurve)
+	// File inputUrbanBlock = new File(rootFolder, "islet.shp");
+	// // Input 4 (facultative) : a road shapefile (it can be used to check road access if this is better than characerizing road as an absence of parcel)
+	// File inputRoad = new File(rootFolder, "road.shp");
+	//
+	// File tmpFolder = new File("/tmp/");
+	//
+	// FilterFactory2 ff = CommonFactoryFinder.getFilterFactory2();
+	// ShapefileDataStore sdsIlot = new ShapefileDataStore(inputUrbanBlock.toURI().toURL());
+	// SimpleFeatureCollection collec = sdsIlot.getFeatureSource().getFeatures();
+	// ShapefileDataStore sds = new ShapefileDataStore(inputShapeFile.toURI().toURL());
+	// try (SimpleFeatureIterator it = sds.getFeatureSource().getFeatures().features()){
+	// while (it.hasNext()) {
+	// SimpleFeature feat = it.next();
+	// List<LineString> lines = Collec.fromSFCtoListRingLines(
+	// collec.subCollection(ff.bbox(ff.property(feat.getFeatureType().getGeometryDescriptor().getLocalName()), feat.getBounds())));
+	// if (feat.getAttribute(MarkParcelAttributeFromPosition.getMarkFieldName()) != null
+	// && (int) feat.getAttribute(MarkParcelAttributeFromPosition.getMarkFieldName()) == 1) {
+	// generateFlagSplitedParcels(feat, lines, tmpFolder, inputBuildingFile, inputRoad, 400.0, 15.0, 3.0, false, null);
+	// }
+	// }
+	// } catch (Exception problem) {
+	// problem.printStackTrace();
+	// }
+	// sds.dispose();
+	// sdsIlot.dispose();
+	// }
 
+	public static SimpleFeatureCollection generateFlagSplitedParcels(SimpleFeature feat, List<LineString> extLines, double noise, File tmpFolder, File buildingFile,
+			Double maximalAreaSplitParcel, Double maximalWidthSplitParcel, Double lenDriveway, boolean allowIsolatedParcel) throws Exception {
+		return generateFlagSplitedParcels(feat, extLines, noise, tmpFolder, buildingFile, null, maximalAreaSplitParcel, maximalWidthSplitParcel, lenDriveway,
+				allowIsolatedParcel, null);
+	}
 
-//  public static void main(String[] args) throws Exception {
-//
-//    // Input 1/ the input parcelles to split
-//    String inputShapeFile = "src/main/resources/testData/parcelle.shp";
-//    // Input 2 : the buildings that mustnt intersects the allowed roads (facultatif)
-//    String inputBuildingFile = "src/main/resources/testData/building.shp";
-//    // Input 3 (facultative) : the exterior of the urban block (it serves to determiner the multicurve)
-//    String inputUrbanBlock = "src/main/resources/testData/ilot.shp";
-//    // IFeatureCollection<IFeature> featC = ShapefileReader.read(inputUrbanBlock);
-//    ShapefileDataStore blockDS = new ShapefileDataStore(new File(inputUrbanBlock).toURI().toURL());
-//    SimpleFeatureCollection blocks = blockDS.getFeatureSource().getFeatures();
-//    String folderOut = "data/";
-//    // The output file that will contain all the decompositions
-//    String shapeFileOut = folderOut + "outflag.shp";
-//    (new File(folderOut)).mkdirs();
-//    // Reading collection
-//    ShapefileDataStore parcelDS = new ShapefileDataStore(new File(inputShapeFile).toURI().toURL());
-//    SimpleFeatureCollection parcels = parcelDS.getFeatureSource().getFeatures();
-//    ShapefileDataStore buildingsDS = new ShapefileDataStore(new File(inputBuildingFile).toURI().toURL());
-//    SimpleFeatureCollection buildings = buildingsDS.getFeatureSource().getFeatures();
-//    List<LineString> list = new ArrayList<>();
-//    SimpleFeatureIterator iterator = Util.select(blocks, JTS.toGeometry(parcels.getBounds())).features();
-//    while (iterator.hasNext()) {
-//      SimpleFeature f = iterator.next();
-//      Util.getPolygons((Geometry) f.getDefaultGeometry()).stream().forEach(p -> list.add(p.getExteriorRing()));
-//    }
-//    iterator.close();
-//    blockDS.dispose();
-//
-//    // Maxmimal area for a parcel
-//    double maximalArea = 800;
-//    // MAximal with to the road
-//    double maximalWidth = 15;
-//    // Do we want noisy results
-//    double noise = 0;
-//    // The with of the road that is created
-//    double roadWidth = 3;
-//    //
-//    // IFeatureCollection<IFeature> featCollOut = new FT_FeatureCollection<>();
-//    //
-//    List<Polygon> finalResult = new ArrayList<>();
-//    iterator = parcels.features();
-//    // For each shape
-//    while (iterator.hasNext()) {
-//      SimpleFeature feat = iterator.next();
-////      if (feat.getAttribute("NUMERO").toString().equalsIgnoreCase("0024") && feat.getAttribute("FEUILLE").toString().equalsIgnoreCase("2")
-////          && feat.getAttribute("SECTION").toString().equalsIgnoreCase("0A")) {
-//
-//      if (true) {
-//        Geometry geom = (Geometry) feat.getDefaultGeometry();
-//        // IDirectPosition dp = new DirectPosition(0, 0, 0); // geom.centroid();
-//        // geom = geom.translate(-dp.getX(), -dp.getY(), 0);
-//
-//        // List<IOrientableSurface> surfaces = FromGeomToSurface.convertGeom(geom);
-//        List<Polygon> surfaces = Util.getPolygons(geom);
-//
-//        if (surfaces.size() != 1) {
-//          System.out.println("Not simple geometry : " + feat.toString());
-//          continue;
-//        }
-//
-//        // We run the algorithm of decomposition
-//        FlagParcelDecomposition ffd = new FlagParcelDecomposition(surfaces.get(0), buildings, maximalArea, maximalWidth, roadWidth, list);
-//        System.out.println("EXT");
-//        System.out.println(ffd.getExtAsGeom());
-//        List<Polygon> results = ffd.decompParcel(noise);
-//
-//        // final int intCurrentCount = i;
-//        // results.stream().forEach(x -> AttributeManager.addAttribute(x, "ID", intCurrentCount, "Integer"));
-//        // results.stream().forEach(x -> x.setGeom(x.getGeom().translate(dp.getX(), dp.getY(), 0)));
-//        // Get the results
-//        // featCollOut.addAll(results);
-//        finalResult.addAll(results);
-//      }
-//    }
-//    iterator.close();
-//    buildingsDS.dispose();
-//    parcelDS.dispose();
-//  }
+	/**
+	 * Main way to access to the flag parcel split algorithm. 
+	 * @param feat
+	 * @param extLines
+	 * @param tmpFolder
+	 * @param buildingFile
+	 * @param roadFile
+	 * @param maximalAreaSplitParcel
+	 * @param maximalWidthSplitParcel
+	 * @param lenDriveway
+	 * @param allowIsolatedParcel
+	 * @param exclusionZone
+	 * @return
+	 * @throws Exception
+	 */
+	public static SimpleFeatureCollection generateFlagSplitedParcels(SimpleFeature feat, List<LineString> extLines, double noise, File tmpFolder, File buildingFile,
+			File roadFile, Double maximalAreaSplitParcel, Double maximalWidthSplitParcel, Double lenDriveway, boolean allowIsolatedParcel,
+			Geometry exclusionZone) throws Exception {
+		ShapefileDataStore buildingDS = new ShapefileDataStore(buildingFile.toURI().toURL());
+		List<Polygon> surfaces = Util.getPolygons((Geometry) feat.getDefaultGeometry());
+		// as the road shapefile can be left as null, we differ the FlagParcelDecomposition constructor
+		FlagParcelDecomposition fpd;
+		if (roadFile != null && roadFile.exists()) {
+			ShapefileDataStore roadSDS = new ShapefileDataStore(roadFile.toURI().toURL());
+			Geometry geom = ((Geometry) feat.getDefaultGeometry()).buffer(10);
+			fpd = new FlagParcelDecomposition(surfaces.get(0), Collec.snapDatas(buildingDS.getFeatureSource().getFeatures(), geom),
+					Collec.snapDatas(roadSDS.getFeatureSource().getFeatures(), geom), maximalAreaSplitParcel, maximalWidthSplitParcel, lenDriveway,
+					extLines, exclusionZone);
+			roadSDS.dispose();
+		} else {
+			fpd = new FlagParcelDecomposition(surfaces.get(0),
+					Collec.snapDatas(buildingDS.getFeatureSource().getFeatures(), ((Geometry) feat.getDefaultGeometry()).buffer(10)),
+					maximalAreaSplitParcel, maximalWidthSplitParcel, lenDriveway, extLines, exclusionZone);
+		}
+		List<Polygon> decomp = fpd.decompParcel(noise);
+		// if the size of the collection is 1, no flag cut has been done. We check if we can normal cut it, if allowed
+		if (decomp.size() == 1 && allowIsolatedParcel) {
+			System.out.println("normal decomp instead of flagg decomp allowed and done");
+			return OBBBlockDecomposition.splitParcels(feat, maximalAreaSplitParcel, maximalWidthSplitParcel, 0.5, noise, extLines, 0, true, 99);
+		}
+		File fileOut = new File(tmpFolder, "tmp_split.shp");
+		FeaturePolygonizer.saveGeometries(decomp, fileOut, "Polygon");
+		ShapefileDataStore sds = new ShapefileDataStore(fileOut.toURI().toURL());
+		SimpleFeatureCollection parcelOut = DataUtilities.collection(sds.getFeatureSource().getFeatures());
+		sds.dispose();
+		buildingDS.dispose();
+		return parcelOut;
+	}
   
 
   private double maximalArea, maximalWidth, drivewayWidth;
@@ -265,7 +281,7 @@ public class FlagParcelDecomposition {
       return Collections.singletonList(p);
     }
     // Determination of splitting polygon (it is a splitting line in the article)
-    List<Polygon> splittingPolygon = OBBBlockDecomposition.computeSplittingPolygon(p, this.getExt(), true, noise,0.0,0,0.0,0,0);
+    List<Polygon> splittingPolygon = OBBBlockDecomposition.computeSplittingPolygon(p, this.getExt(), true, noise, 0.0,0.0,0,0.0,0,0);
     // Split into polygon
     List<Polygon> splitPolygon = OBBBlockDecomposition.split(p, splittingPolygon);
     long nbNoRoadAccess = splitPolygon.stream().filter(x -> !hasRoadAccess(x)).count();
@@ -314,16 +330,12 @@ public class FlagParcelDecomposition {
    *  </ul>
    */
   private Pair<List<Polygon>, List<Polygon>> generateFlagParcel(List<Polygon> splittedPolygon) {
-//    splittedPolygon.stream().forEach(p -> System.out.println(p));
-
     List<Polygon> left = new ArrayList<>();
     List<Polygon> right = new ArrayList<>();
 
     // We get the two geometries with and without road access
     List<Polygon> lPolygonWithRoadAccess = splittedPolygon.stream().filter(x -> hasRoadAccess(x)).collect(Collectors.toList());
     List<Polygon> lPolygonWithNoRoadAccess = splittedPolygon.stream().filter(x -> !hasRoadAccess(x)).collect(Collectors.toList());
-//    System.out.println("lPolygonWithNoRoadAccess");
-//    lPolygonWithNoRoadAccess.stream().forEach(p -> System.out.println(p));
 
     bouclepoly: for (Polygon currentPoly : lPolygonWithNoRoadAccess) {
       List<Pair<MultiLineString, Polygon>> listMap = generateCandidateForCreatingRoad(currentPoly, lPolygonWithRoadAccess);
@@ -339,61 +351,31 @@ public class FlagParcelDecomposition {
         // The geometry road
         Geometry road = side.getKey().buffer(this.drivewayWidth);
         Polygon polygon = side.getValue();
-//        System.out.println("ROAD");
-//        System.out.println(road);
         // The road intersects a building on the property, we do not keep it
-        if (!Util.select(Collec.snapDatas(this.buildings,this.polygonInit.buffer(-0.5)), road).isEmpty()) {
-//           System.out.println("Building case : " + this.polygonInit);
+        if (!Util.select(Collec.snapDatas(this.buildings,this.polygonInit.buffer(-0.5)), road).isEmpty()) 
           continue;
-        }
         try {
+        // The first geometry is the polygon with road access and a remove of the geometry
           Geometry geomPol1 = getDifference(polygon, road);
           Geometry geomPol2 = getIntersection(getUnion(currentPoly, road), getUnion(currentPoly,polygon));
-          // The first geometry is the polygon with road access and a remove of the geometry
-//        Geometry geomPol1 = null;
-//        Geometry roadToAdd = null;
-//        try {
-//          Pair<Geometry,Geometry> intersectionDifference = getIntersectionDifference(side.getValue(), road);
-//          roadToAdd = intersectionDifference.getLeft();
-//          geomPol1 = intersectionDifference.getRight();
-//        } catch (Exception e) {
-//          e.printStackTrace();
-//        }
-//        Geometry geomPol2;
-//        try {
-//          geomPol2 = getUnion(currentPoly, roadToAdd);
-//        } catch (Exception e) {
-//          e.printStackTrace();
-//          geomPol2 = currentPoly.union(roadToAdd.buffer(0.01)).buffer(0.0);
-//        }
-
         // It might be a multi polygon so we remove the small area <
         List<Polygon> lPolygonsOut1 = Util.getPolygons(geomPol1);
         lPolygonsOut1 = lPolygonsOut1.stream().filter(x -> x.getArea() > TOO_SMALL_PARCEL_AREA).collect(Collectors.toList());
 
         List<Polygon> lPolygonsOut2 = Util.getPolygons(geomPol2);
         lPolygonsOut2 = lPolygonsOut2.stream().filter(x -> x.getArea() > TOO_SMALL_PARCEL_AREA).collect(Collectors.toList());
-//        System.out.println("lPolygonsOut1");
-//        lPolygonsOut1.stream().forEach(p -> System.out.println(p));
-//        System.out.println("lPolygonsOut2");
-//        lPolygonsOut2.stream().forEach(p -> System.out.println(p));
 
         // We check if there is a road acces for all, if not we abort
         for (Polygon pol : lPolygonsOut1) {
           if (!hasRoadAccess(pol)) {
-//            System.out.println("Road access is missing for the parcel that used to have a road access ; polyinit : " + this.polygonInit);
-//            System.out.println("Current polyg : " + pol);
             continue boucleside;
           }
         }
         for (Polygon pol : lPolygonsOut2) {
           if (!hasRoadAccess(pol)) {
-//            System.out.println("Road access is missing for the densified parcel ; polyinit : " + this.polygonInit);
-//            System.out.println("Current polyg : " + pol);
             continue boucleside;
           }
         }
-
         // We directly add the result from polygon 2 to the results
         right.addAll(lPolygonsOut2);
         
@@ -407,7 +389,6 @@ public class FlagParcelDecomposition {
           e.printStackTrace();
         }
       }
-      // System.out.println("I am empty"); generateFlagParcel(splittedPolygon);
       // We have added nothing if we are here, we kept the initial polygon
       right.add(currentPoly);
     }
@@ -416,6 +397,7 @@ public class FlagParcelDecomposition {
     return new ImmutablePair<List<Polygon>, List<Polygon>>(left, right);
   }
 
+  //TODO move those functions to ArtiScales-Tools? 
   private Geometry getDifference(Geometry a, Geometry b) throws Exception {
     PrecisionModel pm = new PrecisionModel(100);
     Geometry jtsGeomA = GeometryPrecisionReducer.reduce(a, pm);
@@ -481,35 +463,28 @@ private Pair<Geometry,Geometry> getIntersectionDifference(Geometry a, Geometry b
   }
 
   /**
-   * End condition : either the area is below a threshold or width to road
+   * End condition : either the area is below a threshold or width to road (which is ultimately allowed to be 0). Goes to the {@link OBBBlockDecomposition} class 
    * 
    * @param area
+   *            Area of the current parcel
    * @param frontSideWidth
-   * @return
+   *            width of contact between road and parcel
+   * @return true if the algorithm must stop
    */
   private boolean endCondition(double area, double frontSideWidth) {
-	return (area <= maximalArea) || ((frontSideWidth <= maximalWidth) && (frontSideWidth != 0.0));
+	return OBBBlockDecomposition.endCondition(area, frontSideWidth, maximalArea, maximalWidth);
   }
 
-  /**
-   * Determine the width of the parcel on road
-   * 
-   * @param p
-   * @return
-   */
-  private double frontSideWidth(Polygon p) {
-    Geometry geom = p.buffer(1).intersection(this.getExtAsGeom());
-    if (geom == null) {
-      geom = p.buffer(5).intersection(this.getExtAsGeom());
-    }
-    if (geom == null) {
-      System.out.println("Cannot process to intersection between");
-      System.out.println(p.toString());
-      System.out.println(this.getExt().toString());
-      return 0;
-    }
-    return geom.getLength();
-  }
+	/**
+	 * Determine the width of the parcel on road
+	 * 
+	 * @param p
+	 *            input {@link Polygon}
+	 * @return the length of contact between parcel and road
+	 */
+	private double frontSideWidth(Polygon p) {
+		return ParcelState.getParcelFrontSideWidth(p, roads, ext);
+	}
   
 	/**
 	 * Indicate if the given polygon is near the {@link org.locationtech.jts.geom.Polygon#getExteriorRing() shell} of a given Polygon object. This object is the islandExterior
@@ -520,15 +495,11 @@ private Pair<Geometry,Geometry> getIntersectionDifference(Geometry a, Geometry b
 	 * 
 	 * @param poly
 	 */
-  public boolean hasRoadAccess(Polygon poly){
+ private boolean hasRoadAccess(Polygon poly){
 	return ParcelState.isParcelHasRoadAccess(poly, roads, poly.getFactory().createMultiLineString(ext.toArray(new LineString[ext.size()])),exclusionZone);
   }
-  
-//  public boolean hasRoadAccess(Polygon poly) {
-//	    return (poly.intersects(getExtAsGeom().buffer(0.5)));
-//	  }
 
-  public MultiLineString getListAsGeom(List<LineString> list) {
+ private MultiLineString getListAsGeom(List<LineString> list) {
     return Geom.getListAsGeom(list, this.polygonInit.getFactory());
   }
   

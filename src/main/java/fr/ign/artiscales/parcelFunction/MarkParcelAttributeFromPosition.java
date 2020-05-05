@@ -122,7 +122,7 @@ public class MarkParcelAttributeFromPosition {
 				try {
 					Geometry geomFeat = (Geometry) feat.getDefaultGeometry();
 					if (isAlreadyMarked(feat) != 0 && ParcelState.isParcelHasRoadAccess((Polygon) Geom.getPolygon(geomFeat),
-							Collec.snapDatas(roads, geomFeat), Collec.fromSFCtoRingMultiLines(Collec.snapDatas(islet, geomFeat)), exclusionZone)) {
+							Collec.snapDatas(roads, geomFeat), Collec.fromPolygonSFCtoRingMultiLines(Collec.snapDatas(islet, geomFeat)), exclusionZone)) {
 						feat.setAttribute(markFieldName, 1);
 					} else {
 						feat.setAttribute(markFieldName, 0);
@@ -143,7 +143,7 @@ public class MarkParcelAttributeFromPosition {
 				Geometry geomFeat = (Geometry) feat.getDefaultGeometry();
 				featureBuilder = ParcelSchema.setSFBMinParcelSplitWithFeat(feat,featureBuilder, featureSchema, 0);
 				if (isAlreadyMarked(feat) != 0 && ParcelState.isParcelHasRoadAccess((Polygon) Geom.getPolygon(geomFeat),
-						Collec.snapDatas(roads, geomFeat), Collec.fromSFCtoRingMultiLines(Collec.snapDatas(islet, geomFeat)), exclusionZone)) {
+						Collec.snapDatas(roads, geomFeat), Collec.fromPolygonSFCtoRingMultiLines(Collec.snapDatas(islet, geomFeat)), exclusionZone)) {
 					featureBuilder.set(markFieldName, 1);
 				}
 				result.add(featureBuilder.buildFeature(Attribute.makeUniqueId()));
@@ -444,6 +444,64 @@ public class MarkParcelAttributeFromPosition {
 		}
 		sds.dispose();
 		signalIfNoParcelMarked(result, "markBuiltParcel");
+		return result.collection();
+	}
+	
+	
+	/**
+	 * Mark parcels that intersects a given collection of polygons. The default field name containing the mark is "SPLIT" but it can be changed with the {@link #setMarkFieldName(String)}
+	 * method. Less optimized method that takes a Geometry as an input
+	 * 
+	 * @param parcels
+	 *            Input parcel {@link SimpleFeatureCollection}
+	 * @param polygonIntersectionFile
+	 *            A shapefile containing the collection of polygons
+	 * @return {@link SimpleFeatureCollection} of the input parcels with marked parcels on the {@link #markFieldName} field.
+	 * @throws IOException
+	 * @throws FactoryException
+	 * @throws NoSuchAuthorityCodeException
+	 * @throws Exception
+	 */
+	public static SimpleFeatureCollection markParcelIntersectPolygonIntersection(SimpleFeatureCollection parcels, List<Geometry> geoms)
+			throws IOException, NoSuchAuthorityCodeException, FactoryException {
+		
+		DefaultFeatureCollection result = new DefaultFeatureCollection();
+		final SimpleFeatureType featureSchema = ParcelSchema.getSFBMinParcelSplit().getFeatureType();
+
+		//if features have the schema that the one intended to set, we bypass 
+		if (featureSchema.equals(parcels.getSchema())) {
+			Arrays.stream(parcels.toArray(new SimpleFeature[0])).forEach(feat -> {
+				Geometry geomF = (Geometry) feat.getDefaultGeometry();
+				Geometry unionG = Geom.unionGeom(geoms.stream().filter(g -> g.intersects(geomF)).collect(Collectors.toList()));
+				try {
+					if (isAlreadyMarked(feat) != 0 && ((Geometry) feat.getDefaultGeometry()).intersects(unionG)) {
+						feat.setAttribute(markFieldName, 1);
+					} else {
+						feat.setAttribute(markFieldName, 0);
+					}
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+				result.add(feat);
+			});
+			return result;
+		}
+		SimpleFeatureBuilder featureBuilder = ParcelSchema.getSFBMinParcelSplit();
+		try (SimpleFeatureIterator it = parcels.features()) {
+			while (it.hasNext()) {
+				SimpleFeature feat = it.next();
+				Geometry geomF = (Geometry) feat.getDefaultGeometry();
+				featureBuilder = ParcelSchema.setSFBMinParcelSplitWithFeat(feat, featureBuilder, featureSchema, 0);
+				if (isAlreadyMarked(feat) != 0 && ((Geometry) feat.getDefaultGeometry())
+						.intersects(Geom.unionPrecisionReduce(geoms.stream().filter(g -> g.intersects(geomF)).collect(Collectors.toList()), 100))) {
+					featureBuilder.set(markFieldName, 1);
+				}
+				result.add(featureBuilder.buildFeature(Attribute.makeUniqueId()));
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		signalIfNoParcelMarked(result, "markParcelIntersectPolygonIntersection");
 		return result.collection();
 	}
 	

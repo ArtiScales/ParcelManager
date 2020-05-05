@@ -7,10 +7,16 @@ import java.util.List;
 
 import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.feature.DefaultFeatureCollection;
+import org.geotools.feature.simple.SimpleFeatureBuilder;
 import org.opengis.feature.simple.SimpleFeature;
+import org.opengis.referencing.FactoryException;
+import org.opengis.referencing.NoSuchAuthorityCodeException;
 
 import fr.ign.artiscales.fields.french.FrenchZoningSchemas;
+import fr.ign.artiscales.parcelFunction.MarkParcelAttributeFromPosition;
 import fr.ign.artiscales.parcelFunction.ParcelSchema;
+import fr.ign.cogit.geoToolsFunctions.Attribute;
+import fr.ign.cogit.geoToolsFunctions.vectors.Collec;
 
 public class GeneralFields {
 
@@ -56,7 +62,9 @@ public class GeneralFields {
 	
 	/**
 	 * Trivial method to get the genericZone list of a type
-	 * @param genericZone the given generic zone
+	 * 
+	 * @param genericZone
+	 *            the given generic zone
 	 * @return the given list( as final)
 	 */
 	public static List<String> getGenericZoneUsualNames(String genericZone) {
@@ -75,7 +83,7 @@ public class GeneralFields {
 	 * a two letters section, and Parcel Manager creates longer section names). Other methods can be set to determine if a parcel has been simulated.
 	 * 
 	 * @param feature
-	 *            : {@link SimpleFeature} parcel
+	 *            {@link SimpleFeature} input parcel
 	 * @return True if the parcel section looks like it has been simulated.
 	 */
 	public static boolean isParcelLikeFrenchHasSimulatedFileds(SimpleFeature feature) {
@@ -116,5 +124,46 @@ public class GeneralFields {
 
 	public static void setZoneCommunityCode(String zoneCommunityCode) {
 		GeneralFields.zoneCommunityCode = zoneCommunityCode;
+	}
+
+	/**
+	 * Change a {@link SimpleFeatureCollection} of any kind to follow the minimum schema for Parcel Manager (see method {@link ParcelSchema#getSFBMinParcel()}.
+	 * 
+	 * @param parcels
+	 *            input {@link SimpleFeatureCollection}
+	 * @return A {@link SimpleFeatureCollection} with attributes following the minimal schema
+	 */
+	public static SimpleFeatureCollection transformSFCToMinParcel(SimpleFeatureCollection parcels) {
+		return transformSFCToMinParcel(parcels, false);
+	}
+
+	/**
+	 * Change a {@link SimpleFeatureCollection} of any kind to follow the minimum schema for Parcel Manager (see method {@link ParcelSchema#getSFBMinParcel()}. Could be the version
+	 * with the mark field or not.
+	 * 
+	 * @param parcels
+	 *            input {@link SimpleFeatureCollection}
+	 * @param hasMark
+	 *            If the {@link MarkParcelAttributeFromPosition#getMarkFieldName()} should be kept or not.
+	 * @return A {@link SimpleFeatureCollection} with attributes following the minimal schema
+	 */
+	public static SimpleFeatureCollection transformSFCToMinParcel(SimpleFeatureCollection parcels, boolean hasMark) {
+			DefaultFeatureCollection result = new DefaultFeatureCollection();
+			boolean split = Collec.isCollecContainsAttribute(parcels, MarkParcelAttributeFromPosition.getMarkFieldName()) && hasMark ;
+		Arrays.stream(parcels.toArray(new SimpleFeature[0])).forEach(feat -> {
+			try {
+				SimpleFeatureBuilder sfb ;
+				if (split)
+					sfb = ParcelSchema.setSFBMinParcelWithFeat(feat, ParcelSchema.getSFBMinParcelSplit().getFeatureType());
+				else 
+					sfb = ParcelSchema.setSFBMinParcelWithFeat(feat, ParcelSchema.getSFBMinParcel().getFeatureType());
+				result.add(sfb.buildFeature(Attribute.makeUniqueId()));
+			} catch (NoSuchAuthorityCodeException e) {
+				e.printStackTrace();
+			} catch (FactoryException e) {
+				e.printStackTrace();
+			}
+		});
+		return result;
 	}
 }

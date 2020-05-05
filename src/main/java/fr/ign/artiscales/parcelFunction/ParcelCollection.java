@@ -505,4 +505,154 @@ public class ParcelCollection {
 		} 
 		return parcelToNotAdd;
 	}
+	
+//	/**
+//	 * this method aims to select the simulated parcels, the parcel that haven't been selected and if no building have been simulated on the selected and/or cuted parcel, get the
+//	 * older ones. This is not finished nor working TODO finish to have beautiful results
+//	 * 
+//	 * @return
+//	 * @throws IOException
+//	 */
+//	public SimpleFeatureCollection reuniteParcelOGAndSimuled() throws IOException {
+//		DefaultFeatureCollection reuniteParcel = new DefaultFeatureCollection();
+//
+//		ShapefileDataStore parcelOGSDS = new ShapefileDataStore(parcelOGFile.toURI().toURL());
+//		SimpleFeatureCollection parcelOG = parcelOGSDS.getFeatureSource().getFeatures();
+//		List<String> oGCode = FrenchParcelFields.getFrenchCodeParcels(parcelOG);
+//
+//		ShapefileDataStore parcelSimuledSDS = new ShapefileDataStore(getParcelDepotGenFile().toURI().toURL());
+//		SimpleFeatureCollection parcelSimuled = parcelSimuledSDS.getFeatureSource().getFeatures();
+//		List<String> simuledCode = FrenchParcelFields.getFrenchCodeParcels(parcelSimuled);
+//
+//		List<String> intactParcels = new ArrayList<String>();
+//		List<String> cuttedButIntactParcels = new ArrayList<String>();
+//		List<String> changedParcels = new ArrayList<String>();
+//
+//		List<String> simuledParcels = new ArrayList<String>();
+//
+//		for (String simuC : simuledCode) {
+//			if (oGCode.contains(simuC)) {
+//				intactParcels.add(simuC);
+//			} else {
+//				changedParcels.add(simuC);
+//			}
+//		}
+//
+//		changedP: for (String changedParcel : simuledCode) {
+//			SimpleFeatureIterator itParcel = parcelSimuled.features();
+//			try {
+//				while (itParcel.hasNext()) {
+//					SimpleFeature ft = itParcel.next();
+//					String codeTmp = (String) ft.getAttribute("CODE");
+//					if (codeTmp.equals(changedParcel)) {
+//						// no construction has been simulated in this parcel
+//						if (isParcelReallySimulated(ft)) {
+//							simuledParcels.add(codeTmp);
+//						} else {
+//							cuttedButIntactParcels.add(codeTmp);
+//						}
+//						continue changedP;
+//					}
+//				}
+//			} catch (Exception problem) {
+//				problem.printStackTrace();
+//			} finally {
+//				itParcel.close();
+//			}
+//		}
+//		System.out.println("isolated problematic parcels");
+//		DefaultFeatureCollection toMergeIftouch = new DefaultFeatureCollection();
+//		SimpleFeatureIterator itParcel = parcelSimuled.features();
+//		try {
+//			while (itParcel.hasNext()) {
+//				SimpleFeature f = itParcel.next();
+//				if (cuttedButIntactParcels.contains((String) f.getAttribute("CODE"))) {
+//					toMergeIftouch.add(f);
+//				}
+//			}
+//		} catch (Exception problem) {
+//			problem.printStackTrace();
+//		} finally {
+//			itParcel.close();
+//		}
+//
+//		Collec.exportSFC(toMergeIftouch, new File("/tmp/toMergeIfTouch.shp"));
+//
+//		SimpleFeatureIterator ItToMergeIftouch = toMergeIftouch.features();
+//
+//		try {
+//			while (ItToMergeIftouch.hasNext()) {
+//				SimpleFeature f = ItToMergeIftouch.next();
+//				Geometry aggregate = mergeIfTouch((Geometry) f.getDefaultGeometry(), toMergeIftouch);
+//
+//				// find attribute infos
+//				SimpleFeatureIterator getAttributeIt = Collec.snapDatas(parcelOG, aggregate).features();
+//				try {
+//					while (getAttributeIt.hasNext()) {
+//						SimpleFeature model = getAttributeIt.next();
+//						if (((Geometry) model.getDefaultGeometry()).intersects(aggregate)) {
+//							SimpleFeatureBuilder sfbuild = ArtiScalesSchemas.setSFBParcelAsASWithFeat(model);
+//							sfbuild.set(model.getFeatureType().getGeometryDescriptor().getName().toString(), aggregate);
+//							reuniteParcel.add(sfbuild.buildFeature(null));
+//							break;
+//						}
+//
+//					}
+//				} catch (Exception problem) {
+//					problem.printStackTrace();
+//				} finally {
+//					getAttributeIt.close();
+//				}
+//
+//			}
+//		} catch (Exception problem) {
+//			problem.printStackTrace();
+//		} finally {
+//			ItToMergeIftouch.close();
+//		}
+//
+//		Collec.exportSFC(reuniteParcel, new File("/tmp/unitedParcels.shp"));
+//
+//		return toMergeIftouch;
+//
+//		// maybe some created parcels are made of OG parcels. We then have to make some particular stuff
+//	}
+//
+//	/**
+//	 * This method recursively add geometries to a solo one if they touch each other not sure this is working
+//	 * 
+//	 * not safe at work
+//	 * 
+//	 * @param geomIn
+//	 * @param df
+//	 * @return
+//	 * @throws IOException
+//	 */
+//	public Geometry mergeIfTouch(Geometry geomIn, DefaultFeatureCollection df) throws IOException {
+//		DefaultFeatureCollection result = new DefaultFeatureCollection();
+//		result.addAll(df.collection());
+//
+//		SimpleFeatureIterator features = df.features();
+//
+//		Geometry aggreg = geomIn;
+//
+//		try {
+//			while (features.hasNext()) {
+//				SimpleFeature f = features.next();
+//				Geometry geomTemp = (((Geometry) f.getDefaultGeometry()));
+//				if (geomIn.intersects(geomTemp) && !geomIn.equals(geomTemp)) {
+//					result.remove(f);
+//					aggreg = Geom.unionGeom(geomIn, geomTemp);
+//					aggreg = mergeIfTouch(aggreg, result);
+//					break;
+//				}
+//			}
+//		} catch (Exception problem) {
+//			problem.printStackTrace();
+//		} finally {
+//			features.close();
+//		}
+//		return aggreg;
+//
+//	}
 }

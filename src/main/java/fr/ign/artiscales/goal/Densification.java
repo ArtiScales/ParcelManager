@@ -14,7 +14,8 @@ import org.locationtech.jts.geom.LineString;
 import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.filter.FilterFactory2;
 
-import fr.ign.artiscales.decomposition.ParcelSplitFlag;
+import fr.ign.artiscales.decomposition.FlagParcelDecomposition;
+import fr.ign.artiscales.fields.GeneralFields;
 import fr.ign.artiscales.parcelFunction.MarkParcelAttributeFromPosition;
 import fr.ign.artiscales.parcelFunction.ParcelSchema;
 import fr.ign.cogit.geoToolsFunctions.Attribute;
@@ -94,12 +95,11 @@ public class Densification {
 						&& feat.getAttribute(MarkParcelAttributeFromPosition.getMarkFieldName()).equals(1)
 						&& ((Geometry) feat.getDefaultGeometry()).getArea() > maximalAreaSplitParcel) {
 					//we get the ilot lines
-					List<LineString> lines = Collec.fromSFCtoListRingLines(isletCollection.subCollection(
+					List<LineString> lines = Collec.fromPolygonSFCtoListRingLines(isletCollection.subCollection(
 							ff.bbox(ff.property(feat.getFeatureType().getGeometryDescriptor().getLocalName()), feat.getBounds())));
 					// we falg cut the parcel
-					SimpleFeatureCollection tmp = ParcelSplitFlag.generateFlagSplitedParcels(feat, lines, tmpFolder,
-							buildingFile, roadFile, maximalAreaSplitParcel, maximalWidthSplitParcel, lenDriveway,
-							allowIsolatedParcel, exclusionZone);
+					SimpleFeatureCollection tmp = FlagParcelDecomposition.generateFlagSplitedParcels(feat, lines, 0.0, tmpFolder, buildingFile,
+							roadFile, maximalAreaSplitParcel, maximalWidthSplitParcel, lenDriveway, allowIsolatedParcel, exclusionZone);
 					// if the cut parcels are inferior to the minimal size, we cancel all and add the initial parcel
 					boolean add = true;
 					try (SimpleFeatureIterator parcelIt = tmp.features()){
@@ -293,6 +293,8 @@ public class Densification {
 		if (!MarkParcelAttributeFromPosition.isNoParcelMarked(parcelDensified)) {
 			parcelDensified = ConsolidationDivision.consolidationDivision(parcelDensified, tmpFolder, profile.getMaximalArea(),
 					profile.getMinimalArea(), profile.getMaximalWidth(), profile.getStreetWidth(), profile.getDecompositionLevelWithoutStreet());
+		} else {
+			parcelDensified	= GeneralFields.transformSFCToMinParcel(parcelDensified, false);
 		}
 		return parcelDensified;
 	}

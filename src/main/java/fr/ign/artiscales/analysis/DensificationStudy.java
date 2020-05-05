@@ -33,35 +33,14 @@ import fr.ign.cogit.parameter.ProfileUrbanFabric;
  *
  */
 public class DensificationStudy {
-
 	public static void main(String[] args) throws Exception {
 		PMStep.setGENERATEATTRIBUTES(false);
 		PMScenario pmScen = new PMScenario(new File("src/main/resources/DensificationStudy/scenario.json"), new File("/tmp"));
 		pmScen.executeStep();
-		
-////		run a densification study on a single community
-//		File rootFolder = new File("/home/ubuntu/PMtest/Densification/");
-//		File parcelFile = new File(rootFolder, "torcy.shp");
-//		// File parcelFile = new File(rootFolder, "marked.shp");
-//		File zoningFile = new File(rootFolder, "zoning.shp");
-//		File buildingFile = new File(rootFolder, "building.shp");
-//		File roadFile = new File(rootFolder, "road.shp");
-//		File isletFile = new File(rootFolder, "islet.shp");
-//		File outFolder = new File(rootFolder, "/out/");
-//		File tmpFolder = new File("/tmp/");
-//		ProfileUrbanFabric profile = ProfileUrbanFabric.convertJSONtoProfile(new File(rootFolder, "/profileBuildingType/smallHouse.json"));
-//
-//		ShapefileDataStore sdsParcel = new ShapefileDataStore(parcelFile.toURI().toURL());
-//		SimpleFeatureCollection parcels = sdsParcel.getFeatureSource().getFeatures();
-//
-//		boolean isParcelWithoutStreetAllowed = false;
-//		runDensificationStudy(parcels, isletFile, buildingFile, roadFile, zoningFile, tmpFolder, outFolder,
-//				isParcelWithoutStreetAllowed, profile);
-//		sdsParcel.dispose();		
-		}
+	}
 
 	/**
-	 * Densification study. Can be used as a goal in scenarios
+	 * Densification study. Can be used as a goal in scenarios.
 	 * @param parcels
 	 * @param buildingFile
 	 * @param roadFile

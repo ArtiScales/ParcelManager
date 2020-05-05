@@ -142,7 +142,7 @@ public class StatParcelStreetRatio {
 				long nbParcelsWithContactToRoad = Arrays.stream(df.toArray(new SimpleFeature[0]))
 						.filter(feat -> ParcelState.isParcelHasRoadAccess((Polygon) Geom.getPolygon((Geometry) feat.getDefaultGeometry()),
 								Collec.snapDatas(roads, ((Geometry) feat.getDefaultGeometry())),
-								Collec.fromSFCtoRingMultiLines(Collec.snapDatas(islets,(Geometry) z.getDefaultGeometry())))).count();
+								Collec.fromPolygonSFCtoRingMultiLines(Collec.snapDatas(islets,(Geometry) z.getDefaultGeometry())))).count();
 				tab[5] = String.valueOf(((double) nbParcelsWithContactToRoad / (double) df.size()));
 				System.out.println("zone " + z.getAttribute("LIBELLE") + " of " + z.getAttribute("INSEE"));
 				System.out.println("road access nb "+nbParcelsWithContactToRoad + " on "+ df.size());

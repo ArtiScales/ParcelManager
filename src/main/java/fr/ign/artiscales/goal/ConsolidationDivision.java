@@ -3,21 +3,26 @@ package fr.ign.artiscales.goal;
 import java.io.File;
 import java.util.Arrays;
 
+import org.geotools.data.DataUtilities;
+import org.geotools.data.shapefile.ShapefileDataStore;
 import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.data.simple.SimpleFeatureIterator;
+import org.geotools.factory.CommonFactoryFinder;
 import org.geotools.feature.DefaultFeatureCollection;
 import org.geotools.feature.simple.SimpleFeatureBuilder;
 import org.locationtech.jts.geom.Geometry;
 import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.feature.simple.SimpleFeatureType;
+import org.opengis.filter.FilterFactory2;
 
-import fr.ign.artiscales.decomposition.ParcelSplit;
+import fr.ign.artiscales.decomposition.OBBBlockDecomposition;
 import fr.ign.artiscales.parcelFunction.MarkParcelAttributeFromPosition;
 import fr.ign.artiscales.parcelFunction.ParcelCollection;
 import fr.ign.artiscales.parcelFunction.ParcelSchema;
 import fr.ign.cogit.geoToolsFunctions.Attribute;
 import fr.ign.cogit.geoToolsFunctions.vectors.Collec;
 import fr.ign.cogit.geoToolsFunctions.vectors.Geom;
+import fr.ign.cogit.geometryGeneration.CityGeneration;
 
 /**
  * Simulation following this goal merge together the contiguous marked parcels to create zones. The chosen parcel division process (OBB by default) is then applied on each created zone.
@@ -66,10 +71,10 @@ public class ConsolidationDivision {
 	 */
 	public static SimpleFeatureCollection consolidationDivision(SimpleFeatureCollection parcels, File tmpFolder, double maximalArea,
 			double minimalArea, double maximalWidth, double streetWidth, int decompositionLevelWithoutStreet) throws Exception {
-		return consolidationDivision(parcels, tmpFolder, maximalArea, minimalArea, maximalWidth, streetWidth, 999, streetWidth,
+		return consolidationDivision(parcels, null, tmpFolder, 0.5, 0.0, maximalArea, minimalArea, maximalWidth, streetWidth, 999, streetWidth,
 				decompositionLevelWithoutStreet);
 	}
-	
+
 	/**
 	 * Method that merges the contiguous marked parcels into zones and then split those zones with a given parcel division algorithm (by default, the Oriented Bounding Box).
 	 * 
@@ -94,10 +99,10 @@ public class ConsolidationDivision {
 	 * @return the set of parcel with decomposition
 	 * @throws Exception
 	 */
-	public static SimpleFeatureCollection consolidationDivision(SimpleFeatureCollection parcels, File tmpFolder, double maximalArea,
+	public static SimpleFeatureCollection consolidationDivision(SimpleFeatureCollection parcels, File roadFile, File tmpFolder, double roadEpsilon, double noise, double maximalArea,
 			double minimalArea, double maximalWidth, double smallStreetWidth, int largeStreetLevel, double largeStreetWidth,
 			int decompositionLevelWithoutStreet) throws Exception {
-		return consolidationDivision(parcels, tmpFolder, null, maximalArea, minimalArea, maximalWidth, smallStreetWidth, largeStreetLevel,
+		return consolidationDivision(parcels, roadFile, tmpFolder, null, roadEpsilon, noise, maximalArea, minimalArea, maximalWidth, smallStreetWidth, largeStreetLevel,
 				largeStreetWidth, decompositionLevelWithoutStreet);
 	}
 		
@@ -127,9 +132,9 @@ public class ConsolidationDivision {
 	 * @return the set of parcel with decomposition
 	 * @throws Exception
 	 */
-	public static SimpleFeatureCollection consolidationDivision(SimpleFeatureCollection parcels, File tmpFolder, File polygonIntersection,
-			double maximalArea, double minimalArea, double maximalWidth, double smallStreetWidth, int largeStreetLevel, double largeStreetWidth,
-			int decompositionLevelWithoutStreet) throws Exception {
+	public static SimpleFeatureCollection consolidationDivision(SimpleFeatureCollection parcels, File roadFile, File tmpFolder,
+			File polygongIntersection, double roadEpsilon, double noise, double maximalArea, double minimalArea, double maximalWidth,
+			double smallStreetWidth, int largeStreetLevel, double largeStreetWidth, int decompositionLevelWithoutStreet) throws Exception {
 
 		DefaultFeatureCollection parcelSaved = new DefaultFeatureCollection();
 		parcelSaved.addAll(parcels);
@@ -181,8 +186,19 @@ public class ConsolidationDivision {
 		// third step : cuting of the parcels
 		////////////////
 
+		SimpleFeatureCollection roads;
+		if (roadFile != null && roadFile.exists()) {
+			ShapefileDataStore sdsRoad = new ShapefileDataStore(roadFile.toURI().toURL());
+			roads = DataUtilities.collection(sdsRoad.getFeatureSource().getFeatures());
+			sdsRoad.dispose();
+		} else {
+			roads = null;
+		}
+		
 		SimpleFeatureBuilder sfBuilderFinalParcel = ParcelSchema.getSFBMinParcel();
 		DefaultFeatureCollection cutParcels = new DefaultFeatureCollection();
+		SimpleFeatureCollection isletCollection = CityGeneration.createUrbanIslet(parcels);
+		FilterFactory2 ff = CommonFactoryFinder.getFilterFactory2();
 
 		Arrays.stream(mergedParcels.toArray(new SimpleFeature[0])).forEach(feat -> {
 			if (((Geometry) feat.getDefaultGeometry()).getArea() > maximalArea) {
@@ -192,8 +208,12 @@ public class ConsolidationDivision {
 					SimpleFeatureCollection freshCutParcel = new DefaultFeatureCollection();
 					switch (PROCESS) {
 					case "OBB":
-						freshCutParcel = ParcelSplit.splitParcels(feat, maximalArea, maximalWidth, 0.0, 0.0, null, smallStreetWidth, largeStreetLevel,
-								largeStreetWidth, false, decompositionLevelWithoutStreet, tmpFolder);
+						freshCutParcel = OBBBlockDecomposition.splitParcels(feat,
+								(roads != null && !roads.isEmpty()) ? Collec.snapDatas(roads, (Geometry) feat.getDefaultGeometry()) : null,
+								maximalArea, maximalWidth, roadEpsilon, noise,
+								Collec.fromPolygonSFCtoListRingLines(isletCollection.subCollection(
+										ff.bbox(ff.property(feat.getFeatureType().getGeometryDescriptor().getLocalName()), feat.getBounds()))),
+								smallStreetWidth, largeStreetLevel, largeStreetWidth, true, decompositionLevelWithoutStreet);
 						break;
 					case "SS":
 						System.out.println("not implemented yet");
