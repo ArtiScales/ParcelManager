@@ -4,6 +4,8 @@ import java.io.File;
 import java.util.Arrays;
 import java.util.List;
 
+import org.geotools.data.DataUtilities;
+import org.geotools.data.shapefile.ShapefileDataStore;
 import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.data.simple.SimpleFeatureIterator;
 import org.geotools.factory.CommonFactoryFinder;
@@ -79,7 +81,7 @@ public class Densification {
 				|| Arrays.stream(parcelCollection.toArray(new SimpleFeature[0]))
 						.filter(feat -> feat.getAttribute(MarkParcelAttributeFromPosition.getMarkFieldName()).equals(1)).count() == 0) {
 			System.out.println("Densification : unmarked parcels");
-			return parcelCollection;
+			return GeneralFields.transformSFCToMinParcel(parcelCollection);
 		}
 		//preparation of the builder and empty collections
 		final String geomName = parcelCollection.getSchema().getGeometryDescriptor().getLocalName();
@@ -283,19 +285,24 @@ public class Densification {
 	 */
 	public static SimpleFeatureCollection densificationOrNeighborhood(SimpleFeatureCollection parcelCollection, SimpleFeatureCollection isletCollection,
 			File tmpFolder, File buildingFile, File roadFile, ProfileUrbanFabric profile, boolean allowIsolatedParcel, Geometry exclusionZone) throws Exception {
+		//this is an ugly temporary fix but i cannot se	
+		//TODO find a better solution
+		Collec.exportSFC(parcelCollection, new File("/tmp/start.shp"));
 		// We flagcut the parcels which size is inferior to 4x the max parcel size
-		SimpleFeatureCollection parcelDensified = densification(MarkParcelAttributeFromPosition.markParcelsInf(parcelCollection, (int) profile.getMaximalArea()*4), isletCollection, tmpFolder, buildingFile, roadFile,
+				SimpleFeatureCollection parcelInf = MarkParcelAttributeFromPosition.markParcelsInf(parcelCollection, profile.getMaximalArea()*4);
+		SimpleFeatureCollection parcelDensified = densification(parcelInf, isletCollection, tmpFolder, buildingFile, roadFile,
 				profile.getMaximalArea(), profile.getMinimalArea(), profile.getMaximalWidth(), profile.getLenDriveway(),
 				allowIsolatedParcel, exclusionZone);
 		//if parcels are too big, we try to create neighborhoods inside them with the consolidation algorithm
 		//We first re-mark the parcels that were marked.
-		parcelDensified = MarkParcelAttributeFromPosition.markParcelsSup(MarkParcelAttributeFromPosition.markAlreadyMarkedParcels(parcelDensified, parcelCollection), (int) profile.getMaximalArea()*4);
-		if (!MarkParcelAttributeFromPosition.isNoParcelMarked(parcelDensified)) {
-			parcelDensified = ConsolidationDivision.consolidationDivision(parcelDensified, tmpFolder, profile.getMaximalArea(),
+		//TODO second part of the ugly fix
+		ShapefileDataStore sds = new ShapefileDataStore( new File("/tmp/start.shp").toURI().toURL());
+		SimpleFeatureCollection supParcels = MarkParcelAttributeFromPosition.markParcelsSup(MarkParcelAttributeFromPosition.markAlreadyMarkedParcels(parcelDensified, sds.getFeatureSource().getFeatures()), profile.getMaximalArea()*4);
+		sds.dispose();
+		if (!MarkParcelAttributeFromPosition.isNoParcelMarked(supParcels)) {
+			parcelDensified = ConsolidationDivision.consolidationDivision(supParcels, tmpFolder, profile.getMaximalArea(),
 					profile.getMinimalArea(), profile.getMaximalWidth(), profile.getStreetWidth(), profile.getDecompositionLevelWithoutStreet());
-		} else {
-			parcelDensified	= GeneralFields.transformSFCToMinParcel(parcelDensified, false);
-		}
+		} 
 		return parcelDensified;
 	}
 }

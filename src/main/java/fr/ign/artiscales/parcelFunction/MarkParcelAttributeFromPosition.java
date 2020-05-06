@@ -55,16 +55,16 @@ public class MarkParcelAttributeFromPosition {
 //		sdsIslet.dispose();
 //		sdsParcel.dispose();
 //	
-//	File parcelsMarkedF = new File("/home/ubuntu/workspace/ParcelManager/src/main/resources/smallTest/parcel.shp");
-//	File zoningFile = new File("/home/ubuntu/workspace/ParcelManager/src/main/resources/smallTest/zoning.shp");
-//	long startTime = System.currentTimeMillis();
-//	ShapefileDataStore sdsParcel = new ShapefileDataStore(parcelsMarkedF.toURI().toURL());
-//	SimpleFeatureCollection parcels = sdsParcel.getFeatureSource().getFeatures();
-//	Collec.exportSFC(markParcelIntersectZoningWithoutPreciseZonings(parcels, "AU", Arrays.asList("AU2"), zoningFile), new File("/tmp/d"));
-//	sdsParcel.dispose();
-//	long stopTime = System.currentTimeMillis();
-//	System.out.println(stopTime - startTime);
-//	sdsParcel.dispose();
+//	File parcelsMarkedF = new File("/tmp/start.shp");
+//	File parcelsToMarkF = new File("/tmp/dens.shp");
+//
+//	ShapefileDataStore sdsParcelMarked = new ShapefileDataStore(parcelsMarkedF.toURI().toURL());
+//	ShapefileDataStore sdsparcelsToMark = new ShapefileDataStore(parcelsToMarkF.toURI().toURL());
+//
+//	SimpleFeatureCollection parcelsMarked = sdsParcelMarked.getFeatureSource().getFeatures();
+//	SimpleFeatureCollection parcelsToMark = sdsparcelsToMark.getFeatureSource().getFeatures();
+//
+//	Collec.exportSFC(markAlreadyMarkedParcels(parcelsToMark, parcelsMarked),new File("/tmp/das"));
 //	
 //	}
 	
@@ -167,7 +167,7 @@ public class MarkParcelAttributeFromPosition {
 	 * @throws FactoryException
 	 * @throws IOException
 	 */
-	public static SimpleFeatureCollection markParcelsInf(SimpleFeatureCollection parcels, int size) throws NoSuchAuthorityCodeException, FactoryException, IOException {
+	public static SimpleFeatureCollection markParcelsInf(SimpleFeatureCollection parcels, double size) throws NoSuchAuthorityCodeException, FactoryException, IOException {
 		final SimpleFeatureType featureSchema = ParcelSchema.getSFBMinParcelSplit().getFeatureType();
 		DefaultFeatureCollection result = new DefaultFeatureCollection();
 		
@@ -216,7 +216,7 @@ public class MarkParcelAttributeFromPosition {
 	 * @throws FactoryException
 	 * @throws IOException
 	 */
-	public static SimpleFeatureCollection markParcelsSup(SimpleFeatureCollection parcels, int size)
+	public static SimpleFeatureCollection markParcelsSup(SimpleFeatureCollection parcels, double size)
 			throws NoSuchAuthorityCodeException, FactoryException, IOException {
 		final SimpleFeatureType featureSchema = ParcelSchema.getSFBMinParcelSplit().getFeatureType();
 		DefaultFeatureCollection result = new DefaultFeatureCollection();
@@ -225,7 +225,7 @@ public class MarkParcelAttributeFromPosition {
 		if (featureSchema.equals(parcels.getSchema())) {
 			Arrays.stream(parcels.toArray(new SimpleFeature[0])).forEach(feat -> {
 				try {
-					if (isAlreadyMarked(feat) != 0 && ((Geometry)feat.getDefaultGeometry()).getArea() > size) {
+					if (isAlreadyMarked(feat) != 0 && ((Geometry) feat.getDefaultGeometry()).getArea() > size) {
 						feat.setAttribute(markFieldName, 1);
 					} else {
 						feat.setAttribute(markFieldName, 0);
@@ -242,7 +242,7 @@ public class MarkParcelAttributeFromPosition {
 			while (it.hasNext()) {
 				SimpleFeature feat = it.next();
 				featureBuilder = ParcelSchema.setSFBMinParcelSplitWithFeat(feat,featureBuilder, featureSchema, 0);
-				if (isAlreadyMarked(feat) != 0 && ((Geometry)feat.getDefaultGeometry()).getArea() > size) {
+				if (isAlreadyMarked(feat) != 0 && ((Geometry) feat.getDefaultGeometry()).getArea() > size) {
 					featureBuilder.set(markFieldName, 1);
 				} 
 				result.add(featureBuilder.buildFeature(Attribute.makeUniqueId()));
@@ -839,15 +839,16 @@ public class MarkParcelAttributeFromPosition {
 	}
 
 	/**
-	 * Mark parcels that have already been marked on an other simple collection feature
+	 * Mark parcels that have already been marked on an other simple collection feature. They may not have the same attribute, so we rely on geometries
 	 * 
 	 * @param parcelsToMark
 	 *            Parcel collection to copy the marks on. Could have a markFieldName or not.
 	 * @param parcelsMarked
 	 *            Parcel collection that has a markFieldName field
 	 * @return {@link SimpleFeatureCollection} of the input parcels with marked parcels on the {@link #markFieldName} field.
+	 * @throws IOException 
 	 */
-	public static SimpleFeatureCollection markAlreadyMarkedParcels(SimpleFeatureCollection parcelsToMark, SimpleFeatureCollection parcelsMarked) {
+	public static SimpleFeatureCollection markAlreadyMarkedParcels(SimpleFeatureCollection parcelsToMark, SimpleFeatureCollection parcelsMarked) throws IOException {
 		if (!Collec.isCollecContainsAttribute(parcelsMarked, markFieldName)) {
 			System.out.println("markAlreadyMarkedParcels: parcelMarked doesn't contain the markFieldName field");
 			return parcelsToMark ;
@@ -855,37 +856,31 @@ public class MarkParcelAttributeFromPosition {
 		SimpleFeatureBuilder builder = ParcelSchema.addSplitField(parcelsToMark.getSchema());
 		DefaultFeatureCollection result = new DefaultFeatureCollection();
 		FilterFactory2 ff = CommonFactoryFinder.getFilterFactory2();
-		PropertyName pName = ff.property(parcelsToMark.getSchema().getGeometryDescriptor().getLocalName());
+		PropertyName geomName = ff.property(parcelsToMark.getSchema().getGeometryDescriptor().getLocalName());
 		
 		try (SimpleFeatureIterator parcelIt = parcelsToMark.features()){
 			toMarkParcel : while (parcelIt.hasNext()) {
 				SimpleFeature parcelToMark = parcelIt.next();
 				Geometry geomParcelToMark = (Geometry) parcelToMark.getDefaultGeometry();
-				double geomArea = geomParcelToMark.getArea();
 				//look for exact geometries 
-				SimpleFeatureCollection parcelsIntersectRef = parcelsMarked.subCollection(ff.intersects(pName, ff.literal(geomParcelToMark)));
+				SimpleFeatureCollection parcelsIntersectRef = parcelsMarked.subCollection(ff.intersects(geomName, ff.literal(geomParcelToMark)));
 				try (SimpleFeatureIterator itParcelsMarked = parcelsIntersectRef.features()) {
 					while (itParcelsMarked.hasNext()) {
 						SimpleFeature parcelMarked = itParcelsMarked.next();
-						double inter = Geom.scaledGeometryReductionIntersection(Arrays.asList(geomParcelToMark, (Geometry) parcelMarked.getDefaultGeometry())).getArea();
-						// if there are parcel intersection and a similar area, we conclude that parcel haven't changed. We put it in the \"same\" collection and stop the search
-						if (inter > 0.95 * geomArea && inter < 1.05 * geomArea) {
-							for (AttributeDescriptor attr : parcelToMark.getFeatureType().getAttributeDescriptors()) {
+						if ((int) parcelMarked.getAttribute(markFieldName) == 1 && ((Geometry) parcelMarked.getDefaultGeometry()).buffer(2).contains(geomParcelToMark)) {
+							for (AttributeDescriptor attr : parcelToMark.getFeatureType().getAttributeDescriptors())
 								builder.set(attr.getName(), parcelToMark.getAttribute(attr.getName()));
-							}
-							builder.set(markFieldName, parcelMarked.getAttribute(markFieldName));
+							builder.set(markFieldName, 1);
 							result.add(builder.buildFeature(Attribute.makeUniqueId()));
 							continue toMarkParcel;
 						}
-
 					}
 				} catch (Exception problem) {
 					problem.printStackTrace();
 				}
 				// if we haven't found correspondance
-				for (AttributeDescriptor attr : parcelToMark.getFeatureType().getAttributeDescriptors()) {
+				for (AttributeDescriptor attr : parcelToMark.getFeatureType().getAttributeDescriptors()) 
 					builder.set(attr.getName(), parcelToMark.getAttribute(attr.getName()));
-				}
 				builder.set(markFieldName, 0);
 				result.add(builder.buildFeature(Attribute.makeUniqueId()));
 			}
