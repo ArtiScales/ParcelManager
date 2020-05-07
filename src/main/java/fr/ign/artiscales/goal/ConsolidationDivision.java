@@ -48,10 +48,10 @@ public class ConsolidationDivision {
 	 */
 	public static boolean OVERWRITESHAPEFILES = true;
 
-
 	/**
 	 * Method that merges the contiguous marked parcels into zones and then split those zones with a given parcel division algorithm (by default, the Oriented Bounding Box)
-	 * overload of {@link #consolidationDivision(SimpleFeatureCollection, File, double, double, double, double, int, double, int)} for a single road size.
+	 * overload of {@link #consolidationDivision(SimpleFeatureCollection, File, File, double , double , double , double , double , double , int , double , int )} for a single road size.
+	 * 
 	 * @param parcels
 	 *            The parcels to be merged and cut. Must be marked with the SPLIT filed (see markParcelIntersectMUPOutput for example, with the method concerning MUP-City's output)
 	 * @param tmpFolder
@@ -133,7 +133,7 @@ public class ConsolidationDivision {
 	 * @throws Exception
 	 */
 	public static SimpleFeatureCollection consolidationDivision(SimpleFeatureCollection parcels, File roadFile, File tmpFolder,
-			File polygongIntersection, double roadEpsilon, double noise, double maximalArea, double minimalArea, double maximalWidth,
+			File polygonIntersection, double roadEpsilon, double noise, double maximalArea, double minimalArea, double maximalWidth,
 			double smallStreetWidth, int largeStreetLevel, double largeStreetWidth, int decompositionLevelWithoutStreet) throws Exception {
 
 		DefaultFeatureCollection parcelSaved = new DefaultFeatureCollection();

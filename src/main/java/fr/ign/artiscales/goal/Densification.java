@@ -4,7 +4,6 @@ import java.io.File;
 import java.util.Arrays;
 import java.util.List;
 
-import org.geotools.data.DataUtilities;
 import org.geotools.data.shapefile.ShapefileDataStore;
 import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.data.simple.SimpleFeatureIterator;
@@ -17,6 +16,7 @@ import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.filter.FilterFactory2;
 
 import fr.ign.artiscales.decomposition.FlagParcelDecomposition;
+import fr.ign.artiscales.decomposition.OBBBlockDecomposition;
 import fr.ign.artiscales.fields.GeneralFields;
 import fr.ign.artiscales.parcelFunction.MarkParcelAttributeFromPosition;
 import fr.ign.artiscales.parcelFunction.ParcelSchema;
@@ -25,9 +25,11 @@ import fr.ign.cogit.geoToolsFunctions.vectors.Collec;
 import fr.ign.cogit.parameter.ProfileUrbanFabric;
 
 /**
- * Simulation following that goal divides parcels to ensure that they could be densified. The {@link fr.ign.artiscales.decomposition.ParcelSplitFlag} process is applied on the
+ * Simulation following that goal divides parcels to ensure that they could be densified. The
+ * {@link FlagParcelDecomposition#generateFlagSplitedParcels(SimpleFeature, List, double, File, File, File, Double, Double, Double, boolean, Geometry)} method is applied on the
  * selected parcels. If the creation of a flag parcel is impossible and the local rules allows parcel to be disconnected from the road network, the
- * {@link fr.ign.artiscales.decomposition.ParcelSplit} is applied. Other behavior can be set relatively to the parcel's sizes.
+ * {@link OBBBlockDecomposition#splitParcels(SimpleFeature, double, double, double, double, List, double, boolean, int)} is applied. Other behavior can be set relatively to the
+ * parcel's sizes.
  * 
  * @author Maxime Colomb
  *

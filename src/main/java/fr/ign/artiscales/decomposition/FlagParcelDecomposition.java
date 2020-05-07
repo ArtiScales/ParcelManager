@@ -102,7 +102,6 @@ public class FlagParcelDecomposition {
 	 * @param lenDriveway
 	 * @param allowIsolatedParcel
 	 * @param exclusionZone
-	 * @return
 	 * @throws Exception
 	 */
 	public static SimpleFeatureCollection generateFlagSplitedParcels(SimpleFeature feat, List<LineString> extLines, double noise, File tmpFolder, File buildingFile,

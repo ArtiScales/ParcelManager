@@ -63,8 +63,6 @@ public class OBBBlockDecomposition {
 	 *            Number of last iteration row for which no street network is generated
 	 * @param forceStreetAccess
 	 *            Force the access to the road for each parcel. Not working good yet.
-	 * @param tmpFolder
-	 *            A folder to store temporary files
 	 * @return a collection of subdivised parcels
 	 * @throws Exception
 	 */

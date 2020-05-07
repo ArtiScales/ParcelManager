@@ -108,10 +108,13 @@ public class ParcelState {
 
   	/**
 	 * Determine the width of the parcel on road.
+	 * 
 	 * @param p
 	 *            input {@link Polygon}
-	 * @param exterior
-	 *            lines 
+	 * @param roads
+	 *            Road ShapeFile (can be null)
+	 * @param ext
+	 *            lines
 	 * @return width of the parcel on road
 	 */
 	public static double getParcelFrontSideWidth(Polygon p, SimpleFeatureCollection roads, List<LineString> ext) {
