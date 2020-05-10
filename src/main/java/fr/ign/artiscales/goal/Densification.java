@@ -98,15 +98,16 @@ public class Densification {
 				if (feat.getAttribute(MarkParcelAttributeFromPosition.getMarkFieldName()) != null
 						&& feat.getAttribute(MarkParcelAttributeFromPosition.getMarkFieldName()).equals(1)
 						&& ((Geometry) feat.getDefaultGeometry()).getArea() > maximalAreaSplitParcel) {
-					//we get the ilot lines
+					//we get the needed ilot lines
 					List<LineString> lines = Collec.fromPolygonSFCtoListRingLines(isletCollection.subCollection(
 							ff.bbox(ff.property(feat.getFeatureType().getGeometryDescriptor().getLocalName()), feat.getBounds())));
 					// we falg cut the parcel
-					SimpleFeatureCollection tmp = FlagParcelDecomposition.generateFlagSplitedParcels(feat, lines, 0.0, tmpFolder, buildingFile,
+					SimpleFeatureCollection unsortedFlagParcel = FlagParcelDecomposition.generateFlagSplitedParcels(feat, lines, 0.0, tmpFolder, buildingFile,
 							roadFile, maximalAreaSplitParcel, maximalWidthSplitParcel, lenDriveway, allowIsolatedParcel, exclusionZone);
 					// if the cut parcels are inferior to the minimal size, we cancel all and add the initial parcel
 					boolean add = true;
-					try (SimpleFeatureIterator parcelIt = tmp.features()){
+					// If the flag parcel size is too small, we won't add anything
+					try (SimpleFeatureIterator parcelIt = unsortedFlagParcel.features()){
 						while (parcelIt.hasNext()) {
 							if (((Geometry) parcelIt.next().getDefaultGeometry()).getArea() < minimalAreaSplitParcel) {
 //								System.out.println("densifyed parcel is too small");
@@ -121,13 +122,15 @@ public class Densification {
 					if (add) {
 						// construct the new parcels
 						int i = 1;
-						try(SimpleFeatureIterator parcelCutedIt = tmp.features()) {
+						try(SimpleFeatureIterator parcelCutedIt = unsortedFlagParcel.features()) {
 							while (parcelCutedIt.hasNext()) {
 								SimpleFeature parcelCuted = parcelCutedIt.next();
 								sFBMinParcel.set(geomName, parcelCuted.getDefaultGeometry());
-								sFBMinParcel.set(ParcelSchema.getMinParcelSectionField(), (String) feat.getAttribute(ParcelSchema.getMinParcelSectionField()) + "-Densifyed");
+								sFBMinParcel.set(ParcelSchema.getMinParcelSectionField(),
+										(String) feat.getAttribute(ParcelSchema.getMinParcelSectionField()) + "-Densifyed");
 								sFBMinParcel.set(ParcelSchema.getMinParcelNumberField(), String.valueOf(i++));
-								sFBMinParcel.set(ParcelSchema.getMinParcelCommunityField(), feat.getAttribute(ParcelSchema.getMinParcelCommunityField()));
+								sFBMinParcel.set(ParcelSchema.getMinParcelCommunityField(),
+										feat.getAttribute(ParcelSchema.getMinParcelCommunityField()));
 								SimpleFeature cutedParcel = sFBMinParcel.buildFeature(Attribute.makeUniqueId());
 								resultParcels.add(cutedParcel);
 								if (SAVEINTERMEDIATERESULT)

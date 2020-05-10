@@ -78,8 +78,9 @@ public class ParcelStat {
 						contactWithRoad = true;
 					// float compactness =
 					String[] line = {
-							parcel.getAttribute(ParcelSchema.getMinParcelCommunityField() + "-" + ParcelSchema.getMinParcelSectionField()) + "-"
-									+ ParcelSchema.getMinParcelNumberField(),
+							parcel.getAttribute(ParcelSchema.getMinParcelCommunityField()) + "-"
+									+ parcel.getAttribute(ParcelSchema.getMinParcelSectionField()) + "-"
+									+ parcel.getAttribute(ParcelSchema.getMinParcelNumberField()),
 							String.valueOf(parcelGeom.getArea()), String.valueOf(parcelGeom.getLength()), String.valueOf(contactWithRoad),
 							String.valueOf(widthRoadContact),
 							String.valueOf(ParcelState.countParcelNeighborhood(parcelGeom, Collec.snapDatas(parcels, parcelGeom.buffer(2)))) };
