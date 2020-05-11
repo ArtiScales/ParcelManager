@@ -122,8 +122,8 @@ public class CompareSimulatedParcelsWithEvolution {
 			
 			//make general statistics 
 			System.out.println("single stats");
-//			ShapefileDataStore sdsFinalParcel = new ShapefileDataStore(step.getLastOutput().toURI().toURL());
-			ShapefileDataStore sdsFinalParcel = new ShapefileDataStore(new File("src/main/resources/ParcelComparison/out/parcelCuted-consolidationDivision-smallHouse-NC_.shp").toURI().toURL());
+			ShapefileDataStore sdsFinalParcel = new ShapefileDataStore(step.getLastOutput().toURI().toURL());
+			// ShapefileDataStore sdsFinalParcel = new ShapefileDataStore(new File("src/main/resources/ParcelComparison/out/parcelCuted-consolidationDivision-smallHouse-NC_.shp").toURI().toURL());
 			ParcelStat.writeStatSingleParcel(MarkParcelAttributeFromPosition.markParcelIntersectPolygonIntersection(sdsFinalParcel.getFeatureSource().getFeatures(), geoms), Collec.snapDatas(sdsRoad.getFeatureSource().getFeatures(), geomUnion), new File(zoneOutFolder, "parcelSimulatedStats.csv"));
 			sdsFinalParcel.dispose();
 		}

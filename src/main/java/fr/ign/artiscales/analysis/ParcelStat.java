@@ -59,7 +59,7 @@ public class ParcelStat {
 			throws NoSuchAuthorityCodeException, IOException, FactoryException {
 		// look if there's mark field. If not, every parcels are marked 
 		if (!Collec.isCollecContainsAttribute(parcels, MarkParcelAttributeFromPosition.getMarkFieldName())) {
-			System.out.println("+++ writeStatSingleParcel: unmarked parcels. Try to marl them with the MarkParcelAttributeFromPosition.markAllParcel() method. Return null ");
+			System.out.println("+++ writeStatSingleParcel: unmarked parcels. Try to mark them with the MarkParcelAttributeFromPosition.markAllParcel() method. Return null ");
 			return;
 		}
 		CSVWriter csv = new CSVWriter(new FileWriter(parcelStatCsv, false));
