@@ -1,0 +1,27 @@
+{
+	"rootfile": "src/main/resources/ParcelComparison/",
+	"parcelFile":"src/main/resources/ParcelComparison/parcel2003.shp",
+	"polygonIntersectionFile":"src/main/resources/ParcelComparison/out/polygonIntersection.shp",
+	"outFolder": "src/main/resources/ParcelComparison/out/",
+	"steps": [
+		 {
+			"goal": "densificationOrNeighborhood",
+			"genericZone": "U",
+			"communityNumber":"77152",
+			"urbanFabricType": "smallHouse"
+		},		
+		{
+			"goal": "consolidationDivision",
+			"parcelProcess": "OBB",
+			"communityNumber":"77152",			
+			"genericZone": "AU",
+			"urbanFabricType": "smallHouse"
+		},	
+		{
+			"goal": "consolidationDivision",
+			"parcelProcess": "OBB",
+			"communityNumber":"77152",
+			"genericZone": "NC",
+			"urbanFabricType": "smallHouse"
+		}]
+}

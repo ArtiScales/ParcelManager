@@ -77,6 +77,24 @@ public class GeneralFields {
 		return genericZoneUsualNames;
 	}
 
+	/**
+	 * This method allows to determine if a parcel has been simulated regarding to different parcel types of nomenclature. For now, only the French verification but other methods
+	 * can be set to determine if a parcel has been simulated.
+	 * 
+	 * @param feature
+	 *            {@link SimpleFeature} input parcel
+	 * @return True if the parcel section looks like it has been simulated.
+	 */
+	public static boolean isParcelHasSimulatedFields(SimpleFeature feature) {
+		switch (parcelFieldType) {
+		case "french":
+			return isParcelLikeFrenchHasSimulatedFileds(feature);
+		default:
+			System.out.println(
+					"isParcelHasSimulatedFields: unknown method because of an unknown parcel nomenclature (" + parcelFieldType + "). Returned false");
+			return false;
+		}
+	}	
 	
 	/**
 	 * This method allows to determine if a parcel has been simulated. It looks if the length of filed value for the <i>SECTION</i> information is upper than 2 (French Parcel have

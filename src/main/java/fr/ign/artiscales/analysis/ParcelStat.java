@@ -7,6 +7,7 @@ import java.util.Arrays;
 
 import org.geotools.data.shapefile.ShapefileDataStore;
 import org.geotools.data.simple.SimpleFeatureCollection;
+import org.locationtech.jts.algorithm.MinimumBoundingCircle;
 import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.geom.Polygon;
 import org.opengis.feature.simple.SimpleFeature;
@@ -63,7 +64,7 @@ public class ParcelStat {
 			return;
 		}
 		CSVWriter csv = new CSVWriter(new FileWriter(parcelStatCsv, false));
-		String[] firstLine = { "code", "area", "perimeter", "contactWithRoad", "widthContactWithRoad", "numberOfNeighborhood" };
+		String[] firstLine = { "code", "area", "perimeter", "contactWithRoad", "widthContactWithRoad", "numberOfNeighborhood","maxBoundingCircle" };
 		csv.writeNext(firstLine);
 		SimpleFeatureCollection islet = CityGeneration.createUrbanIslet(parcels);
 		Arrays.stream(parcels.toArray(new SimpleFeature[0]))
@@ -83,9 +84,19 @@ public class ParcelStat {
 									+ parcel.getAttribute(ParcelSchema.getMinParcelNumberField()),
 							String.valueOf(parcelGeom.getArea()), String.valueOf(parcelGeom.getLength()), String.valueOf(contactWithRoad),
 							String.valueOf(widthRoadContact),
-							String.valueOf(ParcelState.countParcelNeighborhood(parcelGeom, Collec.snapDatas(parcels, parcelGeom.buffer(2)))) };
+							String.valueOf(ParcelState.countParcelNeighborhood(parcelGeom, Collec.snapDatas(parcels, parcelGeom.buffer(2)))), String.valueOf(egress(parcelGeom)) };
 					csv.writeNext(line);
 			});
 		csv.close();
+	}
+
+	public static double egress(Geometry geom) {
+		MinimumBoundingCircle mbc = new MinimumBoundingCircle(geom);
+		//only on jts 1.17
+//		System.out.println(mbc.getCircle());
+//		MaximumInscribedCircle mic = new MaximumInscribedCircle(geom.buffer(0), 1);
+//		System.out.println(mic.getCenter().buffer(mic.getRadiusLine().getLength()));
+//		return mic.getRadiusLine().getLength() / mbc.getDiameter().getLength() ;
+		return  mbc.getDiameter().getLength();
 	}
 }

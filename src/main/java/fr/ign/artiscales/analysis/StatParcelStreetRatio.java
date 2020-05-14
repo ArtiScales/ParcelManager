@@ -156,13 +156,12 @@ public class StatParcelStreetRatio {
 		Csv.generateCsvFile(stat, folderOutStat, "streetRatioParcelZone", true, firstLine);
 		return ratio;
 	}
-
 	private static double areaParcelNewlySimulated(SimpleFeatureCollection markedParcels) {
 		double totArea = 0.0;
 		try (SimpleFeatureIterator parcels = markedParcels.features()) {
 			while (parcels.hasNext()) {
 				SimpleFeature parcel = parcels.next();
-				if (GeneralFields.isParcelLikeFrenchHasSimulatedFileds(parcel)) {
+				if (GeneralFields.isParcelHasSimulatedFields(parcel)) {
 					totArea = totArea + ((Geometry) parcel.getDefaultGeometry()).getArea();
 				}
 			}

@@ -247,7 +247,8 @@ public class MarkParcelAttributeFromPosition {
 	}
 	
 	/**
-	 * look if a parcel has the {@link #markFieldName} field and if it is positive or negative
+	 * look if a parcel has the {@link #markFieldName} field and if it is positive or negative. Also look if a parcel has already been simulated. The default method for the kind of
+	 * nomenclature is used. If already simulated, we won't re-simulate it.
 	 * 
 	 * @param feat
 	 *            input SimpleFeature
@@ -260,10 +261,10 @@ public class MarkParcelAttributeFromPosition {
 	 */
 	public static int isAlreadyMarked(SimpleFeature feat) {
 		if (Collec.isSimpleFeatureContainsAttribute(feat, markFieldName) && feat.getAttribute(markFieldName) != null) {
-			if ((int) feat.getAttribute(markFieldName) == 1)
+			if ((int) feat.getAttribute(markFieldName) == 0 || GeneralFields.isParcelHasSimulatedFields(feat))
+				return 0;			
+			else if ((int) feat.getAttribute(markFieldName) == 1)
 				return 1;
-			else if ((int) feat.getAttribute(markFieldName) == 0)
-				return 0;
 			else
 				return -1;
 		} else
@@ -452,12 +453,13 @@ public class MarkParcelAttributeFromPosition {
 		//if features have the schema that the one intended to set, we bypass 
 		if (featureSchema.equals(parcels.getSchema())) {
 			Arrays.stream(parcels.toArray(new SimpleFeature[0])).forEach(feat -> {
-				Geometry geomF = (Geometry) feat.getDefaultGeometry();
-				Geometry unionG = Geom.unionGeom(geoms.stream().filter(g -> g.intersects(geomF)).collect(Collectors.toList()));
 				try {
-					if (isAlreadyMarked(feat) != 0 && ((Geometry) feat.getDefaultGeometry()).intersects(unionG))
+					if (isAlreadyMarked(feat) != 0 && !Geom
+							.unionPrecisionReduce(
+									geoms.stream().filter(g -> g.intersects((Geometry) feat.getDefaultGeometry())).collect(Collectors.toList()), 100)
+							.isEmpty())
 						feat.setAttribute(markFieldName, 1);
-					else 
+					else
 						feat.setAttribute(markFieldName, 0);
 				} catch (Exception e) {
 					e.printStackTrace();
@@ -470,10 +472,11 @@ public class MarkParcelAttributeFromPosition {
 		try (SimpleFeatureIterator it = parcels.features()) {
 			while (it.hasNext()) {
 				SimpleFeature feat = it.next();
-				Geometry geomF = (Geometry) feat.getDefaultGeometry();
 				featureBuilder = ParcelSchema.setSFBMinParcelSplitWithFeat(feat, featureBuilder, featureSchema, 0);
-				if (isAlreadyMarked(feat) != 0 && ((Geometry) feat.getDefaultGeometry())
-						.intersects(Geom.unionPrecisionReduce(geoms.stream().filter(g -> g.intersects(geomF)).collect(Collectors.toList()), 100)))
+				if (isAlreadyMarked(feat) != 0 && !Geom
+						.unionPrecisionReduce(
+								geoms.stream().filter(g -> g.intersects((Geometry) feat.getDefaultGeometry())).collect(Collectors.toList()), 100)
+						.isEmpty())
 					featureBuilder.set(markFieldName, 1);
 				result.add(featureBuilder.buildFeature(Attribute.makeUniqueId()));
 			}
@@ -483,7 +486,6 @@ public class MarkParcelAttributeFromPosition {
 		signalIfNoParcelMarked(result, "markParcelIntersectPolygonIntersection");
 		return result.collection();
 	}
-	
 	
 	/**
 	 * Mark parcels that intersects a given collection of polygons. The default field name containing the mark is "SPLIT" but it can be changed with the {@link #setMarkFieldName(String)}
@@ -857,7 +859,7 @@ public class MarkParcelAttributeFromPosition {
 
 	/**
 	 * Mark a parcel if it has been simulated. This is done using the <i>section</i> field name and the method
-	 * {@link fr.ign.artiscales.fields.GeneralFields#isParcelLikeFrenchHasSimulatedFileds(SimpleFeature)}.
+	 * {@link fr.ign.artiscales.fields.GeneralFields#isParcelHasSimulatedFields(SimpleFeature)}.
 	 * 
 	 * @param parcels
 	 *            Input parcel {@link SimpleFeatureCollection}
@@ -870,11 +872,21 @@ public class MarkParcelAttributeFromPosition {
 		final SimpleFeatureType featureSchema = ParcelSchema.getSFBMinParcelSplit().getFeatureType();
 		DefaultFeatureCollection result = new DefaultFeatureCollection();
 		SimpleFeatureBuilder featureBuilder = ParcelSchema.getSFBMinParcelSplit();
+		if (featureSchema.equals(parcels.getSchema())) {
+			Arrays.stream(parcels.toArray(new SimpleFeature[0])).forEach(feat -> {
+				if (isAlreadyMarked(feat) != 0 && GeneralFields.isParcelHasSimulatedFields(feat))
+					feat.setAttribute(markFieldName, 1);
+				 else 
+					feat.setAttribute(markFieldName, 0);
+				result.add(feat);
+			});
+			return result;
+		}
 		try (SimpleFeatureIterator it = parcels.features()) {
 			while (it.hasNext()) {
 				SimpleFeature feat = it.next();
 				featureBuilder = ParcelSchema.setSFBMinParcelSplitWithFeat(feat,featureBuilder, featureSchema, 0);
-				if (isAlreadyMarked(feat) != 0 && GeneralFields.isParcelLikeFrenchHasSimulatedFileds(feat))
+				if (isAlreadyMarked(feat) != 0 && GeneralFields.isParcelHasSimulatedFields(feat))
 					featureBuilder.set(markFieldName, 1);
 				result.add(featureBuilder.buildFeature(Attribute.makeUniqueId()));
 			}
