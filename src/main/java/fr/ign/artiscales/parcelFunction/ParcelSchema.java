@@ -4,7 +4,6 @@ import org.geotools.feature.simple.SimpleFeatureBuilder;
 import org.geotools.feature.simple.SimpleFeatureTypeBuilder;
 import org.geotools.referencing.CRS;
 import org.locationtech.jts.geom.Geometry;
-import org.locationtech.jts.geom.MultiPolygon;
 import org.locationtech.jts.geom.Polygon;
 import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.feature.simple.SimpleFeatureType;
@@ -92,28 +91,6 @@ public class ParcelSchema {
 		//if looks like french parcel
 		else if (Collec.isSimpleFeatureContainsAttribute(feat, "CODE_DEP")) 
 			builder.set(ParcelSchema.getMinParcelCommunityField(), ((String) feat.getAttribute("CODE_DEP")).concat((String) feat.getAttribute("CODE_COM")));
-		return builder;
-	}
-
-	public static SimpleFeatureBuilder getSFBSchemaWithMultiPolygon(SimpleFeatureType schema) {
-		SimpleFeatureTypeBuilder sfTypeBuilder = new SimpleFeatureTypeBuilder();
-		String geomName = schema.getGeometryDescriptor().getLocalName();
-		for (AttributeDescriptor attr : schema.getAttributeDescriptors()) {
-			if (attr.getLocalName().equals(geomName))
-				continue;
-			sfTypeBuilder.add(attr);
-		}
-		sfTypeBuilder.setName(schema.getName());
-		sfTypeBuilder.setCRS(schema.getCoordinateReferenceSystem());
-		sfTypeBuilder.add(geomName, MultiPolygon.class);
-		sfTypeBuilder.setDefaultGeometry(geomName);
-		return new SimpleFeatureBuilder(sfTypeBuilder.buildFeatureType());
-	}
-	
-	public static SimpleFeatureBuilder setSFBSchemaWithMultiPolygon(SimpleFeature feat) {
-		SimpleFeatureBuilder builder = getSFBSchemaWithMultiPolygon(feat.getFeatureType());
-		for (AttributeDescriptor attr : feat.getFeatureType().getAttributeDescriptors())
-			builder.set(attr.getName(), feat.getAttribute(attr.getName()));
 		return builder;
 	}
 	

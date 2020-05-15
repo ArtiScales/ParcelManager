@@ -139,14 +139,14 @@ public class ParcelCollection {
 					// System.out.println("idToMerge: " + idToMerge + " " + ParcelAttribute.sysoutFrenchParcel(feat));
 					// if the big parcel has already been merged with a small parcel, we skip it and will return to that small parcel in a future iteration
 					if (ids.contains(idToMerge)) {
-						result.add(ParcelSchema.setSFBSchemaWithMultiPolygon(feat).buildFeature(Attribute.makeUniqueId()));
+						result.add(Schemas.setSFBSchemaWithMultiPolygon(feat).buildFeature(Attribute.makeUniqueId()));
 						continue;
 					}
 					ids.add(idToMerge);
 					// we now merge geometries and copy attributes to the new Feature
 					List<Geometry> lG = new ArrayList<Geometry>();
 					lG.add(geom);
-					SimpleFeatureBuilder build = ParcelSchema.getSFBSchemaWithMultiPolygon(parcelsUnsorted.getSchema());
+					SimpleFeatureBuilder build = Schemas.getSFBSchemaWithMultiPolygon(parcelsUnsorted.getSchema());
 					Arrays.stream(intersect.toArray(new SimpleFeature[0])).forEach(thaParcel -> {
 						if (thaParcel.getID().equals(idToMerge)) {
 //							build.addAll(thaParcel.getAttributes());
@@ -171,7 +171,7 @@ public class ParcelCollection {
 				}
 				// no else - if the small parcel doesn't touch any other parcels, we left it as a blank space and will be left as a public space
 			} else {
-				result.add(ParcelSchema.setSFBSchemaWithMultiPolygon(feat).buildFeature(Attribute.makeUniqueId()));
+				result.add(Schemas.setSFBSchemaWithMultiPolygon(feat).buildFeature(Attribute.makeUniqueId()));
 			}
 		}
 		return result;
