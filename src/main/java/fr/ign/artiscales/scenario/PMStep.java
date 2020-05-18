@@ -146,7 +146,7 @@ public class PMStep {
 				break;
 			case "densificationOrNeighborhood":
 				((DefaultFeatureCollection) parcelCut).addAll(Densification.densificationOrNeighborhood(parcelMarkedComm, CityGeneration.createUrbanIslet(parcelMarkedComm), TMPFOLDER, BUILDINGFILE, ROADFILE, profile,
-						ParcelState.isArt3AllowsIsolatedParcel(parcel.features().next(), PREDICATEFILE), Geom.createBufferBorder(parcelMarkedComm)));
+						ParcelState.isArt3AllowsIsolatedParcel(parcel.features().next(), PREDICATEFILE), Geom.createBufferBorder(parcelMarkedComm), 5));
 				break;
 			case "consolidationDivision":
 				ConsolidationDivision.PROCESS = parcelProcess;

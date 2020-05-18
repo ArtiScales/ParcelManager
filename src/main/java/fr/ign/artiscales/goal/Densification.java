@@ -231,10 +231,9 @@ public class Densification {
 	}
 	
 	/**
-	 * Apply the densification goal on a set of marked parcels.
-	 *
-	 * overload {@link #densification(SimpleFeatureCollection, SimpleFeatureCollection, File, File, File, double, double, double, double, boolean)} method with a profile building
-	 * type input (which automatically report its parameters to the fields)
+	 * Apply the densification goal on a set of marked parcels. Overload
+	 * {@link #densification(SimpleFeatureCollection, SimpleFeatureCollection, File, File, File, double, double, double, double, boolean)} method with a profile building type input
+	 * (which automatically report its parameters to the fields)
 	 * 
 	 * @param parcelCollection
 	 *            SimpleFeatureCollection of marked parcels.
@@ -247,19 +246,49 @@ public class Densification {
 	 *            Shapefile representing the buildings.
 	 * @param roadFile
 	 *            Shapefile representing the roads (optional).
-	 * @param profileFile
-	 *            File containing the .json description of the urban scene profile planed to be simulated on this zone.
+	 * @param profile
+	 *            Description of the urban fabric profile planed to be simulated on this zone.
 	 * @param allowIsolatedParcel
 	 *            true if the simulated parcels have the right to be isolated from the road, false otherwise.
+	 * @param exclusionZone
+	 *            Exclude a zone that won't be considered as a potential road connection. Useful to represent border of the parcel plan. Can be null.
+	 * @return The input parcel {@link SimpleFeatureCollection} with the marked parcels replaced by the simulated parcels. All parcels have the
+	 *         {@link fr.ign.artiscales.parcelFunction.ParcelSchema#getSFBMinParcel()} schema.
+	 * @throws Exception
+	 */
+	public static SimpleFeatureCollection densification(SimpleFeatureCollection parcelCollection, SimpleFeatureCollection isletCollection,
+			File tmpFolder, File buildingFile, File roadFile, ProfileUrbanFabric profile, boolean allowIsolatedParcel) throws Exception {
+		return densification(parcelCollection, isletCollection, tmpFolder, buildingFile, roadFile, profile, allowIsolatedParcel, null);
+	}
+	
+	/**
+	 * Apply the densification goal on a set of marked parcels. Overload
+	 * {@link #densification(SimpleFeatureCollection, SimpleFeatureCollection, File, File, File, double, double, double, double, boolean)} method with a profile building type input
+	 * (which automatically report its parameters to the fields)
+	 * 
+	 * @param parcelCollection
+	 *            SimpleFeatureCollection of marked parcels.
+	 * @param isletCollection
+	 *            SimpleFeatureCollection containing the morphological islet. Can be generated with the
+	 *            {@link fr.ign.cogit.geometryGeneration.CityGeneration#createUrbanIslet(File, File)} method.
+	 * @param tmpFolder
+	 *            folder to store temporary files.
+	 * @param buildingFile
+	 *            Shapefile representing the buildings.
+	 * @param roadFile
+	 *            Shapefile representing the roads (optional).
+	 * @param profile
+	 *            Description of the urban fabric profile planed to be simulated on this zone.
+	 * @param allowIsolatedParcel
+	 *            true if the simulated parcels have the right to be isolated from the road, false otherwise. exclusionZone
 	 * @return The input parcel {@link SimpleFeatureCollection} with the marked parcels replaced by the simulated parcels. All parcels have the
 	 *         {@link fr.ign.artiscales.parcelFunction.ParcelSchema#getSFBMinParcel()} schema. * @throws Exception
 	 */
 	public static SimpleFeatureCollection densification(SimpleFeatureCollection parcelCollection, SimpleFeatureCollection isletCollection,
-			File tmpFolder, File buildingFile, File roadFile, File profileFile, boolean allowIsolatedParcel) throws Exception {
-		ProfileUrbanFabric profile = ProfileUrbanFabric.convertJSONtoProfile(profileFile);
+			File tmpFolder, File buildingFile, File roadFile, ProfileUrbanFabric profile, boolean allowIsolatedParcel, Geometry exclusionZone) throws Exception {
 		return densification(parcelCollection, isletCollection, tmpFolder, buildingFile, roadFile,
 				profile.getMaximalArea(), profile.getMinimalArea(), profile.getMaximalWidth(), profile.getLenDriveway(),
-				allowIsolatedParcel);
+				allowIsolatedParcel, exclusionZone);
 	}
 	
 	/**
@@ -284,30 +313,35 @@ public class Densification {
 	 *            true if the simulated parcels have the right to be isolated from the road, false otherwise.
 	 * @param exclusionZone
 	 *            Exclude a zone that won't be considered as a potential road connection. Useful to represent border of the parcel plan. Can be null.
+	 * @param factorOflargeZoneCreation
+	 *            If the area of the parcel to be simulated is superior to the maximal size of parcels multiplied by this factor, the simulation will be done with the
+	 *            {@link fr.ign.artiscales.goal.ConsolidationDivision#consolidationDivision(SimpleFeatureCollection, File, double, double, double, double, int)} method.
 	 * @return The input parcel {@link SimpleFeatureCollection} with the marked parcels replaced by the simulated parcels. All parcels have the
 	 *         {@link fr.ign.artiscales.parcelFunction.ParcelSchema#getSFBMinParcel()} schema.
 	 * @throws Exception
 	 */
 	public static SimpleFeatureCollection densificationOrNeighborhood(SimpleFeatureCollection parcelCollection, SimpleFeatureCollection isletCollection,
-			File tmpFolder, File buildingFile, File roadFile, ProfileUrbanFabric profile, boolean allowIsolatedParcel, Geometry exclusionZone) throws Exception {
-		//this is an ugly temporary fix but i cannot se	
+			File tmpFolder, File buildingFile, File roadFile, ProfileUrbanFabric profile, boolean allowIsolatedParcel, Geometry exclusionZone, int factorOflargeZoneCreation) throws Exception {
+		//this is an ugly temporary fix but i cannot see 	
 		//TODO find a better solution
-		Collec.exportSFC(parcelCollection, new File("/tmp/start.shp"));
+		Collec.exportSFC(parcelCollection, new File(tmpFolder, "start.shp"));
 		// We flagcut the parcels which size is inferior to 4x the max parcel size
 				SimpleFeatureCollection parcelInf = MarkParcelAttributeFromPosition.markParcelsInf(parcelCollection, profile.getMaximalArea()*4);
 		SimpleFeatureCollection parcelDensified = densification(parcelInf, isletCollection, tmpFolder, buildingFile, roadFile,
 				profile.getMaximalArea(), profile.getMinimalArea(), profile.getMaximalWidth(), profile.getLenDriveway(),
 				allowIsolatedParcel, exclusionZone);
+Collec.exportSFC(parcelDensified, new File(tmpFolder, "parcelDensified.shp"));
 		//if parcels are too big, we try to create neighborhoods inside them with the consolidation algorithm
 		//We first re-mark the parcels that were marked.
 		//TODO second part of the ugly fix
-		ShapefileDataStore sds = new ShapefileDataStore( new File("/tmp/start.shp").toURI().toURL());
-		SimpleFeatureCollection supParcels = MarkParcelAttributeFromPosition.markParcelsSup(MarkParcelAttributeFromPosition.markAlreadyMarkedParcels(parcelDensified, sds.getFeatureSource().getFeatures()), profile.getMaximalArea()*4);
+		ShapefileDataStore sds = new ShapefileDataStore( new File(tmpFolder, "start.shp").toURI().toURL());
+		SimpleFeatureCollection supParcels = MarkParcelAttributeFromPosition.markParcelsSup(MarkParcelAttributeFromPosition.markAlreadyMarkedParcels(parcelDensified, sds.getFeatureSource().getFeatures()), profile.getMaximalArea()*factorOflargeZoneCreation);
 		sds.dispose();
 		if (!MarkParcelAttributeFromPosition.isNoParcelMarked(supParcels)) {
 			parcelDensified = ConsolidationDivision.consolidationDivision(supParcels, tmpFolder, profile.getMaximalArea(),
 					profile.getMinimalArea(), profile.getMaximalWidth(), profile.getStreetWidth(), profile.getDecompositionLevelWithoutStreet());
 		} 
+Collec.exportSFC(parcelDensified, new File(tmpFolder, "parcelDensifiedBig.shp"));
 		return parcelDensified;
 	}
 }

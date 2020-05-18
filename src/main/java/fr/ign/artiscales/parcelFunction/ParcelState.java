@@ -194,15 +194,13 @@ public class ParcelState {
 	public static boolean isParcelHasRoadAccess(Polygon poly, SimpleFeatureCollection roads, MultiLineString ext, Geometry disabledBuffer) {
 		// if (poly.intersects((((Polygon) ext).getExteriorRing()).buffer(0.5))) {
 		if (poly.intersects(ext.buffer(0.5))) {
-			if (disabledBuffer != null && poly.intersects(disabledBuffer.buffer(0.5))) {
+			if (disabledBuffer != null && poly.intersects(disabledBuffer.buffer(0.5)))
 				return false;
-			}
 			return true;
 		}
 		// System.out.println(Geom.unionGeom(getRoadPolygon(roads)));
-		if (roads != null && poly.intersects(Geom.unionGeom(getRoadPolygon(roads)))) {
+		if (roads != null && poly.intersects(Geom.unionGeom(getRoadPolygon(roads))))
 			return true;
-		}
 		return false;
 	}
 
@@ -218,8 +216,7 @@ public class ParcelState {
 	 * @throws IOException
 	 */
 	public static boolean isArt3AllowsIsolatedParcel(SimpleFeature feat, File predicateFile) throws IOException {
-		return isArt3AllowsIsolatedParcel(
-				((String) feat.getAttribute("CODE_DEP")) + ((String) feat.getAttribute("CODE_COM")), predicateFile);
+		return isArt3AllowsIsolatedParcel(((String) feat.getAttribute("CODE_DEP")) + ((String) feat.getAttribute("CODE_COM")), predicateFile);
 	}
 
 	/**
@@ -298,19 +295,15 @@ public class ParcelState {
 	 */
 	public static boolean isAlreadyBuilt(SimpleFeatureCollection batiSFC, SimpleFeature parcel, double bufferBati)
 			throws IOException {
-		boolean isContent = false;
 		Geometry geom = ((Geometry) parcel.getDefaultGeometry());
 		try (SimpleFeatureIterator iterator = batiSFC.features()) {
-			while (iterator.hasNext()) {
-				if (geom.intersects(((Geometry) iterator.next().getDefaultGeometry()).buffer(bufferBati))) {
-					isContent = true;
-					break;
-				}
-			}
+			while (iterator.hasNext())
+				if (geom.intersects(((Geometry) iterator.next().getDefaultGeometry()).buffer(bufferBati)))
+					return true;
 		} catch (Exception problem) {
 			problem.printStackTrace();
 		}
-		return isContent;
+		return false;
 	}
 
 	/**
@@ -347,9 +340,8 @@ public class ParcelState {
 		// put the best cell evaluation into the parcel
 		if (onlyCells.size() > 0) {
 			try (SimpleFeatureIterator onlyCellIt = onlyCells.features()) {
-				while (onlyCellIt.hasNext()) {
+				while (onlyCellIt.hasNext()) 
 					bestEval = Math.max(bestEval, (Double) onlyCellIt.next().getAttribute("eval"));
-				}
 			} catch (Exception problem) {
 				problem.printStackTrace();
 			} 
@@ -425,14 +417,15 @@ public class ParcelState {
 		// calculation, but it could worth it
 		boolean twoZones = false;
 		HashMap<String, Double> repart = new HashMap<String, Double>();
+		
+		PrecisionModel precMod = new PrecisionModel(100);
+		Geometry parcelInGeometry = GeometryPrecisionReducer.reduce((Geometry) parcelIn.getDefaultGeometry(), precMod);
+
 		try (SimpleFeatureIterator featuresZones = Collec
 				.snapDatas(shpDSZone.getFeatureSource().getFeatures(), (Geometry) parcelIn.getDefaultGeometry()).features()) {
 			zoneLoop: while (featuresZones.hasNext()) {
 				SimpleFeature feat = featuresZones.next();
-				PrecisionModel precMod = new PrecisionModel(100);
 				Geometry featGeometry = GeometryPrecisionReducer.reduce((Geometry) feat.getDefaultGeometry(), precMod);
-				Geometry parcelInGeometry = GeometryPrecisionReducer.reduce((Geometry) parcelIn.getDefaultGeometry(),
-						precMod);
 				if (featGeometry.buffer(0.5).contains(parcelInGeometry)) {
 					twoZones = false;
 					String zoneName = FrenchZoningSchemas.normalizeNameFrenchBigZone((String) feat.getAttribute(GeneralFields.getZoneGenericNameField()));
