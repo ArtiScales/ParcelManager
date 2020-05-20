@@ -8,8 +8,11 @@ import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.data.simple.SimpleFeatureIterator;
 import org.geotools.feature.DefaultFeatureCollection;
 import org.geotools.feature.simple.SimpleFeatureBuilder;
+import org.geotools.feature.simple.SimpleFeatureTypeBuilder;
 import org.locationtech.jts.geom.Geometry;
 import org.opengis.feature.simple.SimpleFeature;
+import org.opengis.feature.simple.SimpleFeatureType;
+import org.opengis.feature.type.AttributeDescriptor;
 import org.opengis.referencing.FactoryException;
 import org.opengis.referencing.NoSuchAuthorityCodeException;
 
@@ -123,7 +126,7 @@ public class FrenchParcelFields {
 	}
 	
 	/**
-	 * Construct a french parcel code
+	 * Construct a french parcel code for a {@link SimpleFeature}.
 	 * 
 	 * @param parcel
 	 *            French parcel feature
@@ -134,6 +137,38 @@ public class FrenchParcelFields {
 				+ ((String) parcel.getAttribute("SECTION")) + ((String) parcel.getAttribute("NUMERO"));
 	}
 	
+	/**
+	 * Add a "CODE" field for every french parcel like of a {@link SimpleFeatureCollection}.
+	 * 
+	 * @param parcels
+	 *            {@link SimpleFeatureCollection} of French parcels.
+	 * @return The collection with the "CODE" field added.
+	 */
+	public static SimpleFeatureCollection addFrenchParcelCode(SimpleFeatureCollection parcels) {
+		DefaultFeatureCollection result = new DefaultFeatureCollection();
+		SimpleFeatureTypeBuilder sfTypeBuilder = new SimpleFeatureTypeBuilder();
+		SimpleFeatureType schema = parcels.getSchema();
+		for (AttributeDescriptor attr : schema.getAttributeDescriptors())
+			sfTypeBuilder.add(attr);
+		sfTypeBuilder.add("CODE", String.class);
+		sfTypeBuilder.setName(schema.getName());
+		sfTypeBuilder.setCRS(schema.getCoordinateReferenceSystem());
+		sfTypeBuilder.setDefaultGeometry(schema.getGeometryDescriptor().getLocalName());
+		SimpleFeatureBuilder builder = new SimpleFeatureBuilder(sfTypeBuilder.buildFeatureType());
+		try (SimpleFeatureIterator parcelIt = parcels.features()) {
+			while (parcelIt.hasNext()) {
+				SimpleFeature feat = parcelIt.next();
+				for (AttributeDescriptor attr : feat.getFeatureType().getAttributeDescriptors())
+					builder.set(attr.getName(), feat.getAttribute(attr.getName()));
+				builder.set("CODE", makeFrenchParcelCode(feat));
+				result.add(builder.buildFeature(Attribute.makeUniqueId()));
+			}
+		} catch (Exception problem) {
+			problem.printStackTrace();
+		}
+		return result;
+	}
+
 	/**
 	 * Get the parcel codes (Attribute CODE of the given SimpleFeatureCollection)
 	 * 

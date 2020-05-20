@@ -11,18 +11,19 @@ import org.geotools.data.simple.SimpleFeatureIterator;
 import org.geotools.feature.DefaultFeatureCollection;
 import org.geotools.feature.simple.SimpleFeatureBuilder;
 import org.geotools.feature.simple.SimpleFeatureTypeBuilder;
-import org.geotools.referencing.CRS;
 import org.locationtech.jts.algorithm.MinimumBoundingCircle;
 import org.locationtech.jts.algorithm.distance.DiscreteHausdorffDistance;
 import org.locationtech.jts.algorithm.match.HausdorffSimilarityMeasure;
 import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.geom.Polygon;
 import org.opengis.feature.simple.SimpleFeature;
+import org.opengis.feature.simple.SimpleFeatureType;
 import org.opengis.referencing.FactoryException;
 import org.opengis.referencing.NoSuchAuthorityCodeException;
 
 import com.opencsv.CSVWriter;
 
+import fr.ign.artiscales.fields.GeneralFields;
 import fr.ign.artiscales.parcelFunction.MarkParcelAttributeFromPosition;
 import fr.ign.artiscales.parcelFunction.ParcelSchema;
 import fr.ign.artiscales.parcelFunction.ParcelState;
@@ -39,24 +40,21 @@ import fr.ign.cogit.geometryGeneration.CityGeneration;
  */
 public class ParcelStat {
 
-	 public static void main(String[] args) throws Exception {
-	 long strat = System.currentTimeMillis();
-	 // ShapefileDataStore sdsParcel = new ShapefileDataStore(
-	 // new File("/home/ubuntu/workspace/ParcelManager/src/main/resources/GeneralTest/parcel.shp").toURI().toURL());
-	 ShapefileDataStore sdsParcelEv = new ShapefileDataStore(new File("/home/ubuntu/workspace/ParcelManager/src/main/resources/ParcelComparison/out/evolvedParcel.shp").toURI().toURL());
-	 ShapefileDataStore sdsSimu = new ShapefileDataStore(
-	 new File("/home/ubuntu/workspace/ParcelManager/src/main/resources/ParcelComparison/out/simulatedParcel.shp").toURI().toURL());
-	
-	 SimpleFeatureCollection parcelEv = sdsParcelEv.getFeatureSource().getFeatures();
-	 parcelEv = MarkParcelAttributeFromPosition.markAllParcel(parcelEv);
-	 SimpleFeatureCollection parcelSimu = sdsSimu.getFeatureSource().getFeatures();
-
-	 makeHausdorfDistanceMaps(parcelEv, parcelSimu);
-	 
-	 sdsParcelEv.dispose();
-	 sdsSimu.dispose();
-	 System.out.println("time : " + (System.currentTimeMillis() - strat));
-	 }
+//	public static void main(String[] args) throws Exception {
+//		long strat = System.currentTimeMillis();
+//		// ShapefileDataStore sdsParcel = new ShapefileDataStore(
+//		// new File("/home/ubuntu/workspace/ParcelManager/src/main/resources/GeneralTest/parcel.shp").toURI().toURL());
+//		ShapefileDataStore sdsParcelEv = new ShapefileDataStore(
+//				new File("/home/ubuntu/workspace/ParcelManager/src/main/resources/ParcelComparison/out2/evolvedParcel.shp").toURI().toURL());
+//		ShapefileDataStore sdsSimu = new ShapefileDataStore(
+//				new File("/home/ubuntu/workspace/ParcelManager/src/main/resources/ParcelComparison/out2/simulatedParcels.shp").toURI().toURL());
+//		SimpleFeatureCollection parcelEv = sdsParcelEv.getFeatureSource().getFeatures();
+//		SimpleFeatureCollection parcelSimu = sdsSimu.getFeatureSource().getFeatures();
+//		Collec.exportSFC(makeHausdorfDistanceMaps(parcelEv, parcelSimu), new File("/tmp/haus"));
+//		sdsParcelEv.dispose();
+//		sdsSimu.dispose();
+//		System.out.println("time : " + (System.currentTimeMillis() - strat));
+//	}
 
 	public static void writeStatSingleParcel(SimpleFeatureCollection parcels, File roadFile, File parcelStatCsv)
 			throws NoSuchAuthorityCodeException, IOException, FactoryException {
@@ -74,7 +72,7 @@ public class ParcelStat {
 			return;
 		}
 		CSVWriter csv = new CSVWriter(new FileWriter(parcelStatCsv, false));
-		String[] firstLine = { "code", "area", "perimeter", "contactWithRoad", "widthContactWithRoad", "numberOfNeighborhood", "maxBoundingCircle" };
+		String[] firstLine = { "code", "area", "perimeter", "contactWithRoad", "widthContactWithRoad", "numberOfNeighborhood", "maxBoundingCircle"};
 		csv.writeNext(firstLine);
 		SimpleFeatureCollection islet = CityGeneration.createUrbanIslet(parcels);
 		Arrays.stream(parcels.toArray(new SimpleFeature[0]))
@@ -113,15 +111,17 @@ public class ParcelStat {
 
 	public static SimpleFeatureCollection makeHausdorfDistanceMaps(SimpleFeatureCollection parcelIn, SimpleFeatureCollection parcelToCompare)
 			throws NoSuchAuthorityCodeException, FactoryException, IOException {
-		
-		//ckeck for the fields //TODO CONSTRUCT
-		
+		if (!Collec.isCollecContainsAttribute(parcelIn, "CODE")) 
+			GeneralFields.addParcelCode(parcelIn);
+		if (!Collec.isCollecContainsAttribute(parcelToCompare, "CODE")) 
+			GeneralFields.addParcelCode(parcelToCompare);
+		SimpleFeatureType schema = parcelIn.getSchema();
 		DefaultFeatureCollection result = new DefaultFeatureCollection();
 		SimpleFeatureTypeBuilder sfTypeBuilder = new SimpleFeatureTypeBuilder();
 		sfTypeBuilder.setName("minParcel");
-		sfTypeBuilder.setCRS(CRS.decode("EPSG:2154"));
-		sfTypeBuilder.add("the_geom", Polygon.class);
-		sfTypeBuilder.setDefaultGeometry("the_geom");
+		sfTypeBuilder.setCRS(schema.getCoordinateReferenceSystem());
+		sfTypeBuilder.add(schema.getGeometryDescriptor().getLocalName(), Polygon.class);
+		sfTypeBuilder.setDefaultGeometry(schema.getGeometryDescriptor().getLocalName());
 		sfTypeBuilder.add("DisHausDst", Double.class);
 		sfTypeBuilder.add("HausDist", Double.class);
 		sfTypeBuilder.add("CODE", String.class);
@@ -133,14 +133,20 @@ public class ParcelStat {
 				SimpleFeature parcel = parcelIt.next();
 				Geometry parcelGeom = (Geometry) parcel.getDefaultGeometry();
 				SimpleFeature parcelCompare = Collec.getSimpleFeatureFromSFC(parcelGeom, parcelToCompare);
-				Geometry parcelCompareGeom = (Geometry) parcelCompare.getDefaultGeometry();
-				DiscreteHausdorffDistance dhd = new DiscreteHausdorffDistance(parcelGeom, parcelCompareGeom);
-				builder.set("DisHausDst", dhd.distance());
-				builder.set("HausDist", hausDis.measure(parcelGeom, parcelCompareGeom));
-				builder.set("CODE", parcel.getAttribute("CODE"));
-				builder.set("CodeAppar", parcelCompare.getAttribute("CODE"));
-				builder.set("the_geom", parcelGeom);
-				result.add(builder.buildFeature(Attribute.makeUniqueId()));
+				if (parcelCompare != null) {
+					Geometry parcelCompareGeom = (Geometry) parcelCompare.getDefaultGeometry();
+					DiscreteHausdorffDistance dhd = new DiscreteHausdorffDistance(parcelGeom, parcelCompareGeom);
+					builder.set("DisHausDst", dhd.distance());
+					builder.set("HausDist", hausDis.measure(parcelGeom, parcelCompareGeom));
+					builder.set("CODE", parcel.getAttribute("CODE"));
+					builder.set("CodeAppar", parcelCompare.getAttribute("CODE"));
+					builder.set(schema.getGeometryDescriptor().getLocalName(), parcelGeom);
+					result.add(builder.buildFeature(Attribute.makeUniqueId()));
+				} else {
+					builder.set("CODE", parcel.getAttribute("CODE"));
+					builder.set(schema.getGeometryDescriptor().getLocalName(), parcelGeom);
+					result.add(builder.buildFeature(Attribute.makeUniqueId()));
+				}
 			}
 		} catch (Exception problem) {
 			problem.printStackTrace();

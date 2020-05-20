@@ -13,6 +13,7 @@ import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.referencing.FactoryException;
 import org.opengis.referencing.NoSuchAuthorityCodeException;
 
+import fr.ign.artiscales.fields.french.FrenchParcelFields;
 import fr.ign.artiscales.fields.french.FrenchZoningSchemas;
 import fr.ign.artiscales.parcelFunction.MarkParcelAttributeFromPosition;
 import fr.ign.artiscales.parcelFunction.ParcelAttribute;
@@ -60,6 +61,21 @@ public class GeneralFields {
 			}
 		});
 		return result.collection();
+	}
+
+	/**
+	 * Add a "CODE" field for every parcels of a {@link SimpleFeatureCollection}. Only french solution implemented yet. 
+	 * 
+	 * @param parcels
+	 *            {@link SimpleFeatureCollection} of parcels.
+	 * @return The collection with the "CODE" field added.
+	 */
+	public static SimpleFeatureCollection addParcelCode(SimpleFeatureCollection parcels) throws IOException {
+		SimpleFeatureCollection result = new DefaultFeatureCollection();
+		if (parcelFieldType.equals("french")) {
+			result = FrenchParcelFields.addFrenchParcelCode(parcels);
+		}
+		return result;
 	}
 	
 	/**
