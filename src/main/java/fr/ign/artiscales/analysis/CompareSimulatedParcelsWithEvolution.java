@@ -50,7 +50,7 @@ public class CompareSimulatedParcelsWithEvolution {
 		File scenarioFile = new File(rootFolder, "scenario.json");
 		
 		// Mark and export the parcels that have changed between the two set of time
-		ParcelCollection.markDiffParcel(fileParcelPast, fileParcelNow, outFolder);
+		ParcelCollection.sortDifferentParcel(fileParcelPast, fileParcelNow, outFolder);
 
 		// create ilots for parcel densification in case they haven't been generated before
 		CityGeneration.createUrbanIslet(fileParcelPast, rootFolder);
