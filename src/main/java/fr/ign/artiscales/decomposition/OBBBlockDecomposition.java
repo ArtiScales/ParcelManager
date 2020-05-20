@@ -158,12 +158,12 @@ public class OBBBlockDecomposition {
         } else {
           Polygon polygon = (Polygon) Geom.getPolygon((Geometry) feature.getDefaultGeometry());
           DescriptiveStatistics dS = new DescriptiveStatistics();
-		  OBBBlockDecomposition.decompose(polygon, extBlock, (roads != null && !roads.isEmpty()) ?  Collec.snapDatas(roads, (Geometry) feature.getDefaultGeometry()): null, maximalArea, maximalWidth, noise, streetEpsilon, smallStreetWidth, largeStreetLevel,
+		  OBBBlockDecomposition.decompose(polygon, extBlock, (roads != null && !roads.isEmpty()) ?  Collec.snapDatas(roads, (Geometry) feature.getDefaultGeometry()) : null, maximalArea, maximalWidth, noise, streetEpsilon, smallStreetWidth, largeStreetLevel,
 									largeStreetWidth, forceStreetAccess, 0, decompositionLevelWithoutStreet)
 							.stream().forEach(c -> dS.addValue(c.getValue()));
 		  int decompositionLevelWithRoad = (int) dS.getPercentile(50) - decompositionLevelWithoutStreet;
 		  int decompositionLevelWithLargeRoad = (int) dS.getPercentile(50) - largeStreetLevel ;
-		  OBBBlockDecomposition.decompose(polygon, extBlock, (roads != null && !roads.isEmpty()) ?  Collec.snapDatas(roads, (Geometry) feature.getDefaultGeometry()): null, maximalArea, maximalWidth, noise, streetEpsilon, smallStreetWidth, decompositionLevelWithLargeRoad ,
+		  OBBBlockDecomposition.decompose(polygon, extBlock, (roads != null && !roads.isEmpty()) ?  Collec.snapDatas(roads, (Geometry) feature.getDefaultGeometry()) : null, maximalArea, maximalWidth, noise, streetEpsilon, smallStreetWidth, decompositionLevelWithLargeRoad ,
 									largeStreetWidth, forceStreetAccess, decompositionLevelWithRoad, decompositionLevelWithoutStreet)
 		  	.childrenStream().forEach(p-> {
             SimpleFeature newFeature = builder.buildFeature(Attribute.makeUniqueId());

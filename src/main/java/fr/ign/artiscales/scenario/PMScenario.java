@@ -17,7 +17,7 @@ import com.fasterxml.jackson.core.JsonToken;
  */
 public class PMScenario {
 
-	private File zoningFile, buildingFile, roadFile, polygonIntersection, predicateFile, parcelFile, profileFolder, tmpFolder, outFolder;
+	private File zoningFile, buildingFile, roadFile, polygonIntersection, zone, predicateFile, parcelFile, profileFolder, tmpFolder, outFolder;
 
 	private List<PMStep> stepList = new ArrayList<PMStep>();
 	private boolean fileSet = false;
@@ -56,12 +56,12 @@ public class PMScenario {
 					buildingFile = new File(rootFolder, "building.shp");
 					roadFile = new File(rootFolder, "road.shp");
 					polygonIntersection = new File(rootFolder, "polygonIntersection.shp");
+					zone = new File(rootFolder,"zone.shp");
 					predicateFile = new File(rootFolder, "predicate.csv");
 					parcelFile = new File(rootFolder, "parcel.shp");
 					profileFolder = new File(rootFolder, "profileUrbanFabric");
 				}
 			}
-			
 			//if the line is an array, it describes a PMSetp
 			if (token == JsonToken.FIELD_NAME && "steps".equals(parser.getCurrentName())) {
 				token = parser.nextToken();
@@ -76,50 +76,42 @@ public class PMScenario {
 					token = parser.nextToken();
 					if (token == JsonToken.FIELD_NAME && parser.getCurrentName().equals("goal")) {
 						token = parser.nextToken();
-						if (token == JsonToken.VALUE_STRING) {
+						if (token == JsonToken.VALUE_STRING)
 							goal = parser.getText();
-						}
 					}
 					if (token == JsonToken.FIELD_NAME && parser.getCurrentName().equals("parcelProcess")) {
 						token = parser.nextToken();
-						if (token == JsonToken.VALUE_STRING) {
+						if (token == JsonToken.VALUE_STRING)
 							parcelProcess = parser.getText();
-						}
 					}
 					if (token == JsonToken.FIELD_NAME && parser.getCurrentName().equals("genericZone")) {
 						token = parser.nextToken();
-						if (token == JsonToken.VALUE_STRING) {
+						if (token == JsonToken.VALUE_STRING)
 							genericZone = parser.getText();
-						}
 					}
 					if (token == JsonToken.FIELD_NAME && parser.getCurrentName().equals("preciseZone")) {
 						token = parser.nextToken();
-						if (token == JsonToken.VALUE_STRING) {
+						if (token == JsonToken.VALUE_STRING)
 							preciseZone = parser.getText();
-						}
 					}
 					if (token == JsonToken.FIELD_NAME && parser.getCurrentName().equals("communityNumber")) {
 						token = parser.nextToken();
-						if (token == JsonToken.VALUE_STRING) {
+						if (token == JsonToken.VALUE_STRING) 
 							communityNumber = parser.getText();
-						}
 					}
 					if (token == JsonToken.FIELD_NAME && parser.getCurrentName().equals("communityType")) {
 						token = parser.nextToken();
-						if (token == JsonToken.VALUE_STRING) {
+						if (token == JsonToken.VALUE_STRING)
 							communityType = parser.getText();
-						}
 					}
 					if (token == JsonToken.FIELD_NAME && parser.getCurrentName().equals("urbanFabricType")) {
 						token = parser.nextToken();
-						if (token == JsonToken.VALUE_STRING) {
+						if (token == JsonToken.VALUE_STRING) 
 							urbanFabric = parser.getText();
-						}
 					}
 					if (token == JsonToken.END_OBJECT) {
 						List<PMStep> list = getStepList();
-						PMStep step = new PMStep(goal, parcelProcess, genericZone, preciseZone, communityNumber, communityType,
-								urbanFabric);
+						PMStep step = new PMStep(goal, parcelProcess, genericZone, preciseZone, communityNumber, communityType, urbanFabric);
 						list.add(step);
 						setStepList(list);
 						goal = parcelProcess = genericZone = preciseZone = communityNumber = communityType = urbanFabric = "";
@@ -155,6 +147,13 @@ public class PMScenario {
 					fileSet = true;
 				}
 			}
+			if (token == JsonToken.FIELD_NAME && "zoneFile".equals(parser.getCurrentName())) {
+				token = parser.nextToken();
+				if (token == JsonToken.VALUE_STRING) {
+					zone = new File(parser.getText());
+					fileSet = true;
+				}
+			}
 			if (token == JsonToken.FIELD_NAME && "predicateFile".equals(parser.getCurrentName())) {
 				token = parser.nextToken();
 				if (token == JsonToken.VALUE_STRING) {
@@ -185,18 +184,17 @@ public class PMScenario {
 			}
 		}
 		parser.close();
-		PMStep.setFiles(parcelFile, zoningFile, tmpFolder, buildingFile, roadFile, predicateFile, polygonIntersection, outFolder,
+		PMStep.setFiles(parcelFile, zoningFile, tmpFolder, buildingFile, roadFile, predicateFile, polygonIntersection, zone, outFolder,
 				profileFolder);
 	}
 
 	public void executeStep() throws Exception {
 		for (PMStep pmstep : getStepList()) {
 			System.out.println("try " + pmstep);
-			if (REUSESIMULATEDPARCELS) {
+			if (REUSESIMULATEDPARCELS)
 				PMStep.setParcel(pmstep.execute());
-			} else {
+			else
 				pmstep.execute();
-			}
 		}
 	}
 
@@ -211,7 +209,7 @@ public class PMScenario {
 	@Override
 	public String toString() {
 		return "PMScenario [zoningFile=" + zoningFile + ", buildingFile=" + buildingFile + ", roadFile=" + roadFile + ", polygonIntersection="
-				+ polygonIntersection + ", predicateFile=" + predicateFile + ", parcelFile=" + parcelFile + ", tmpFolder="
+				+ polygonIntersection + ", zone=" + zone + ", predicateFile=" + predicateFile + ", parcelFile=" + parcelFile + ", tmpFolder="
 				+ tmpFolder + ", outFolder=" + outFolder + ", stepList=" + stepList + ", fileSet=" + fileSet + ", profileFolder=" + profileFolder
 				+ "]";
 	}

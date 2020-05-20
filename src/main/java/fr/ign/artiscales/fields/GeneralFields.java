@@ -6,6 +6,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.geotools.data.simple.SimpleFeatureCollection;
+import org.geotools.data.simple.SimpleFeatureIterator;
 import org.geotools.feature.DefaultFeatureCollection;
 import org.geotools.feature.simple.SimpleFeatureBuilder;
 import org.opengis.feature.simple.SimpleFeature;
@@ -14,6 +15,7 @@ import org.opengis.referencing.NoSuchAuthorityCodeException;
 
 import fr.ign.artiscales.fields.french.FrenchZoningSchemas;
 import fr.ign.artiscales.parcelFunction.MarkParcelAttributeFromPosition;
+import fr.ign.artiscales.parcelFunction.ParcelAttribute;
 import fr.ign.artiscales.parcelFunction.ParcelSchema;
 import fr.ign.cogit.geoToolsFunctions.Attribute;
 import fr.ign.cogit.geoToolsFunctions.vectors.Collec;
@@ -145,6 +147,37 @@ public class GeneralFields {
 	}
 
 	/**
+	 * Change a {@link SimpleFeatureCollection} of any kind to follow the minimum schema for Parcel Manager (see method {@link ParcelSchema#getSFBMinParcel()} with the help of an extra {@link SimpleFeatureCollection}.
+	 * 
+	 * @param sfc
+	 *            input {@link SimpleFeatureCollection} to transform.
+	 * @param sfcWithInfo
+	 *            {@link SimpleFeatureCollection} containing the interesting attribute informations.
+	 * @return A {@link SimpleFeatureCollection} with attributes following the minimal schema
+	 * @throws FactoryException
+	 * @throws NoSuchAuthorityCodeException
+	 * @throws IOException
+	 */
+	public static SimpleFeatureCollection transformSFCToMinParcel(SimpleFeatureCollection sfc, SimpleFeatureCollection sfcWithInfo)
+			throws NoSuchAuthorityCodeException, FactoryException, IOException {
+		DefaultFeatureCollection result = new DefaultFeatureCollection();
+		SimpleFeatureBuilder builder = ParcelSchema.getSFBMinParcel();
+		try (SimpleFeatureIterator it = sfc.features()) {
+			while (it.hasNext()) {
+				SimpleFeature feat = it.next();
+				builder.set(builder.getFeatureType().getGeometryDescriptor().getLocalName(), feat.getDefaultGeometry());
+				builder.set(ParcelSchema.getMinParcelCommunityField(), ParcelAttribute.getCommunityCodeFromSFC(sfcWithInfo, feat));
+				builder.set(ParcelSchema.getMinParcelSectionField(), ParcelAttribute.getSectionCodeFromSFC(sfcWithInfo, feat));
+				builder.set(ParcelSchema.getMinParcelNumberField(), ParcelAttribute.getNumberCodeFromSFC(sfcWithInfo, feat));
+				result.add(builder.buildFeature(Attribute.makeUniqueId()));
+			}
+		} catch (Exception problem) {
+			problem.printStackTrace();
+		}
+		return result.collection();
+	}
+	
+	/**
 	 * Change a {@link SimpleFeatureCollection} of any kind to follow the minimum schema for Parcel Manager (see method {@link ParcelSchema#getSFBMinParcel()}.
 	 * 
 	 * @param parcels
@@ -166,14 +199,14 @@ public class GeneralFields {
 	 * @return A {@link SimpleFeatureCollection} with attributes following the minimal schema
 	 */
 	public static SimpleFeatureCollection transformSFCToMinParcel(SimpleFeatureCollection parcels, boolean hasMark) {
-			DefaultFeatureCollection result = new DefaultFeatureCollection();
-			boolean split = Collec.isCollecContainsAttribute(parcels, MarkParcelAttributeFromPosition.getMarkFieldName()) && hasMark ;
+		DefaultFeatureCollection result = new DefaultFeatureCollection();
+		boolean split = Collec.isCollecContainsAttribute(parcels, MarkParcelAttributeFromPosition.getMarkFieldName()) && hasMark;
 		Arrays.stream(parcels.toArray(new SimpleFeature[0])).forEach(feat -> {
 			try {
-				SimpleFeatureBuilder sfb ;
+				SimpleFeatureBuilder sfb;
 				if (split)
 					sfb = ParcelSchema.setSFBMinParcelWithFeat(feat, ParcelSchema.getSFBMinParcelSplit().getFeatureType());
-				else 
+				else
 					sfb = ParcelSchema.setSFBMinParcelWithFeat(feat, ParcelSchema.getSFBMinParcel().getFeatureType());
 				result.add(sfb.buildFeature(Attribute.makeUniqueId()));
 			} catch (NoSuchAuthorityCodeException e) {

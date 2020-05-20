@@ -39,24 +39,24 @@ import fr.ign.cogit.geometryGeneration.CityGeneration;
  */
 public class ParcelStat {
 
-	// public static void main(String[] args) throws Exception {
-	// long strat = System.currentTimeMillis();
-	// // ShapefileDataStore sdsParcel = new ShapefileDataStore(
-	// // new File("/home/ubuntu/workspace/ParcelManager/src/main/resources/GeneralTest/parcel.shp").toURI().toURL());
-	// ShapefileDataStore sdsParcel = new ShapefileDataStore(new File("/tmp/p.shp").toURI().toURL());
-	//
-	// SimpleFeatureCollection parcels = sdsParcel.getFeatureSource().getFeatures();
-	// parcels = MarkParcelAttributeFromPosition.markAllParcel(parcels);
-	// ShapefileDataStore sdsRoad = new ShapefileDataStore(
-	// new File("/home/ubuntu/workspace/ParcelManager/src/main/resources/GeneralTest/road.shp").toURI().toURL());
-	// SimpleFeatureCollection roads = sdsRoad.getFeatureSource().getFeatures();
-	// File parcelStatCsv = new File("/tmp/parcelStat.csv");
-	//
-	// writeStatSingleParcel(parcels, roads, parcelStatCsv);
-	// sdsParcel.dispose();
-	// sdsRoad.dispose();
-	// System.out.println("time : " + (System.currentTimeMillis() - strat));
-	// }
+	 public static void main(String[] args) throws Exception {
+	 long strat = System.currentTimeMillis();
+	 // ShapefileDataStore sdsParcel = new ShapefileDataStore(
+	 // new File("/home/ubuntu/workspace/ParcelManager/src/main/resources/GeneralTest/parcel.shp").toURI().toURL());
+	 ShapefileDataStore sdsParcelEv = new ShapefileDataStore(new File("/home/ubuntu/workspace/ParcelManager/src/main/resources/ParcelComparison/out/evolvedParcel.shp").toURI().toURL());
+	 ShapefileDataStore sdsSimu = new ShapefileDataStore(
+	 new File("/home/ubuntu/workspace/ParcelManager/src/main/resources/ParcelComparison/out/simulatedParcel.shp").toURI().toURL());
+	
+	 SimpleFeatureCollection parcelEv = sdsParcelEv.getFeatureSource().getFeatures();
+	 parcelEv = MarkParcelAttributeFromPosition.markAllParcel(parcelEv);
+	 SimpleFeatureCollection parcelSimu = sdsSimu.getFeatureSource().getFeatures();
+
+	 makeHausdorfDistanceMaps(parcelEv, parcelSimu);
+	 
+	 sdsParcelEv.dispose();
+	 sdsSimu.dispose();
+	 System.out.println("time : " + (System.currentTimeMillis() - strat));
+	 }
 
 	public static void writeStatSingleParcel(SimpleFeatureCollection parcels, File roadFile, File parcelStatCsv)
 			throws NoSuchAuthorityCodeException, IOException, FactoryException {
@@ -113,6 +113,9 @@ public class ParcelStat {
 
 	public static SimpleFeatureCollection makeHausdorfDistanceMaps(SimpleFeatureCollection parcelIn, SimpleFeatureCollection parcelToCompare)
 			throws NoSuchAuthorityCodeException, FactoryException, IOException {
+		
+		//ckeck for the fields //TODO CONSTRUCT
+		
 		DefaultFeatureCollection result = new DefaultFeatureCollection();
 		SimpleFeatureTypeBuilder sfTypeBuilder = new SimpleFeatureTypeBuilder();
 		sfTypeBuilder.setName("minParcel");

@@ -2,8 +2,14 @@
 	"rootfile": "src/main/resources/ParcelComparison/",
 	"parcelFile":"src/main/resources/ParcelComparison/parcel2003.shp",
 	"polygonIntersectionFile":"src/main/resources/ParcelComparison/out/polygonIntersection.shp",
+	"zoneFile":"src/main/resources/ParcelComparison/out/zone.shp",
 	"outFolder": "src/main/resources/ParcelComparison/out/",
 	"steps": [
+		{
+			"goal": "zoneDivision",
+			"parcelProcess": "OBB",
+			"urbanFabricType": "smallHouse"
+		},	
 		{
 			"goal": "densificationOrNeighborhood",
 			"parcelProcess": "OBB",

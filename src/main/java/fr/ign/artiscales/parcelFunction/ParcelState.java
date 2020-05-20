@@ -118,10 +118,8 @@ public class ParcelState {
 	 * @return width of the parcel on road
 	 */
 	public static double getParcelFrontSideWidth(Polygon p, SimpleFeatureCollection roads, List<LineString> ext) {
-		MultiLineString l = null;
 		try {
-			l = p.getFactory().createMultiLineString(ext.toArray(new LineString[ext.size()]));
-			double len = p.buffer(0.2).intersection(l).getLength();
+			double len = p.buffer(0.2).intersection(p.getFactory().createMultiLineString(ext.toArray(new LineString[ext.size()]))).getLength();
 			if (len > 0)
 				return len;
 			if (roads != null) {
@@ -138,8 +136,7 @@ public class ParcelState {
 				return 0;
 		} catch (Exception e) {
 			try {
-				l = p.getFactory().createMultiLineString(ext.toArray(new LineString[ext.size()]));
-				double len = p.buffer(0.4).intersection(l).getLength();
+				double len = p.buffer(0.4).intersection(p.getFactory().createMultiLineString(ext.toArray(new LineString[ext.size()]))).getLength();
 				if (len > 0)
 					return len;
 				if (roads != null) {

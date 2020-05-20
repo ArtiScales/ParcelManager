@@ -59,16 +59,14 @@ public class GeneralTest {
 		System.out.println("zoneTotRecomp");
 		System.out.println("/////////////////////////");
 		ZoneDivision.DEBUG = true;
-		ShapefileDataStore shpDSZone = new ShapefileDataStore(zoningFile.toURI().toURL());
-		SimpleFeatureCollection featuresZones = shpDSZone.getFeatureSource().getFeatures();
-		SimpleFeatureCollection zone = ZoneDivision.createZoneToCut("AU",null, featuresZones, parcel);
+		SimpleFeatureCollection zone = ZoneDivision.createZoneToCut("AU", null, zoningFile, parcel);
 		// If no zones, we won't bother
 		if (zone.isEmpty()) {
 			System.out.println("parcelGenZone : no zones to be cut");
 			System.exit(1);
 		}
 		ZoneDivision.SAVEINTERMEDIATERESULT = true;
-		SimpleFeatureCollection parcelCuted = ZoneDivision.zoneDivision(zone, parcel, tmpFolder, zoningFile, profilelargeCollective.getRoadEpsilon(),
+		SimpleFeatureCollection parcelCuted = ZoneDivision.zoneDivision(zone, parcel, tmpFolder, profilelargeCollective.getRoadEpsilon(),
 				profilelargeCollective.getNoise(), profilelargeCollective.getMaximalArea(), profilelargeCollective.getMinimalArea(),
 				profilelargeCollective.getMaximalWidth(), profilelargeCollective.getStreetWidth(), profilelargeCollective.getLargeStreetLevel(),
 				profilelargeCollective.getLargeStreetWidth(), profilelargeCollective.getDecompositionLevelWithoutStreet());
@@ -78,7 +76,6 @@ public class GeneralTest {
 		Collec.exportSFC(zone, new File(outFolder, "zone.shp"));
 		StatParcelStreetRatio.streetRatioParcelZone(zone, finaux, statFolder, roadFile);
 		MakeStatisticGraphs.makeAreaGraph(new File(outFolder, "parcelTotZone.shp"), statFolder);
-		shpDSZone.dispose();
 
 		/////////////////////////
 		//////// try the consolidRecomp method

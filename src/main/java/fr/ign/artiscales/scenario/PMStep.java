@@ -9,7 +9,6 @@ import java.util.List;
 import org.geotools.data.DataUtilities;
 import org.geotools.data.shapefile.ShapefileDataStore;
 import org.geotools.data.simple.SimpleFeatureCollection;
-import org.geotools.data.simple.SimpleFeatureIterator;
 import org.geotools.feature.DefaultFeatureCollection;
 import org.locationtech.jts.geom.Geometry;
 import org.opengis.feature.simple.SimpleFeature;
@@ -64,7 +63,7 @@ public class PMStep {
 	 * 
 	 */
 	public static void setFiles(File parcelFile, File zoningFile, File tmpFolder, File buildingFile, File roadFile, File predicateFile,
-			File polygonIntersection, File outFolder, File profileFolder) {
+			File polygonIntersection, File zone, File outFolder, File profileFolder) {
 		PARCELFILE = parcelFile;
 		ZONINGFILE = zoningFile;
 		TMPFOLDER = tmpFolder;
@@ -72,6 +71,7 @@ public class PMStep {
 		BUILDINGFILE = buildingFile;
 		ROADFILE = roadFile;
 		POLYGONINTERSECTION = polygonIntersection;
+		ZONE = zone;
 		PREDICATEFILE = predicateFile;
 		OUTFOLDER = outFolder;
 		PROFILEFOLDER = profileFolder;
@@ -82,7 +82,7 @@ public class PMStep {
 	private File lastOutput;
 	
 	private static File PARCELFILE, ZONINGFILE, TMPFOLDER, BUILDINGFILE, ROADFILE, PREDICATEFILE, 
-	POLYGONINTERSECTION, OUTFOLDER, PROFILEFOLDER;
+	POLYGONINTERSECTION, ZONE, OUTFOLDER, PROFILEFOLDER;
 	public static List<String> cachePlacesSimulates = new ArrayList<String>();
 
 	/**
@@ -111,19 +111,26 @@ public class PMStep {
 			parcel = FrenchParcelFields.frenchParcelToMinParcel(parcel);
 			break;
 		}
-		ShapefileDataStore shpDSZone = new ShapefileDataStore(ZONINGFILE.toURI().toURL());
 		// mark (select) the parcels
 		SimpleFeatureCollection parcelMarked;
 		//if we work with zones, we put them as parcel input
 		if (goal.equals("zoneDivision")) {
-			parcelMarked = getSimulationParcels(ZoneDivision.createZoneToCut(genericZone, shpDSZone.getFeatureSource().getFeatures(), parcel));
-		} else {
+			SimpleFeatureCollection zoneIn;
+			// If a specific zone is an input, we take them directly. We also have to set attributes from pre-existing parcel field. 
+			if (ZONE != null && ZONE.exists()) {
+				ShapefileDataStore shpDSZone = new ShapefileDataStore(ZONE.toURI().toURL());
+				zoneIn = DataUtilities.collection(GeneralFields.transformSFCToMinParcel(shpDSZone.getFeatureSource().getFeatures(),parcel));
+				shpDSZone.dispose();
+			}
+			// If no zone have been set, it means we have to use the zoning plan.
+			else
+				zoneIn = DataUtilities.collection(ZoneDivision.createZoneToCut(genericZone, ZONINGFILE, parcel));
+			parcelMarked = getSimulationParcels(zoneIn);
+		} else
 			parcelMarked = getSimulationParcels(parcel);
-		}
-		shpDSZone.dispose();
 		if (DEBUG)
 			Collec.exportSFC(parcelMarked, new File(TMPFOLDER, "parcelMarked" + this.getZoneStudied()));
-		SimpleFeatureCollection parcelCut = new DefaultFeatureCollection(null,ParcelSchema.getSFBMinParcel().getFeatureType());
+		SimpleFeatureCollection parcelCut = new DefaultFeatureCollection(null, ParcelSchema.getSFBMinParcel().getFeatureType());
 		// get the wanted building profile
 		ProfileUrbanFabric profile = ProfileUrbanFabric.convertJSONtoProfile(new File(PROFILEFOLDER + "/" + urbanFabricType + ".json"));
 		// in case of lot of cities to simulate, we separate the execution of PM simulations for each community
@@ -134,10 +141,10 @@ public class PMStep {
 			switch (goal) {
 			case "zoneDivision":
 				ZoneDivision.PROCESS = parcelProcess;
-				parcelCut = ZoneDivision.zoneDivision(parcelMarkedComm, parcel, TMPFOLDER, ZONINGFILE, profile.getRoadEpsilon(), profile.getNoise(),
-						profile.getMaximalArea(), profile.getMinimalArea(), profile.getMaximalWidth(), profile.getStreetWidth(),
-						profile.getLargeStreetLevel(), profile.getLargeStreetWidth(), profile.getDecompositionLevelWithoutStreet());
-				parcel = parcelCut;
+				((DefaultFeatureCollection) parcelCut).addAll(ZoneDivision.zoneDivision(parcelMarkedComm, ParcelGetter.getParcelByCommunityCode(parcel, communityNumber), TMPFOLDER,
+						profile.getRoadEpsilon(), profile.getNoise(), profile.getMaximalArea(), profile.getMinimalArea(), profile.getMaximalWidth(),
+						profile.getStreetWidth(), profile.getLargeStreetLevel(), profile.getLargeStreetWidth(),
+						profile.getDecompositionLevelWithoutStreet()));
 				break;
 			case "densification":
 				((DefaultFeatureCollection) parcelCut).addAll(Densification.densification(parcelMarkedComm, CityGeneration.createUrbanIslet(parcelMarkedComm), TMPFOLDER, BUILDINGFILE, ROADFILE, profile.getMaximalArea(),
@@ -251,10 +258,10 @@ public class PMStep {
 		if (DEBUG)
 			Collec.exportSFC(parcel, new File(OUTFOLDER, "selectedParcels.shp"));		
 		
-		// parcel marking with input polygons 
-		if (POLYGONINTERSECTION != null && POLYGONINTERSECTION.exists()) {
+		// parcel marking with input polygons (disabled if we use a specific zone)
+		if (POLYGONINTERSECTION != null && POLYGONINTERSECTION.exists() && !(ZONE != null && ZONE.exists())) 
 			parcel = MarkParcelAttributeFromPosition.markParcelIntersectPolygonIntersection(parcel, POLYGONINTERSECTION);
-		}
+	
 		SimpleFeatureCollection result = new DefaultFeatureCollection(); 
 		// parcel marking with a zoning plan (possible to be hacked for any attribute feature selection by setting the field name to the genericZoning scenario parameter) 
 		if (ZONINGFILE != null && ZONINGFILE.exists() && genericZone != null && !genericZone.equals("")) {
@@ -293,9 +300,8 @@ public class PMStep {
 						for (String pl : cachePlacesSimulates) {
 							if (pl.startsWith(place)) {
 								String[] p = pl.split("-");
-								if (p.length == 3 && pl.startsWith(place)) {
+								if (p.length == 3 && pl.startsWith(place))
 									preciseZones.add(p[2]);
-								}
 							}
 						}
 						// if we found specific precise zones, we exclude them from the marking session
@@ -303,7 +309,7 @@ public class PMStep {
 							((DefaultFeatureCollection) result).addAll(MarkParcelAttributeFromPosition
 									.markParcelIntersectZoningWithoutPreciseZonings(parcelCity, genericZone, preciseZones, ZONINGFILE));
 							System.out.println("sparedPreciseZones: " + preciseZones);
-						} 
+						}
 						// if no precise zones have been found - this shouldn't happend - but we select zones with generic zoning
 						else {
 							System.out.println("no precise zones have been found - this shouldn't happend");
@@ -315,10 +321,9 @@ public class PMStep {
 					else if (genericZone != null && genericZone != "" && preciseZone != null && preciseZone != "") {
 						((DefaultFeatureCollection)result).addAll(MarkParcelAttributeFromPosition.markParcelIntersectPreciseZoningType(parcelCity, genericZone, preciseZone, ZONINGFILE));
 						cachePlacesSimulates.add(place + "-" + preciseZone);
-					} else {
+					} else
 						System.out.println(
 								"getSimulationParcels: zone has already been simulated but not on a small part defined by the preciseZone field");
-					}
 				}
 				 if (parcelCity.isEmpty() || MarkParcelAttributeFromPosition.isNoParcelMarked(parcelCity)) {
 					cachePlacesSimulates.remove(place);
@@ -326,23 +331,14 @@ public class PMStep {
 					//TODO find a proper way to remove the whole community?
 				 }
 			}
-		} else {
-			result=parcel;
-		}
-		
-		//if the result is only zones, we return only the interesting parcels 
+		} else 
+			result = parcel;
+		// if the result is only zones, we return only the marked ones
 		if (goal.equals("zoneDivision")) {
-			result = new DefaultFeatureCollection();
-			try (SimpleFeatureIterator it = parcel.features()) {
-				while (it.hasNext()) {
-					SimpleFeature feat = it.next();
-					if (feat.getAttribute(MarkParcelAttributeFromPosition.getMarkFieldName()).equals(1)) {
-						((DefaultFeatureCollection) result).add(feat);
-					}
-				}
-			} catch (Exception problem) {
-				problem.printStackTrace();
-			}
+			if (MarkParcelAttributeFromPosition.isNoParcelMarked(parcel))
+				result = parcel;
+			else 
+			result = MarkParcelAttributeFromPosition.getOnlyMarkedParcels(parcel);
 		}
 		return result;
 	}
@@ -363,9 +359,8 @@ public class PMStep {
 		List<Geometry> lG = new ArrayList<Geometry>();
 		SimpleFeatureCollection zones = getSimulationParcels(sfc);
 		Arrays.stream(zones.toArray(new SimpleFeature[0])).forEach(parcel -> {
-			if (parcel.getAttribute(MarkParcelAttributeFromPosition.getMarkFieldName()).equals(1)) {
+			if (parcel.getAttribute(MarkParcelAttributeFromPosition.getMarkFieldName()).equals(1))
 				lG.add((Geometry) parcel.getDefaultGeometry());
-			}
 		});
 		return lG;
 	}

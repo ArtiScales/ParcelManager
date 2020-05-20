@@ -15,6 +15,7 @@ import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.geotools.data.shapefile.ShapefileDataStore;
 import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.data.simple.SimpleFeatureIterator;
@@ -42,18 +43,8 @@ import fr.ign.cogit.geoToolsFunctions.vectors.Geom;
 public class ParcelCollection {
 
 //	public static void main(String[] args) throws Exception {
-//		ShapefileDataStore sds = new ShapefileDataStore(new File("/tmp/lala.shp").toURI().toURL());
-//		SimpleFeatureCollection sfc = sds.getFeatureSource().getFeatures();
-//		Collec.exportSFC(mergeTooSmallParcels(sfc,100),new File("/tmp/lalaMerged.shp"));
-//		markDiffParcel(new File("/tmp/lala.shp"), new File("/tmp/lala2.shp"), new File("/tmp/delRoad"), new File("/tmp/"));
-//
-//		ShapefileDataStore sds = new ShapefileDataStore(new File("/tmp/lala.shp").toURI().toURL());
-//		SimpleFeatureCollection sfc = sds.getFeatureSource().getFeatures();
-//		long startTime2 = System.nanoTime();
-//		SimpleFeatureCollection parcelsUnsorted2 = Vectors.sortSFCWithArea(sfc);
-//		long stopTime2 = System.nanoTime();
-//		System.out.println("two took "+(stopTime2 - startTime2));
-//		Collec.exportSFC(mergeTooSmallParcels(sfc,20),new File("/tmp/lalaMerged.shp"));
+//		File rootFile = new File("src/main/resources/ParcelComparison/");
+//		markDiffParcel(new File(rootFile,"parcel2003.shp"), new File(rootFile,"parcel2018.shp"), new File("/tmp/"));
 //	}
 	
 	/**
@@ -68,20 +59,14 @@ public class ParcelCollection {
 	 * @return The input {@link SimpleFeatureCollection} with small parcels merged or removed
 	 * @throws IOException
 	 */
-	public static SimpleFeatureCollection mergeTooSmallParcels(SimpleFeatureCollection parcelsUnsorted, int minimalParcelSize)
-			throws IOException {
-		
+	public static SimpleFeatureCollection mergeTooSmallParcels(SimpleFeatureCollection parcelsUnsorted, int minimalParcelSize) throws IOException {
 		List<Integer> sizeResults = new ArrayList<Integer>();
 		SimpleFeatureCollection result = recursiveMergeTooSmallParcel(parcelsUnsorted, minimalParcelSize);
-
 		sizeResults.add(result.size());
-//		System.out.println("Merging too small parcels");
-//		System.out.println("OG size:"+parcelsUnsorted.size());
 		do {
 			// recursive application of the merge algorithm to merge little parcels to big ones one-by-one
 			result = recursiveMergeTooSmallParcel(result, minimalParcelSize);
 			sizeResults.add(result.size());
-//			System.out.println(sizeResults);
 		}
 		// while parcels are still getting merged, we run the recursive algorithm
 		while (!sizeResults.get(sizeResults.size() - 1).equals(sizeResults.get(sizeResults.size() - 2)));
@@ -405,7 +390,8 @@ public class ParcelCollection {
 	 * <li><b>same.shp</b> contains the reference parcels that have not evolved</li>
 	 * <li><b>notSame.shp</b> contains the reference parcels that have changed</li>
 	 * <li><b>polygonIntersection.shp</b> contains the <i>notSame.shp</i> parcels with a reduction buffer, used for a precise intersection with other parcel in Parcel Manager
-	 * scenarios</li>
+	 * scenarios. The large parcels that are selected for a zone simulation (see below) aren't present.</li>
+	 * <li><b>zones.shp</b> contains special zones to be simulated</li>
 	 * <li><b>evolvedParcel.shp</b> contains only the compared parcels that have evolved</li>
 	 * </ul>
 	 * 
@@ -416,13 +402,20 @@ public class ParcelCollection {
 	 * @param parcelOutFolder
 	 *            Folder where are stored the result shapefiles
 	 * @throws IOException
+	 * @throws FactoryException 
+	 * @throws NoSuchAuthorityCodeException 
 	 */
-	public static void markDiffParcel(File parcelRefFile, File parcelToCompareFile, File parcelOutFolder) throws IOException {
+	public static void markDiffParcel(File parcelRefFile, File parcelToCompareFile, File parcelOutFolder) throws IOException, NoSuchAuthorityCodeException, FactoryException {
+		markDiffParcel(parcelRefFile, parcelToCompareFile, parcelOutFolder, 100, 450);
+	}
+	
+	public static void markDiffParcel(File parcelRefFile, File parcelToCompareFile, File parcelOutFolder, double minParcelSimulatedSize, double maxParcelSimulatedSize) throws IOException, NoSuchAuthorityCodeException, FactoryException {
 		File fSame = new File(parcelOutFolder, "same.shp");
 		File fEvolved = new File(parcelOutFolder, "evolvedParcel.shp");
 		File fNotSame = new File(parcelOutFolder, "notSame.shp");
 		File fInter = new File(parcelOutFolder, "polygonIntersection.shp");
-		if (fSame.exists() && fEvolved.exists() && fInter.exists() && fNotSame.exists() && fInter.exists() ) {
+		File fZone = new File(parcelOutFolder, "zone.shp");
+		if (fSame.exists() && fEvolved.exists() && fInter.exists() && fNotSame.exists() && fInter.exists() && fZone.exists()) {
 			System.out.println("markDiffParcel(...) already calculated");
 			return ;
 		}
@@ -459,16 +452,13 @@ public class ParcelCollection {
 				} 
 				//we check if the parcel has been intentionally deleted by generating new polygons (same technique of area comparison, but with a way smaller error bound)
 				// if it has been cleaned, we don't add it to no additional parcels 
-
 				List<Geometry> geomList = Arrays.stream(parcelsIntersectRef.toArray(new SimpleFeature[0])).map(x -> (Geometry) x.getDefaultGeometry())
 						.collect(Collectors.toList());
 				geomList.add(geomPRef);
 				List<Polygon> polygons = FeaturePolygonizer.getPolygons(geomList);
-				for (Polygon polygon : polygons) {
-					if ((polygon.getArea() > geomArea* 0.9 && polygon.getArea() < geomArea * 1.1) && polygon.buffer(0.5).contains(geomPRef) ) {
+				for (Polygon polygon : polygons)
+					if ((polygon.getArea() > geomArea * 0.9 && polygon.getArea() < geomArea * 1.1) && polygon.buffer(0.5).contains(geomPRef))
 						continue refParcel;
-					}
-				}
 				notSame.add(pRef);
 				SimpleFeatureBuilder intersecPolygon = Schemas.getBasicSchemaMultiPolygon("intersectionPolygon");
 				intersecPolygon.set("the_geom", ((Geometry) pRef.getDefaultGeometry()).buffer(-2));
@@ -479,12 +469,48 @@ public class ParcelCollection {
 		} 
 		Collec.exportSFC(same, fSame);
 		Collec.exportSFC(notSame, fNotSame);
-		Collec.exportSFC(polygonIntersection, fInter);
 		
-		//export the compared parcels that have changed
+		// export the compared parcels that have changed
 		SimpleFeatureCollection evolvedParcel = parcelToSort.subCollection(ff.intersects(pName, ff.literal(Geom.unionSFC(polygonIntersection))));
 		Collec.exportSFC(evolvedParcel, fEvolved);
-		
+
+		// We now seek if a large part of the evolved parcel stays intact and small parts, which represents parcels created for residential development purposes, are generated.
+		List<Geometry> firstZones = Geom.unionTouchingGeometries(
+				Arrays.stream(notSame.toArray(new SimpleFeature[0])).map(x -> (Geometry) x.getDefaultGeometry()).collect(Collectors.toList()));
+		List<Geometry> zones = new ArrayList<Geometry>();
+		List<Geometry> intersectionGeoms = new ArrayList<Geometry>();
+		for (Geometry firstZone : firstZones) {
+			SimpleFeatureCollection parcelsEvolved = Collec.snapDatas(evolvedParcel, firstZone);
+			if (firstZone.getArea() > 10 * maxParcelSimulatedSize) {
+				DescriptiveStatistics stat = new DescriptiveStatistics();
+				Arrays.stream(parcelsEvolved.toArray(new SimpleFeature[0])).forEach(sf -> stat.addValue(((Geometry) sf.getDefaultGeometry()).getArea()));
+				if (stat.getMax() > stat.getPercentile(50) * 20) {
+					List<Geometry> intrestingZones = new ArrayList<Geometry>();
+					Arrays.stream(parcelsEvolved.toArray(new SimpleFeature[0])).forEach(sf -> {
+						Geometry geom = (Geometry) sf.getDefaultGeometry();
+						if (geom.getArea() < 10 * stat.getPercentile(50))
+							intrestingZones.add(((Geometry) sf.getDefaultGeometry()));
+					});
+					List<Geometry> lG = Geom.unionTouchingGeometries(intrestingZones);
+					for (Geometry g : lG) {
+						if (g.getArea() > 5 * maxParcelSimulatedSize)
+							zones.add(g);
+						else if (g.getArea() > minParcelSimulatedSize)
+							intersectionGeoms.add(g);
+					}
+				} else
+					Arrays.stream(parcelsEvolved.toArray(new SimpleFeature[0])).forEach(sf -> {
+						intersectionGeoms.add((Geometry) sf.getDefaultGeometry());
+					});
+
+			} else
+				Arrays.stream(parcelsEvolved.toArray(new SimpleFeature[0])).forEach(sf -> {
+					intersectionGeoms.add((Geometry) sf.getDefaultGeometry());
+				});
+		}
+		List<Geometry> intersection = Geom.unionTouchingGeometries(intersectionGeoms).stream().map(g -> g.buffer(-2)).collect(Collectors.toList());
+		Geom.exportGeom(zones, fZone);
+		Geom.exportGeom(intersection, fInter);
 		sds.dispose();
 		sdsRef.dispose();
 	}
@@ -497,9 +523,8 @@ public class ParcelCollection {
 	 */
 	public static List<String> dontAddParcel(List<String> parcelToNotAdd, SimpleFeatureCollection bigZoned) {
 		try (SimpleFeatureIterator feat = bigZoned.features()) {
-			while (feat.hasNext()) {
+			while (feat.hasNext())
 				parcelToNotAdd.add((String) feat.next().getAttribute("CODE"));
-			}
 		} catch (Exception problem) {
 			problem.printStackTrace();
 		} 

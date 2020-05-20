@@ -949,6 +949,16 @@ public class MarkParcelAttributeFromPosition {
 			return true;
 		return Arrays.stream(sfcIn.toArray(new SimpleFeature[0])).filter(x -> (int) x.getAttribute(markFieldName) != 0).count() == 0;
 	}
+	
+	public static SimpleFeatureCollection getOnlyMarkedParcels(SimpleFeatureCollection in) {
+		DefaultFeatureCollection result = new DefaultFeatureCollection();
+		Arrays.stream(in.toArray(new SimpleFeature[0])).forEach(feat -> {
+			if ((int) feat.getAttribute(markFieldName) == 1) {
+				result.add(feat);
+			}
+		});
+		return result;
+	}
 
 	public static boolean isPostMark() {
 		return postMark;

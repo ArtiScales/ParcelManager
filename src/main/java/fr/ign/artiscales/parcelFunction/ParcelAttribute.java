@@ -34,7 +34,7 @@ public class ParcelAttribute {
 //	}
 	 
 	/**
-	 * get the Community Code number from a Simplefeature (that is most of the time, a parcel or building)
+	 * get the Community Code number from a {@link SimpleFeature} (that is most of the time, a parcel or building)
 	 * 
 	 * @param sFCWithCommunityCode
 	 *            Collection of cities. The default field name is <i>DEPCOM</i> an can be changed with the function {@link #setCommunityTypeFieldName(String)}
@@ -44,6 +44,32 @@ public class ParcelAttribute {
 	 */
 	public static String getCommunityCodeFromSFC(SimpleFeatureCollection sFCWithCommunityCode, SimpleFeature feat) {
 		return Collec.getFieldFromSFC((Geometry) feat.getDefaultGeometry(), sFCWithCommunityCode, ParcelSchema.getMinParcelCommunityField());
+	}
+	
+	/**
+	 * get the Section code from a {@link SimpleFeature} (that is most of the time, a parcel or building)
+	 * 
+	 * @param sFCWithCommunityCode
+	 *            Collection of cities. The default field name is <i>SECTION</i> an can be changed with the function {@link ParcelSchema#setMinParcelSectionField(String)}
+	 * @param feat
+	 *            Collection of parcels to get city codes from.
+	 * @return the most represented city code from the SimpleFeatureCollection 
+	 */
+	public static String getSectionCodeFromSFC(SimpleFeatureCollection sFCWithCommunityCode, SimpleFeature feat) {
+		return Collec.getFieldFromSFC((Geometry) feat.getDefaultGeometry(), sFCWithCommunityCode, ParcelSchema.getMinParcelSectionField());
+	}
+	
+	/**
+	 * get the Number from a {@link SimpleFeature} (that is most of the time, a parcel or building)
+	 * 
+	 * @param sFCWithCommunityCode
+	 *            Collection of cities. The default field name is <i>NUMERO</i> an can be changed with the function {@link ParcelSchema#setMinParcelNumberField(String)}
+	 * @param feat
+	 *            Collection of parcels to get city codes from.
+	 * @return the most represented city code from the SimpleFeatureCollection 
+	 */
+	public static String getNumberCodeFromSFC(SimpleFeatureCollection sFCWithCommunityCode, SimpleFeature feat) {
+		return Collec.getFieldFromSFC((Geometry) feat.getDefaultGeometry(), sFCWithCommunityCode, ParcelSchema.getMinParcelNumberField());
 	}
 
 	/**
