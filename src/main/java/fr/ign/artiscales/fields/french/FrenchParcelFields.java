@@ -90,6 +90,7 @@ public class FrenchParcelFields {
 						insee = makeINSEECode(iniParcel);
 					} catch (Exception c) {
 						insee = "";
+						c.printStackTrace();
 						System.out.println("rr " + iniParcel);
 					}
 				}

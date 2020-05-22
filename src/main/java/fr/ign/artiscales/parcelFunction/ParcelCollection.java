@@ -127,7 +127,8 @@ public class ParcelCollection {
 						continue refParcel;
 				notSame.add(pRef);
 				SimpleFeatureBuilder intersecPolygon = Schemas.getBasicSchemaMultiPolygon("intersectionPolygon");
-				intersecPolygon.set("the_geom", ((Geometry) pRef.getDefaultGeometry()).buffer(-2));
+				intersecPolygon.set(intersecPolygon.getFeatureType().getGeometryDescriptor().getName(),
+						((Geometry) pRef.getDefaultGeometry()).buffer(-2));
 				polygonIntersection.add(intersecPolygon.buildFeature(Attribute.makeUniqueId()));
 			}
 		} catch (Exception problem) {
@@ -173,9 +174,10 @@ public class ParcelCollection {
 					intersectionGeoms.add((Geometry) sf.getDefaultGeometry());
 				});
 		}
-		List<Geometry> intersection = Geom.unionTouchingGeometries(intersectionGeoms).stream().map(g -> g.buffer(-2)).collect(Collectors.toList());
 		Geom.exportGeom(zones, fZone);
-		Geom.exportGeom(intersection, fInter);
+		Geom.exportGeom(Geom.unionTouchingGeometries(
+						intersectionGeoms.stream().filter(g -> g.getArea() < maxParcelSimulatedSize * 20).collect(Collectors.toList()))
+				.stream().map(g -> g.buffer(-2)).collect(Collectors.toList()), fInter);
 		sds.dispose();
 		sdsRef.dispose();
 	}
