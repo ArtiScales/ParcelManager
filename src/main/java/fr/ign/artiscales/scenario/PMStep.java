@@ -6,7 +6,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import org.geotools.data.DataUtilities;
+import org.geotools.data.collection.SpatialIndexFeatureCollection;
 import org.geotools.data.shapefile.ShapefileDataStore;
 import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.feature.DefaultFeatureCollection;
@@ -105,7 +105,7 @@ public class PMStep {
 	public File execute() throws Exception {
 		//convert the parcel to a common type
 		ShapefileDataStore shpDSParcel = new ShapefileDataStore(PARCELFILE.toURI().toURL());
-		SimpleFeatureCollection parcel = DataUtilities.collection(shpDSParcel.getFeatureSource().getFeatures());
+		SimpleFeatureCollection parcel = new SpatialIndexFeatureCollection(shpDSParcel.getFeatureSource().getFeatures());
 		switch (GeneralFields.getParcelFieldType()) {
 		case "french":
 			parcel = FrenchParcelFields.frenchParcelToMinParcel(parcel);
@@ -119,12 +119,12 @@ public class PMStep {
 			// If a specific zone is an input, we take them directly. We also have to set attributes from pre-existing parcel field. 
 			if (ZONE != null && ZONE.exists()) {
 				ShapefileDataStore shpDSZone = new ShapefileDataStore(ZONE.toURI().toURL());
-				zoneIn = DataUtilities.collection(GeneralFields.transformSFCToMinParcel(shpDSZone.getFeatureSource().getFeatures(),parcel));
+				zoneIn = GeneralFields.transformSFCToMinParcel(shpDSZone.getFeatureSource().getFeatures(),parcel);
 				shpDSZone.dispose();
 			}
 			// If no zone have been set, it means we have to use the zoning plan.
 			else
-				zoneIn = DataUtilities.collection(ZoneDivision.createZoneToCut(genericZone, ZONINGFILE, parcel));
+				zoneIn = ZoneDivision.createZoneToCut(genericZone, ZONINGFILE, parcel);
 			parcelMarked = getSimulationParcels(zoneIn);
 		} else
 			parcelMarked = getSimulationParcels(parcel);
@@ -147,18 +147,22 @@ public class PMStep {
 						profile.getDecompositionLevelWithoutStreet()));
 				break;
 			case "densification":
-				((DefaultFeatureCollection) parcelCut).addAll(Densification.densification(parcelMarkedComm, CityGeneration.createUrbanIslet(parcelMarkedComm), TMPFOLDER, BUILDINGFILE, ROADFILE, profile.getMaximalArea(),
+				((DefaultFeatureCollection) parcelCut).addAll(Densification.densification(parcelMarkedComm,
+						CityGeneration.createUrbanIslet(parcelMarkedComm), TMPFOLDER, BUILDINGFILE, ROADFILE, profile.getMaximalArea(),
 						profile.getMinimalArea(), profile.getMaximalWidth(), profile.getLenDriveway(),
 						ParcelState.isArt3AllowsIsolatedParcel(parcel.features().next(), PREDICATEFILE), Geom.createBufferBorder(parcelMarkedComm)));
 				break;
 			case "densificationOrNeighborhood":
-				((DefaultFeatureCollection) parcelCut).addAll(Densification.densificationOrNeighborhood(parcelMarkedComm, CityGeneration.createUrbanIslet(parcelMarkedComm), TMPFOLDER, BUILDINGFILE, ROADFILE, profile,
-						ParcelState.isArt3AllowsIsolatedParcel(parcel.features().next(), PREDICATEFILE), Geom.createBufferBorder(parcelMarkedComm), 5));
+				((DefaultFeatureCollection) parcelCut).addAll(
+						Densification.densificationOrNeighborhood(parcelMarkedComm, CityGeneration.createUrbanIslet(parcelMarkedComm), TMPFOLDER,
+								BUILDINGFILE, ROADFILE, profile, ParcelState.isArt3AllowsIsolatedParcel(parcel.features().next(), PREDICATEFILE),
+								Geom.createBufferBorder(parcelMarkedComm), 5));
 				break;
 			case "consolidationDivision":
 				ConsolidationDivision.PROCESS = parcelProcess;
-				((DefaultFeatureCollection) parcelCut).addAll(ConsolidationDivision.consolidationDivision(parcelMarkedComm, ROADFILE, TMPFOLDER, profile.getRoadEpsilon(), profile.getNoise(), profile.getMaximalArea(), profile.getMinimalArea(),
-						profile.getMaximalWidth(), profile.getStreetWidth(), profile.getLargeStreetLevel(), profile.getLargeStreetWidth(),
+				((DefaultFeatureCollection) parcelCut).addAll(ConsolidationDivision.consolidationDivision(parcelMarkedComm, ROADFILE, TMPFOLDER,
+						profile.getRoadEpsilon(), profile.getNoise(), profile.getMaximalArea(), profile.getMinimalArea(), profile.getMaximalWidth(),
+						profile.getStreetWidth(), profile.getLargeStreetLevel(), profile.getLargeStreetWidth(),
 						profile.getDecompositionLevelWithoutStreet()));
 				break;
 			case "densificationStudy":
@@ -234,7 +238,7 @@ public class PMStep {
 			// if a single community number is set
 			else {
 				communityNumbers.add(communityNumber);
-				parcel = DataUtilities.collection(ParcelGetter.getParcelByCommunityCode(parcelIn, communityNumber));
+				parcel = ParcelGetter.getParcelByCommunityCode(parcelIn, communityNumber);
 			}
 		} 
 		// if multiple communities are present in the parcel collection
@@ -247,19 +251,19 @@ public class PMStep {
 		// if a type of community has been set  
 		else if (communityType != null && communityType != "") {
 			communityNumbers.addAll(ParcelAttribute.getCityCodesOfParcels(parcelIn));
-			parcel = DataUtilities.collection(ParcelGetter.getParcelByTypo(communityType, parcelIn, ZONINGFILE));
+			parcel = ParcelGetter.getParcelByTypo(communityType, parcelIn, ZONINGFILE);
 		} 
 		// if the input parcel is just what needs to be simulated
 		else {
 			communityNumbers.addAll(ParcelAttribute.getCityCodesOfParcels(parcelIn));
-			parcel = DataUtilities.collection(parcelIn);
+			parcel = parcelIn;
 		}
 		
 		if (DEBUG)
 			Collec.exportSFC(parcel, new File(OUTFOLDER, "selectedParcels.shp"));		
 		
 		// parcel marking with input polygons (disabled if we use a specific zone)
-		if (POLYGONINTERSECTION != null && POLYGONINTERSECTION.exists() && !(ZONE != null && ZONE.exists())) 
+		if (POLYGONINTERSECTION != null && POLYGONINTERSECTION.exists() && !goal.equals("zoneDivision")) 
 			parcel = MarkParcelAttributeFromPosition.markParcelIntersectPolygonIntersection(parcel, POLYGONINTERSECTION);
 	
 		SimpleFeatureCollection result = new DefaultFeatureCollection(); 
@@ -340,7 +344,7 @@ public class PMStep {
 			else 
 			result = MarkParcelAttributeFromPosition.getOnlyMarkedParcels(parcel);
 		}
-		return result;
+		return new SpatialIndexFeatureCollection(result);
 	}
 	
 	/**
@@ -354,14 +358,13 @@ public class PMStep {
 	 */
 	public List<Geometry> getBoundsOfZone() throws IOException, NoSuchAuthorityCodeException, FactoryException {
 		ShapefileDataStore sds = new ShapefileDataStore(PARCELFILE.toURI().toURL());
-		SimpleFeatureCollection sfc = DataUtilities.collection(sds.getFeatureSource().getFeatures());
-		sds.dispose();
 		List<Geometry> lG = new ArrayList<Geometry>();
-		SimpleFeatureCollection zones = getSimulationParcels(sfc);
-		Arrays.stream(zones.toArray(new SimpleFeature[0])).forEach(parcel -> {
-			if (parcel.getAttribute(MarkParcelAttributeFromPosition.getMarkFieldName()).equals(1))
-				lG.add((Geometry) parcel.getDefaultGeometry());
-		});
+		Arrays.stream(getSimulationParcels(new SpatialIndexFeatureCollection(sds.getFeatureSource().getFeatures())).toArray(new SimpleFeature[0]))
+				.forEach(parcel -> {
+					if (parcel.getAttribute(MarkParcelAttributeFromPosition.getMarkFieldName()).equals(1))
+						lG.add((Geometry) parcel.getDefaultGeometry());
+				});
+		sds.dispose();
 		return lG;
 	}
 

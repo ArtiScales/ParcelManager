@@ -233,9 +233,8 @@ public class ParcelCollection {
 				// System.out.println(feat.getID() + " is too small");
 				DefaultFeatureCollection intersect = new DefaultFeatureCollection();
 				Arrays.stream(parcelsUnsorted.toArray(new SimpleFeature[0])).forEach(interParcel -> {
-					if (((Geometry) interParcel.getDefaultGeometry()).intersects(geom) && !interParcel.getID().equals(feat.getID())) {
+					if (((Geometry) interParcel.getDefaultGeometry()).intersects(geom) && !interParcel.getID().equals(feat.getID()))
 						intersect.add(interParcel);
-					}
 				});
 				// if the small parcel is intersecting others and will be merge to them
 				if (intersect.size() > 0) {
@@ -243,7 +242,9 @@ public class ParcelCollection {
 					// if the tiny parcel intersects a bigger parcel, we seek the longest side to which parcel could be incorporated
 					HashMap<String, Double> repart = new HashMap<String, Double>();
 					Arrays.stream(intersect.toArray(new SimpleFeature[0])).forEach(interParcel -> {
-						repart.put(interParcel.getID(), ((Geometry) interParcel.getDefaultGeometry()).intersection(geom.buffer(1)).getArea());
+						repart.put(interParcel.getID(),
+								Geom.scaledGeometryReductionIntersection(Arrays.asList((Geometry) interParcel.getDefaultGeometry(), geom.buffer(1)))
+										.getArea());
 					});
 					// we sort to place the biggest intersecting parcel in first
 					List<Entry<String, Double>> entryList = new ArrayList<Entry<String, Double>>(repart.entrySet());
@@ -288,9 +289,8 @@ public class ParcelCollection {
 					result.add(f);
 				}
 				// no else - if the small parcel doesn't touch any other parcels, we left it as a blank space and will be left as a public space
-			} else {
+			} else
 				result.add(Schemas.setSFBSchemaWithMultiPolygon(feat).buildFeature(Attribute.makeUniqueId()));
-			}
 		}
 		return result;
 	}
@@ -512,10 +512,7 @@ public class ParcelCollection {
 		return new ImmutablePair<SimpleFeatureCollection, SimpleFeatureCollection>(
 				less, more);
 	}
-	
-	
 
-	
 	/**
 	 * WARNING not tested (maybe not needed)
 	 * @param parcelToNotAdd

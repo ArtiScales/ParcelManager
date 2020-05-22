@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.data.simple.SimpleFeatureIterator;
@@ -187,15 +188,17 @@ public class ZoneDivision {
 		}
 		// parts of parcel outside the zone must not be cut by the algorithm and keep their attributes
 		// temporary shapefiles that serves to do polygons with the polygonizer
-		File fParcelsInAU = Collec.exportSFC(parcelsInZone, new File(tmpFolder, "parcelCible.shp"));
-		File fZone = Collec.exportSFC(goOdZone, new File(tmpFolder, "oneAU.shp"));
-		Geometry geomSelectedZone = Geom.unionSFC(goOdZone);
-		File[] polyFiles = { fParcelsInAU, fZone };
-		List<Polygon> polygons = FeaturePolygonizer.getPolygons(polyFiles);	
+//		File fParcelsInAU = Collec.exportSFC(parcelsInZone, new File(tmpFolder, "parcelCible.shp"));
+//		File fZone = Collec.exportSFC(goOdZone, new File(tmpFolder, "oneAU.shp"));
+//		File[] polyFiles = { fParcelsInAU, fZone };
+//		List<Polygon> polygons = FeaturePolygonizer.getPolygons(polyFiles);	
 		// apparently less optimized... 
-		// List<Geometry> geomList = Arrays.stream(parcels.toArray(new SimpleFeature[0])).map(x -> (Geometry) x.getDefaultGeometry()).collect(Collectors.toList());
-		// geomList.addAll(Arrays.stream(parcels.toArray(new SimpleFeature[0])).map(x -> (Geometry) x.getDefaultGeometry()).collect(Collectors.toList()));
-		// List<Polygon> polygons = FeaturePolygonizer.getPolygons(geomList);
+		List<Geometry> geomList = Arrays.stream(parcels.toArray(new SimpleFeature[0])).map(x -> (Geometry) x.getDefaultGeometry())
+				.collect(Collectors.toList());
+		geomList.addAll(
+				Arrays.stream(parcels.toArray(new SimpleFeature[0])).map(x -> (Geometry) x.getDefaultGeometry()).collect(Collectors.toList()));
+		List<Polygon> polygons = FeaturePolygonizer.getPolygons(geomList);
+		Geometry geomSelectedZone = Geom.unionSFC(goOdZone);
 
 		// big loop on each generated geometry to save the parts that are not contained in the zones. We add them to the savedParcels collection.
 		for (Geometry poly : polygons) {

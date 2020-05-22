@@ -24,6 +24,7 @@ import org.opengis.feature.simple.SimpleFeature;
 
 import fr.ign.artiscales.parcelFunction.ParcelState;
 import fr.ign.cogit.FeaturePolygonizer;
+import fr.ign.cogit.geoToolsFunctions.Schemas;
 import fr.ign.cogit.geoToolsFunctions.vectors.Collec;
 import fr.ign.cogit.geoToolsFunctions.vectors.Geom;
 
@@ -115,7 +116,7 @@ public class FlagParcelDecomposition {
 			ShapefileDataStore roadSDS = new ShapefileDataStore(roadFile.toURI().toURL());
 			Geometry geom = ((Geometry) feat.getDefaultGeometry()).buffer(10);
 			fpd = new FlagParcelDecomposition(surfaces.get(0), Collec.snapDatas(buildingDS.getFeatureSource().getFeatures(), geom),
-					Collec.snapDatas(roadSDS.getFeatureSource().getFeatures(), geom), maximalAreaSplitParcel, maximalWidthSplitParcel, lenDriveway,
+					DataUtilities.collection(Collec.snapDatas(roadSDS.getFeatureSource().getFeatures(), geom)), maximalAreaSplitParcel, maximalWidthSplitParcel, lenDriveway,
 					extLines, exclusionZone);
 			roadSDS.dispose();
 		} else {
@@ -125,17 +126,12 @@ public class FlagParcelDecomposition {
 		}
 		List<Polygon> decomp = fpd.decompParcel(noise);
 		// if the size of the collection is 1, no flag cut has been done. We check if we can normal cut it, if allowed
+		buildingDS.dispose();
 		if (decomp.size() == 1 && allowIsolatedParcel) {
 			System.out.println("normal decomp instead of flagg decomp allowed and done");
 			return OBBBlockDecomposition.splitParcels(feat, maximalAreaSplitParcel, maximalWidthSplitParcel, 0.5, noise, extLines, 0, true, 99);
 		}
-		File fileOut = new File(tmpFolder, "tmp_split.shp");
-		FeaturePolygonizer.saveGeometries(decomp, fileOut, "Polygon");
-		ShapefileDataStore sds = new ShapefileDataStore(fileOut.toURI().toURL());
-		SimpleFeatureCollection parcelOut = DataUtilities.collection(sds.getFeatureSource().getFeatures());
-		sds.dispose();
-		buildingDS.dispose();
-		return parcelOut;
+		return Geom.geomsToCollec(decomp, Schemas.getBasicSchemaMultiPolygon("geom"));
 	}
   
 

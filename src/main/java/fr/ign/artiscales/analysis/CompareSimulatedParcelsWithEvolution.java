@@ -39,15 +39,14 @@ public class CompareSimulatedParcelsWithEvolution {
 		Instant start = Instant.now();
 		// definition of the shapefiles representing two set of parcel
 		File rootFolder = new File("src/main/resources/ParcelComparison/");
-		File outFolder = new File(rootFolder, "out3");
+		File outFolder = new File(rootFolder, "out");
 		outFolder.mkdirs();
 		File fileParcelPast = new File(rootFolder, "parcel2003.shp");
 		File fileParcelNow = new File(rootFolder, "parcel2018.shp");
 		File roadFile = new File(rootFolder, "road.shp");
-		ShapefileDataStore sdsRoad = new ShapefileDataStore(roadFile.toURI().toURL());
 
 		// definition of a parameter file
-		File scenarioFile = new File(rootFolder, "scenario3.json");
+		File scenarioFile = new File(rootFolder, "scenario.json");
 		
 		// Mark and export the parcels that have changed between the two set of time
 		ParcelCollection.sortDifferentParcel(fileParcelPast, fileParcelNow, outFolder);
@@ -82,7 +81,7 @@ public class CompareSimulatedParcelsWithEvolution {
 		PMStep.cachePlacesSimulates.clear(); 
 		
 		FilterFactory2 ff = CommonFactoryFinder.getFilterFactory2(GeoTools.getDefaultHints());
-
+		ShapefileDataStore sdsRoad = new ShapefileDataStore(roadFile.toURI().toURL());
 		for (PMStep step : pm.getStepList()) {
 			System.out.println("analysis for step " + step);
 			File zoneOutFolder = new File(outFolder,step.getZoneStudied());

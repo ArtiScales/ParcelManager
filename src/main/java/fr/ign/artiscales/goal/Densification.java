@@ -330,7 +330,6 @@ public class Densification {
 		SimpleFeatureCollection parcelDensified = densification(parcelInf, isletCollection, tmpFolder, buildingFile, roadFile,
 				profile.getMaximalArea(), profile.getMinimalArea(), profile.getMaximalWidth(), profile.getLenDriveway(),
 				allowIsolatedParcel, exclusionZone);
-Collec.exportSFC(parcelDensified, new File(tmpFolder, "parcelDensified.shp"));
 		//if parcels are too big, we try to create neighborhoods inside them with the consolidation algorithm
 		//We first re-mark the parcels that were marked.
 		//TODO second part of the ugly fix
@@ -338,10 +337,9 @@ Collec.exportSFC(parcelDensified, new File(tmpFolder, "parcelDensified.shp"));
 		SimpleFeatureCollection supParcels = MarkParcelAttributeFromPosition.markParcelsSup(MarkParcelAttributeFromPosition.markAlreadyMarkedParcels(parcelDensified, sds.getFeatureSource().getFeatures()), profile.getMaximalArea()*factorOflargeZoneCreation);
 		sds.dispose();
 		if (!MarkParcelAttributeFromPosition.isNoParcelMarked(supParcels)) {
-			parcelDensified = ConsolidationDivision.consolidationDivision(supParcels, tmpFolder, profile.getMaximalArea(),
+			parcelDensified = ConsolidationDivision.consolidationDivision(supParcels, roadFile, tmpFolder, profile.getMaximalArea(),
 					profile.getMinimalArea(), profile.getMaximalWidth(), profile.getStreetWidth(), profile.getDecompositionLevelWithoutStreet());
 		} 
-Collec.exportSFC(parcelDensified, new File(tmpFolder, "parcelDensifiedBig.shp"));
 		return parcelDensified;
 	}
 }

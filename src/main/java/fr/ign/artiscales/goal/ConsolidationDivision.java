@@ -50,10 +50,13 @@ public class ConsolidationDivision {
 
 	/**
 	 * Method that merges the contiguous marked parcels into zones and then split those zones with a given parcel division algorithm (by default, the Oriented Bounding Box)
-	 * overload of {@link #consolidationDivision(SimpleFeatureCollection, File, File, double , double , double , double , double , double , int , double , int )} for a single road size.
+	 * overload of {@link #consolidationDivision(SimpleFeatureCollection, File, File, double , double , double , double , double , double , int , double , int )} for a single road
+	 * size.
 	 * 
 	 * @param parcels
 	 *            The parcels to be merged and cut. Must be marked with the SPLIT filed (see markParcelIntersectMUPOutput for example, with the method concerning MUP-City's output)
+	 * @param roadFile
+	 *            ShapeFile of the road segments. Can be null.
 	 * @param tmpFolder
 	 *            A temporary folder where will be saved intermediate results
 	 * @param maximalArea
@@ -69,9 +72,9 @@ public class ConsolidationDivision {
 	 * @return the set of parcel with decomposition
 	 * @throws Exception
 	 */
-	public static SimpleFeatureCollection consolidationDivision(SimpleFeatureCollection parcels, File tmpFolder, double maximalArea,
+	public static SimpleFeatureCollection consolidationDivision(SimpleFeatureCollection parcels, File roadFile, File tmpFolder, double maximalArea,
 			double minimalArea, double maximalWidth, double streetWidth, int decompositionLevelWithoutStreet) throws Exception {
-		return consolidationDivision(parcels, null, tmpFolder, 0.5, 0.0, maximalArea, minimalArea, maximalWidth, streetWidth, 999, streetWidth,
+		return consolidationDivision(parcels, roadFile, tmpFolder, 0.5, 0.0, maximalArea, minimalArea, maximalWidth, streetWidth, 999, streetWidth,
 				decompositionLevelWithoutStreet);
 	}
 
@@ -111,6 +114,8 @@ public class ConsolidationDivision {
 	 * 
 	 * @param parcels
 	 *            The parcels to be merged and cut. Must be marked with the SPLIT filed (see markParcelIntersectMUPOutput for example, with the method concerning MUP-City's output)
+	 * @param roadFile
+	 *            ShapeFile of the road segments. Can be null.
 	 * @param tmpFolder
 	 *            A temporary folder where will be saved intermediate results
 	 * @param polygonIntersection
@@ -135,6 +140,7 @@ public class ConsolidationDivision {
 	public static SimpleFeatureCollection consolidationDivision(SimpleFeatureCollection parcels, File roadFile, File tmpFolder,
 			File polygonIntersection, double roadEpsilon, double noise, double maximalArea, double minimalArea, double maximalWidth,
 			double smallStreetWidth, int largeStreetLevel, double largeStreetWidth, int decompositionLevelWithoutStreet) throws Exception {
+	
 		DefaultFeatureCollection parcelSaved = new DefaultFeatureCollection();
 		parcelSaved.addAll(parcels);
 		DefaultFeatureCollection parcelToMerge = new DefaultFeatureCollection();
@@ -179,7 +185,7 @@ public class ConsolidationDivision {
 		SimpleFeatureCollection roads;
 		if (roadFile != null && roadFile.exists()) {
 			ShapefileDataStore sdsRoad = new ShapefileDataStore(roadFile.toURI().toURL());
-			roads = DataUtilities.collection(sdsRoad.getFeatureSource().getFeatures());
+			roads = DataUtilities.collection(Collec.snapDatas(sdsRoad.getFeatureSource().getFeatures(), mergedParcels));
 			sdsRoad.dispose();
 		} else
 			roads = null;

@@ -196,7 +196,7 @@ public class ParcelState {
 			return true;
 		}
 		// System.out.println(Geom.unionGeom(getRoadPolygon(roads)));
-		if (roads != null && poly.intersects(Geom.unionGeom(getRoadPolygon(roads))))
+		if (roads != null && !roads.isEmpty() && poly.intersects(Geom.unionGeom(getRoadPolygon(roads))))
 			return true;
 		return false;
 	}

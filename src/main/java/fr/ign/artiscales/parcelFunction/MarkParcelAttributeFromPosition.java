@@ -7,7 +7,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import org.geotools.data.DataUtilities;
 import org.geotools.data.shapefile.ShapefileDataStore;
 import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.data.simple.SimpleFeatureIterator;
@@ -666,9 +665,7 @@ public class MarkParcelAttributeFromPosition {
 		List<String> genericZoneUsualNames = GeneralFields.getGenericZoneUsualNames(genericZone);
 		DefaultFeatureCollection result = new DefaultFeatureCollection();
 		ShapefileDataStore shpDSZone = new ShapefileDataStore(zoningFile.toURI().toURL());
-		SimpleFeatureCollection zoningSFC = DataUtilities.collection(shpDSZone.getFeatureSource().getFeatures());
-		shpDSZone.dispose();
-
+		SimpleFeatureCollection zoningSFC = shpDSZone.getFeatureSource().getFeatures();
 		SimpleFeatureBuilder featureBuilder = ParcelSchema.getSFBMinParcelSplit();
 		// if features have the schema that the one intended to set, we bypass
 		if (featureSchema.equals(parcels.getSchema())) {
@@ -686,6 +683,7 @@ public class MarkParcelAttributeFromPosition {
 				}
 				result.add(feat);
 			});
+			shpDSZone.dispose();
 			return result;
 		}
 		try (SimpleFeatureIterator it = parcels.features()) {
@@ -703,6 +701,7 @@ public class MarkParcelAttributeFromPosition {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+		shpDSZone.dispose();
 		signalIfNoParcelMarked(result, "markParcelIntersectPreciseZoningType");
 		return result;
 	}
