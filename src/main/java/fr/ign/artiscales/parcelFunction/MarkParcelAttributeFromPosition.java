@@ -7,6 +7,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.geotools.data.DataUtilities;
+import org.geotools.data.collection.SpatialIndexFeatureCollection;
 import org.geotools.data.shapefile.ShapefileDataStore;
 import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.data.simple.SimpleFeatureIterator;
@@ -117,7 +119,7 @@ public class MarkParcelAttributeFromPosition {
 	 */
 	public static SimpleFeatureCollection markParcelsConnectedToRoad(SimpleFeatureCollection parcels, SimpleFeatureCollection islet, File roadFile, Geometry exclusionZone) throws NoSuchAuthorityCodeException, FactoryException, IOException {
 		ShapefileDataStore sds = new ShapefileDataStore(roadFile.toURI().toURL());
-		SimpleFeatureCollection roads = Collec.snapDatas(sds.getFeatureSource().getFeatures(), parcels);
+		SimpleFeatureCollection roads = Collec.snapDatas(new SpatialIndexFeatureCollection(sds.getFeatureSource().getFeatures()), parcels);
 		final SimpleFeatureType featureSchema = ParcelSchema.getSFBMinParcelSplit().getFeatureType();
 		DefaultFeatureCollection result = new DefaultFeatureCollection();
 		//if features have the schema that the one intended to set, we bypass
@@ -137,8 +139,7 @@ public class MarkParcelAttributeFromPosition {
 			});
 			sds.dispose();
 			return result;
-		}
-		
+		}		
 		SimpleFeatureBuilder featureBuilder = ParcelSchema.getSFBMinParcelSplit();
 		try (SimpleFeatureIterator it = parcels.features()) {
 			while (it.hasNext()) {
@@ -313,12 +314,12 @@ public class MarkParcelAttributeFromPosition {
 	 * @throws FactoryException
 	 * @throws IOException 
 	 */
-	public static SimpleFeatureCollection markRandomParcels(SimpleFeatureCollection parcels, String genericZone,
-			File zoningFile, double minSize, int nbParcelToMark) throws NoSuchAuthorityCodeException, FactoryException, IOException {
-		if (zoningFile != null && genericZone != null) 
+	public static SimpleFeatureCollection markRandomParcels(SimpleFeatureCollection parcels, String genericZone, File zoningFile, double minSize,
+			int nbParcelToMark) throws NoSuchAuthorityCodeException, FactoryException, IOException {
+		if (zoningFile != null && genericZone != null)
 			parcels = markParcelIntersectGenericZoningType(parcels, genericZone, zoningFile);
-		List<SimpleFeature> list = Arrays.stream(parcels.toArray(new SimpleFeature[0])).filter(feat -> 
-		((Geometry)feat.getDefaultGeometry()).getArea() > minSize).collect(Collectors.toList());
+		List<SimpleFeature> list = Arrays.stream(parcels.toArray(new SimpleFeature[0]))
+				.filter(feat -> ((Geometry) feat.getDefaultGeometry()).getArea() > minSize).collect(Collectors.toList());
 		Collections.shuffle(list);
 		DefaultFeatureCollection result = new DefaultFeatureCollection();
 		while (nbParcelToMark > 0) {
@@ -345,7 +346,7 @@ public class MarkParcelAttributeFromPosition {
 	public static SimpleFeatureCollection markUnBuiltParcel(SimpleFeatureCollection parcels, File buildingFile)
 			throws IOException, NoSuchAuthorityCodeException, FactoryException {
 		ShapefileDataStore sds = new ShapefileDataStore(buildingFile.toURI().toURL());
-		SimpleFeatureCollection buildings = Collec.snapDatas(sds.getFeatureSource().getFeatures(), parcels);
+		SimpleFeatureCollection buildings = Collec.snapDatas(new SpatialIndexFeatureCollection(sds.getFeatureSource().getFeatures()), parcels);
 		final SimpleFeatureType featureSchema = ParcelSchema.getSFBMinParcelSplit().getFeatureType();
 		DefaultFeatureCollection result = new DefaultFeatureCollection();
 		//if features have the schema that the one intended to set, we bypass 
@@ -397,7 +398,7 @@ public class MarkParcelAttributeFromPosition {
 	public static SimpleFeatureCollection markBuiltParcel(SimpleFeatureCollection parcels, File buildingFile)
 			throws IOException, NoSuchAuthorityCodeException, FactoryException {
 		ShapefileDataStore sds = new ShapefileDataStore(buildingFile.toURI().toURL());
-		SimpleFeatureCollection buildings = Collec.snapDatas(sds.getFeatureSource().getFeatures(), parcels);
+		SimpleFeatureCollection buildings = Collec.snapDatas(new SpatialIndexFeatureCollection(sds.getFeatureSource().getFeatures()), parcels);
 		final SimpleFeatureType featureSchema = ParcelSchema.getSFBMinParcelSplit().getFeatureType();
 		DefaultFeatureCollection result = new DefaultFeatureCollection();
 		
@@ -456,8 +457,7 @@ public class MarkParcelAttributeFromPosition {
 		if (featureSchema.equals(parcels.getSchema())) {
 			Arrays.stream(parcels.toArray(new SimpleFeature[0])).forEach(feat -> {
 				try {
-					if (isAlreadyMarked(feat) != 0 && !Geom
-							.unionPrecisionReduce(
+					if (isAlreadyMarked(feat) != 0 && !Geom.unionPrecisionReduce(
 									geoms.stream().filter(g -> g.intersects((Geometry) feat.getDefaultGeometry())).collect(Collectors.toList()), 100)
 							.isEmpty())
 						feat.setAttribute(markFieldName, 1);
@@ -475,8 +475,7 @@ public class MarkParcelAttributeFromPosition {
 			while (it.hasNext()) {
 				SimpleFeature feat = it.next();
 				featureBuilder = ParcelSchema.setSFBMinParcelSplitWithFeat(feat, featureBuilder, featureSchema, 0);
-				if (isAlreadyMarked(feat) != 0 && !Geom
-						.unionPrecisionReduce(
+				if (isAlreadyMarked(feat) != 0 && !Geom.unionPrecisionReduce(
 								geoms.stream().filter(g -> g.intersects((Geometry) feat.getDefaultGeometry())).collect(Collectors.toList()), 100)
 						.isEmpty())
 					featureBuilder.set(markFieldName, 1);
@@ -506,7 +505,9 @@ public class MarkParcelAttributeFromPosition {
 			throws IOException, NoSuchAuthorityCodeException, FactoryException {
 		DefaultFeatureCollection result = new DefaultFeatureCollection();
 		ShapefileDataStore sds = new ShapefileDataStore(polygonIntersectionFile.toURI().toURL());
-		SimpleFeatureCollection polyCollec = sds.getFeatureSource().getFeatures();
+		// put in memory coz it provoked an unlock error - TODO can't find where that came from
+		SimpleFeatureCollection polyCollec = new SpatialIndexFeatureCollection(DataUtilities.collection(sds.getFeatureSource().getFeatures()));
+		sds.dispose();
 		final SimpleFeatureType featureSchema = ParcelSchema.getSFBMinParcelSplit().getFeatureType();
 		// if features have the schema that the one intended to set, we bypass 
 		if (featureSchema.equals(parcels.getSchema())) {
@@ -527,7 +528,7 @@ public class MarkParcelAttributeFromPosition {
 		try (SimpleFeatureIterator it = parcels.features()) {
 			while (it.hasNext()) {
 				SimpleFeature feat = it.next();
-				featureBuilder = ParcelSchema.setSFBMinParcelSplitWithFeat(feat,featureBuilder, featureSchema, 0);
+				featureBuilder = ParcelSchema.setSFBMinParcelSplitWithFeat(feat, featureBuilder, featureSchema, 0);
 				if (isAlreadyMarked(feat) != 0 && ((Geometry) feat.getDefaultGeometry()).intersects(Geom.unionSFC(Collec.snapDatas(polyCollec, (Geometry) feat.getDefaultGeometry()))))
 					featureBuilder.set(markFieldName, 1);
 				result.add(featureBuilder.buildFeature(Attribute.makeUniqueId()));
@@ -535,7 +536,6 @@ public class MarkParcelAttributeFromPosition {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		sds.dispose();
 		signalIfNoParcelMarked(result, "markParcelIntersectPolygonIntersection");
 		return result.collection();
 	}
@@ -560,7 +560,7 @@ public class MarkParcelAttributeFromPosition {
 		final SimpleFeatureType featureSchema = ParcelSchema.getSFBMinParcelSplit().getFeatureType();
 		DefaultFeatureCollection result = new DefaultFeatureCollection();
 		ShapefileDataStore shpDSZone = new ShapefileDataStore(zoningFile.toURI().toURL());
-		SimpleFeatureCollection zoningSFC = shpDSZone.getFeatureSource().getFeatures();
+		SimpleFeatureCollection zoningSFC = new SpatialIndexFeatureCollection(shpDSZone.getFeatureSource().getFeatures());
 		List<String> genericZoneUsualNames = GeneralFields.getGenericZoneUsualNames(genericZone);
 		// if features have the schema that the one intended to set, we bypass
 		if (featureSchema.equals(parcels.getSchema())) {
@@ -616,11 +616,9 @@ public class MarkParcelAttributeFromPosition {
 		final SimpleFeatureType featureSchema = ParcelSchema.getSFBMinParcelSplit().getFeatureType();
 		DefaultFeatureCollection result = new DefaultFeatureCollection();
 		SimpleFeatureBuilder featureBuilder = ParcelSchema.getSFBMinParcelSplit();
-
 		List<String> genericZoneUsualNames = GeneralFields.getGenericZoneUsualNames(genericZone);
 		ShapefileDataStore shpDSZone = new ShapefileDataStore(zoningFile.toURI().toURL());
-		SimpleFeatureCollection zoningSFC = shpDSZone.getFeatureSource().getFeatures();
-		
+		SimpleFeatureCollection zoningSFC = new SpatialIndexFeatureCollection(shpDSZone.getFeatureSource().getFeatures());
 		try (SimpleFeatureIterator it = parcels.features()) {
 			while (it.hasNext()) {
 				SimpleFeature feat = it.next();
@@ -660,12 +658,11 @@ public class MarkParcelAttributeFromPosition {
 	public static SimpleFeatureCollection markParcelIntersectPreciseZoningType(SimpleFeatureCollection parcels, String genericZone,
 			String preciseZone, File zoningFile) throws NoSuchAuthorityCodeException, FactoryException, IOException {
 		final SimpleFeatureType featureSchema = ParcelSchema.getSFBMinParcelSplit().getFeatureType();
-
 		// Get the zoning usual names
 		List<String> genericZoneUsualNames = GeneralFields.getGenericZoneUsualNames(genericZone);
 		DefaultFeatureCollection result = new DefaultFeatureCollection();
 		ShapefileDataStore shpDSZone = new ShapefileDataStore(zoningFile.toURI().toURL());
-		SimpleFeatureCollection zoningSFC = shpDSZone.getFeatureSource().getFeatures();
+		SimpleFeatureCollection zoningSFC = new SpatialIndexFeatureCollection(shpDSZone.getFeatureSource().getFeatures());
 		SimpleFeatureBuilder featureBuilder = ParcelSchema.getSFBMinParcelSplit();
 		// if features have the schema that the one intended to set, we bypass
 		if (featureSchema.equals(parcels.getSchema())) {
@@ -722,7 +719,7 @@ public class MarkParcelAttributeFromPosition {
 			throws NoSuchAuthorityCodeException, FactoryException, IOException {
 		final SimpleFeatureType featureSchema = ParcelSchema.getSFBMinParcelSplit().getFeatureType();
 		ShapefileDataStore sds = new ShapefileDataStore(zoningFile.toURI().toURL());
-		SimpleFeatureCollection zonings = sds.getFeatureSource().getFeatures();
+		SimpleFeatureCollection zonings = new SpatialIndexFeatureCollection(sds.getFeatureSource().getFeatures());
 		DefaultFeatureCollection result = new DefaultFeatureCollection();
 		// if features have the schema that the one intended to set, we bypass 
 		if (featureSchema.equals(parcels.getSchema())) {

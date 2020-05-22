@@ -37,7 +37,7 @@ import fr.ign.cogit.geometryGeneration.CityGeneration;
 
 /**
  * Simulation following this goal operates on a zone rather than on parcels. Zones are usually taken from a zoning plan and their integration is made with the
- * {@link #createZoneToCut(String, SimpleFeatureCollection, SimpleFeatureCollection)} method. The parcel which are across the zone are cut and the parts that aren't contained into
+ * {@link #createZoneToCut(String, File, SimpleFeatureCollection)} method. The parcel which are across the zone are cut and the parts that aren't contained into
  * the zone are kept with their attributes. The chosen parcel division process (OBB by default) is then applied on the zone.
  * 
  * @author Maxime Colomb
