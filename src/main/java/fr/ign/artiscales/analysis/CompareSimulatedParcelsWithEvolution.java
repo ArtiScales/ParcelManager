@@ -58,7 +58,7 @@ public class CompareSimulatedParcelsWithEvolution {
 //		PMStep.setDEBUG(true);
 		PMStep.setGENERATEATTRIBUTES(false);
 		PMScenario pm = new PMScenario(scenarioFile, outFolder);
-		pm.executeStep();
+//		pm.executeStep();
 		System.out.println("++++++++++ Done with PMscenario ++++++++++");
 		System.out.println();
 		
@@ -84,20 +84,20 @@ public class CompareSimulatedParcelsWithEvolution {
 		ShapefileDataStore sdsRoad = new ShapefileDataStore(roadFile.toURI().toURL());
 		for (PMStep step : pm.getStepList()) {
 			System.out.println("analysis for step " + step);
-			File zoneOutFolder = new File(outFolder,step.getZoneStudied());
+			File zoneOutFolder = new File(outFolder, step.getZoneStudied());
 			zoneOutFolder.mkdirs();
-			List<Geometry> geoms = step.getBoundsOfZone();						
+			List<Geometry> geoms = step.getBoundsOfZone();
 			Geometry geomUnion = Geom.unionPrecisionReduce(geoms, 100).buffer(1);
-			
-			//simulated parcels crop
+
+			// simulated parcels crop
 			ShapefileDataStore sdsSimulatedParcel = new ShapefileDataStore(simulatedFile.toURI().toURL());
-			SimpleFeatureCollection sfcSimulatedParcel = sdsSimulatedParcel.getFeatureSource().getFeatures()
-					.subCollection(ff.within(ff.property(sdsSimulatedParcel.getSchema().getGeometryDescriptor().getLocalName()), ff.literal(geomUnion)));
+			SimpleFeatureCollection sfcSimulatedParcel = sdsSimulatedParcel.getFeatureSource().getFeatures().subCollection(
+					ff.within(ff.property(sdsSimulatedParcel.getSchema().getGeometryDescriptor().getLocalName()), ff.literal(geomUnion)));
 			Collec.exportSFC(sfcSimulatedParcel, new File(zoneOutFolder, "SimulatedParcel"));
 			ShapefileDataStore sdsFinalParcel = new ShapefileDataStore(step.getLastOutput().toURI().toURL());
-			ParcelStat.writeStatSingleParcel(MarkParcelAttributeFromPosition.markSimulatedParcel(
-					MarkParcelAttributeFromPosition.markParcelIntersectPolygonIntersection(sdsFinalParcel.getFeatureSource().getFeatures(),
-							geoms.stream().map(g -> g.buffer(-3)).collect(Collectors.toList()))),
+			ParcelStat.writeStatSingleParcel(
+					MarkParcelAttributeFromPosition.markSimulatedParcel(MarkParcelAttributeFromPosition.markParcelIntersectPolygonIntersection(
+							sdsFinalParcel.getFeatureSource().getFeatures(), geoms.stream().map(g -> g.buffer(-3)).collect(Collectors.toList()))),
 					Collec.snapDatas(sdsRoad.getFeatureSource().getFeatures(), geomUnion), new File(zoneOutFolder, "SimulatedParcelStats.csv"));
 			sdsSimulatedParcel.dispose();
 			sdsFinalParcel.dispose();
