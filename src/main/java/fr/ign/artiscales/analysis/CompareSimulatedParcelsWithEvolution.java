@@ -8,6 +8,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.geotools.data.collection.SpatialIndexFeatureCollection;
 import org.geotools.data.shapefile.ShapefileDataStore;
 import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.factory.CommonFactoryFinder;
@@ -65,11 +66,9 @@ public class CompareSimulatedParcelsWithEvolution {
 		List<File> lF = new	ArrayList<File>();
 
 		//get the intermediate files resulting of the PM steps and merge them together
-		for (File f : outFolder.listFiles()) {
-			if ((f.getName().contains(("Only")) && f.getName().contains(".shp"))) {
+		for (File f : outFolder.listFiles())
+			if ((f.getName().contains(("Only")) && f.getName().contains(".shp")))
 				lF.add(f);
-			}
-		}
 		File simulatedFile = new File(outFolder, "simulatedParcels.shp");
 		Shp.mergeVectFiles(lF, simulatedFile);
 	
@@ -79,7 +78,7 @@ public class CompareSimulatedParcelsWithEvolution {
 		System.out.println("steps"+ pm.getStepList());
 		//we proceed with an analysis made for each steps
 		PMStep.cachePlacesSimulates.clear(); 
-		
+		MarkParcelAttributeFromPosition.setPostMark(true);
 		FilterFactory2 ff = CommonFactoryFinder.getFilterFactory2(GeoTools.getDefaultHints());
 		ShapefileDataStore sdsRoad = new ShapefileDataStore(roadFile.toURI().toURL());
 		for (PMStep step : pm.getStepList()) {
@@ -95,10 +94,11 @@ public class CompareSimulatedParcelsWithEvolution {
 					ff.within(ff.property(sdsSimulatedParcel.getSchema().getGeometryDescriptor().getLocalName()), ff.literal(geomUnion)));
 			Collec.exportSFC(sfcSimulatedParcel, new File(zoneOutFolder, "SimulatedParcel"));
 			ShapefileDataStore sdsFinalParcel = new ShapefileDataStore(step.getLastOutput().toURI().toURL());
+//			ShapefileDataStore sdsFinalParcel = new ShapefileDataStore(new File("/home/thema/Documents/MC/workspace/ParcelManager/src/main/resources/ParcelComparison/out/parcelCuted-zoneDivision-smallHouse-_.shp").toURI().toURL());
 			ParcelStat.writeStatSingleParcel(
 					MarkParcelAttributeFromPosition.markSimulatedParcel(MarkParcelAttributeFromPosition.markParcelIntersectPolygonIntersection(
-							sdsFinalParcel.getFeatureSource().getFeatures(), geoms.stream().map(g -> g.buffer(-3)).collect(Collectors.toList()))),
-					Collec.snapDatas(sdsRoad.getFeatureSource().getFeatures(), geomUnion), new File(zoneOutFolder, "SimulatedParcelStats.csv"));
+							sdsFinalParcel.getFeatureSource().getFeatures(), geoms.stream().map(g -> g.buffer(-2)).collect(Collectors.toList()))),
+					Collec.snapDatas(new SpatialIndexFeatureCollection(sdsRoad.getFeatureSource().getFeatures()), geomUnion), new File(zoneOutFolder, "SimulatedParcelStats.csv"));
 			sdsSimulatedParcel.dispose();
 			sdsFinalParcel.dispose();
 
@@ -111,7 +111,7 @@ public class CompareSimulatedParcelsWithEvolution {
 			ParcelStat.writeStatSingleParcel(
 					MarkParcelAttributeFromPosition.markParcelIntersectPolygonIntersection(sdsEvolvedAndAllParcels.getFeatureSource().getFeatures(),
 							Arrays.stream(sfcEvolvedParcel.toArray(new SimpleFeature[0])).map(g -> ((Geometry) g.getDefaultGeometry()).buffer(-1)).collect(Collectors.toList())),
-					Collec.snapDatas(sdsRoad.getFeatureSource().getFeatures(), geomUnion), new File(zoneOutFolder, "EvolvedParcelStats.csv"));
+					Collec.snapDatas(new SpatialIndexFeatureCollection(sdsRoad.getFeatureSource().getFeatures()), geomUnion), new File(zoneOutFolder, "EvolvedParcelStats.csv"));
 			sdsEvolvedParcel.dispose();
 		}
 		sdsRoad.dispose();

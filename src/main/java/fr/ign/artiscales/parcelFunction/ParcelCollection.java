@@ -139,7 +139,6 @@ public class ParcelCollection {
 		
 		// export the compared parcels that have changed
 		SimpleFeatureCollection evolvedParcel = parcelToSort.subCollection(ff.intersects(pName, ff.literal(Geom.unionSFC(polygonIntersection))));
-		Collec.exportSFC(evolvedParcel, fEvolved);
 
 		// We now seek if a large part of the evolved parcel stays intact and small parts, which represents parcels created for residential development purposes, are generated.
 		List<Geometry> firstZones = Geom.unionTouchingGeometries(
@@ -175,9 +174,16 @@ public class ParcelCollection {
 				});
 		}
 		Geom.exportGeom(zones, fZone);
-		Geom.exportGeom(Geom.unionTouchingGeometries(
-						intersectionGeoms.stream().filter(g -> g.getArea() < maxParcelSimulatedSize * 20).collect(Collectors.toList()))
-				.stream().map(g -> g.buffer(-2)).collect(Collectors.toList()), fInter);
+		List<Geometry> listGeom = Geom.unionTouchingGeometries(
+				intersectionGeoms.stream().filter(g -> g.getArea() < maxParcelSimulatedSize * 20)
+						.collect(Collectors.toList()).stream().map(g -> g.buffer(-1)).collect(Collectors.toList()));
+		Geom.exportGeom(listGeom, fInter);
+		listGeom.addAll(zones);
+		DefaultFeatureCollection finalEvolvedParcels = new DefaultFeatureCollection();
+		listGeom.stream().forEach(g -> {
+			finalEvolvedParcels.addAll(Collec.snapDatas(evolvedParcel, g.buffer(-1)));
+		});
+		Collec.exportSFC(finalEvolvedParcels, fEvolved);
 		sds.dispose();
 		sdsRef.dispose();
 	}
@@ -257,7 +263,6 @@ public class ParcelCollection {
 						}
 					});
 					String idToMerge = entryList.get(0).getKey();
-					// System.out.println("idToMerge: " + idToMerge + " " + ParcelAttribute.sysoutFrenchParcel(feat));
 					// if the big parcel has already been merged with a small parcel, we skip it and will return to that small parcel in a future iteration
 					if (ids.contains(idToMerge)) {
 						result.add(Schemas.setSFBSchemaWithMultiPolygon(feat).buildFeature(Attribute.makeUniqueId()));
@@ -270,7 +275,6 @@ public class ParcelCollection {
 					SimpleFeatureBuilder build = Schemas.getSFBSchemaWithMultiPolygon(parcelsUnsorted.getSchema());
 					Arrays.stream(intersect.toArray(new SimpleFeature[0])).forEach(thaParcel -> {
 						if (thaParcel.getID().equals(idToMerge)) {
-//							build.addAll(thaParcel.getAttributes());
 							for (AttributeDescriptor attr : thaParcel.getFeatureType().getAttributeDescriptors()) {
 								if (attr.getLocalName().equals("the_geom"))
 									continue;

@@ -2,6 +2,8 @@ package fr.ign.artiscales.test;
 
 import java.io.File;
 
+import org.geotools.data.DataUtilities;
+import org.geotools.data.collection.SpatialIndexFeatureCollection;
 import org.geotools.data.shapefile.ShapefileDataStore;
 import org.geotools.data.simple.SimpleFeatureCollection;
 
@@ -46,8 +48,7 @@ public class GeneralTest {
 		File statFolder = new File(outFolder, "stat");
 		statFolder.mkdirs();
 		ShapefileDataStore shpDSParcel = new ShapefileDataStore(parcelFile.toURI().toURL());
-		SimpleFeatureCollection parcel = ParcelGetter.getFrenchParcelByZip(shpDSParcel.getFeatureSource().getFeatures(), "25267");
-
+		SimpleFeatureCollection parcel = new SpatialIndexFeatureCollection(ParcelGetter.getFrenchParcelByZip(shpDSParcel.getFeatureSource().getFeatures(), "25267"));
 		ProfileUrbanFabric profileDetached = ProfileUrbanFabric.convertJSONtoProfile(new File(profileFolder, "detachedHouse.json"));
 		ProfileUrbanFabric profileSmallHouse = ProfileUrbanFabric.convertJSONtoProfile(new File(profileFolder, "smallHouse.json"));
 		ProfileUrbanFabric profilelargeCollective = ProfileUrbanFabric.convertJSONtoProfile(new File(profileFolder, "largeCollective.json"));
@@ -59,14 +60,17 @@ public class GeneralTest {
 		System.out.println("zoneTotRecomp");
 		System.out.println("/////////////////////////");
 		ZoneDivision.DEBUG = true;
-		SimpleFeatureCollection zone = ZoneDivision.createZoneToCut("AU", null, zoningFile, parcel);
+		ShapefileDataStore shpDSZoning= new ShapefileDataStore(zoningFile.toURI().toURL());
+		SimpleFeatureCollection zoning = new SpatialIndexFeatureCollection(DataUtilities.collection((shpDSZoning.getFeatureSource().getFeatures())));
+		shpDSZoning.dispose();
+		SimpleFeatureCollection zone = ZoneDivision.createZoneToCut("AU", zoning, zoningFile, parcel);
 		// If no zones, we won't bother
 		if (zone.isEmpty()) {
 			System.out.println("parcelGenZone : no zones to be cut");
 			System.exit(1);
 		}
 		ZoneDivision.SAVEINTERMEDIATERESULT = true;
-		SimpleFeatureCollection parcelCuted = ZoneDivision.zoneDivision(zone, parcel, tmpFolder, profilelargeCollective.getRoadEpsilon(),
+		SimpleFeatureCollection parcelCuted = ZoneDivision.zoneDivision(zone, parcel, tmpFolder, outFolder, profilelargeCollective.getRoadEpsilon(),
 				profilelargeCollective.getNoise(), profilelargeCollective.getMaximalArea(), profilelargeCollective.getMinimalArea(),
 				profilelargeCollective.getMaximalWidth(), profilelargeCollective.getStreetWidth(), profilelargeCollective.getLargeStreetLevel(),
 				profilelargeCollective.getLargeStreetWidth(), profilelargeCollective.getDecompositionLevelWithoutStreet());
