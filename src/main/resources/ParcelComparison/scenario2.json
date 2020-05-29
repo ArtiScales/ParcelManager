@@ -1,7 +1,7 @@
 {
 	"rootfile": "src/main/resources/ParcelComparison/",
 	"parcelFile":"src/main/resources/ParcelComparison/parcel2003.shp",
-	"polygonIntersectionFile":"src/main/resources/ParcelComparison/out/polygonIntersection.shp",
+	"polygonIntersectionFile":"src/main/resources/ParcelComparison/out/place.shp",
 	"outFolder": "src/main/resources/ParcelComparison/out/",
 	"steps": [
 		 {

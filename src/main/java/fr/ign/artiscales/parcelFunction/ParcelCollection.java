@@ -55,9 +55,9 @@ public class ParcelCollection {
 	 * <ul>
 	 * <li><b>same.shp</b> contains the reference parcels that have not evolved</li>
 	 * <li><b>notSame.shp</b> contains the reference parcels that have changed</li>
-	 * <li><b>polygonIntersection.shp</b> contains the <i>notSame.shp</i> parcels with a reduction buffer, used for a precise intersection with other parcel in Parcel Manager
+	 * <li><b>place.shp</b> contains the <i>notSame.shp</i> parcels with a reduction buffer, used for a precise intersection with other parcel in Parcel Manager
 	 * scenarios. The large parcels that are selected for a zone simulation (see below) aren't present.</li>
-	 * <li><b>zones.shp</b> contains special zones to be simulated</li>
+	 * <li><b>zone.shp</b> contains special zones to be simulated</li>
 	 * <li><b>evolvedParcel.shp</b> contains only the compared parcels that have evolved</li>
 	 * </ul>
 	 * 
@@ -79,9 +79,9 @@ public class ParcelCollection {
 		File fSame = new File(parcelOutFolder, "same.shp");
 		File fEvolved = new File(parcelOutFolder, "evolvedParcel.shp");
 		File fNotSame = new File(parcelOutFolder, "notSame.shp");
-		File fInter = new File(parcelOutFolder, "polygonIntersection.shp");
+		File fInter = new File(parcelOutFolder, "place.shp");
 		File fZone = new File(parcelOutFolder, "zone.shp");
-		if (fSame.exists() && fEvolved.exists() && fInter.exists() && fNotSame.exists() && fInter.exists() && fZone.exists()) {
+		if (fSame.exists() && fEvolved.exists() && fNotSame.exists() && fInter.exists() && fZone.exists()) {
 			System.out.println("markDiffParcel(...) already calculated");
 			return ;
 		}
