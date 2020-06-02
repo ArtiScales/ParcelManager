@@ -145,7 +145,7 @@ public class MarkParcelAttributeFromPosition {
 			while (it.hasNext()) {
 				SimpleFeature feat = it.next();
 				Geometry geomFeat = (Geometry) feat.getDefaultGeometry();
-				featureBuilder = ParcelSchema.setSFBMinParcelSplitWithFeat(feat,featureBuilder, featureSchema, 0);
+				featureBuilder = ParcelSchema.setSFBMinParcelSplitWithFeat(feat, featureBuilder, featureSchema, 0);
 				if (isAlreadyMarked(feat) != 0 && ParcelState.isParcelHasRoadAccess((Polygon) Geom.getPolygon(geomFeat),
 						Collec.snapDatas(roads, geomFeat), Collec.fromPolygonSFCtoRingMultiLines(Collec.snapDatas(islet, geomFeat)), exclusionZone))
 					featureBuilder.set(markFieldName, 1);
@@ -259,9 +259,9 @@ public class MarkParcelAttributeFromPosition {
 	 *            input SimpleFeature
 	 * @return
 	 *         <ul>
-	 *         <li>If no <i>mark</i> field or the field is unset, return <b>-1</b>
-	 *         <li>If <i>mark</i> field is set to 0, return <b>0</b>
-	 *         <li>If <i>mark</i> field is set to 1, return <b>1</b>
+	 *         <li>If no <i>mark</i> field or the field is unset, return <b>-1</b></li>
+	 *         <li>If <i>mark</i> field is set to 0, return <b>0</b></li>
+	 *         <li>If <i>mark</i> field is set to 1, return <b>1</b></li>
 	 *         </ul>
 	 */
 	public static int isAlreadyMarked(SimpleFeature feat) {

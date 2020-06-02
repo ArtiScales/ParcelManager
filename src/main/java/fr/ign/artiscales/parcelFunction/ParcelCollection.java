@@ -16,12 +16,14 @@ import java.util.stream.Collectors;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
+import org.geotools.data.collection.SpatialIndexFeatureCollection;
 import org.geotools.data.shapefile.ShapefileDataStore;
 import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.data.simple.SimpleFeatureIterator;
 import org.geotools.factory.CommonFactoryFinder;
 import org.geotools.feature.DefaultFeatureCollection;
 import org.geotools.feature.simple.SimpleFeatureBuilder;
+import org.locationtech.jts.algorithm.match.HausdorffSimilarityMeasure;
 import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.geom.Polygon;
 import org.locationtech.jts.geom.TopologyException;
@@ -42,10 +44,10 @@ import fr.ign.cogit.geoToolsFunctions.vectors.Geom;
 
 public class ParcelCollection {
 
-//	public static void main(String[] args) throws Exception {
-//		File rootFile = new File("src/main/resources/ParcelComparison/");
-//		markDiffParcel(new File(rootFile,"parcel2003.shp"), new File(rootFile,"parcel2018.shp"), new File("/tmp/"));
-//	}
+	public static void main(String[] args) throws Exception {
+		File rootFile = new File("src/main/resources/ParcelComparison/");
+		sortDifferentParcel(new File(rootFile,"parcel2003.shp"), new File(rootFile,"parcel2018.shp"), new File("/tmp/"));
+	}
 	
 	/**
 	 * method that compares two set of parcels and sort the reference plan parcels between the ones that changed and the ones that doesn't We compare the parcels area of the
@@ -87,12 +89,12 @@ public class ParcelCollection {
 		}
 		
 		ShapefileDataStore sds = new ShapefileDataStore(parcelToCompareFile.toURI().toURL());
-		SimpleFeatureCollection parcelToSort = sds.getFeatureSource().getFeatures();
+		SimpleFeatureCollection parcelToSort = new SpatialIndexFeatureCollection(sds.getFeatureSource().getFeatures());
 		ShapefileDataStore sdsRef = new ShapefileDataStore(parcelRefFile.toURI().toURL());
 		SimpleFeatureCollection parcelRef = sdsRef.getFeatureSource().getFeatures();
 		FilterFactory2 ff = CommonFactoryFinder.getFilterFactory2();
 		PropertyName pName = ff.property(parcelRef.getSchema().getGeometryDescriptor().getLocalName());
-
+		SimpleFeatureBuilder intersecPolygon = Schemas.getBasicSchemaMultiPolygon("intersectionPolygon");
 		DefaultFeatureCollection same = new DefaultFeatureCollection();
 		DefaultFeatureCollection notSame = new DefaultFeatureCollection();
 		DefaultFeatureCollection polygonIntersection = new DefaultFeatureCollection();
@@ -101,14 +103,14 @@ public class ParcelCollection {
 			refParcel: while (itRef.hasNext()) {
 				SimpleFeature pRef = itRef.next();
 				Geometry geomPRef = (Geometry) pRef.getDefaultGeometry();
-				double geomArea = geomPRef.getArea();
+				HausdorffSimilarityMeasure hausDis = new HausdorffSimilarityMeasure();
 				//for every intersected parcels, we check if it is close to (as tiny geometry changes)
 				SimpleFeatureCollection parcelsIntersectRef = parcelToSort.subCollection(ff.intersects(pName, ff.literal(geomPRef)));
 				try (SimpleFeatureIterator itParcelIntersectRef = parcelsIntersectRef.features()) {
 					while (itParcelIntersectRef.hasNext()) {
-						double inter = Geom.scaledGeometryReductionIntersection(Arrays.asList(geomPRef,(Geometry) itParcelIntersectRef.next().getDefaultGeometry())).getArea();
+						Geometry comparedGeom = (Geometry) itParcelIntersectRef.next().getDefaultGeometry();
 						// if there are parcel intersection and a similar area, we conclude that parcel haven't changed. We put it in the \"same\" collection and stop the search
-						if (inter > 0.95 * geomArea && inter < 1.05 * geomArea) {
+						if (hausDis.measure(geomPRef, comparedGeom) > 0.9 && (geomPRef.getArea() > 0.95 * comparedGeom.getArea() && geomPRef.getArea() < 1.05*comparedGeom.getArea())) {
 							same.add(pRef);
 							continue refParcel;
 						}
@@ -116,19 +118,27 @@ public class ParcelCollection {
 				} catch (Exception problem) {
 					problem.printStackTrace();
 				} 
-				//we check if the parcel has been intentionally deleted by generating new polygons (same technique of area comparison, but with a way smaller error bound)
+				// we check if the parcel has been intentionally deleted by generating new polygons (same technique of area comparison, but with a way smaller error bound)
 				// if it has been cleaned, we don't add it to no additional parcels
 				List<Geometry> geomList = Arrays.stream(parcelsIntersectRef.toArray(new SimpleFeature[0])).map(x -> (Geometry) x.getDefaultGeometry())
 						.collect(Collectors.toList());
 				geomList.add(geomPRef);
-				List<Polygon> polygons = FeaturePolygonizer.getPolygons(geomList);
-				for (Polygon polygon : polygons)
-					if ((polygon.getArea() > geomArea * 0.9 && polygon.getArea() < geomArea * 1.1) && polygon.buffer(0.5).contains(geomPRef))
-						continue refParcel;
+				// We generate a list of polygons including the filled void. If a similarity is now found and wasn't during the last step, it means the parcel in question has intentionally been deleted
+				List<Polygon> listPoly = FeaturePolygonizer.getPolygons(geomList);
+				// if no nex parcel has been created, we don't do this test
+				if (listPoly.size() != geomList.size()) {
+					for (Polygon polygon : listPoly) {
+//						if (polygon.contains(geomPRef)) {
+//							 	
+//						}
+						// if a new parcel is now found corresponding to the criterion of similarity,
+						// that parcel was intentionaly deleted
+						if (hausDis.measure(geomPRef, polygon) > 0.9 && (geomPRef.getArea() > 0.97 * polygon.getArea() && geomPRef.getArea() < 1.03*polygon.getArea())) {
+							continue refParcel;
+						}
+					}}
 				notSame.add(pRef);
-				SimpleFeatureBuilder intersecPolygon = Schemas.getBasicSchemaMultiPolygon("intersectionPolygon");
-				intersecPolygon.set(intersecPolygon.getFeatureType().getGeometryDescriptor().getName(),
-						((Geometry) pRef.getDefaultGeometry()).buffer(-2));
+				intersecPolygon.set(intersecPolygon.getFeatureType().getGeometryDescriptor().getName(),	((Geometry) pRef.getDefaultGeometry()).buffer(-2));
 				polygonIntersection.add(intersecPolygon.buildFeature(Attribute.makeUniqueId()));
 			}
 		} catch (Exception problem) {
