@@ -405,13 +405,6 @@ public class TopologicalStraightSkeletonParcelDecomposition {
       if (widths.size() == 1) {
         result.add(strip.getGeometry());
       } else {
-        // Node n = straightSkeleton.getGraph().getNode(c)
-        // extEdges.stream().filter(predicate)
-        // List<Polygon> polygons = straightSkeleton.getGraph().getFaces().stream().map(f -> f.getGeometry()).filter(f -> f.intersects(strip.getGeometry()))
-        // .map(f -> snap(f, strip.getGeometry(), 0.01)).map(f -> f.intersection(strip.getGeometry())).filter(f -> f instanceof Polygon).map(f -> (Polygon) f)
-        // .collect(Collectors.toList());
-        // List<LineString> cutLines = new ArrayList<>();
-        // List<Polygon> prevPolygons = new ArrayList<>();
         double previousL = widths.get(0);
         // split the strip now
         Polygon remainder = (Polygon) strip.getGeometry().copy();
@@ -422,24 +415,12 @@ public class TopologicalStraightSkeletonParcelDecomposition {
           // get perpendicular line
           Coordinate coordinate = lil.extractPoint(previousL);
           LineString cutLine = getCutLine(straightSkeleton, pol, remainder, coordinate, l);
-          // cutLines.add(cutLine);
-          // System.out.println(cutLine);
           Polygon r = (Polygon) GeometryPrecisionReducer.reduce(remainder, new PrecisionModel(100));
           LineString cl = (LineString) GeometryPrecisionReducer.reduce(cutLine, new PrecisionModel(100));
           Geometry[] snapped = GeometrySnapper.snap(r, cl, 0.01);
-          // Polygon snapped = snap(snap(remainder, cutLine.getCoordinateN(0), 0.01), cutLine.getCoordinateN(cutLine.getNumPoints() - 1), 0.01);
           Pair<Polygon, Polygon> split = splitPolygon((Polygon) snapped[0], (LineString) snapped[1], false);
           result.add(split.getLeft());
           remainder = split.getRight();
-
-          // lines.add(l);
-          // List<Polygon> currentPol = polygons.stream().filter(p -> p.intersects(l)).collect(Collectors.toList());
-          // Coordinate c1 = l.getCoordinateN(l.getNumPoints() - 2);
-          // Coordinate c2 = l.getCoordinateN(l.getNumPoints() - 1);
-          // perpLines.add(getPerpendicular(c1, c2, l.getFactory(), true));
-          // System.out.println("WIDTH = " + w + "\n" + l);
-          // System.out.println(createParcel(straightSkeleton, betaStrips, l));
-          // System.out.println(getPerpendicular(c1, c2, l.getFactory(), true));
           previousL = current;
         }
         result.add(remainder);
@@ -452,54 +433,9 @@ public class TopologicalStraightSkeletonParcelDecomposition {
 
   private static List<Polygon> createParcels(StraightSkeleton straightSkeleton, TopologicalGraph betaStrips, Polygon pol, double minWidth, double maxWidth, double omega,
       RandomGenerator rng) {
-    double meanWidth = (minWidth + maxWidth) / 2;
-    double sd = Math.sqrt(3 * omega);
-    NormalDistribution nd = new NormalDistribution(rng, meanWidth, sd);
+    NormalDistribution nd = new NormalDistribution(rng, (minWidth + maxWidth) / 2, Math.sqrt(3 * omega));
     List<Polygon> result = new ArrayList<>();
-    for (Face face : betaStrips.getFaces()) {
-      System.out.println("Strip " + face.getGeometry());
-      result.addAll(slice(straightSkeleton, pol, minWidth, maxWidth, nd, rng, face));
-      // List<HalfEdge> extEdges = face.getEdges().stream().filter(e -> e.getTwin() == null && !pol.contains(e.getGeometry())).collect(Collectors.toList());
-      // // System.out.println("Face\n" + face.getGeometry());
-      // LineMerger lsm = new LineMerger();
-      // extEdges.stream().forEach(e -> lsm.add(e.getGeometry()));
-      // Collection<?> merged = lsm.getMergedLineStrings();
-      // if (merged.size() == 1) {
-      // // FIXME check the order of that linestring: should be CCW
-      // LineString phi = (LineString) merged.iterator().next();
-      // LengthIndexedLine lil = new LengthIndexedLine(phi);
-      // double length = phi.getLength();
-      // List<Double> widths = sampleWidths(length, nd, minWidth, maxWidth);
-      // if (widths.size() == 1) {
-      // result.add(face.getGeometry());
-      // } else {
-      // // Node n = straightSkeleton.getGraph().getNode(c)
-      // // extEdges.stream().filter(predicate)
-      // List<Polygon> polygons = straightSkeleton.getGraph().getFaces().stream().map(f -> f.getGeometry()).filter(f -> f.intersects(face.getGeometry()))
-      // .map(f -> snap(f, face.getGeometry(), 0.01)).map(f -> f.intersection(face.getGeometry())).filter(f -> f instanceof Polygon).map(f -> (Polygon) f)
-      // .collect(Collectors.toList());
-      // List<LineString> lines = new ArrayList<>();
-      // List<LineString> perpLines = new ArrayList<>();
-      // List<Polygon> prevPolygons = new ArrayList<>();
-      // double previousL = 0;
-      // for (double w : widths) {
-      // double current = previousL + w;
-      // LineString l = (LineString) lil.extractLine(previousL, current);
-      // lines.add(l);
-      // List<Polygon> currentPol = polygons.stream().filter(p -> p.intersects(l)).collect(Collectors.toList());
-      // Coordinate c1 = l.getCoordinateN(l.getNumPoints() - 2);
-      // Coordinate c2 = l.getCoordinateN(l.getNumPoints() - 1);
-      // perpLines.add(getPerpendicular(c1, c2, l.getFactory(), true));
-      // // System.out.println("WIDTH = " + w + "\n" + l);
-      // // System.out.println(createParcel(straightSkeleton, betaStrips, l));
-      // System.out.println(getPerpendicular(c1, c2, l.getFactory(), true));
-      // previousL = current;
-      // }
-      // }
-      // } else {
-      // System.out.println("MORE THAN ONE SEGMENT FOR BETA STRIP (" + merged.size() + ")");
-      // }
-    }
+    betaStrips.getFaces().forEach(f->result.addAll(slice(straightSkeleton, pol, minWidth, maxWidth, nd, rng, f)));
     return result;
   }
 
@@ -535,43 +471,50 @@ public class TopologicalStraightSkeletonParcelDecomposition {
       }
       System.out.println(currNode.getGeometry());
       if (supportingVertexClass != NONE) {
-        final Face removedAlphaStrip = (supportingVertexClass == PREVIOUS) ? nextAlphaStrip : prevAlphaStrip;
+        final Face splitAlphaStrip = (supportingVertexClass == PREVIOUS) ? nextAlphaStrip : prevAlphaStrip;
         // FIXME always getFace()?
-        List<Face> facesToRemove = diagonalEdgeList.stream().map(e -> (e.getFace().getParent() == removedAlphaStrip) ? e.getFace() : e.getTwin().getFace())
-            .collect(Collectors.toList());
+//        List<Face> facesToRemove = diagonalEdgeList.stream().map(e -> (e.getFace().getParent() == splitAlphaStrip) ? e.getFace() : e.getTwin().getFace())
+//            .collect(Collectors.toList());
+//        System.out.println("faces to remove");
+//        facesToRemove.forEach(f->System.out.println(f.getGeometry()));
         // FIXME check: only one edge for alpha strips?
-        Coordinate projection = Util.project(currNode.getCoordinate(), removedAlphaStrip.getEdges().get(0).getGeometry());
-        Polygon toRemove = facesToRemove.get(facesToRemove.size() - 1).getGeometry();
-        Pair<Polygon, Polygon> split = splitPolygon(toRemove, currNode.getCoordinate(), projection);// toRemove.getFactory().createLineString(new Coordinate[] {
-                                                                                                    // currNode.getCoordinate(), projection }));
-        Face absorbingBetaSplit = (supportingVertexClass == PREVIOUS) ? prevAlphaStrip : nextAlphaStrip;
-        Face absorbedBetaSplit = (supportingVertexClass == PREVIOUS) ? nextAlphaStrip : prevAlphaStrip;
-        Polygon absorbingBetaSplitPolygon = absorbingBetaSplit.getGeometry();
-        Polygon absorbedBetaSplitPolygon = absorbedBetaSplit.getGeometry();
-        if (supportingVertexClass == PREVIOUS) System.out.println("PREVIOUS");
-        else System.out.println("NEXT");
-        System.out.println("ABSORBING:\n" + absorbingBetaSplit.getGeometry());
-        System.out.println("ABSORBED:\n" + absorbedBetaSplit.getGeometry());
-        System.out.println("LEFT");
-        System.out.println(split.getLeft());
-        System.out.println("RIGHT");
-        System.out.println(split.getRight());
-        int leftShared = sharedPoints(split.getLeft(), absorbingBetaSplitPolygon);
-        // int rightShared = sharedPoints(split.getRight(), absorbingBetaSplit);
-        // System.out.println("SHARED " + leftShared + " - " + rightShared);
-        System.out.println(absorbingBetaSplitPolygon);
-        Polygon absorbedPolygonPart = (leftShared == 2) ? split.getLeft() : split.getRight();
-        Polygon keptPolygonPart = (leftShared == 2) ? split.getRight() : split.getLeft();
-        System.out.println("ABSORBEDPART:\n" + absorbedPolygonPart);
-        List<Polygon> absorbedPolygons = facesToRemove.subList(0, facesToRemove.size() - 1).stream().map(f -> f.getGeometry()).collect(Collectors.toList());
-        List<Polygon> newAbsorbing = new ArrayList<>(absorbedPolygons);
-        newAbsorbing.add(absorbingBetaSplitPolygon);
-        newAbsorbing.add(absorbedPolygonPart);
-        absorbedPolygons.add(toRemove);
-        absorbingBetaSplit.setPolygon(Util.polygonUnion(newAbsorbing));
-        absorbedBetaSplit.setPolygon(Util.polygonUnion(Arrays.asList(Util.polygonDifference(Arrays.asList(absorbedBetaSplitPolygon), absorbedPolygons), keptPolygonPart)));
-        System.out.println("ABSORBING:\n" + absorbingBetaSplit.getGeometry());
-        System.out.println("ABSORBED:\n" + absorbedBetaSplit.getGeometry());
+//        Coordinate projection = Util.project(currNode.getCoordinate(), splitAlphaStrip.getEdges().get(0).getGeometry());
+//        Polygon toRemove = facesToRemove.get(facesToRemove.size() - 1).getGeometry();
+//        Pair<Polygon, Polygon> split = splitPolygon(toRemove, currNode.getCoordinate(), projection);
+        // toRemove.getFactory().createLineString(new Coordinate[] {currNode.getCoordinate(), projection }));
+        // TODO check that the first edge is always the supporting edge
+        Coordinate projection = Util.project(currNode.getCoordinate(), splitAlphaStrip.getEdges().get(0).getGeometry());
+        Polygon splitAlphaStripSnapped = snap(splitAlphaStrip.getGeometry(),projection, 0.01);
+        Polygon r = (Polygon) GeometryPrecisionReducer.reduce(splitAlphaStripSnapped, new PrecisionModel(100));
+        LineString cl = (LineString) GeometryPrecisionReducer.reduce(r.getFactory().createLineString(new Coordinate[] {projection, currNode.getCoordinate()}), new PrecisionModel(100));
+        Geometry[] snapped = GeometrySnapper.snap(r, cl, 0.01);
+        Pair<Polygon, Polygon> split = splitPolygon((Polygon) snapped[0], (LineString) snapped[1], false);
+//        Pair<Polygon, Polygon> split = splitPolygon(splitAlphaStrip.getGeometry(), currNode.getCoordinate(), projection);
+        Face gainingBetaSplit = (supportingVertexClass == PREVIOUS) ? prevAlphaStrip : nextAlphaStrip;
+        Face loosingBetaSplit = (supportingVertexClass == PREVIOUS) ? nextAlphaStrip : prevAlphaStrip;
+        Polygon gainingBetaSplitPolygon = gainingBetaSplit.getGeometry();
+        Polygon loosingBetaSplitPolygon = loosingBetaSplit.getGeometry();
+        System.out.println((supportingVertexClass == PREVIOUS)?"PREVIOUS":"NEXT");
+        System.out.println("Gaining before:\n" + gainingBetaSplit.getGeometry());
+        System.out.println("Loosing before:\n" + loosingBetaSplit.getGeometry());
+        System.out.println("LEFT:\n"+split.getLeft());
+        System.out.println("RIGHT:\n"+split.getRight());
+        Polygon exchangedPolygonPart = (supportingVertexClass == PREVIOUS) ? split.getLeft() : split.getRight();
+        Polygon remainingPolygonPart = (supportingVertexClass == PREVIOUS) ? split.getRight() : split.getLeft();
+        System.out.println("Exchanged:\n" + exchangedPolygonPart);
+        System.out.println("Remaining:\n" + remainingPolygonPart);
+//        List<Polygon> absorbedPolygons = facesToRemove.subList(0, facesToRemove.size() - 1).stream().map(f -> f.getGeometry()).collect(Collectors.toList());
+        List<Polygon> newAbsorbing = new ArrayList<>();
+        newAbsorbing.add(gainingBetaSplitPolygon);
+        newAbsorbing.add(exchangedPolygonPart);
+//        absorbedPolygons.add(toRemove);
+        System.out.println("absorbing ");
+        newAbsorbing.forEach(f->System.out.println(f));
+        gainingBetaSplit.setPolygon(Util.polygonUnion(newAbsorbing));
+        System.out.println("ABSORBING:\n" + gainingBetaSplit.getGeometry());
+//        loosingBetaSplit.setPolygon(Util.polygonUnion(Arrays.asList(Util.polygonDifference(Arrays.asList(loosingBetaSplitPolygon), absorbedPolygons), remainingPolygonPart)));
+        loosingBetaSplit.setPolygon(Util.polygonDifference(Arrays.asList(splitAlphaStripSnapped), Arrays.asList(exchangedPolygonPart)));
+        System.out.println("ABSORBED:\n" + loosingBetaSplit.getGeometry());
       }
       System.out.println("DONE");
     }
@@ -643,7 +586,9 @@ public class TopologicalStraightSkeletonParcelDecomposition {
 
   public static Pair<Polygon, Polygon> splitPolygon(Polygon poly, LineString line, boolean force) {
     // Polygon snapped = snap(poly, line.getCoordinateN(line.getNumPoints() - 1), 0.01);
-    System.out.println("SNAPPED =\n" + poly);
+    System.out.println("SNAPPED:\n" + poly);
+    System.out.println("LINE:\n"+line);
+    System.out.println("BOUNDARY:\n"+poly.getBoundary());
     Geometry nodedLinework = poly.getBoundary().union(line);
     List<Geometry> polys = polygonize(nodedLinework, force);
     // Only keep polygons which are inside the input
@@ -659,10 +604,11 @@ public class TopologicalStraightSkeletonParcelDecomposition {
       return null;
     }
     // try to order them from left to right
-    List<Coordinate> coords = Arrays.asList(output.get(0).getExteriorRing().getCoordinates());
+    // get the coordinates (remove the last, duplicated, point)
+    List<Coordinate> coords = Arrays.asList(output.get(0).getExteriorRing().getCoordinates()).subList(0, output.get(0).getExteriorRing().getNumPoints() - 1);
     int index0 = coords.indexOf(line.getCoordinateN(0));
     int index1 = coords.indexOf(line.getCoordinateN(1));
-    int indexDiff = (index1 - index0 + coords.size() - 1) % (coords.size() - 1);
+    int indexDiff = (index1 - index0 + coords.size()) % coords.size();
     System.out.println("SPLIT WITH (" + coords.size() + ")");
     System.out.println(line);
     System.out.println(poly.getFactory().createPoint(line.getCoordinateN(0)));
@@ -703,7 +649,7 @@ public class TopologicalStraightSkeletonParcelDecomposition {
     SimpleFeatureIterator iterator = parcels.features();
     SimpleFeature feature = iterator.next();
     List<Polygon> polygons = Util.getPolygons((Geometry) feature.getDefaultGeometry());
-    double maxDepth = 100, maxDistanceForNearestRoad = 100, minimalArea = 20, minWidth = 2, maxWidth = 5, omega = 0.1;
+    double maxDepth = 10, maxDistanceForNearestRoad = 100, minimalArea = 20, minWidth = 2, maxWidth = 5, omega = 0.1;
     iterator.close();
     List<Polygon> outputParcels = decompose(polygons.get(0), roads, maxDepth, maxDistanceForNearestRoad, minimalArea, minWidth, maxWidth, omega, new MersenneTwister(42));
     System.out.println("OUTPUT PARCELS");
