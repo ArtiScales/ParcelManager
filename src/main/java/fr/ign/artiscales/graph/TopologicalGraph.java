@@ -24,6 +24,8 @@ import org.locationtech.jts.geom.Polygon;
 import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.feature.simple.SimpleFeatureType;
 
+import com.google.common.collect.Comparators;
+
 public class TopologicalGraph {
   Map<Coordinate,Node> nodes = new HashMap<>();
   List<HalfEdge> edges = new ArrayList<>();
@@ -128,6 +130,7 @@ public class TopologicalGraph {
   
   public static <G extends Geometry, E extends GraphElement<G,E>> void export(Collection<E> feats, File file, String geomType) {
     System.out.println(Calendar.getInstance().getTime() + " save " + feats.size() + " features to " + file);
+    file.getParentFile().mkdirs();
     if (feats.isEmpty())
       return;
     try {
@@ -136,6 +139,7 @@ public class TopologicalGraph {
       for (String attribute : attributes) {
         specs += "," + attribute + ":String";
       }
+      System.out.println(specs);
       ShapefileDataStoreFactory factory = new ShapefileDataStoreFactory();
       FileDataStore dataStore = factory.createDataStore(file.toURI().toURL());
       String featureTypeName = "Object";
@@ -170,5 +174,11 @@ public class TopologicalGraph {
 
   public Node getNode(Coordinate c) {
     return this.nodes.get(c);
+  }
+  public Node getNode(Coordinate c, double tolerance) {
+    List<Coordinate> candidates = this.nodes.keySet().stream().filter(coord->coord.distance(c) <= tolerance).collect(Collectors.toList());
+    if (candidates.isEmpty()) return null;
+    candidates.sort((c1,c2) -> Double.compare(c1.distance(c), c2.distance(c)));
+    return this.nodes.get(candidates.get(0));
   }
 }

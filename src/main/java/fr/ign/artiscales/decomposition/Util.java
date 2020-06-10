@@ -18,6 +18,7 @@ import org.locationtech.jts.geom.MultiLineString;
 import org.locationtech.jts.geom.Polygon;
 import org.locationtech.jts.geom.PrecisionModel;
 import org.locationtech.jts.linearref.LengthIndexedLine;
+import org.locationtech.jts.math.Vector2D;
 import org.locationtech.jts.operation.linemerge.LineMerger;
 import org.locationtech.jts.operation.union.CascadedPolygonUnion;
 import org.locationtech.jts.precision.GeometryPrecisionReducer;
@@ -124,4 +125,53 @@ public class Util {
     return splitLine(line, lil.indexOf(c));
   }
 
+  static boolean getRayLineSegmentIntersects(Coordinate o, Coordinate d, Coordinate a, Coordinate b) {
+    Vector2D ortho = Vector2D.create(-d.y, d.x);
+    Vector2D aToO = Vector2D.create(a, o);
+    Vector2D aToB = Vector2D.create(a, b);
+    double denom = aToB.dot(ortho);
+    if (denom < 0) {
+      ortho = Vector2D.create(d.y, -d.x);
+      denom = aToB.dot(ortho);
+    }
+//    System.out.println("denom = " + denom);
+    // Here would be a good time to see if denom is zero in which case the line segment and the ray are parallel.
+    if (denom == 0) return false; // TODO : add tolerance?
+    // The length of this cross product can also be written as abs( aToB.x * aToO.y - aToO.x * aToB.y ).
+    double length = Math.abs(aToB.getX() * aToO.getY() - aToO.getX() * aToB.getY());
+    double t1 = length / denom;
+    double t2 = aToO.dot(ortho) / denom;
+//    System.out.println("t1 = " + t1 + " t2 = " + t2);
+    return t2 >= 0 && t2 <= 1 && t1 >= 0;
+  }
+  static Coordinate getRayLineSegmentIntersection(Coordinate o, Coordinate d, Coordinate a, Coordinate b) {
+    Vector2D ortho = Vector2D.create(-d.y, d.x);
+    Vector2D aToO = Vector2D.create(a, o);
+    Vector2D aToB = Vector2D.create(a, b);
+    double denom = aToB.dot(ortho);
+    if (denom < 0) {
+      ortho = Vector2D.create(d.y, -d.x);
+      denom = aToB.dot(ortho);
+    }
+    // Here would be a good time to see if denom is zero in which case the line segment and the ray are parallel.
+    if (denom == 0) return null; // TODO : add tolerance?
+    // The length of this cross product can also be written as abs( aToB.x * aToO.y - aToO.x * aToB.y ).
+    double length = Math.abs(aToB.getX() * aToO.getY() - aToO.getX() * aToB.getY());
+    double t1 = length / denom;
+    double t2 = aToO.dot(ortho) / denom;
+    if (t2 >= 0 && t2 <= 1 && t1 >= 0)
+      return new Coordinate(a.getX() + t2 * aToB.getX(), a.getY() + t2 * aToB.getY());
+    return null;
+  }
+
+  static boolean getRayLineSegmentIntersects(Coordinate o, Coordinate d, LineString line) {
+    Coordinate a = line.getCoordinateN(0);
+    Coordinate b = line.getCoordinateN(line.getNumPoints() - 1);
+    return getRayLineSegmentIntersects(o, d, a, b);
+  }
+  static Coordinate getRayLineSegmentIntersection(Coordinate o, Coordinate d, LineString line) {
+    Coordinate a = line.getCoordinateN(0);
+    Coordinate b = line.getCoordinateN(line.getNumPoints() - 1);
+    return getRayLineSegmentIntersection(o, d, a, b);
+  }
 }
