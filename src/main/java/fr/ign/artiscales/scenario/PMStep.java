@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import org.geotools.data.DataUtilities;
 import org.geotools.data.collection.SpatialIndexFeatureCollection;
 import org.geotools.data.shapefile.ShapefileDataStore;
 import org.geotools.data.simple.SimpleFeatureCollection;
@@ -115,17 +116,7 @@ public class PMStep {
 		SimpleFeatureCollection parcelMarked;
 		//if we work with zones, we put them as parcel input
 		if (goal.equals("zoneDivision")) {
-			SimpleFeatureCollection zoneIn;
-			// If a specific zone is an input, we take them directly. We also have to set attributes from pre-existing parcel field. 
-			if (ZONE != null && ZONE.exists()) {
-				ShapefileDataStore shpDSZone = new ShapefileDataStore(ZONE.toURI().toURL());
-				zoneIn = GeneralFields.transformSFCToMinParcel(shpDSZone.getFeatureSource().getFeatures(),parcel);
-				shpDSZone.dispose();
-			}
-			// If no zone have been set, it means we have to use the zoning plan.
-			else
-				zoneIn = ZoneDivision.createZoneToCut(genericZone, ZONINGFILE, parcel);
-			parcelMarked = getSimulationParcels(zoneIn);
+			parcelMarked = getSimulationParcels(getZone(parcel));
 		} else
 			parcelMarked = getSimulationParcels(parcel);
 		if (DEBUG)
@@ -142,7 +133,7 @@ public class PMStep {
 			case "zoneDivision":
 				ZoneDivision.PROCESS = parcelProcess;
 				((DefaultFeatureCollection) parcelCut).addAll(ZoneDivision.zoneDivision(parcelMarkedComm, ParcelGetter.getParcelByCommunityCode(parcel, communityNumber), TMPFOLDER,
-						profile.getRoadEpsilon(), profile.getNoise(), profile.getMaximalArea(), profile.getMinimalArea(), profile.getMaximalWidth(),
+						OUTFOLDER, profile.getRoadEpsilon(), profile.getNoise(), profile.getMaximalArea(), profile.getMinimalArea(), profile.getMaximalWidth(),
 						profile.getStreetWidth(), profile.getLargeStreetLevel(), profile.getLargeStreetWidth(),
 						profile.getDecompositionLevelWithoutStreet()));
 				break;
@@ -349,7 +340,6 @@ public class PMStep {
 	
 	/**
 	 * Generate the bound of the parcels that are simulated by the current PMStep. Uses the marked parcels by the {@link #getSimulationParcels(SimpleFeatureCollection)} method.
-	 * Flush the cache.
 	 * 
 	 * @return A list of the geometries of the simulated parcels
 	 * @throws IOException
@@ -359,13 +349,46 @@ public class PMStep {
 	public List<Geometry> getBoundsOfZone() throws IOException, NoSuchAuthorityCodeException, FactoryException {
 		ShapefileDataStore sds = new ShapefileDataStore(PARCELFILE.toURI().toURL());
 		List<Geometry> lG = new ArrayList<Geometry>();
-		Arrays.stream(getSimulationParcels(new SpatialIndexFeatureCollection(sds.getFeatureSource().getFeatures())).toArray(new SimpleFeature[0]))
-				.forEach(parcel -> {
-					if (parcel.getAttribute(MarkParcelAttributeFromPosition.getMarkFieldName()).equals(1))
+		if (goal.equals("zoneDivision")) {
+			Arrays.stream(getZone(sds.getFeatureSource().getFeatures()).toArray(new SimpleFeature[0])).forEach(parcel -> {
 						lG.add((Geometry) parcel.getDefaultGeometry());
-				});
+					});
+		}
+		else {
+			Arrays.stream(getSimulationParcels(new SpatialIndexFeatureCollection(sds.getFeatureSource().getFeatures())).toArray(new SimpleFeature[0]))
+					.forEach(parcel -> {
+						if (parcel.getAttribute(MarkParcelAttributeFromPosition.getMarkFieldName()).equals(1))
+							lG.add((Geometry) parcel.getDefaultGeometry());
+					});
+		}
 		sds.dispose();
 		return lG;
+	}
+	
+	/**
+	 * Get the zones to simulate for the <i>Zone Division</i> goal. If a specific zone Shapefile is set at the {@link #ZONE} location, it will automatically get and return it. 
+	 * @param parcel
+	 * @return
+	 * @throws NoSuchAuthorityCodeException
+	 * @throws IOException
+	 * @throws FactoryException
+	 */
+	private SimpleFeatureCollection getZone(SimpleFeatureCollection parcel) throws NoSuchAuthorityCodeException, IOException, FactoryException {
+		SimpleFeatureCollection zoneIn;
+		// If a specific zone is an input, we take them directly. We also have to set attributes from pre-existing parcel field.
+		if (ZONE != null && ZONE.exists()) {
+			ShapefileDataStore shpDSZone = new ShapefileDataStore(ZONE.toURI().toURL());
+			zoneIn = GeneralFields.transformSFCToMinParcel(shpDSZone.getFeatureSource().getFeatures(), parcel);
+			shpDSZone.dispose();
+		}
+		// If no zone have been set, it means we have to use the zoning plan.
+		else {
+			ShapefileDataStore shpDSZoning= new ShapefileDataStore(ZONINGFILE.toURI().toURL());
+			SimpleFeatureCollection zoning = new SpatialIndexFeatureCollection(DataUtilities.collection((shpDSZoning.getFeatureSource().getFeatures())));
+			shpDSZoning.dispose();
+			zoneIn = ZoneDivision.createZoneToCut(genericZone, preciseZone, zoning, ZONINGFILE, parcel);
+		}
+		return zoneIn;
 	}
 
 	public static void setParcel(File parcelFile) {

@@ -47,43 +47,42 @@ public class FlagParcelDecomposition {
   // We remove some parts that may have a too small area < 25
   public static double TOO_SMALL_PARCEL_AREA = 25;
   
-	// public static void main(String[] args) throws Exception {
-	// /////////////////////////
-	// //////// try the generateFlagSplitedParcels method
-	// /////////////////////////
-	// File rootFolder = new File("src/main/resources/GeneralTest/");
-	//
-	// // Input 1/ the input parcelles to split
-	// File inputShapeFile = new File("/tmp/marked.shp");
-	// // Input 2 : the buildings that mustnt intersects the allowed roads (facultatif)
-	// File inputBuildingFile = new File(rootFolder, "building.shp");
-	// // Input 3 (facultative) : the exterior of the urban block (it serves to determiner the multicurve)
-	// File inputUrbanBlock = new File(rootFolder, "islet.shp");
-	// // Input 4 (facultative) : a road shapefile (it can be used to check road access if this is better than characerizing road as an absence of parcel)
-	// File inputRoad = new File(rootFolder, "road.shp");
-	//
-	// File tmpFolder = new File("/tmp/");
-	//
-	// FilterFactory2 ff = CommonFactoryFinder.getFilterFactory2();
-	// ShapefileDataStore sdsIlot = new ShapefileDataStore(inputUrbanBlock.toURI().toURL());
-	// SimpleFeatureCollection collec = sdsIlot.getFeatureSource().getFeatures();
-	// ShapefileDataStore sds = new ShapefileDataStore(inputShapeFile.toURI().toURL());
-	// try (SimpleFeatureIterator it = sds.getFeatureSource().getFeatures().features()){
-	// while (it.hasNext()) {
-	// SimpleFeature feat = it.next();
-	// List<LineString> lines = Collec.fromSFCtoListRingLines(
-	// collec.subCollection(ff.bbox(ff.property(feat.getFeatureType().getGeometryDescriptor().getLocalName()), feat.getBounds())));
-	// if (feat.getAttribute(MarkParcelAttributeFromPosition.getMarkFieldName()) != null
-	// && (int) feat.getAttribute(MarkParcelAttributeFromPosition.getMarkFieldName()) == 1) {
-	// generateFlagSplitedParcels(feat, lines, tmpFolder, inputBuildingFile, inputRoad, 400.0, 15.0, 3.0, false, null);
-	// }
-	// }
-	// } catch (Exception problem) {
-	// problem.printStackTrace();
-	// }
-	// sds.dispose();
-	// sdsIlot.dispose();
-	// }
+//	 public static void main(String[] args) throws Exception {
+//	 /////////////////////////
+//	 //////// try the generateFlagSplitedParcels method
+//		/////////////////////////
+//		long start = System.currentTimeMillis();
+//		File rootFolder = new File("src/main/resources/GeneralTest/");
+//
+//		// Input 1/ the input parcels to split
+//		File inputShapeFile = new File(rootFolder, "parcel.shp");
+//		// Input 2 : the buildings that mustnt intersects the allowed roads (facultatif)
+//		File inputBuildingFile = new File(rootFolder, "building.shp");
+//		// Input 4 (facultative) : a road shapefile (it can be used to check road access
+//		// if this is better than characerizing road as an absence of parcel)
+//		File inputRoad = new File(rootFolder, "road.shp");
+//		File zoningFile = new File(rootFolder, "zoning.shp");
+//
+//		File tmpFolder = new File("/tmp/");
+//		FilterFactory2 ff = CommonFactoryFinder.getFilterFactory2();
+//		ShapefileDataStore sds = new ShapefileDataStore(inputShapeFile.toURI().toURL());
+//		SimpleFeatureCollection parcels = MarkParcelAttributeFromPosition.markParcelIntersectGenericZoningType(sds.getFeatureSource().getFeatures(),"U",zoningFile);
+//		SimpleFeatureCollection islet = CityGeneration.createUrbanIslet(parcels);
+//		try (SimpleFeatureIterator it = parcels.features()) {
+//			while (it.hasNext()) {
+//				SimpleFeature feat = it.next();
+//				if (feat.getAttribute(MarkParcelAttributeFromPosition.getMarkFieldName()) != null
+//						&& (int) feat.getAttribute(MarkParcelAttributeFromPosition.getMarkFieldName()) == 1) {
+//					generateFlagSplitedParcels(feat, Collec.fromPolygonSFCtoListRingLines(islet.subCollection(ff.bbox(
+//							ff.property(feat.getFeatureType().getGeometryDescriptor().getLocalName()), feat.getBounds()))), 0, tmpFolder, inputBuildingFile, inputRoad, 400.0, 15.0, 3.0, false, null);
+//				}
+//			}
+//		} catch (Exception problem) {
+//			problem.printStackTrace();
+//		}
+//		sds.dispose();
+//		System.out.println("time : " + (System.currentTimeMillis() - start));
+//	}
 
 	public static SimpleFeatureCollection generateFlagSplitedParcels(SimpleFeature feat, List<LineString> extLines, double noise, File tmpFolder, File buildingFile,
 			Double maximalAreaSplitParcel, Double maximalWidthSplitParcel, Double lenDriveway, boolean allowIsolatedParcel) throws Exception {

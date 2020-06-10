@@ -63,6 +63,7 @@ Though, make sure that the ***preciseZone*** step is declared before the ***prec
 
 It is possible to hack this method by using another kind of shapefile and put in on the ***zoningFile***, change the default value of the ***genericZone*** field name with the *fields.GeneralFields.setZoneGenericNameField(String)* method and set a ***genericZone*** value. 
 
+Once a parcel has been simulated, it attribute filed *SECTION* (see attribute policy) is marked with a long value, depending on the ***goal*** used. We check that field to know if a parcel has been simulated. By default, parcels cannot be marked again if they have been already simulated. It is possible to change that behaviour, for post treatments means by exemple, in setting the static boolean ***MarkParcelAttributeFromPosition.postMark*** to **true**.
 
 <h3>Parcel Manager algorithms</h3>
 Different algorithm are available in Parcel Manager.
@@ -77,8 +78,8 @@ Diferrent process can be used to divise parcels.
 The parameter ***parcelProcess*** can be set with one of those three values: 
 
 * ***OBB***: use the oriented bounding box method
-* ***SS***: use the straight skeleton method
-* ***MS***: use the median line skeleton method
+* ***SS***: use the straight skeleton method (not implemented yet)
+* ***MS***: use the median line skeleton method (not implemented yet)
 
 <h3>Urban Fabric profiles</h3>
 

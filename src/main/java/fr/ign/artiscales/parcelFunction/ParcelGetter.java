@@ -7,6 +7,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.geotools.data.DataUtilities;
+import org.geotools.data.collection.SpatialIndexFeatureCollection;
 import org.geotools.data.shapefile.ShapefileDataStore;
 import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.data.simple.SimpleFeatureIterator;
@@ -44,7 +45,7 @@ public class ParcelGetter {
 //	}
 	
 	/**
-	 * get a set of parcel depending to their zoning type. 
+	 * Get a set of parcel depending to their zoning type. 
 	 * @param zone
 	 * @param parcelles
 	 * @param zoningFile Shapefile containing the french zoning
@@ -54,12 +55,10 @@ public class ParcelGetter {
 	public static SimpleFeatureCollection getParcelByFrenchZoningType(String zone, SimpleFeatureCollection parcelles, File zoningFile)
 			throws IOException {
 		ShapefileDataStore zonesSDS = new ShapefileDataStore(zoningFile.toURI().toURL());
-		SimpleFeatureCollection zonesSFCBig = zonesSDS.getFeatureSource().getFeatures();
-		SimpleFeatureCollection zonesSFC = Collec.snapDatas(zonesSFCBig, parcelles);
+		SimpleFeatureCollection zonesSFC = Collec.snapDatas(zonesSDS.getFeatureSource().getFeatures(), parcelles);
 		List<String> listZones = FrenchZoningSchemas.getUsualNames(zone);
-
 		DefaultFeatureCollection zoneSelected = new DefaultFeatureCollection();
-		try(SimpleFeatureIterator itZonez = zonesSFC.features()) {
+		try (SimpleFeatureIterator itZonez = zonesSFC.features()) {
 			while (itZonez.hasNext()) {
 				SimpleFeature zones = itZonez.next();
 				if (listZones.contains(zones.getAttribute(GeneralFields.getZoneGenericNameField()))) {
@@ -73,19 +72,17 @@ public class ParcelGetter {
 		try (SimpleFeatureIterator it = parcelles.features()) {
 			while (it.hasNext()) {
 				SimpleFeature parcelFeat = it.next();
+				Geometry parcelGeom = (Geometry) parcelFeat.getDefaultGeometry();
 				try (SimpleFeatureIterator itZone = zoneSelected.features()) {
 					while (itZone.hasNext()) {
 						SimpleFeature zoneFeat = itZone.next();
 						Geometry zoneGeom = (Geometry) zoneFeat.getDefaultGeometry();
-						Geometry parcelGeom = (Geometry) parcelFeat.getDefaultGeometry();
-						if (zoneGeom.contains(parcelGeom)) {
+						if (zoneGeom.contains(parcelGeom))
 							result.add(parcelFeat);
-						}
 						// if the intersection is less than 50% of the parcel, we let it to the other
 						// (with the hypothesis that there is only 2 features)
-						else if (Geom.scaledGeometryReductionIntersection(Arrays.asList(parcelGeom, zoneGeom)).getArea() > parcelGeom.getArea() / 2) {
+						else if (Geom.scaledGeometryReductionIntersection(Arrays.asList(parcelGeom, zoneGeom)).getArea() > parcelGeom.getArea() / 2) 
 							result.add(parcelFeat);
-						}
 					}
 				} catch (Exception problem) {
 					problem.printStackTrace();
@@ -110,43 +107,29 @@ public class ParcelGetter {
 	 * @return parcels which are included in the communities of a given typology
 	 * @throws IOException
 	 */
-	public static SimpleFeatureCollection getParcelByTypo(String typo, SimpleFeatureCollection parcels, File zoningFile)
-			throws IOException {
-
+	public static SimpleFeatureCollection getParcelByTypo(String typo, SimpleFeatureCollection parcels, File zoningFile) throws IOException {
 		ShapefileDataStore zoningSDS = new ShapefileDataStore(zoningFile.toURI().toURL());
-		SimpleFeatureCollection zoningSFC = Collec.snapDatas(zoningSDS.getFeatureSource().getFeatures(), parcels);
-
+		SimpleFeatureCollection zoningSFC = Collec.snapDatas(new SpatialIndexFeatureCollection(zoningSDS.getFeatureSource().getFeatures()), parcels);
 		FilterFactory2 ff = CommonFactoryFinder.getFilterFactory2(GeoTools.getDefaultHints());
+		Filter filter = ff.like(ff.property(typologyField), typo);
 		DefaultFeatureCollection result = new DefaultFeatureCollection();
 		try (SimpleFeatureIterator itParcel = parcels.features()) {
 			while (itParcel.hasNext()) {
 				SimpleFeature parcelFeat = itParcel.next();
 				Geometry parcelGeom = (Geometry) parcelFeat.getDefaultGeometry();
 				// if tiny parcel, we don't care
-				if (parcelGeom.getArea() < 5.0) {
+				Filter filterGeom = ff.bbox(ff.property(parcelFeat.getFeatureType().getGeometryDescriptor().getLocalName()), parcelFeat.getBounds());
+				if (parcelGeom.getArea() < 5.0) 
 					continue;
-				}
-				Filter filter = ff.like(ff.property(typologyField), typo);
-				try (SimpleFeatureIterator itTypo = zoningSFC.subCollection(filter).features()){
+				try (SimpleFeatureIterator itTypo = zoningSFC.subCollection(filter).subCollection(filterGeom).features()){
 					while (itTypo.hasNext()) {
-						SimpleFeature typoFeat = itTypo.next();
-						Geometry typoGeom = (Geometry) typoFeat.getDefaultGeometry();
-						if (typoGeom.intersects(parcelGeom)) {
-							if (typoGeom.contains(parcelGeom)) {
-								result.add(parcelFeat);
-								break;
-							}
-							// if the intersection is less than 50% of the parcel, we let it to the other
-							// (with the hypothesis that there is only 2 features)
-							// else if (parcelGeom.intersection(typoGeom).getArea() > parcelGeom.getArea() /
-							// 2) {
-							else if (Geom.scaledGeometryReductionIntersection(Arrays.asList(typoGeom, parcelGeom))
-									.getArea() > (parcelGeom.getArea() / 2)) {
-								result.add(parcelFeat);
-								break;
-							} else {
-								break;
-							}
+						Geometry typoGeom = (Geometry) itTypo.next().getDefaultGeometry();
+						// if there's an containing or the intersection is less than 50% of the parcel, we let it to the other
+						// (with the hypothesis that there is only 2 features)
+						if (typoGeom.contains(parcelGeom) || Geom.scaledGeometryReductionIntersection(Arrays.asList(typoGeom, parcelGeom))
+								.getArea() > (parcelGeom.getArea() / 2)) {
+							result.add(parcelFeat);
+							break;
 						}
 					}
 				} catch (Exception problem) {
@@ -162,8 +145,7 @@ public class ParcelGetter {
 
 	public static File getFrenchParcelByZip(File parcelIn, List<String> vals, File fileOut) throws IOException {
 		ShapefileDataStore sds = new ShapefileDataStore(parcelIn.toURI().toURL());
-		SimpleFeatureCollection sfc = sds.getFeatureSource().getFeatures();
-		SimpleFeatureCollection result = getFrenchParcelByZip(sfc, vals);
+		SimpleFeatureCollection result = getFrenchParcelByZip(sds.getFeatureSource().getFeatures(), vals);
 		sds.dispose();
 		return Collec.exportSFC(result, fileOut);
 	}

@@ -37,18 +37,20 @@ import fr.ign.cogit.geometryGeneration.CityGeneration;
  *
  */
 public class StatParcelStreetRatio {
+	
+	private static boolean overwrite = true;
 
-	public static void main(String[] args) throws Exception {
-		long start = System.currentTimeMillis();
-		ShapefileDataStore sds = new ShapefileDataStore(new File("/home/ubuntu/workspace/ParcelManager/src/main/resources/testData/out/zone.shp").toURI().toURL());
-		SimpleFeatureCollection sfc = sds.getFeatureSource().getFeatures();
-		ShapefileDataStore sds2 = new ShapefileDataStore(new File("//home/ubuntu/workspace/ParcelManager/src/main/resources/testData/out/parcelTotZone.shp").toURI().toURL());
-		SimpleFeatureCollection sfc2 = sds2.getFeatureSource().getFeatures();
-		streetRatioParcels(sfc, sfc2, new File("/tmp/"), new File("/home/ubuntu/workspace/ParcelManager/src/main/resources/testData/road.shp"));
-		sds.dispose();
-		sds2.dispose();
-		System.out.println(System.currentTimeMillis()-start);
-	}
+//	public static void main(String[] args) throws Exception {
+//		long start = System.currentTimeMillis();
+//		ShapefileDataStore sds = new ShapefileDataStore(new File("/home/ubuntu/workspace/ParcelManager/src/main/resources/testData/out/zone.shp").toURI().toURL());
+//		SimpleFeatureCollection sfc = sds.getFeatureSource().getFeatures();
+//		ShapefileDataStore sds2 = new ShapefileDataStore(new File("//home/ubuntu/workspace/ParcelManager/src/main/resources/testData/out/parcelTotZone.shp").toURI().toURL());
+//		SimpleFeatureCollection sfc2 = sds2.getFeatureSource().getFeatures();
+//		streetRatioParcels(sfc, sfc2, new File("/tmp/"), new File("/home/ubuntu/workspace/ParcelManager/src/main/resources/testData/road.shp"));
+//		sds.dispose();
+//		sds2.dispose();
+//		System.out.println(System.currentTimeMillis()-start);
+//	}
 
 	/**
 	 * Calculate the ratio between the parcel area and the total area of a zone. It express the quantity of not parcel land, which could be either streets or public spaces
@@ -153,7 +155,8 @@ public class StatParcelStreetRatio {
 			problem.printStackTrace();
 		} 
 		sdsRoad.dispose();
-		Csv.generateCsvFile(stat, folderOutStat, "streetRatioParcelZone", true, firstLine);
+		Csv.generateCsvFile(stat, folderOutStat, "streetRatioParcelZone", !overwrite, firstLine);
+		overwrite = false;
 		return ratio;
 	}
 	private static double areaParcelNewlySimulated(SimpleFeatureCollection markedParcels) {

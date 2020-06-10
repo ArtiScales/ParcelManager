@@ -13,6 +13,7 @@ import org.geotools.data.simple.SimpleFeatureIterator;
 import org.locationtech.jts.geom.Geometry;
 import org.opengis.feature.simple.SimpleFeature;
 
+import fr.ign.artiscales.fields.GeneralFields;
 import fr.ign.artiscales.fields.french.FrenchParcelFields;
 import fr.ign.cogit.geoToolsFunctions.vectors.Collec;
 
@@ -43,7 +44,16 @@ public class ParcelAttribute {
 	 * @return the most represented city code from the SimpleFeatureCollection 
 	 */
 	public static String getCommunityCodeFromSFC(SimpleFeatureCollection sFCWithCommunityCode, SimpleFeature feat) {
-		return Collec.getFieldFromSFC((Geometry) feat.getDefaultGeometry(), sFCWithCommunityCode, ParcelSchema.getMinParcelCommunityField());
+		if (!Collec.isCollecContainsAttribute(sFCWithCommunityCode, ParcelSchema.getMinParcelCommunityField())) {
+			switch (GeneralFields.getParcelFieldType()) {
+			case ("french"):
+				return FrenchParcelFields.makeINSEECode(Collec.getSimpleFeatureFromSFC((Geometry) feat.getDefaultGeometry(), sFCWithCommunityCode));
+			default:
+				return "";
+			}
+		} else {
+			return Collec.getFieldFromSFC((Geometry) feat.getDefaultGeometry(), sFCWithCommunityCode, ParcelSchema.getMinParcelCommunityField());
+		}
 	}
 	
 	/**

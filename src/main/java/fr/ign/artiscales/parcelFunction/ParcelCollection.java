@@ -16,12 +16,14 @@ import java.util.stream.Collectors;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
+import org.geotools.data.collection.SpatialIndexFeatureCollection;
 import org.geotools.data.shapefile.ShapefileDataStore;
 import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.data.simple.SimpleFeatureIterator;
 import org.geotools.factory.CommonFactoryFinder;
 import org.geotools.feature.DefaultFeatureCollection;
 import org.geotools.feature.simple.SimpleFeatureBuilder;
+import org.locationtech.jts.algorithm.match.HausdorffSimilarityMeasure;
 import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.geom.Polygon;
 import org.locationtech.jts.geom.TopologyException;
@@ -42,10 +44,10 @@ import fr.ign.cogit.geoToolsFunctions.vectors.Geom;
 
 public class ParcelCollection {
 
-//	public static void main(String[] args) throws Exception {
-//		File rootFile = new File("src/main/resources/ParcelComparison/");
-//		markDiffParcel(new File(rootFile,"parcel2003.shp"), new File(rootFile,"parcel2018.shp"), new File("/tmp/"));
-//	}
+	public static void main(String[] args) throws Exception {
+		File rootFile = new File("src/main/resources/ParcelComparison/");
+		sortDifferentParcel(new File(rootFile,"parcel2003.shp"), new File(rootFile,"parcel2018.shp"), new File("/tmp/"));
+	}
 	
 	/**
 	 * method that compares two set of parcels and sort the reference plan parcels between the ones that changed and the ones that doesn't We compare the parcels area of the
@@ -55,9 +57,9 @@ public class ParcelCollection {
 	 * <ul>
 	 * <li><b>same.shp</b> contains the reference parcels that have not evolved</li>
 	 * <li><b>notSame.shp</b> contains the reference parcels that have changed</li>
-	 * <li><b>polygonIntersection.shp</b> contains the <i>notSame.shp</i> parcels with a reduction buffer, used for a precise intersection with other parcel in Parcel Manager
+	 * <li><b>place.shp</b> contains the <i>notSame.shp</i> parcels with a reduction buffer, used for a precise intersection with other parcel in Parcel Manager
 	 * scenarios. The large parcels that are selected for a zone simulation (see below) aren't present.</li>
-	 * <li><b>zones.shp</b> contains special zones to be simulated</li>
+	 * <li><b>zone.shp</b> contains special zones to be simulated</li>
 	 * <li><b>evolvedParcel.shp</b> contains only the compared parcels that have evolved</li>
 	 * </ul>
 	 * 
@@ -79,20 +81,20 @@ public class ParcelCollection {
 		File fSame = new File(parcelOutFolder, "same.shp");
 		File fEvolved = new File(parcelOutFolder, "evolvedParcel.shp");
 		File fNotSame = new File(parcelOutFolder, "notSame.shp");
-		File fInter = new File(parcelOutFolder, "polygonIntersection.shp");
+		File fInter = new File(parcelOutFolder, "place.shp");
 		File fZone = new File(parcelOutFolder, "zone.shp");
-		if (fSame.exists() && fEvolved.exists() && fInter.exists() && fNotSame.exists() && fInter.exists() && fZone.exists()) {
+		if (fSame.exists() && fEvolved.exists() && fNotSame.exists() && fInter.exists() && fZone.exists()) {
 			System.out.println("markDiffParcel(...) already calculated");
 			return ;
 		}
 		
 		ShapefileDataStore sds = new ShapefileDataStore(parcelToCompareFile.toURI().toURL());
-		SimpleFeatureCollection parcelToSort = sds.getFeatureSource().getFeatures();
+		SimpleFeatureCollection parcelToSort = new SpatialIndexFeatureCollection(sds.getFeatureSource().getFeatures());
 		ShapefileDataStore sdsRef = new ShapefileDataStore(parcelRefFile.toURI().toURL());
 		SimpleFeatureCollection parcelRef = sdsRef.getFeatureSource().getFeatures();
 		FilterFactory2 ff = CommonFactoryFinder.getFilterFactory2();
 		PropertyName pName = ff.property(parcelRef.getSchema().getGeometryDescriptor().getLocalName());
-
+		SimpleFeatureBuilder intersecPolygon = Schemas.getBasicSchemaMultiPolygon("intersectionPolygon");
 		DefaultFeatureCollection same = new DefaultFeatureCollection();
 		DefaultFeatureCollection notSame = new DefaultFeatureCollection();
 		DefaultFeatureCollection polygonIntersection = new DefaultFeatureCollection();
@@ -101,14 +103,14 @@ public class ParcelCollection {
 			refParcel: while (itRef.hasNext()) {
 				SimpleFeature pRef = itRef.next();
 				Geometry geomPRef = (Geometry) pRef.getDefaultGeometry();
-				double geomArea = geomPRef.getArea();
+				HausdorffSimilarityMeasure hausDis = new HausdorffSimilarityMeasure();
 				//for every intersected parcels, we check if it is close to (as tiny geometry changes)
 				SimpleFeatureCollection parcelsIntersectRef = parcelToSort.subCollection(ff.intersects(pName, ff.literal(geomPRef)));
 				try (SimpleFeatureIterator itParcelIntersectRef = parcelsIntersectRef.features()) {
 					while (itParcelIntersectRef.hasNext()) {
-						double inter = Geom.scaledGeometryReductionIntersection(Arrays.asList(geomPRef,(Geometry) itParcelIntersectRef.next().getDefaultGeometry())).getArea();
+						Geometry comparedGeom = (Geometry) itParcelIntersectRef.next().getDefaultGeometry();
 						// if there are parcel intersection and a similar area, we conclude that parcel haven't changed. We put it in the \"same\" collection and stop the search
-						if (inter > 0.95 * geomArea && inter < 1.05 * geomArea) {
+						if (hausDis.measure(geomPRef, comparedGeom) > 0.9 && (geomPRef.getArea() > 0.95 * comparedGeom.getArea() && geomPRef.getArea() < 1.05*comparedGeom.getArea())) {
 							same.add(pRef);
 							continue refParcel;
 						}
@@ -116,18 +118,27 @@ public class ParcelCollection {
 				} catch (Exception problem) {
 					problem.printStackTrace();
 				} 
-				//we check if the parcel has been intentionally deleted by generating new polygons (same technique of area comparison, but with a way smaller error bound)
+				// we check if the parcel has been intentionally deleted by generating new polygons (same technique of area comparison, but with a way smaller error bound)
 				// if it has been cleaned, we don't add it to no additional parcels
 				List<Geometry> geomList = Arrays.stream(parcelsIntersectRef.toArray(new SimpleFeature[0])).map(x -> (Geometry) x.getDefaultGeometry())
 						.collect(Collectors.toList());
 				geomList.add(geomPRef);
-				List<Polygon> polygons = FeaturePolygonizer.getPolygons(geomList);
-				for (Polygon polygon : polygons)
-					if ((polygon.getArea() > geomArea * 0.9 && polygon.getArea() < geomArea * 1.1) && polygon.buffer(0.5).contains(geomPRef))
-						continue refParcel;
+				// We generate a list of polygons including the filled void. If a similarity is now found and wasn't during the last step, it means the parcel in question has intentionally been deleted
+				List<Polygon> listPoly = FeaturePolygonizer.getPolygons(geomList);
+				// if no nex parcel has been created, we don't do this test
+				if (listPoly.size() != geomList.size()) {
+					for (Polygon polygon : listPoly) {
+//						if (polygon.contains(geomPRef)) {
+//							 	
+//						}
+						// if a new parcel is now found corresponding to the criterion of similarity,
+						// that parcel was intentionaly deleted
+						if (hausDis.measure(geomPRef, polygon) > 0.9 && (geomPRef.getArea() > 0.97 * polygon.getArea() && geomPRef.getArea() < 1.03*polygon.getArea())) {
+							continue refParcel;
+						}
+					}}
 				notSame.add(pRef);
-				SimpleFeatureBuilder intersecPolygon = Schemas.getBasicSchemaMultiPolygon("intersectionPolygon");
-				intersecPolygon.set("the_geom", ((Geometry) pRef.getDefaultGeometry()).buffer(-2));
+				intersecPolygon.set(intersecPolygon.getFeatureType().getGeometryDescriptor().getName(),	((Geometry) pRef.getDefaultGeometry()).buffer(-2));
 				polygonIntersection.add(intersecPolygon.buildFeature(Attribute.makeUniqueId()));
 			}
 		} catch (Exception problem) {
@@ -138,7 +149,6 @@ public class ParcelCollection {
 		
 		// export the compared parcels that have changed
 		SimpleFeatureCollection evolvedParcel = parcelToSort.subCollection(ff.intersects(pName, ff.literal(Geom.unionSFC(polygonIntersection))));
-		Collec.exportSFC(evolvedParcel, fEvolved);
 
 		// We now seek if a large part of the evolved parcel stays intact and small parts, which represents parcels created for residential development purposes, are generated.
 		List<Geometry> firstZones = Geom.unionTouchingGeometries(
@@ -173,9 +183,17 @@ public class ParcelCollection {
 					intersectionGeoms.add((Geometry) sf.getDefaultGeometry());
 				});
 		}
-		List<Geometry> intersection = Geom.unionTouchingGeometries(intersectionGeoms).stream().map(g -> g.buffer(-2)).collect(Collectors.toList());
 		Geom.exportGeom(zones, fZone);
-		Geom.exportGeom(intersection, fInter);
+		List<Geometry> listGeom = Geom.unionTouchingGeometries(
+				intersectionGeoms.stream().filter(g -> g.getArea() < maxParcelSimulatedSize * 20)
+						.collect(Collectors.toList()).stream().map(g -> g.buffer(-1)).collect(Collectors.toList()));
+		Geom.exportGeom(listGeom, fInter);
+		listGeom.addAll(zones);
+		DefaultFeatureCollection finalEvolvedParcels = new DefaultFeatureCollection();
+		listGeom.stream().forEach(g -> {
+			finalEvolvedParcels.addAll(Collec.snapDatas(evolvedParcel, g.buffer(-1)));
+		});
+		Collec.exportSFC(finalEvolvedParcels, fEvolved);
 		sds.dispose();
 		sdsRef.dispose();
 	}
@@ -255,7 +273,6 @@ public class ParcelCollection {
 						}
 					});
 					String idToMerge = entryList.get(0).getKey();
-					// System.out.println("idToMerge: " + idToMerge + " " + ParcelAttribute.sysoutFrenchParcel(feat));
 					// if the big parcel has already been merged with a small parcel, we skip it and will return to that small parcel in a future iteration
 					if (ids.contains(idToMerge)) {
 						result.add(Schemas.setSFBSchemaWithMultiPolygon(feat).buildFeature(Attribute.makeUniqueId()));
@@ -268,7 +285,6 @@ public class ParcelCollection {
 					SimpleFeatureBuilder build = Schemas.getSFBSchemaWithMultiPolygon(parcelsUnsorted.getSchema());
 					Arrays.stream(intersect.toArray(new SimpleFeature[0])).forEach(thaParcel -> {
 						if (thaParcel.getID().equals(idToMerge)) {
-//							build.addAll(thaParcel.getAttributes());
 							for (AttributeDescriptor attr : thaParcel.getFeatureType().getAttributeDescriptors()) {
 								if (attr.getLocalName().equals("the_geom"))
 									continue;

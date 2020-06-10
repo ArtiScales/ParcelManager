@@ -75,7 +75,7 @@ public class MarkParcelAttributeFromPosition {
 	static String markFieldName = "SPLIT";
 	
 	/**
-	 * specify that the marking is made before (false) or after (true) the simulation process. It won't allow or will the marking of the already simulated parcels
+	 * Specify that the marking is made before (false) or after (true) the simulation process. It won't allow or will the marking of the already simulated parcels
 	 */
 	private static boolean postMark = false;
 
@@ -145,7 +145,7 @@ public class MarkParcelAttributeFromPosition {
 			while (it.hasNext()) {
 				SimpleFeature feat = it.next();
 				Geometry geomFeat = (Geometry) feat.getDefaultGeometry();
-				featureBuilder = ParcelSchema.setSFBMinParcelSplitWithFeat(feat,featureBuilder, featureSchema, 0);
+				featureBuilder = ParcelSchema.setSFBMinParcelSplitWithFeat(feat, featureBuilder, featureSchema, 0);
 				if (isAlreadyMarked(feat) != 0 && ParcelState.isParcelHasRoadAccess((Polygon) Geom.getPolygon(geomFeat),
 						Collec.snapDatas(roads, geomFeat), Collec.fromPolygonSFCtoRingMultiLines(Collec.snapDatas(islet, geomFeat)), exclusionZone))
 					featureBuilder.set(markFieldName, 1);
@@ -259,9 +259,9 @@ public class MarkParcelAttributeFromPosition {
 	 *            input SimpleFeature
 	 * @return
 	 *         <ul>
-	 *         <li>If no <i>mark</i> field or the field is unset, return <b>-1</b>
-	 *         <li>If <i>mark</i> field is set to 0, return <b>0</b>
-	 *         <li>If <i>mark</i> field is set to 1, return <b>1</b>
+	 *         <li>If no <i>mark</i> field or the field is unset, return <b>-1</b></li>
+	 *         <li>If <i>mark</i> field is set to 0, return <b>0</b></li>
+	 *         <li>If <i>mark</i> field is set to 1, return <b>1</b></li>
 	 *         </ul>
 	 */
 	public static int isAlreadyMarked(SimpleFeature feat) {
@@ -458,8 +458,7 @@ public class MarkParcelAttributeFromPosition {
 			Arrays.stream(parcels.toArray(new SimpleFeature[0])).forEach(feat -> {
 				try {
 					if (isAlreadyMarked(feat) != 0 && !Geom.unionPrecisionReduce(
-									geoms.stream().filter(g -> g.intersects((Geometry) feat.getDefaultGeometry())).collect(Collectors.toList()), 100)
-							.isEmpty())
+									geoms.stream().filter(g -> g.intersects((Geometry) feat.getDefaultGeometry())).collect(Collectors.toList()), 100).isEmpty())
 						feat.setAttribute(markFieldName, 1);
 					else
 						feat.setAttribute(markFieldName, 0);
@@ -468,6 +467,7 @@ public class MarkParcelAttributeFromPosition {
 				}
 				result.add(feat);
 			});
+			signalIfNoParcelMarked(result, "markParcelIntersectPolygonIntersection");
 			return result;
 		}
 		SimpleFeatureBuilder featureBuilder = ParcelSchema.getSFBMinParcelSplit();
@@ -476,8 +476,7 @@ public class MarkParcelAttributeFromPosition {
 				SimpleFeature feat = it.next();
 				featureBuilder = ParcelSchema.setSFBMinParcelSplitWithFeat(feat, featureBuilder, featureSchema, 0);
 				if (isAlreadyMarked(feat) != 0 && !Geom.unionPrecisionReduce(
-								geoms.stream().filter(g -> g.intersects((Geometry) feat.getDefaultGeometry())).collect(Collectors.toList()), 100)
-						.isEmpty())
+								geoms.stream().filter(g -> g.intersects((Geometry) feat.getDefaultGeometry())).collect(Collectors.toList()), 100).isEmpty())
 					featureBuilder.set(markFieldName, 1);
 				result.add(featureBuilder.buildFeature(Attribute.makeUniqueId()));
 			}
@@ -874,7 +873,7 @@ public class MarkParcelAttributeFromPosition {
 			Arrays.stream(parcels.toArray(new SimpleFeature[0])).forEach(feat -> {
 				if (isAlreadyMarked(feat) != 0 && GeneralFields.isParcelHasSimulatedFields(feat))
 					feat.setAttribute(markFieldName, 1);
-				 else 
+				else
 					feat.setAttribute(markFieldName, 0);
 				result.add(feat);
 			});
@@ -883,7 +882,7 @@ public class MarkParcelAttributeFromPosition {
 		try (SimpleFeatureIterator it = parcels.features()) {
 			while (it.hasNext()) {
 				SimpleFeature feat = it.next();
-				featureBuilder = ParcelSchema.setSFBMinParcelSplitWithFeat(feat,featureBuilder, featureSchema, 0);
+				featureBuilder = ParcelSchema.setSFBMinParcelSplitWithFeat(feat, featureBuilder, featureSchema, 0);
 				if (isAlreadyMarked(feat) != 0 && GeneralFields.isParcelHasSimulatedFields(feat))
 					featureBuilder.set(markFieldName, 1);
 				result.add(featureBuilder.buildFeature(Attribute.makeUniqueId()));
