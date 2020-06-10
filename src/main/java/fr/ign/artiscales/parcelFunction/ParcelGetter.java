@@ -14,6 +14,8 @@ import org.geotools.factory.CommonFactoryFinder;
 import org.geotools.feature.DefaultFeatureCollection;
 import org.geotools.feature.simple.SimpleFeatureBuilder;
 import org.geotools.util.factory.GeoTools;
+import org.locationtech.jts.geom.Coordinate;
+import org.locationtech.jts.geom.CoordinateXY;
 import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.geom.Polygon;
 import org.locationtech.jts.geom.PrecisionModel;
@@ -220,6 +222,11 @@ public class ParcelGetter {
 			while (it.hasNext()) {
 				SimpleFeature feat = it.next();
 				if (((String) feat.getAttribute(firstFieldName)).concat(((String) feat.getAttribute(secondFieldName))).equals(val)) {
+				  Geometry original = (Geometry) feat.getDefaultGeometry();
+          Geometry g = original.getFactory().createGeometry(original);
+          g.apply((Coordinate c) -> coord2D(c));
+          g.geometryChanged();
+          feat.setDefaultGeometry(g);
 					result.add(feat);
 				}
 			}
@@ -228,7 +235,10 @@ public class ParcelGetter {
 		} 
 		return result.collection();
 	}
-	
+  private static void coord2D(Coordinate c) {
+    if (!CoordinateXY.class.isInstance(c))
+      c.setZ(Double.NaN);
+  }	
 	/**
 	 * Get parcels out of a parcel collection with the zip code of them parcels.
 	 * 
