@@ -16,7 +16,6 @@ import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.referencing.FactoryException;
 import org.opengis.referencing.NoSuchAuthorityCodeException;
 
-import fr.ign.artiscales.analysis.DensificationStudy;
 import fr.ign.artiscales.fields.GeneralFields;
 import fr.ign.artiscales.fields.french.FrenchParcelFields;
 import fr.ign.artiscales.fields.french.FrenchZoningSchemas;
@@ -28,6 +27,7 @@ import fr.ign.artiscales.parcelFunction.ParcelAttribute;
 import fr.ign.artiscales.parcelFunction.ParcelGetter;
 import fr.ign.artiscales.parcelFunction.ParcelSchema;
 import fr.ign.artiscales.parcelFunction.ParcelState;
+import fr.ign.artiscales.workflow.DensificationStudy;
 import fr.ign.cogit.geoToolsFunctions.vectors.Collec;
 import fr.ign.cogit.geoToolsFunctions.vectors.Geom;
 import fr.ign.cogit.geometryGeneration.CityGeneration;
@@ -351,10 +351,9 @@ public class PMStep {
 		List<Geometry> lG = new ArrayList<Geometry>();
 		if (goal.equals("zoneDivision")) {
 			Arrays.stream(getZone(sds.getFeatureSource().getFeatures()).toArray(new SimpleFeature[0])).forEach(parcel -> {
-						lG.add((Geometry) parcel.getDefaultGeometry());
-					});
-		}
-		else {
+				lG.add((Geometry) parcel.getDefaultGeometry());
+			});
+		} else {
 			Arrays.stream(getSimulationParcels(new SpatialIndexFeatureCollection(sds.getFeatureSource().getFeatures())).toArray(new SimpleFeature[0]))
 					.forEach(parcel -> {
 						if (parcel.getAttribute(MarkParcelAttributeFromPosition.getMarkFieldName()).equals(1))
@@ -396,7 +395,7 @@ public class PMStep {
 	}
 
 	public String getZoneStudied() {
-		return goal + "With" + parcelProcess + "On" + genericZone +"_" + preciseZone + "Of" + communityNumber;
+		return goal + "With" + parcelProcess + "On" + genericZone + "_" + preciseZone + "Of" + communityNumber;
 	}
 
 	public static boolean isSaveIntermediateResult() {

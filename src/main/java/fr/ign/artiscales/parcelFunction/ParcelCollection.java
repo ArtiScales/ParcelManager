@@ -72,12 +72,15 @@ public class ParcelCollection {
 	 * @throws IOException
 	 * @throws FactoryException 
 	 * @throws NoSuchAuthorityCodeException 
+	 * @throws ParseException 
 	 */
-	public static void sortDifferentParcel(File parcelRefFile, File parcelToCompareFile, File parcelOutFolder) throws IOException, NoSuchAuthorityCodeException, FactoryException {
+	public static void sortDifferentParcel(File parcelRefFile, File parcelToCompareFile, File parcelOutFolder)
+			throws IOException, NoSuchAuthorityCodeException, FactoryException {
 		sortDifferentParcel(parcelRefFile, parcelToCompareFile, parcelOutFolder, 100, 450);
 	}
-	
-	public static void sortDifferentParcel(File parcelRefFile, File parcelToCompareFile, File parcelOutFolder, double minParcelSimulatedSize, double maxParcelSimulatedSize) throws IOException, NoSuchAuthorityCodeException, FactoryException {
+
+	public static void sortDifferentParcel(File parcelRefFile, File parcelToCompareFile, File parcelOutFolder, double minParcelSimulatedSize,
+			double maxParcelSimulatedSize) throws IOException, NoSuchAuthorityCodeException, FactoryException {
 		File fSame = new File(parcelOutFolder, "same.shp");
 		File fEvolved = new File(parcelOutFolder, "evolvedParcel.shp");
 		File fNotSame = new File(parcelOutFolder, "notSame.shp");
@@ -98,19 +101,23 @@ public class ParcelCollection {
 		DefaultFeatureCollection same = new DefaultFeatureCollection();
 		DefaultFeatureCollection notSame = new DefaultFeatureCollection();
 		DefaultFeatureCollection polygonIntersection = new DefaultFeatureCollection();
+		
+
 		//for every reference parcels 
 		try (SimpleFeatureIterator itRef = parcelRef.features()){
 			refParcel: while (itRef.hasNext()) {
 				SimpleFeature pRef = itRef.next();
 				Geometry geomPRef = (Geometry) pRef.getDefaultGeometry();
-				HausdorffSimilarityMeasure hausDis = new HausdorffSimilarityMeasure();
+				double geomArea = geomPRef.getArea();
 				//for every intersected parcels, we check if it is close to (as tiny geometry changes)
 				SimpleFeatureCollection parcelsIntersectRef = parcelToSort.subCollection(ff.intersects(pName, ff.literal(geomPRef)));
+				HausdorffSimilarityMeasure hausDis = new HausdorffSimilarityMeasure();
 				try (SimpleFeatureIterator itParcelIntersectRef = parcelsIntersectRef.features()) {
 					while (itParcelIntersectRef.hasNext()) {
-						Geometry comparedGeom = (Geometry) itParcelIntersectRef.next().getDefaultGeometry();
+						Geometry g = (Geometry) itParcelIntersectRef.next().getDefaultGeometry();
+						double inter = Geom.scaledGeometryReductionIntersection(Arrays.asList(geomPRef, g)).getArea();
 						// if there are parcel intersection and a similar area, we conclude that parcel haven't changed. We put it in the \"same\" collection and stop the search
-						if (hausDis.measure(geomPRef, comparedGeom) > 0.9 && (geomPRef.getArea() > 0.95 * comparedGeom.getArea() && geomPRef.getArea() < 1.05*comparedGeom.getArea())) {
+						if ((inter > 0.95 * geomArea && inter < 1.05 * geomArea) || hausDis.measure(g, geomPRef) > 0.95) {
 							same.add(pRef);
 							continue refParcel;
 						}
@@ -118,32 +125,78 @@ public class ParcelCollection {
 				} catch (Exception problem) {
 					problem.printStackTrace();
 				} 
-				// we check if the parcel has been intentionally deleted by generating new polygons (same technique of area comparison, but with a way smaller error bound)
+				//we check if the parcel has been intentionally deleted by generating new polygons (same technique of area comparison, but with a way smaller error bound)
 				// if it has been cleaned, we don't add it to no additional parcels
 				List<Geometry> geomList = Arrays.stream(parcelsIntersectRef.toArray(new SimpleFeature[0])).map(x -> (Geometry) x.getDefaultGeometry())
 						.collect(Collectors.toList());
 				geomList.add(geomPRef);
-				// We generate a list of polygons including the filled void. If a similarity is now found and wasn't during the last step, it means the parcel in question has intentionally been deleted
-				List<Polygon> listPoly = FeaturePolygonizer.getPolygons(geomList);
-				// if no nex parcel has been created, we don't do this test
-				if (listPoly.size() != geomList.size()) {
-					for (Polygon polygon : listPoly) {
-//						if (polygon.contains(geomPRef)) {
-//							 	
-//						}
-						// if a new parcel is now found corresponding to the criterion of similarity,
-						// that parcel was intentionaly deleted
-						if (hausDis.measure(geomPRef, polygon) > 0.9 && (geomPRef.getArea() > 0.97 * polygon.getArea() && geomPRef.getArea() < 1.03*polygon.getArea())) {
-							continue refParcel;
-						}
-					}}
+				List<Polygon> polygons = FeaturePolygonizer.getPolygons(geomList);
+				for (Polygon polygon : polygons)
+					if ((polygon.getArea() > geomArea * 0.9 && polygon.getArea() < geomArea * 1.1) && polygon.buffer(0.5).contains(geomPRef))
+						continue refParcel;
 				notSame.add(pRef);
-				intersecPolygon.set(intersecPolygon.getFeatureType().getGeometryDescriptor().getName(),	((Geometry) pRef.getDefaultGeometry()).buffer(-2));
+				intersecPolygon.set(intersecPolygon.getFeatureType().getGeometryDescriptor().getName(),
+						((Geometry) pRef.getDefaultGeometry()).buffer(-2));
 				polygonIntersection.add(intersecPolygon.buildFeature(Attribute.makeUniqueId()));
 			}
 		} catch (Exception problem) {
 			problem.printStackTrace();
 		} 
+		
+		// attempt to use Hausdorf mesures to sort better and avoid the cases where parcels have moved a little, but failed attempt. 
+//		try (SimpleFeatureIterator itRef = parcelRef.features()){
+//			refParcel: while (itRef.hasNext()) {
+//				SimpleFeature pRef = itRef.next();
+//				Geometry geomPRef = (Geometry) pRef.getDefaultGeometry();
+//
+//				//for every intersected parcels, we check if it is close to (as tiny geometry changes)
+//				SimpleFeatureCollection parcelsComparedIntersectRef = parcelToSort.subCollection(ff.intersects(pName, ff.literal(geomPRef)));
+//				try (SimpleFeatureIterator itParcelIntersectRef = parcelsComparedIntersectRef.features()) {
+//					while (itParcelIntersectRef.hasNext()) {
+//						Geometry comparedGeom = (Geometry) itParcelIntersectRef.next().getDefaultGeometry();
+//						// if there are parcel intersection and a similar area, we conclude that parcel haven't changed. We put it in the \"same\" collection and stop the search
+//						if (sameCondition(geomPRef, comparedGeom)) {
+//							same.add(pRef);
+//							continue refParcel;
+//						}
+//					}
+//				} catch (Exception problem) {
+//					problem.printStackTrace();
+//				} 
+//				// we check if the parcel has been intentionally deleted by generating new polygons (same technique of area comparison, but with a way smaller error bound)
+//				// if it has been cleaned, we don't add it to no additional parcels
+//				List<Geometry> geomList = Arrays.stream(parcelsComparedIntersectRef.toArray(new SimpleFeature[0])).map(x -> (Geometry) x.getDefaultGeometry())
+//						.collect(Collectors.toList());
+//				geomList.add(geomPRef);
+//				// We generate a list of polygons including the filled void. If a similarity is now found and wasn't during the last step, it means the parcel in question has intentionally been deleted
+//				List<Polygon> listPoly = FeaturePolygonizer.getPolygons(geomList);
+//				// if no nex parcel has been created, we don't do this test
+////				if (listPoly.size() != geomList.size()) {
+//				Geometry polyPRef = GeometryPrecisionReducer.reduce(geomPRef, new PrecisionModel(100));
+//				polyPRef.normalize();	
+//				for (Polygon polygon : listPoly) {
+//			
+//						polygon.normalize();
+//
+//						// if a new parcel is now found corresponding to the criterion of similarity,
+//						// that parcel was intentionaly deleted
+//						if (!polygon.equalsTopo(polyPRef) && sameCondition(polyPRef, polygon) ) {
+//							System.out.println("for "+polyPRef+" and "+polygon);
+//							System.out.println(eq(polyPRef,  polygon));
+//							HausdorffSimilarityMeasure hausDis = new HausdorffSimilarityMeasure();
+//							System.out.println(hausDis.measure(polyPRef, polygon) > 0.9);
+//							System.out.println(polyPRef.getArea() > 0.9 * polygon.getArea() && polyPRef.getArea() < 1.1 * polygon.getArea());
+//							continue refParcel;
+////						}
+//					}
+//					}
+//				notSame.add(pRef);
+//				intersecPolygon.set(intersecPolygon.getFeatureType().getGeometryDescriptor().getName(),	((Geometry) pRef.getDefaultGeometry()).buffer(-2));
+//				polygonIntersection.add(intersecPolygon.buildFeature(Attribute.makeUniqueId()));
+//			}
+//		} catch (Exception problem) {
+//			problem.printStackTrace();
+//		} 
 		Collec.exportSFC(same, fSame);
 		Collec.exportSFC(notSame, fNotSame);
 		
@@ -197,7 +250,16 @@ public class ParcelCollection {
 		sds.dispose();
 		sdsRef.dispose();
 	}
-	
+
+//	private static boolean sameCondition(Geometry g1, Geometry g2) {
+//		HausdorffSimilarityMeasure hausDis = new HausdorffSimilarityMeasure();
+//		return hausDis.measure(g1, g2) > 0.92 && g1.getArea() > 0.92 * g2.getArea() && g1.getArea() < 1.08 * g2.getArea();
+//	}
+//	
+//	private static boolean eq(Geometry g1, Geometry g2) {
+//		return g1.buffer(0.1).contains(g2) && g2.buffer(0.1).contains(g1);
+//	}
+
 	/**
 	 * This algorithm merges parcels when they are under an area threshold. It seek the surrounding parcel that share the largest side with the small parcel and merge their
 	 * geometries. Parcel must touch at least. If no surrounding parcels are found touching (or intersecting) the small parcel, the parcel is deleted and left as a public space.

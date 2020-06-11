@@ -1,4 +1,4 @@
-package fr.ign.artiscales.analysis;
+package fr.ign.artiscales.workflow;
 
 import java.io.File;
 import java.util.Arrays;

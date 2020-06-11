@@ -1,4 +1,4 @@
-package fr.ign.artiscales.analysis;
+package fr.ign.artiscales.workflow;
 
 import java.io.File;
 import java.time.Duration;
@@ -17,6 +17,7 @@ import org.locationtech.jts.geom.Geometry;
 import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.filter.FilterFactory2;
 
+import fr.ign.artiscales.analysis.SingleParcelStat;
 import fr.ign.artiscales.parcelFunction.MarkParcelAttributeFromPosition;
 import fr.ign.artiscales.parcelFunction.ParcelCollection;
 import fr.ign.artiscales.scenario.PMScenario;
@@ -93,22 +94,25 @@ public class CompareSimulatedParcelsWithEvolution {
 			SimpleFeatureCollection sfcSimulatedParcel = sdsSimulatedParcel.getFeatureSource().getFeatures().subCollection(
 					ff.within(ff.property(sdsSimulatedParcel.getSchema().getGeometryDescriptor().getLocalName()), ff.literal(geomUnion)));
 			Collec.exportSFC(sfcSimulatedParcel, new File(zoneOutFolder, "SimulatedParcel"));
-			ShapefileDataStore sdsFinalParcel = new ShapefileDataStore(step.getLastOutput().toURI().toURL());
-//			ShapefileDataStore sdsFinalParcel = new ShapefileDataStore(new File("/home/thema/Documents/MC/workspace/ParcelManager/src/main/resources/ParcelComparison/out/parcelCuted-zoneDivision-smallHouse-_.shp").toURI().toURL());
-			ParcelStat.writeStatSingleParcel(
+			
+			ShapefileDataStore sdsEvolvedParcel = new ShapefileDataStore(new File(outFolder, "evolvedParcel.shp").toURI().toURL());
+			SimpleFeatureCollection sfcEvolvedParcel = Collec.snapDatas(sdsEvolvedParcel.getFeatureSource().getFeatures(), geomUnion);
+			Collec.exportSFC(sfcEvolvedParcel, new File(zoneOutFolder, "EvolvedParcel"));
+			
+//			ShapefileDataStore sdsFinalParcel = new ShapefileDataStore(step.getLastOutput().toURI().toURL());
+			ShapefileDataStore sdsFinalParcel = new ShapefileDataStore(new File("/home/ubuntu/workspace/ParcelManager/src/main/resources/ParcelComparison/out/parcelCuted-consolidationDivision-smallHouse-NC_.shp").toURI().toURL());
+			SingleParcelStat.writeStatSingleParcel(
 					MarkParcelAttributeFromPosition.markSimulatedParcel(MarkParcelAttributeFromPosition.markParcelIntersectPolygonIntersection(
 							sdsFinalParcel.getFeatureSource().getFeatures(), geoms.stream().map(g -> g.buffer(-2)).collect(Collectors.toList()))),
-					Collec.snapDatas(new SpatialIndexFeatureCollection(sdsRoad.getFeatureSource().getFeatures()), geomUnion), new File(zoneOutFolder, "SimulatedParcelStats.csv"));
+					sfcEvolvedParcel, Collec.snapDatas(new SpatialIndexFeatureCollection(sdsRoad.getFeatureSource().getFeatures()), geomUnion),
+					new File(zoneOutFolder, "SimulatedParcelStats.csv"));
 			sdsSimulatedParcel.dispose();
 			sdsFinalParcel.dispose();
 
 			//evolved parcel crop
 			System.out.println("evolved parcels");
-			ShapefileDataStore sdsEvolvedParcel = new ShapefileDataStore(new File(outFolder, "evolvedParcel.shp").toURI().toURL());
-			SimpleFeatureCollection sfcEvolvedParcel = Collec.snapDatas(sdsEvolvedParcel.getFeatureSource().getFeatures(), geomUnion);
-			Collec.exportSFC(sfcEvolvedParcel, new File(zoneOutFolder, "EvolvedParcel"));
 			ShapefileDataStore sdsEvolvedAndAllParcels = new ShapefileDataStore(fileParcelNow.toURI().toURL());
-			ParcelStat.writeStatSingleParcel(
+			SingleParcelStat.writeStatSingleParcel(
 					MarkParcelAttributeFromPosition.markParcelIntersectPolygonIntersection(sdsEvolvedAndAllParcels.getFeatureSource().getFeatures(),
 							Arrays.stream(sfcEvolvedParcel.toArray(new SimpleFeature[0])).map(g -> ((Geometry) g.getDefaultGeometry()).buffer(-1)).collect(Collectors.toList())),
 					Collec.snapDatas(new SpatialIndexFeatureCollection(sdsRoad.getFeatureSource().getFeatures()), geomUnion), new File(zoneOutFolder, "EvolvedParcelStats.csv"));

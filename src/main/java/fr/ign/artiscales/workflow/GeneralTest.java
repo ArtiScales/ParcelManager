@@ -1,4 +1,4 @@
-package fr.ign.artiscales.test;
+package fr.ign.artiscales.workflow;
 
 import java.io.File;
 
@@ -8,8 +8,8 @@ import org.geotools.data.shapefile.ShapefileDataStore;
 import org.geotools.data.simple.SimpleFeatureCollection;
 
 import fr.ign.artiscales.analysis.MakeStatisticGraphs;
-import fr.ign.artiscales.analysis.ParcelStat;
-import fr.ign.artiscales.analysis.StatParcelStreetRatio;
+import fr.ign.artiscales.analysis.SingleParcelStat;
+import fr.ign.artiscales.analysis.StreetRatioParcels;
 import fr.ign.artiscales.fields.french.FrenchParcelFields;
 import fr.ign.artiscales.goal.ConsolidationDivision;
 import fr.ign.artiscales.goal.Densification;
@@ -78,7 +78,7 @@ public class GeneralTest {
 		SimpleFeatureCollection finaux = FrenchParcelFields.setOriginalFrenchParcelAttributes(parcelCuted, parcel);
 		Collec.exportSFC(finaux, new File(outFolder, "parcelTotZone.shp"));
 		Collec.exportSFC(zone, new File(outFolder, "zone.shp"));
-		StatParcelStreetRatio.streetRatioParcelZone(zone, finaux, statFolder, roadFile);
+		StreetRatioParcels.streetRatioParcelZone(zone, finaux, statFolder, roadFile);
 		MakeStatisticGraphs.makeAreaGraph(new File(outFolder, "parcelTotZone.shp"), statFolder);
 
 		/////////////////////////
@@ -97,7 +97,7 @@ public class GeneralTest {
 				profileDetached.getLargeStreetWidth(), profileDetached.getDecompositionLevelWithoutStreet());
 		SimpleFeatureCollection finalNormalZone = FrenchParcelFields.setOriginalFrenchParcelAttributes(cutedNormalZone, parcel);
 		Collec.exportSFC(finalNormalZone, new File(outFolder, "ParcelConsolidRecomp.shp"));
-		StatParcelStreetRatio.streetRatioParcels(normalZone, finalNormalZone, statFolder, roadFile);
+		StreetRatioParcels.streetRatioParcels(normalZone, finalNormalZone, statFolder, roadFile);
 		MakeStatisticGraphs.makeAreaGraph(new File(outFolder, "ParcelConsolidRecomp.shp"), statFolder);
 
 		/////////////////////////
@@ -115,6 +115,6 @@ public class GeneralTest {
 		Collec.exportSFC(finaux3, new File(outFolder, "parcelDensification.shp"));
 		MakeStatisticGraphs.makeAreaGraph(new File(outFolder, "parcelDensification.shp"), statFolder);
 		shpDSParcel.dispose();
-		ParcelStat.writeStatSingleParcel(MarkParcelAttributeFromPosition.markSimulatedParcel(finaux3), roadFile, new File(outFolder, "stat/statParcel.csv"));
+		SingleParcelStat.writeStatSingleParcel(MarkParcelAttributeFromPosition.markSimulatedParcel(finaux3), roadFile, new File(outFolder, "stat/statParcel.csv"));
 	}
 }

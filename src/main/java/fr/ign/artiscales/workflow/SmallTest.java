@@ -1,4 +1,4 @@
-package fr.ign.artiscales.test;
+package fr.ign.artiscales.workflow;
 
 import java.io.File;
 
