@@ -62,9 +62,11 @@ public class TopologicalStraightSkeletonParcelDecomposition {
   //////////////////////////////////////////////////////
   // Input data parameters
   // Must be a double attribute
-  public final static String NAME_ATT_IMPORTANCE = "length";
+//  public final static String NAME_ATT_IMPORTANCE = "length";
+  public final static String NAME_ATT_IMPORTANCE = "Type";
   // public final static String NAME_ATT_ROAD = "NOM_VOIE_G";
-  public final static String NAME_ATT_ROAD = "n_sq_vo";
+//  public final static String NAME_ATT_ROAD = "n_sq_vo";
+  public final static String NAME_ATT_ROAD = "Id";
 
   //////////////////////////////////////////////////////
 
@@ -82,8 +84,29 @@ public class TopologicalStraightSkeletonParcelDecomposition {
   public static String ATT_IMPORTANCE = "IMPORTANCE";
 
   public static boolean DEBUG = true;
-  public static String FOLDER_OUT_DEBUG = "/tmp/skeleton_100";
+  public static String FOLDER_OUT_DEBUG = "/tmp/skeleton";
 
+  private Polygon initialPolygon;
+  private SimpleFeatureCollection roads;
+  private double offsetDistance;
+  private double maxDistanceForNearestRoad;
+  private double minimalArea;
+  private double minWidth;
+  private double maxWidth;
+  private double omega;
+  private RandomGenerator rng;
+  public TopologicalStraightSkeletonParcelDecomposition(Polygon p, SimpleFeatureCollection roads, double offsetDistance, double maxDistanceForNearestRoad, double minimalArea, double minWidth,
+      double maxWidth, double omega, RandomGenerator rng) {
+    this.initialPolygon = p;
+    this.roads = roads;
+    this.offsetDistance = offsetDistance;
+    this.maxDistanceForNearestRoad = maxDistanceForNearestRoad;
+    this.minimalArea = minimalArea;
+    this.minWidth = minWidth;
+    this.maxWidth = maxWidth;
+    this.omega = omega;
+    this.rng = rng;
+  }
   private static boolean isReflex(Node node, HalfEdge previous, HalfEdge next) {
     return isReflex(node.getCoordinate(), previous.getGeometry(), next.getGeometry());
   }
@@ -112,6 +135,8 @@ public class TopologicalStraightSkeletonParcelDecomposition {
   }
 
   private static Pair<String, Double> getAttributes(SimpleFeature s) {
+    System.out.println(s);
+    System.out.println(s.getDefaultGeometry());
     String name = s.getAttribute(NAME_ATT_ROAD).toString();
     String impo = s.getAttribute(NAME_ATT_IMPORTANCE).toString();
     return new ImmutablePair<>(name, Double.parseDouble(impo.replaceAll(",", ".")));
@@ -143,8 +168,11 @@ public class TopologicalStraightSkeletonParcelDecomposition {
   }
 
   private static TopologicalGraph getAlphaStrips(TopologicalGraph graph, List<HalfEdge> orderedEdges, Map<HalfEdge, Optional<Pair<String, Double>>> attributes) {
+    System.out.println("getAlphaStrips:edges");
+    orderedEdges.forEach(e->System.out.println(e.getGeometry()));
     TopologicalGraph alphaStripGraph = new TopologicalGraph();
     HalfEdge firstHE = orderedEdges.get(0);
+    System.out.println("getAlphaStrips:firstHE:\n"+firstHE.getGeometry());
     Optional<Pair<String, Double>> firstAttributes = attributes.get(firstHE);
     HalfEdge currentStripHE = new HalfEdge(firstHE.getOrigin(), null, null);
     currentStripHE.getChildren().add(firstHE);
@@ -336,39 +364,41 @@ public class TopologicalStraightSkeletonParcelDecomposition {
     return path;
   }
 
-  private static LineString getCutLine(StraightSkeleton straightSkeleton, Polygon pol, Polygon strip, Coordinate coordinate, LineString support) {
+  private static LineString getCutLine(StraightSkeleton straightSkeleton, Polygon strip, Coordinate coordinate, LineString support) {
+    System.out.println("getCutLine FROM\n"+strip.getFactory().createPoint(coordinate)+"\nWITH EXT STRIP\n"+strip.getExteriorRing());
     Node node = straightSkeleton.getGraph().getNode(coordinate, 0.01);
+    GeometryFactory factory = strip.getFactory();
     if (node == null) {
+      System.out.println("NO NODE");
       // no node here, compute perpendicular line
       Coordinate c1 = support.getCoordinateN(1);
       Coordinate c2 = support.getCoordinateN(0);
       Coordinate d = getPerpendicularVector(c1, c2, false);
       Pair<HalfEdge, Coordinate> intersection = getIntersection(straightSkeleton, c2, d);
       Coordinate intersectionCoord = intersection.getRight();
-      if (strip.getExteriorRing().distance(strip.getFactory().createPoint(intersectionCoord)) < 0.01) {
+      Polygon snapped = snap(strip, intersectionCoord, 0.01);
+      System.out.println("INTERSECTION\n"+factory.createPoint(intersectionCoord)+"\n"+snapped);
+      if (snapped.getExteriorRing().distance(factory.createPoint(intersectionCoord)) < 0.01) {
         // we are 'on' the border of the strip
-        Coordinate projection = Util.project(intersectionCoord, strip.getExteriorRing());
-        return pol.getFactory().createLineString(new Coordinate[] { c2, projection });
+//        Coordinate projection = Util.project(intersectionCoord, strip.getExteriorRing());// use snapped?
+//        System.out.println("PROJECTION\n"+factory.createLineString(new Coordinate[] { c2, projection }));
+        return factory.createLineString(new Coordinate[] { c2, intersectionCoord });
       }
-      // Coordinate stripCoordinate = getCoordinate(stripCoordinates, intersection.getRight(), 0.01);
-      // if (stripCoordinate != null) {
-      // return pol.getFactory().createLineString(new Coordinate[] { c2, stripCoordinate });
-      // }
       List<Coordinate> coordinateList = new ArrayList<>();
       coordinateList.add(c2);
-      coordinateList.add(intersection.getRight());
+      coordinateList.add(intersectionCoord);
       Node currentNode = straightSkeleton.getGraph().getNode(intersectionCoord, 0.01);
       if (currentNode == null) {
         double angle = getAngle(intersection.getLeft().getOrigin().getCoordinate(), intersection.getLeft().getTarget().getCoordinate(), d);
         currentNode = (angle < Math.PI / 2) ? intersection.getLeft().getTarget() : intersection.getLeft().getOrigin();
         coordinateList.add(currentNode.getCoordinate());
-        d = getUnitVector(intersection.getRight(), currentNode.getCoordinate());
+        d = getUnitVector(intersectionCoord, currentNode.getCoordinate());
+        System.out.println("NO NODE. CONTINUE TO\n"+currentNode.getGeometry());
+      } else {
+        System.out.println("FOUND NODE\n"+currentNode.getGeometry());
       }
       coordinateList.addAll(getPath(straightSkeleton, strip, currentNode, d));
-      return pol.getFactory().createLineString(coordinateList.toArray(new Coordinate[coordinateList.size()]));
-      // System.out.println(pol.getFactory().createPoint(intersection.getRight()));
-      // System.out.println(pol.getFactory().createLineString(new Coordinate[] { c2, intersection.getRight() }));
-      // System.out.println(pol.getFactory().createLineString(new Coordinate[] {intersection.getRight(), intersection.getLeft().getTarget().getCoordinate()}));
+      return factory.createLineString(coordinateList.toArray(new Coordinate[coordinateList.size()]));
     }
     List<HalfEdge> edges = straightSkeleton.getGraph().getEdges().stream().filter(h -> h.getOrigin() == node && h.getTwin() != null).collect(Collectors.toList());
     if (edges.size() != 1) {
@@ -382,7 +412,7 @@ public class TopologicalStraightSkeletonParcelDecomposition {
       coordinateList.add(c2);
       Coordinate d = getUnitVector(c1, c2);
       coordinateList.addAll(getPath(straightSkeleton, strip, node, d));
-      return pol.getFactory().createLineString(coordinateList.toArray(new Coordinate[coordinateList.size()]));
+      return factory.createLineString(coordinateList.toArray(new Coordinate[coordinateList.size()]));
       // System.out.println(edges.get(0).getGeometry());
     }
     return null;
@@ -391,13 +421,11 @@ public class TopologicalStraightSkeletonParcelDecomposition {
   private static List<Polygon> slice(StraightSkeleton straightSkeleton, Polygon pol, double minWidth, double maxWidth, RealDistribution nd, RandomGenerator rng, Face strip) {
     List<Polygon> result = new ArrayList<>();
     List<HalfEdge> extEdges = strip.getEdges().stream().filter(e -> e.getTwin() == null && !pol.contains(e.getGeometry())).collect(Collectors.toList());
-    // List<Coordinate> stripCoordinates = Arrays.asList(strip.getGeometry().getCoordinates());
-    // System.out.println("Face\n" + face.getGeometry());
     LineMerger lsm = new LineMerger();
     extEdges.stream().forEach(e -> lsm.add(e.getGeometry()));
     Collection<?> merged = lsm.getMergedLineStrings();
     if (merged.size() == 1) {
-      // FIXME check the order of that linestring: should be CCW
+      // TODO check the order of that linestring: should be CCW
       LineString phi = (LineString) merged.iterator().next();
       LengthIndexedLine lil = new LengthIndexedLine(phi);
       double length = phi.getLength();
@@ -405,23 +433,23 @@ public class TopologicalStraightSkeletonParcelDecomposition {
       if (widths.size() == 1) {
         result.add(strip.getGeometry());
       } else {
-        double previousL = widths.get(0);
+        double current = widths.get(0);
         // split the strip now
         Polygon remainder = (Polygon) strip.getGeometry().copy();
         // we remove the last width
         for (double w : widths.subList(1, widths.size())) {
-          double current = previousL + w;
-          LineString l = (LineString) lil.extractLine(previousL, current);
+          double next = current + w;
+          LineString l = (LineString) lil.extractLine(current, next);
           // get perpendicular line
-          Coordinate coordinate = lil.extractPoint(previousL);
-          LineString cutLine = getCutLine(straightSkeleton, pol, remainder, coordinate, l);
+          Coordinate coordinate = lil.extractPoint(current);
+          LineString cutLine = getCutLine(straightSkeleton, remainder, coordinate, l);
           Polygon r = (Polygon) GeometryPrecisionReducer.reduce(remainder, new PrecisionModel(100));
           LineString cl = (LineString) GeometryPrecisionReducer.reduce(cutLine, new PrecisionModel(100));
           Geometry[] snapped = GeometrySnapper.snap(r, cl, 0.01);
           Pair<Polygon, Polygon> split = splitPolygon((Polygon) snapped[0], (LineString) snapped[1], false);
           result.add(split.getLeft());
           remainder = split.getRight();
-          previousL = current;
+          current = next;
         }
         result.add(remainder);
       }
@@ -484,6 +512,8 @@ public class TopologicalStraightSkeletonParcelDecomposition {
         // toRemove.getFactory().createLineString(new Coordinate[] {currNode.getCoordinate(), projection }));
         // TODO check that the first edge is always the supporting edge
         Coordinate projection = Util.project(currNode.getCoordinate(), splitAlphaStrip.getEdges().get(0).getGeometry());
+        System.out.println("SPLIT WITH\n"+currNode.getGeometry()+"\n"+currNode.getGeometry().getFactory().createPoint(projection));
+        
         Polygon splitAlphaStripSnapped = snap(splitAlphaStrip.getGeometry(),projection, 0.01);
         Polygon r = (Polygon) GeometryPrecisionReducer.reduce(splitAlphaStripSnapped, new PrecisionModel(100));
         LineString cl = (LineString) GeometryPrecisionReducer.reduce(r.getFactory().createLineString(new Coordinate[] {projection, currNode.getCoordinate()}), new PrecisionModel(100));
@@ -635,21 +665,30 @@ public class TopologicalStraightSkeletonParcelDecomposition {
   }
 
   public static void main(String[] args) throws IOException, SchemaException {
-    String inputParcelShapeFile = "/home/julien/data/PLU_PARIS/ilots_13.shp";
-    String inputRoadShapeFile = "/home/julien/data/PLU_PARIS/voie/voie_l93.shp";
+//    String inputParcelShapeFile = "/home/julien/data/PLU_PARIS/ilots_13.shp";
+//    String inputRoadShapeFile = "/home/julien/data/PLU_PARIS/voie/voie_l93.shp";
+    File rootFolder = new File("src/main/resources/GeneralTest/");
+
+    File roadFile = new File(rootFolder, "road.shp");
+    File parcelFile = new File(rootFolder, "parcel.shp");
+
     String folderOut = "data/";
     // The output file that will contain all the decompositions
     // String shapeFileOut = folderOut + "outflag.shp";
     (new File(folderOut)).mkdirs();
     // Reading collection
-    ShapefileDataStore parcelDS = new ShapefileDataStore(new File(inputParcelShapeFile).toURI().toURL());
+    ShapefileDataStore parcelDS = new ShapefileDataStore(parcelFile.toURI().toURL());
     SimpleFeatureCollection parcels = parcelDS.getFeatureSource().getFeatures();
-    ShapefileDataStore roadDS = new ShapefileDataStore(new File(inputRoadShapeFile).toURI().toURL());
+    ShapefileDataStore roadDS = new ShapefileDataStore(roadFile.toURI().toURL());
     SimpleFeatureCollection roads = roadDS.getFeatureSource().getFeatures();
     SimpleFeatureIterator iterator = parcels.features();
-    SimpleFeature feature = iterator.next();
+    SimpleFeature feature = null;
+    while (iterator.hasNext()) {
+      feature = iterator.next();
+      if (feature.getAttribute("NUMERO").equals("0024") && feature.getAttribute("SECTION").equals("ZA")) break;
+    }
     List<Polygon> polygons = Util.getPolygons((Geometry) feature.getDefaultGeometry());
-    double maxDepth = 10, maxDistanceForNearestRoad = 100, minimalArea = 20, minWidth = 2, maxWidth = 5, omega = 0.1;
+    double maxDepth = 10, maxDistanceForNearestRoad = 200, minimalArea = 20, minWidth = 2, maxWidth = 5, omega = 0.1;
     iterator.close();
     List<Polygon> outputParcels = decompose(polygons.get(0), roads, maxDepth, maxDistanceForNearestRoad, minimalArea, minWidth, maxWidth, omega, new MersenneTwister(42));
     System.out.println("OUTPUT PARCELS");
