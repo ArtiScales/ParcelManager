@@ -7,7 +7,7 @@ It works with three basic fields, defined as follow:
     <li>The '<b>NUMERO</b>' field represent a unique number of parcel within each section</li>
 </ul>
 Those attribute are generated during every Parcel Manager process.
-If the input parcels already contains those attributes, they are copied to the not simuled parcels. If the field names are different, it is possible to change them with the static setters from the <a href="https://github.com/ArtiScales/ArtiScales-tools/blob/master/src/main/java/fr/ign/cogit/parcelFunction/ParcelSchema.java">ParcelSchema class</a>.
+If the input parcels already contains those attributes, they are copied to the not simuled parcels. If the field names are different, it is possible to change them with the static setters from the <a href="https://github.com/ArtiScales/ArtiScales-tools/blob/master/src/main/java/fr/ign/cogit/parcelFunction/ParcelSchema.java">parcelFunction.ParcelSchema class</a>.
 If the correspondance is missing with the input data, the unsimuled parcels will have null fields. 
 It is also possible to convert the parcel type to this minimum type, with methods like <i>frenchParcelToMinParcel(...)</i> from the <a href="https://github.com/ArtiScales/ParcelManager/blob/master/src/main/java/fr/ign/artiscales/fields/french/FrenchParcelFields.java">fields.french.FrenchParcelFields class</a>.
 Other methods such as <i>setOriginalFrenchParcelAttributes(...)</i> helps re-assignate the fields after a Parcel Manager simulation.
