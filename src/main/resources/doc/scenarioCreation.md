@@ -40,34 +40,34 @@ The parameter ***step*** must contain a .json table with all the following argum
 It is possible to set two different types of parcel selection regarding their inclusion in a part of the zoning plan or a community. 
 
 * ***communityNumber***: Select every parcels that composed the community corresponding to the code. The default field name is <b>INSEE</b>.
-* ***communityType***: A type of urban tissue. All the communities that follows this type will be selected. Default field name is <i>armature</i>. That doesn't work if a ***communityNumber*** is set. 
+* ***communityType***: A type of urban tissue. All the communities that follows this type will be selected. Default field name is <i>armature</i>. That doesn't work if a <i><b>communityNumber</b></i> is set. 
 
 If those two parameters are not set, every parcels are selected and taken into acount. 
 
 <h3>Parcel marks</h3>
 It is often needed to mark a set of parcels in order to declare that their reshaping must happen.
-The field *SPLIT* is used as default but can be changed with the *parcelFunction.MarkParcelAttributeFromPosition.setMarkFieldName(String)* function.
+The field <b>SPLIT</b> is used as default but can be changed with the <i>parcelFunction.MarkParcelAttributeFromPosition.setMarkFieldName(String)</i> function.
 The first way to mark the parcel is to use a set of polygons. 
-Every parcels that intersects the set of polygons from the ***polygonIntersection*** shapefile are marked.
+Every parcels that intersects the set of polygons from the <i><b>polygonIntersection</b></i> shapefile are marked.
 
 <h3>Integration of zoning plans</h3>
 It is also possible to use attribute information with a shapefile, such as a zoning plan, to mark the parcels.
-The ***zoningFile*** shapefile supports a special integration.
-The parameter ***genericZone*** is used to select a type of zoning and can recover multiple zone names using dedicated functions, such as *fields.FrenchZoningSchemas.normalizeNameFrenchBigZone()*. 
-More particular zones are set using the parameter  ***preciseZone***. 
-The setting of a ***preciseZone*** parameter doesn't exempt to set a ***genericZone***. 
-Thus, if a ***genericZone*** is set without ***preciseZone***, every zones will be simulated. 
-If we define a step for a ***preciseZone*** and a second step for the rest of its ***genericZone***, the results of the ***preciseZone*** step will not be part of the second step simulation.
-Though, make sure that the ***preciseZone*** step is declared before the ***preciseZone***.
+The <b><i>zoningFile</i></b> shapefile supports a special integration.
+The parameter <b><i>genericZone</i></b> is used to select a type of zoning and can recover multiple zone names using dedicated functions, such as <i>fields.FrenchZoningSchemas.normalizeNameFrenchBigZone()</i>. 
+More particular zones are set using the parameter  <b><i>preciseZone</i></b>. 
+The setting of a <b><i>preciseZone</i></b> parameter doesn't exempt to set a <b><i>genericZone</i></b>. 
+Thus, if a <b><i>genericZone</i></b> is set without <b><i>preciseZone</i></b>, every zones will be simulated. 
+If we define a step for a <b><i>preciseZone</i></b> and a second step for the rest of its <b><i>genericZone</i></b>, the results of the <b><i>preciseZone</i></b> step will not be part of the second step simulation.
+Though, make sure that the <b><i>preciseZone</i></b> step is declared before the <b><i>preciseZone</i></b>.
 
 
-It is possible to hack this method by using another kind of shapefile and put in on the ***zoningFile***, change the default value of the ***genericZone*** field name with the *fields.GeneralFields.setZoneGenericNameField(String)* method and set a ***genericZone*** value. 
+It is possible to hack this method by using another kind of shapefile and put in on the <b><i>zoningFile</i></b>, change the default value of the <b><i>genericZone</i></b> field name with the <i>fields.GeneralFields.setZoneGenericNameField(String)</i> method and set a <b><i>genericZone</i></b> value. 
 
-Once a parcel has been simulated, it attribute filed *SECTION* (see attribute policy) is marked with a long value, depending on the ***goal*** used. We check that field to know if a parcel has been simulated. By default, parcels cannot be marked again if they have been already simulated. It is possible to change that behaviour, for post treatments means by exemple, in setting the static boolean ***MarkParcelAttributeFromPosition.postMark*** to **true**.
+Once a parcel has been simulated, it attribute filed <i>SECTION</i> (see attribute policy) is marked with a long value, depending on the <b><i>goal</i></b> used. We check that field to know if a parcel has been simulated. By default, parcels cannot be marked again if they have been already simulated. It is possible to change that behaviour, for post treatments means by exemple, in setting the static boolean <b>MarkParcelAttributeFromPosition.postMark</b> to <b>true</b>.
 
 <h3>Parcel Manager algorithms</h3>
 Different algorithm are available in Parcel Manager.
-The parameter ***goal*** can be set with one of those three values:
+The parameter <b><i>goal</i></b> can be set with one of those three values:
 
 * ***zoneDivision***: They take a total zone as an input and decompose it as a big zone
 * ***consolidationDivision***: Takes a set of marked parcels as an input and decompose them as contiguious zones
@@ -75,7 +75,7 @@ The parameter ***goal*** can be set with one of those three values:
 
 <h3>Parcel Manager process</h3>
 Diferrent process can be used to divise parcels.
-The parameter ***parcelProcess*** can be set with one of those three values: 
+The parameter <b><i>parcelProcess</i></b> can be set with one of those three values: 
 
 * ***OBB***: use the oriented bounding box method
 * ***SS***: use the straight skeleton method (not implemented yet)
