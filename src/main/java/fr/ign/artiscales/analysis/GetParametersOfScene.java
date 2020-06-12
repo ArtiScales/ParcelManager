@@ -35,6 +35,7 @@ public class GetParametersOfScene {
 	 * The scale of the studied zone. Can either be community, genericZone, preciseZone or islet
 	 */
 	static String scaleZone = "community";
+	//TODO mettre la possibilité de mélanger ces échelles 	List<String> scaleZone = Arrays.asList("community");
 	static File parcelFile, buildingFile, zoningFile, roadFile, outFolder;
 
 	public static void main(String[] args) throws NoSuchAuthorityCodeException, IOException, FactoryException {
@@ -105,7 +106,7 @@ public class GetParametersOfScene {
 			SimpleFeatureCollection sfc = MarkParcelAttributeFromPosition
 					.getOnlyMarkedParcels(MarkParcelAttributeFromPosition.markBuiltParcel(listSFC.get(zone), buildingFile));
 			if (sfc.size() > 1) {
-				AreaGraph vals = MakeStatisticGraphs.sortValuesAndCategorize(sfc, scaleZone + zone);
+				AreaGraph vals = MakeStatisticGraphs.sortValuesAndCategorize(sfc, scaleZone + zone, true);
 				vals.toCSV(outFolder);
 				MakeStatisticGraphs.makeGraphHisto(vals, outFolder, "area of the built parcel of the " + scaleZone + " " + zone + " without crests",
 						"parcel area", "nb parcels", 15);

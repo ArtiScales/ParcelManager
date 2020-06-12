@@ -52,7 +52,7 @@ public class GeneralTest {
 		ProfileUrbanFabric profileDetached = ProfileUrbanFabric.convertJSONtoProfile(new File(profileFolder, "detachedHouse.json"));
 		ProfileUrbanFabric profileSmallHouse = ProfileUrbanFabric.convertJSONtoProfile(new File(profileFolder, "smallHouse.json"));
 		ProfileUrbanFabric profilelargeCollective = ProfileUrbanFabric.convertJSONtoProfile(new File(profileFolder, "largeCollective.json"));
-
+System.out.println(statFolder);
 		/////////////////////////
 		// zoneTotRecomp
 		/////////////////////////
@@ -79,7 +79,7 @@ public class GeneralTest {
 		Collec.exportSFC(finaux, new File(outFolder, "parcelTotZone.shp"));
 		Collec.exportSFC(zone, new File(outFolder, "zone.shp"));
 		StreetRatioParcels.streetRatioParcelZone(zone, finaux, statFolder, roadFile);
-		MakeStatisticGraphs.makeAreaGraph(new File(outFolder, "parcelTotZone.shp"), statFolder);
+		MakeStatisticGraphs.makeAreaGraph(new File(outFolder, "parcelTotZone.shp"), statFolder, "Zone division for large collective building simulation");
 
 		/////////////////////////
 		//////// try the consolidRecomp method
@@ -98,7 +98,7 @@ public class GeneralTest {
 		SimpleFeatureCollection finalNormalZone = FrenchParcelFields.setOriginalFrenchParcelAttributes(cutedNormalZone, parcel);
 		Collec.exportSFC(finalNormalZone, new File(outFolder, "ParcelConsolidRecomp.shp"));
 		StreetRatioParcels.streetRatioParcels(normalZone, finalNormalZone, statFolder, roadFile);
-		MakeStatisticGraphs.makeAreaGraph(new File(outFolder, "ParcelConsolidRecomp.shp"), statFolder);
+		MakeStatisticGraphs.makeAreaGraph(new File(outFolder, "ParcelConsolidRecomp.shp"), statFolder, "Parcel consolidation-division for detached houses simulation");
 
 		/////////////////////////
 		//////// try the parcelDensification method
@@ -113,7 +113,7 @@ public class GeneralTest {
 				ParcelState.isArt3AllowsIsolatedParcel(parcMarked.features().next(), predicateFile));
 		SimpleFeatureCollection finaux3 = FrenchParcelFields.setOriginalFrenchParcelAttributes(salut, parcel);
 		Collec.exportSFC(finaux3, new File(outFolder, "parcelDensification.shp"));
-		MakeStatisticGraphs.makeAreaGraph(new File(outFolder, "parcelDensification.shp"), statFolder);
+		MakeStatisticGraphs.makeAreaGraph(new File(outFolder, "parcelDensification.shp"), statFolder, "Densification for small houses simulation");
 		shpDSParcel.dispose();
 		SingleParcelStat.writeStatSingleParcel(MarkParcelAttributeFromPosition.markSimulatedParcel(finaux3), roadFile, new File(outFolder, "stat/statParcel.csv"));
 	}

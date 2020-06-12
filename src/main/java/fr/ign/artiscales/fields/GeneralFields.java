@@ -37,7 +37,7 @@ public class GeneralFields {
 	 */
 	static String zonePreciseNameField = "LIBELLE";
 	/**
-	 * Type of parcels. Mostly defines their attributes the call of the schemas for re-assignation. Its default value is 'french'.
+	 * Type of parcels. Mostly defines their attributes the call of the schemas for re-assignation. Its default value is '<b>french</b>'.
 	 */
 	static String parcelFieldType = "french";
 	static String zoneCommunityCode = "DEPCOM";
@@ -48,18 +48,16 @@ public class GeneralFields {
 	 * Parcel Manager creates longer section names) Other methods can be set to determine if a parcel has been simulated.
 	 * 
 	 * @param sfc
-	 *            Parcel collection to sort
+	 *            Parcel {@link SimpleFeatureCollection} to sort
 	 * @return The parcel {@link SimpleFeatureCollection} with only the simulated parcels
 	 * @throws IOException
 	 */
 	public static SimpleFeatureCollection getParcelWithSimulatedFileds(SimpleFeatureCollection sfc) throws IOException {
 		DefaultFeatureCollection result = new DefaultFeatureCollection();
 		Arrays.stream(sfc.toArray(new SimpleFeature[0])).forEach(parcel -> {
-			if (parcelFieldType.equals("french")) {
-				if (isParcelLikeFrenchHasSimulatedFileds(parcel)) {
+			if (parcelFieldType.equals("french"))
+				if (isParcelLikeFrenchHasSimulatedFileds(parcel))
 					result.add(parcel);
-				}
-			}
 		});
 		return result.collection();
 	}
@@ -108,11 +106,12 @@ public class GeneralFields {
 	 * @return The collection with the "CODE" field added.
 	 */
 	public static SimpleFeatureCollection addParcelCode(SimpleFeatureCollection parcels) throws IOException {
-		SimpleFeatureCollection result = new DefaultFeatureCollection();
-		if (parcelFieldType.equals("french")) {
-			result = FrenchParcelFields.addFrenchParcelCode(parcels);
+		switch (parcelFieldType) {
+		case "french":
+			return FrenchParcelFields.addFrenchParcelCode(parcels);
 		}
-		return result;
+		System.out.println("No parcel field type defined for GeneralFields.addParcelCode. Return null");
+		return null;
 	}
 
 	/**
@@ -127,6 +126,7 @@ public class GeneralFields {
 		case "french":
 			return FrenchZoningSchemas.getUsualNames(genericZone);
 		}
+		System.out.println("No parcel field type defined for GeneralFields.getGenericZoneUsualNames. Return null");
 		return null;
 	}
 
@@ -159,9 +159,8 @@ public class GeneralFields {
 	 */
 	public static boolean isParcelLikeFrenchHasSimulatedFileds(SimpleFeature feature) {
 		if (((String) feature.getAttribute(ParcelSchema.getMinParcelSectionField())) != null
-				&& ((String) feature.getAttribute(ParcelSchema.getMinParcelSectionField())).length() > 3) {
+				&& ((String) feature.getAttribute(ParcelSchema.getMinParcelSectionField())).length() > 3)
 			return true;
-		}
 		return false;
 	}
 
@@ -218,7 +217,6 @@ public class GeneralFields {
 			while (it.hasNext()) {
 				SimpleFeature feat = it.next();
 				builder.set(builder.getFeatureType().getGeometryDescriptor().getLocalName(), feat.getDefaultGeometry());
-
 				builder.set(ParcelSchema.getMinParcelCommunityField(), ParcelAttribute.getCommunityCodeFromSFC(sfcWithInfo, feat));
 				builder.set(ParcelSchema.getMinParcelSectionField(), ParcelAttribute.getSectionCodeFromSFC(sfcWithInfo, feat));
 				builder.set(ParcelSchema.getMinParcelNumberField(), ParcelAttribute.getNumberCodeFromSFC(sfcWithInfo, feat));

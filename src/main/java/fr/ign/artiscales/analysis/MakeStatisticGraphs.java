@@ -38,16 +38,16 @@ public class MakeStatisticGraphs {
 	 * @param outFolder
 	 * @throws IOException
 	 */
-	public static void makeAreaGraph(File freshParcelCut, File outFolder) throws IOException {
+	public static void makeAreaGraph(File freshParcelCut, File outFolder, String name) throws IOException {
 		ShapefileDataStore sds = new ShapefileDataStore(freshParcelCut.toURI().toURL());
 		makeGraphHisto(sortValuesAndCategorize(GeneralFields.getParcelWithSimulatedFileds(sds.getFeatureSource().getFeatures()), "area"), outFolder,
-				"Distribution de la surface des parcelles subdivisées - " + freshParcelCut.getName(), "Surface d'une parcelle (m2)",
-				"Nombre de parcelles", 10);
+				"Area plot - " + name, "parcels area (m2)", "Number of parcels", 10);
 		sds.dispose();
 	}
 
 	/**
-	 * Process to sort which parcels have been cut, and get the bounds of the distribution. WARNING - Developed for French Parcels - section is always a two character
+	 * Process to sort which parcels have been cut, and get the bounds of the distribution. WARNING - Developed for French Parcels - section is always a two character. By default,
+	 * cut the top and low 10% values
 	 * 
 	 * @param parcelOut
 	 *            the parcel to sort and plot
@@ -57,6 +57,23 @@ public class MakeStatisticGraphs {
 	 * @throws IOException
 	 */
 	public static AreaGraph sortValuesAndCategorize(SimpleFeatureCollection parcelOut, String nameDistrib) throws IOException {
+		return sortValuesAndCategorize( parcelOut,  nameDistrib, true);
+	}
+	
+	/**
+	 * Process to sort which parcels have been cut, and get the bounds of the distribution. WARNING - Developed for French Parcels - section is always a two character. Can spare the
+	 * crest values (the top and low 10%)
+	 * 
+	 * @param parcelOut
+	 *            the parcel to sort and plot
+	 * @param nameDistrib
+	 *            the name of the distribution
+	 * @param cutCrest
+	 *            Cut the top and low 10% values
+	 * @return a Graph object
+	 * @throws IOException
+	 */
+	public static AreaGraph sortValuesAndCategorize(SimpleFeatureCollection parcelOut, String nameDistrib, boolean cutCrest) throws IOException {
 		List<Double> areaParcel = new ArrayList<Double>();
 		DescriptiveStatistics stat = new DescriptiveStatistics();
 		try (SimpleFeatureIterator parcelIt = parcelOut.features()) {
@@ -76,7 +93,9 @@ public class MakeStatisticGraphs {
 		double infThres = stat.getPercentile(10);
 		double supThres = stat.getPercentile(90);
 		for (double a : areaParcel) {
-			if (a > infThres && a < supThres) {
+			if (cutCrest && (a < infThres || a > supThres))
+				continue;
+			else {
 				areaParcelWithoutCrest.add(a);
 				if (a < aMin) {
 					aMin = a;
@@ -84,7 +103,8 @@ public class MakeStatisticGraphs {
 				if (a > aMax) {
 					aMax = a;
 				}
-			}}
+			}
+		}
 		Collections.sort(areaParcelWithoutCrest);
 		return new AreaGraph(areaParcelWithoutCrest, aMin, aMax, nameDistrib);
 	}
