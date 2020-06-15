@@ -35,12 +35,12 @@ public class GetParametersOfScene {
 	 * The scale of the studied zone. Can either be community, genericZone, preciseZone or islet
 	 */
 	static String scaleZone = "community";
-	//TODO mettre la possibilité de mélanger ces échelles 	List<String> scaleZone = Arrays.asList("community");
+	// TODO mettre la possibilité de mélanger ces échelles List<String> scaleZone = Arrays.asList("community");
 	static File parcelFile, buildingFile, zoningFile, roadFile, outFolder;
 
 	public static void main(String[] args) throws NoSuchAuthorityCodeException, IOException, FactoryException {
-		outFolder = new File("/tmp/tac");
-		setFiles(new File("src/main/resources/PareclComparison/"));
+		outFolder = new File("/tmp/ParametersOfScene");
+		setFiles(new File("src/main/resources/ParcelComparison/"));
 		parcelFile = new File("/tmp/parcelChosen.shp");
 		// genParcelAreaBoundaries(pF);
 		scaleZone = "genericZone";
@@ -124,12 +124,10 @@ public class GetParametersOfScene {
 				}
 				SimpleFeatureCollection roads = Collec.snapDatas(sdsRoad.getFeatureSource().getFeatures(),
 						Geom.unionSFC(sfc).buffer(buffer).buffer(-buffer));
-				if (roads.size() > 1) {
-					System.out.println(roads.size());
+				if (roads.size() > 1)
 					MakeStatisticGraphs.roadGraph(roads, "length of the " + scaleZone + " " + zone + " roads ", "width of the road",
 							"lenght of the type of road", outFolder);
-					// TODO ajouter ratio parcels?
-				}
+				// TODO ajouter ratio parcels?
 			}
 		}
 		sdsRoad.dispose();

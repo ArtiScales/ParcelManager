@@ -127,7 +127,7 @@ public class Densification {
 								SimpleFeature parcelCuted = parcelCutedIt.next();
 								sFBMinParcel.set(geomName, parcelCuted.getDefaultGeometry());
 								sFBMinParcel.set(ParcelSchema.getMinParcelSectionField(),
-										(String) feat.getAttribute(ParcelSchema.getMinParcelSectionField()) + "-Densifyed");
+										makeNewSection((String) feat.getAttribute(ParcelSchema.getMinParcelSectionField())));
 								sFBMinParcel.set(ParcelSchema.getMinParcelNumberField(), String.valueOf(i++));
 								sFBMinParcel.set(ParcelSchema.getMinParcelCommunityField(),
 										feat.getAttribute(ParcelSchema.getMinParcelCommunityField()));
@@ -339,5 +339,27 @@ public class Densification {
 					profile.getMinimalArea(), profile.getMaximalWidth(), profile.getStreetWidth(), profile.getDecompositionLevelWithoutStreet());
 		} 
 		return parcelDensified;
+	}
+	
+	/**
+	 * Create a new section name following a precise rule.
+	 * 
+	 * @param section
+	 *            name of the former section
+	 * @return the new section's name
+	 */
+	public static String makeNewSection(String section) {
+		return section + "-Densifyed";
+	}
+
+	/**
+	 * Check if the input {@link SimpleFeature} has a section field that has been simulated with this present goal.
+	 * 
+	 * @param feat
+	 *            {@link SimpleFeature} to test.
+	 * @return true if the section field is marked with the {@link #makeNewSection(String)} method.
+	 */
+	public static boolean isNewSection(SimpleFeature feat) {
+		return ((String) feat.getAttribute(ParcelSchema.getMinParcelSectionField())).endsWith("-Densifyed");
 	}
 }

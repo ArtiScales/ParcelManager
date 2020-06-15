@@ -168,7 +168,7 @@ public class ZoneDivision {
 						// avoid silvers (plants the code)
 						if (geom.getArea() > 10) {
 							sfBuilder.set(geomName, geom);
-							sfBuilder.set(ParcelSchema.getMinParcelSectionField(), "New" + numZone + "Section");
+							sfBuilder.set(ParcelSchema.getMinParcelSectionField(), makeNewSection(numZone));
 							sfBuilder.set(MarkParcelAttributeFromPosition.getMarkFieldName(), 1);
 							goOdZone.add(sfBuilder.buildFeature(Attribute.makeUniqueId()));
 						}
@@ -357,5 +357,28 @@ public class ZoneDivision {
 			System.out.println("createZoneToCut(): zone is empty");
 		}
 		return finalZone;
+	}
+
+	/**
+	 * Create a new section name following a precise rule.
+	 * 
+	 * @param numZone
+	 *            number of the nex zone
+	 * @return the section's name
+	 */
+	public static String makeNewSection(int numZone) {
+		return "New" + numZone + "Section";
+	}
+
+	/**
+	 * Check if the input {@link SimpleFeature} has a section field that has been simulated with this present goal.
+	 * 
+	 * @param feat
+	 *            {@link SimpleFeature} to test.
+	 * @return true if the section field is marked with the {@link #makeNewSection(int)} method.
+	 */
+	public static boolean isNewSection(SimpleFeature feat) {
+		String section = (String) feat.getAttribute(ParcelSchema.getMinParcelSectionField());
+		return section.startsWith("New") && section.endsWith("Section");
 	}
 }

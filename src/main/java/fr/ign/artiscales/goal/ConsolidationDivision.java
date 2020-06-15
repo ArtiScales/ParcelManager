@@ -234,7 +234,7 @@ public class ConsolidationDivision {
 							problem.printStackTrace();
 						} 
 						sfBuilderFinalParcel.set("the_geom", freshCut.getDefaultGeometry());
-						sfBuilderFinalParcel.set(ParcelSchema.getMinParcelSectionField(), "newSection" + sec + "ConsolidationDivision");
+						sfBuilderFinalParcel.set(ParcelSchema.getMinParcelSectionField(), makeNewSection(sec));
 						sfBuilderFinalParcel.set(ParcelSchema.getMinParcelNumberField(), String.valueOf(i++));
 						sfBuilderFinalParcel.set(ParcelSchema.getMinParcelCommunityField(),
 								feat.getAttribute(ParcelSchema.getMinParcelCommunityField()));
@@ -284,4 +284,26 @@ public class ConsolidationDivision {
 		return result;
 	}
 
+	/**
+	 * Create a new section name following a precise rule.
+	 * 
+	 * @param section
+	 *            former name of the next zone
+	 * @return the section's name
+	 */
+	public static String makeNewSection(String section) {
+		return "newSection" + section + "ConsolidationDivision";
+	}
+
+	/**
+	 * Check if the input {@link SimpleFeature} has a section field that has been simulated with this present goal.
+	 * 
+	 * @param feat
+	 *            {@link SimpleFeature} to test.
+	 * @return true if the section field is marked with the {@link #makeNewSection(String)} method.
+	 */
+	public static boolean isNewSection(SimpleFeature feat) {
+		String section = (String) feat.getAttribute(ParcelSchema.getMinParcelSectionField());
+		return section.startsWith("newSection") && section.endsWith("ConsolidationDivision");
+	}
 }
