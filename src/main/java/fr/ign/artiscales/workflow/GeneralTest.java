@@ -79,7 +79,7 @@ public class GeneralTest {
 		SimpleFeatureCollection finaux = FrenchParcelFields.setOriginalFrenchParcelAttributes(parcelCuted, parcel);
 		Collec.exportSFC(finaux, new File(outFolder, "parcelTotZone.shp"));
 		Collec.exportSFC(zone, new File(outFolder, "zone.shp"));
-		StreetRatioParcels.streetRatioParcelZone(zone, finaux, statFolder, roadFile);
+		StreetRatioParcels.streetRatioZone(zone, finaux, profilelargeCollective.getNameBuildingType(), statFolder, roadFile);
 		MakeStatisticGraphs.makeAreaGraph(
 				Arrays.stream(finaux.toArray(new SimpleFeature[0])).filter(sf -> ZoneDivision.isNewSection(sf)).collect(Collectors.toList()),
 				statFolder, "Zone division - large collective building simulation");
@@ -100,8 +100,7 @@ public class GeneralTest {
 				profileDetached.getLargeStreetWidth(), profileDetached.getDecompositionLevelWithoutStreet());
 		SimpleFeatureCollection finalNormalZone = FrenchParcelFields.setOriginalFrenchParcelAttributes(cutedNormalZone, parcel);
 		Collec.exportSFC(finalNormalZone, new File(outFolder, "ParcelConsolidRecomp.shp"));
-		StreetRatioParcels.streetRatioParcels(markedZone, finalNormalZone, statFolder, roadFile);
-
+		StreetRatioParcels.streetRatioParcels(markedZone, finalNormalZone, profileDetached.getNameBuildingType(), statFolder, roadFile);
 		MakeStatisticGraphs.makeAreaGraph(Arrays.stream(finalNormalZone.toArray(new SimpleFeature[0]))
 				.filter(sf -> ConsolidationDivision.isNewSection(sf)).collect(Collectors.toList()), statFolder,
 				"Consolidation-division - detached houses simulation");

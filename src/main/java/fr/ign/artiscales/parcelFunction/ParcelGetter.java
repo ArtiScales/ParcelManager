@@ -486,16 +486,15 @@ public class ParcelGetter {
 					boolean nc = false;
 
 					for (String s : ParcelState.parcelInBigZone(feat, zoningFile)) {
-						if (s.equals("AU")) {
+						if (s.equals("AU"))
 							au = true;
-						} else if (s.equals("U")) {
+						else if (s.equals("U"))
 							u = true;
-						} else if (s.equals("NC")) {
+						else if (s.equals("NC"))
 							nc = true;
-						} else {
-							// if the parcel is outside of the zoning file, we don't keep it
+						// if the parcel is outside of the zoning file, we don't keep it
+						else
 							continue parc;
-						}
 					}
 					finalParcelBuilder.set("the_geom", geom);
 					finalParcelBuilder.set("CODE", FrenchParcelFields.makeFrenchParcelCode(feat));
@@ -514,13 +513,11 @@ public class ParcelGetter {
 					newParcel.add(finalParcelBuilder.buildFeature(Attribute.makeUniqueId()));
 				}
 			}
-
 		} catch (Exception problem) {
 			problem.printStackTrace();
 		} 
 		parcelSDS.dispose();
 		shpDSBati.dispose();
-
 		return Collec.exportSFC(newParcel.collection(), new File(tmpFolder, "parcelProcessed.shp"));
 	}
 
