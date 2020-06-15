@@ -5,12 +5,14 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.stream.Collectors;
 
 import org.geotools.data.DataUtilities;
 import org.geotools.data.shapefile.ShapefileDataStore;
 import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.data.simple.SimpleFeatureIterator;
 import org.locationtech.jts.geom.Geometry;
+import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.referencing.FactoryException;
 import org.opengis.referencing.NoSuchAuthorityCodeException;
 
@@ -106,7 +108,8 @@ public class GetParametersOfScene {
 			SimpleFeatureCollection sfc = MarkParcelAttributeFromPosition
 					.getOnlyMarkedParcels(MarkParcelAttributeFromPosition.markBuiltParcel(listSFC.get(zone), buildingFile));
 			if (sfc.size() > 1) {
-				AreaGraph vals = MakeStatisticGraphs.sortValuesAndCategorize(sfc, scaleZone + zone, true);
+				AreaGraph vals = MakeStatisticGraphs.sortValuesAndCategorize(
+						Arrays.stream(sfc.toArray(new SimpleFeature[0])).collect(Collectors.toList()), scaleZone + zone, true);
 				vals.toCSV(outFolder);
 				MakeStatisticGraphs.makeGraphHisto(vals, outFolder, "area of the built parcel of the " + scaleZone + " " + zone + " without crests",
 						"parcel area", "nb parcels", 15);
