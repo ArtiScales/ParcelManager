@@ -1,10 +1,10 @@
-#Field Attributes
+# Field Attributes
 Parcel Manager is made to be adaptable for every input of parcels. 
 It works with three basic fields, defined as follow:
 <ul>
-    <li>The '<b>DEPCOM</b>' fied represent the unique identifier of the community (it can be a zipcode or a statistical code)</li>
-    <li>The '<b>SECTION</b>' field represent a zone which must be unique for each communities</li>
-    <li>The '<b>NUMERO</b>' field represent a unique number of parcel within each section</li>
+    <li>The <i>community field</i> represent the unique identifier of the community (it can be a zipcode or a statistical code). Its default name is '<b>DEPCOM</b>'</li>
+    <li>The <i>section field</i> represent a zone which must be unique for each communities. Its default name is '<b>SECTION</b>'</li>
+    <li>The <i>number field</i> represent a unique number of parcel within each section. Its default name is '<b>NUMERO</b>'</li>
 </ul>
 Those attribute are generated during every Parcel Manager process.
 If the input parcels already contains those attributes, they are copied to the not simuled parcels. If the field names are different, it is possible to change them with the static setters from the <a href="https://github.com/ArtiScales/ArtiScales-tools/blob/master/src/main/java/fr/ign/cogit/parcelFunction/ParcelSchema.java">parcelFunction.ParcelSchema class</a>.
