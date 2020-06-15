@@ -1,10 +1,10 @@
 {
 	"largeStreetLevel": "6",
-	"decompositionLevelWithoutStreet": "4",
+	"decompositionLevelWithoutStreet": "3",
 	"largeStreetWidth": "15",
 	"streetWidth": "7",	
-	"maximalArea": "420",
-	"minimalArea": "100",
+	"maximalArea": "550",
+	"minimalArea": "175",
 	"maximalWidth": "7",
 	"nameBuildingType": "smallHouse",
 	"lenDriveway": "3"

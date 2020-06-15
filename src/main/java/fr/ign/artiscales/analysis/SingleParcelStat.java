@@ -38,30 +38,30 @@ import fr.ign.cogit.geometryGeneration.CityGeneration;
  * @author Maxime Colomb
  *
  */
-public class ParcelStat {
+public class SingleParcelStat {
 
-	public static void main(String[] args) throws Exception {
-		long strat = System.currentTimeMillis();
-		// ShapefileDataStore sdsParcel = new ShapefileDataStore(
-		// new File("/home/ubuntu/workspace/ParcelManager/src/main/resources/GeneralTest/parcel.shp").toURI().toURL());
-		ShapefileDataStore sdsParcelEv = new ShapefileDataStore(
-				new File("/home/thema/Documents/ParcelManager/ParcelComparison/out/evolvedParcelsSort.shp").toURI().toURL());
-		ShapefileDataStore sdsSimu = new ShapefileDataStore(
-				new File("/home/thema/Documents/ParcelManager/ParcelComparison/out/simulatedParcels.shp").toURI().toURL());
-		SimpleFeatureCollection parcelEv = MarkParcelAttributeFromPosition.markAllParcel(sdsParcelEv.getFeatureSource().getFeatures());
-		SimpleFeatureCollection parcelSimu = MarkParcelAttributeFromPosition.markAllParcel(sdsSimu.getFeatureSource().getFeatures());
-		ShapefileDataStore sdsRoad = new ShapefileDataStore(
-				new File("/home/thema/Documents/MC/workspace/ParcelManager/src/main/resources/ParcelComparison/road.shp").toURI().toURL());
-		SimpleFeatureCollection road = sdsRoad.getFeatureSource().getFeatures();
-		
-		writeStatSingleParcel(parcelEv, road, new File("/home/thema/Documents/ParcelManager/ParcelComparison/out/statEvol"));
-		writeStatSingleParcel(parcelSimu, road, parcelEv, new File("/home/thema/Documents/ParcelManager/ParcelComparison/out/statSumuled"));
-
-//		Collec.exportSFC(makeHausdorfDistanceMaps(parcelEv, parcelSimu), new File("/tmp/haus"));
-		sdsParcelEv.dispose();
-		sdsSimu.dispose();
-		System.out.println("time : " + (System.currentTimeMillis() - strat));
-	}
+//	public static void main(String[] args) throws Exception {
+//		long strat = System.currentTimeMillis();
+//		// ShapefileDataStore sdsParcel = new ShapefileDataStore(
+//		// new File("/home/ubuntu/workspace/ParcelManager/src/main/resources/GeneralTest/parcel.shp").toURI().toURL());
+//		ShapefileDataStore sdsParcelEv = new ShapefileDataStore(
+//				new File("/home/thema/Documents/ParcelManager/ParcelComparison/out/evolvedParcelsSort.shp").toURI().toURL());
+//		ShapefileDataStore sdsSimu = new ShapefileDataStore(
+//				new File("/home/thema/Documents/ParcelManager/ParcelComparison/out/simulatedParcels.shp").toURI().toURL());
+//		SimpleFeatureCollection parcelEv = MarkParcelAttributeFromPosition.markAllParcel(sdsParcelEv.getFeatureSource().getFeatures());
+//		SimpleFeatureCollection parcelSimu = MarkParcelAttributeFromPosition.markAllParcel(sdsSimu.getFeatureSource().getFeatures());
+//		ShapefileDataStore sdsRoad = new ShapefileDataStore(
+//				new File("/home/thema/Documents/MC/workspace/ParcelManager/src/main/resources/ParcelComparison/road.shp").toURI().toURL());
+//		SimpleFeatureCollection road = sdsRoad.getFeatureSource().getFeatures();
+//		
+//		writeStatSingleParcel(parcelEv, road, new File("/home/thema/Documents/ParcelManager/ParcelComparison/out/statEvol"));
+//		writeStatSingleParcel(parcelSimu, road, parcelEv, new File("/home/thema/Documents/ParcelManager/ParcelComparison/out/statSumuled"));
+//
+////		Collec.exportSFC(makeHausdorfDistanceMaps(parcelEv, parcelSimu), new File("/tmp/haus"));
+//		sdsParcelEv.dispose();
+//		sdsSimu.dispose();
+//		System.out.println("time : " + (System.currentTimeMillis() - strat));
+//	}
 
 	public static void writeStatSingleParcel(SimpleFeatureCollection parcels, File roadFile, File parcelStatCsv)
 			throws NoSuchAuthorityCodeException, IOException, FactoryException {
@@ -91,7 +91,7 @@ public class ParcelStat {
 					Geometry parcelGeom = (Geometry) parcel.getDefaultGeometry();
 					double widthRoadContact = ParcelState.getParcelFrontSideWidth((Polygon) Geom.getPolygon(parcelGeom),
 							Collec.snapDatas(roads, parcelGeom.buffer(7)),
-							Geom.fromMultiToLineString(Collec.fromPolygonSFCtoRingMultiLines(Collec.snapDatas(islet, parcelGeom))));
+							Geom.fromMultiToLineString(Collec.fromPolygonSFCtoRingMultiLines(Collec.snapDatas(islet, parcelGeom.buffer(7)))));
 					boolean contactWithRoad = false;
 					if (widthRoadContact != 0)
 						contactWithRoad = true;

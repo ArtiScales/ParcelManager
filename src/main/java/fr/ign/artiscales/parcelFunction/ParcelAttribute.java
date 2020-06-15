@@ -35,7 +35,7 @@ public class ParcelAttribute {
 //	}
 	 
 	/**
-	 * get the Community Code number from a {@link SimpleFeature} (that is most of the time, a parcel or building)
+	 * Get the Community Code number from a {@link SimpleFeature} (that is most of the time, a parcel or building)
 	 * 
 	 * @param sFCWithCommunityCode
 	 *            Collection of cities. The default field name is <i>DEPCOM</i> an can be changed with the function {@link #setCommunityTypeFieldName(String)}

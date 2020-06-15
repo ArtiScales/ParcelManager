@@ -80,7 +80,7 @@ public class FrenchZoningSchemas {
 	}
 
 	/**
-	 * gives the usual names given to the three types of zones
+	 * Gives the usual names given to the three types of zones in a french context. If null or unknown input, return every known answers.
 	 * 
 	 * @param zone
 	 *            normalized type of zone
@@ -104,6 +104,16 @@ public class FrenchZoningSchemas {
 			listZones.add("NC");
 			listZones.add("ZNC");
 			break;
+		default:
+			listZones.add("U");
+			listZones.add("ZC");
+			listZones.add("C");
+			listZones.add("AU");
+			listZones.add("TBC");
+			listZones.add("A");
+			listZones.add("N");
+			listZones.add("NC");
+			listZones.add("ZNC");
 		}
 		return listZones;
 	}

@@ -37,47 +37,83 @@ public class GeneralFields {
 	 */
 	static String zonePreciseNameField = "LIBELLE";
 	/**
-	 * Type of parcels. Mostly defines their attributes the call of the schemas for re-assignation. Its default value is 'french'.
+	 * Type of parcels. Mostly defines their attributes the call of the schemas for re-assignation. Its default value is '<b>french</b>'.
 	 */
 	static String parcelFieldType = "french";
 	static String zoneCommunityCode = "DEPCOM";
+
 	/**
 	 * This method returns the parcels of a given collection that have been simulated. The type of fields must be precise and that can change the specific rule. In the case of
 	 * French Parcels, it selects the parcels if the length of the filed value for the <i>SECTION</i> information is upper than 2 (French Parcel have a two letters section, and
 	 * Parcel Manager creates longer section names) Other methods can be set to determine if a parcel has been simulated.
 	 * 
 	 * @param sfc
-	 *            Parcel collection to sort
+	 *            Parcel {@link SimpleFeatureCollection} to sort
 	 * @return The parcel {@link SimpleFeatureCollection} with only the simulated parcels
 	 * @throws IOException
 	 */
-	public static SimpleFeatureCollection getParcelWithSimulatedFileds(SimpleFeatureCollection sfc) throws IOException  {
+	public static SimpleFeatureCollection getParcelWithSimulatedFileds(SimpleFeatureCollection sfc) throws IOException {
 		DefaultFeatureCollection result = new DefaultFeatureCollection();
 		Arrays.stream(sfc.toArray(new SimpleFeature[0])).forEach(parcel -> {
-			if (parcelFieldType.equals("french")) {
-				if (isParcelLikeFrenchHasSimulatedFileds(parcel)) {
+			if (parcelFieldType.equals("french"))
+				if (isParcelLikeFrenchHasSimulatedFileds(parcel))
 					result.add(parcel);
-				}
-			}
 		});
 		return result.collection();
 	}
 
 	/**
-	 * Add a "CODE" field for every parcels of a {@link SimpleFeatureCollection}. Only french solution implemented yet. 
+	 * Get a list of all the {@link #zonePreciseNameField} values of the given collection. The city code field name is <i>LIBELLE<i> by default and can be changed with the method
+	 * {@link #setZonePreciseNameField(String)}.
+	 * 
+	 * @param zonings
+	 *            Input {@link SimpleFeatureCollection} of zoning plan
+	 * @return The list of every <i>city code numbers</i> from the input parcels.
+	 */
+	public static List<String> getPreciseZoningTypes(SimpleFeatureCollection zonings) {
+		List<String> result = new ArrayList<String>();
+		Arrays.stream(zonings.toArray(new SimpleFeature[0])).forEach(feat -> {
+			String code = ((String) feat.getAttribute(zonePreciseNameField));
+			if (code != null && !code.isEmpty() && !result.contains(code))
+				result.add(code);
+		});
+		return result;
+	}
+
+	/**
+	 * Get a list of all the {@link #zoneGenericNameField} values of the given collection. The city code field name is <i>TYPEZONE<i> by default and can be changed with the method
+	 * {@link #setZoneGenericNameField(String)}.
+	 * 
+	 * @param zonings
+	 *            Input {@link SimpleFeatureCollection} of zoning plan
+	 * @return The list of every <i>city code numbers</i> from the input parcels.
+	 */
+	public static List<String> getGenericZoningTypes(SimpleFeatureCollection zonings) {
+		List<String> result = new ArrayList<String>();
+		Arrays.stream(zonings.toArray(new SimpleFeature[0])).forEach(feat -> {
+			String code = ((String) feat.getAttribute(zoneGenericNameField));
+			if (code != null && !code.isEmpty() && !result.contains(code))
+				result.add(code);
+		});
+		return result;
+	}
+
+	/**
+	 * Add a "CODE" field for every parcels of a {@link SimpleFeatureCollection}. Only french solution implemented yet.
 	 * 
 	 * @param parcels
 	 *            {@link SimpleFeatureCollection} of parcels.
 	 * @return The collection with the "CODE" field added.
 	 */
 	public static SimpleFeatureCollection addParcelCode(SimpleFeatureCollection parcels) throws IOException {
-		SimpleFeatureCollection result = new DefaultFeatureCollection();
-		if (parcelFieldType.equals("french")) {
-			result = FrenchParcelFields.addFrenchParcelCode(parcels);
+		switch (parcelFieldType) {
+		case "french":
+			return FrenchParcelFields.addFrenchParcelCode(parcels);
 		}
-		return result;
+		System.out.println("No parcel field type defined for GeneralFields.addParcelCode. Return null");
+		return null;
 	}
-	
+
 	/**
 	 * Trivial method to get the genericZone list of a type
 	 * 
@@ -86,13 +122,12 @@ public class GeneralFields {
 	 * @return the given list( as final)
 	 */
 	public static List<String> getGenericZoneUsualNames(String genericZone) {
-		List<String> genericZoneUsualNames = new ArrayList<String>();
 		switch (parcelFieldType) {
 		case "french":
-			genericZoneUsualNames = FrenchZoningSchemas.getUsualNames(genericZone);
-			break;
+			return FrenchZoningSchemas.getUsualNames(genericZone);
 		}
-		return genericZoneUsualNames;
+		System.out.println("No parcel field type defined for GeneralFields.getGenericZoneUsualNames. Return null");
+		return null;
 	}
 
 	/**
@@ -112,8 +147,8 @@ public class GeneralFields {
 					"isParcelHasSimulatedFields: unknown method because of an unknown parcel nomenclature (" + parcelFieldType + "). Returned false");
 			return false;
 		}
-	}	
-	
+	}
+
 	/**
 	 * This method allows to determine if a parcel has been simulated. It looks if the length of filed value for the <i>SECTION</i> information is upper than 2 (French Parcel have
 	 * a two letters section, and Parcel Manager creates longer section names). Other methods can be set to determine if a parcel has been simulated.
@@ -124,12 +159,11 @@ public class GeneralFields {
 	 */
 	public static boolean isParcelLikeFrenchHasSimulatedFileds(SimpleFeature feature) {
 		if (((String) feature.getAttribute(ParcelSchema.getMinParcelSectionField())) != null
-				&& ((String) feature.getAttribute(ParcelSchema.getMinParcelSectionField())).length() > 3) {
+				&& ((String) feature.getAttribute(ParcelSchema.getMinParcelSectionField())).length() > 3)
 			return true;
-		}
 		return false;
 	}
-	
+
 	public static String getZoneGenericNameField() {
 		return zoneGenericNameField;
 	}
@@ -163,7 +197,8 @@ public class GeneralFields {
 	}
 
 	/**
-	 * Change a {@link SimpleFeatureCollection} of any kind to follow the minimum schema for Parcel Manager (see method {@link ParcelSchema#getSFBMinParcel()} with the help of an extra {@link SimpleFeatureCollection}.
+	 * Change a {@link SimpleFeatureCollection} of any kind to follow the minimum schema for Parcel Manager (see method {@link ParcelSchema#getSFBMinParcel()} with the help of an
+	 * extra {@link SimpleFeatureCollection}.
 	 * 
 	 * @param sfc
 	 *            input {@link SimpleFeatureCollection} to transform.
@@ -182,7 +217,6 @@ public class GeneralFields {
 			while (it.hasNext()) {
 				SimpleFeature feat = it.next();
 				builder.set(builder.getFeatureType().getGeometryDescriptor().getLocalName(), feat.getDefaultGeometry());
-				
 				builder.set(ParcelSchema.getMinParcelCommunityField(), ParcelAttribute.getCommunityCodeFromSFC(sfcWithInfo, feat));
 				builder.set(ParcelSchema.getMinParcelSectionField(), ParcelAttribute.getSectionCodeFromSFC(sfcWithInfo, feat));
 				builder.set(ParcelSchema.getMinParcelNumberField(), ParcelAttribute.getNumberCodeFromSFC(sfcWithInfo, feat));
@@ -193,7 +227,7 @@ public class GeneralFields {
 		}
 		return result.collection();
 	}
-	
+
 	/**
 	 * Change a {@link SimpleFeatureCollection} of any kind to follow the minimum schema for Parcel Manager (see method {@link ParcelSchema#getSFBMinParcel()}.
 	 * 

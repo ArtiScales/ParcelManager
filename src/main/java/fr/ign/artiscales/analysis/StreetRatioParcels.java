@@ -36,7 +36,7 @@ import fr.ign.cogit.geometryGeneration.CityGeneration;
  * @author Maxime Colomb
  *
  */
-public class StatParcelStreetRatio {
+public class StreetRatioParcels {
 	
 	private static boolean overwrite = true;
 
@@ -75,14 +75,13 @@ public class StatParcelStreetRatio {
 		DefaultFeatureCollection zone = new DefaultFeatureCollection();
 		FilterFactory2 ff = CommonFactoryFinder.getFilterFactory2(GeoTools.getDefaultHints());
 		Geometry multiGeom ;
-		if (Collec.isCollecContainsAttribute(initialMarkedParcel, MarkParcelAttributeFromPosition.getMarkFieldName())) {
+		if (Collec.isCollecContainsAttribute(initialMarkedParcel, MarkParcelAttributeFromPosition.getMarkFieldName()))
 			multiGeom = Geom
 					.unionSFC(initialMarkedParcel.subCollection(ff.like(ff.property(MarkParcelAttributeFromPosition.getMarkFieldName()), "1")));
-		}
 		else {
 			System.out.println("Parcels haven't been previously marked : stop StatParcelStreetRatio");
 			return 0.0;
-//			multiGeom = Geom.unionGeom(Arrays.stream(initialMarkedParcel.toArray(new SimpleFeature[0])).filter(feat -> GeneralFields.isParcelLikeFrenchHasSimulatedFileds(feat)).map(feat -> (Geometry) feat.getDefaultGeometry()).collect(Collectors.toList()));			
+//			multiGeom = Geom.unionGeom(Arrays.stream(initialMarkedParcel.toArray(new SimpleFeature[0])).filter(feat -> GeneralFields.isParcelLikeFrenchHasSimulatedFileds(feat)).map(feat -> (Geometry) feat.getDefaultGeometry()).collect(Collectors.toList()));
 		}
 		SimpleFeatureBuilder sfBuilderZone = FrenchParcelSchemas.getSFBFrenchZoning();
 		for (int i = 0; i < multiGeom.getNumGeometries(); i++) {
@@ -115,18 +114,18 @@ public class StatParcelStreetRatio {
 		SimpleFeatureCollection islets = CityGeneration.createUrbanIslet(cutParcel);
 
 		Double ratio = areaParcelNewlySimulated(cutParcel) / Collec.area(zone);
-		String[] firstLine = { "CODE", ParcelSchema.getMinParcelCommunityField(), GeneralFields.getZonePreciseNameField(), "InitialArea", "ParcelsArea", "RatioArea", "RatioParcelConnectionRoad" };
+		String[] firstLine = { "CODE", ParcelSchema.getMinParcelCommunityField(), GeneralFields.getZonePreciseNameField(), "InitialArea",
+				"ParcelsArea", "RatioArea", "RatioParcelConnectionRoad" };
 		int count = 0;
-		try (SimpleFeatureIterator zones = zone.features()){
+		try (SimpleFeatureIterator zones = zone.features()) {
 			while (zones.hasNext()) {
 				String[] tab = new String[6];
 				SimpleFeature z = zones.next();
 				tab[0] = (String) z.getAttribute(ParcelSchema.getMinParcelCommunityField());
 				tab[1] = (String) z.getAttribute(GeneralFields.getZonePreciseNameField());
-
 				DefaultFeatureCollection df = new DefaultFeatureCollection();
-				//get the intersecting parcels
-				try (SimpleFeatureIterator parcelIt = cutParcel.features()){
+				// get the intersecting parcels
+				try (SimpleFeatureIterator parcelIt = cutParcel.features()) {
 					while (parcelIt.hasNext()) {
 						SimpleFeature parcel = parcelIt.next();
 						if (((Geometry) z.getDefaultGeometry()).buffer(0.5).contains((Geometry) parcel.getDefaultGeometry())) {
@@ -164,9 +163,8 @@ public class StatParcelStreetRatio {
 		try (SimpleFeatureIterator parcels = markedParcels.features()) {
 			while (parcels.hasNext()) {
 				SimpleFeature parcel = parcels.next();
-				if (GeneralFields.isParcelHasSimulatedFields(parcel)) {
+				if (GeneralFields.isParcelHasSimulatedFields(parcel))
 					totArea = totArea + ((Geometry) parcel.getDefaultGeometry()).getArea();
-				}
 			}
 		} catch (Exception problem) {
 			problem.printStackTrace();
