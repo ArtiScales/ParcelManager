@@ -16,7 +16,6 @@ import org.locationtech.jts.geom.LineSegment;
 import org.locationtech.jts.geom.LineString;
 import org.locationtech.jts.geom.MultiLineString;
 import org.locationtech.jts.geom.Polygon;
-import org.locationtech.jts.geom.PrecisionModel;
 import org.locationtech.jts.linearref.LengthIndexedLine;
 import org.locationtech.jts.math.Vector2D;
 import org.locationtech.jts.operation.linemerge.LineMerger;
@@ -82,15 +81,15 @@ public class Util {
     return (LineString) merger.getMergedLineStrings().iterator().next();// FIXME we assume a lot here
   }
 
-  public static Polygon polygonUnion(List<Polygon> list) {
+  public static Polygon polygonUnion(List<Polygon> list, GeometryPrecisionReducer reducer) {
     if (list.isEmpty())
       return null;
-    List<Geometry> reducedList = list.stream().filter(g->g!=null).map(g -> GeometryPrecisionReducer.reduce(g, new PrecisionModel(100))).collect(Collectors.toList());
+    List<Geometry> reducedList = list.stream().filter(g->g!=null).map(g -> reducer.reduce(g)).collect(Collectors.toList());
     return (Polygon) new CascadedPolygonUnion(reducedList).union();
   }
 
-  public static Polygon polygonUnionWithoutHoles(List<Polygon> list) {
-    Polygon union = polygonUnion(list);
+  public static Polygon polygonUnionWithoutHoles(List<Polygon> list, GeometryPrecisionReducer reducer) {
+    Polygon union = polygonUnion(list, reducer);
     return union.getFactory().createPolygon(union.getExteriorRing().getCoordinates());
   }
 

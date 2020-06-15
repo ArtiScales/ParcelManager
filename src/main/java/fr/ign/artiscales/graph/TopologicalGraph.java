@@ -18,13 +18,12 @@ import org.geotools.data.FileDataStore;
 import org.geotools.data.Transaction;
 import org.geotools.data.shapefile.ShapefileDataStoreFactory;
 import org.geotools.feature.SchemaException;
+import org.locationtech.jts.algorithm.Orientation;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.geom.Polygon;
 import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.feature.simple.SimpleFeatureType;
-
-import com.google.common.collect.Comparators;
 
 public class TopologicalGraph {
   Map<Coordinate,Node> nodes = new HashMap<>();
@@ -65,8 +64,9 @@ public class TopologicalGraph {
     for (Polygon polygon: polygons) {
       Face f = new Face(polygon);
       this.faces.add(f);
-      // we reverse so that the coordinates are CCW
-      Coordinate[] coords = polygon.getExteriorRing().reverse().getCoordinates();
+      // make sure the coordinates are CCW
+      boolean ccw = Orientation.isCCW(polygon.getExteriorRing().getCoordinateSequence());
+      Coordinate[] coords = (ccw ? polygon.getExteriorRing() : polygon.getExteriorRing().reverse()).getCoordinates();
       HalfEdge first = null;
       HalfEdge previous = null;
       for (int index = 0; index < coords.length - 1; index++) {
@@ -110,16 +110,20 @@ public class TopologicalGraph {
     return edges.stream().filter(e -> (e.getOrigin() == node || e.getTarget() == node)).collect(Collectors.toList());
   }
 
-  public List<HalfEdge> incomingEdgesOf(Node node, List<HalfEdge> edges) {
+  public static List<HalfEdge> incomingEdgesOf(Node node, List<HalfEdge> edges) {
     return edges.stream().filter(e -> e.getTarget() == node).collect(Collectors.toList());
   }
 
-  public List<HalfEdge> outgoingEdgesOf(Node node, List<HalfEdge> edges) {
+  public static List<HalfEdge> outgoingEdgesOf(Node node, List<HalfEdge> edges) {
     return edges.stream().filter(e -> e.getOrigin() == node).collect(Collectors.toList());
   }
 
-  public HalfEdge next(Node node, HalfEdge edge, List<HalfEdge> edges) {
+  public static HalfEdge next(Node node, HalfEdge edge, List<HalfEdge> edges) {
     return outgoingEdgesOf(node, edges).stream().filter(e -> e != edge).findAny().orElse(null);
+  }
+
+  public static HalfEdge previous(Node node, HalfEdge edge, List<HalfEdge> edges) {
+    return incomingEdgesOf(node, edges).stream().filter(e -> e != edge).findAny().orElse(null);
   }
 
   public Node getCommonNode(HalfEdge e1, HalfEdge e2) {

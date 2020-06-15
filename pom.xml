@@ -152,7 +152,7 @@
 		<dependency>
 			<groupId>com.github.twak</groupId>
 			<artifactId>campskeleton</artifactId>
-			<version>master-SNAPSHOT</version>
+			<version>master-450b39a53e-1</version>
 		</dependency>
 		<dependency>
 			<groupId>com.fasterxml.jackson.core</groupId>

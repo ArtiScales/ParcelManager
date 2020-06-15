@@ -26,18 +26,17 @@ import org.twak.camp.Machine;
 import org.twak.camp.OffsetSkeleton;
 import org.twak.camp.Output;
 import org.twak.camp.Output.Face;
-import org.twak.camp.Output.SharedEdge;
 import org.twak.camp.Skeleton;
 import org.twak.utils.collections.Loop;
 import org.twak.utils.collections.LoopL;
+import org.twak.utils.collections.Loopable;
 
-import fr.ign.artiscales.graph.*;
-
+import fr.ign.artiscales.graph.HalfEdge;
+import fr.ign.artiscales.graph.Node;
+import fr.ign.artiscales.graph.TopologicalGraph;
 
 /**
- * Weighted straight skeleton computation.
- * Uses the campskeleton library.
- * The result is converted to a topological graph using half-edges.
+ * Weighted straight skeleton computation. Uses the campskeleton library. The result is converted to a topological graph using half-edges.
  * 
  * @author MBrasebin
  * @author Julien Perret
@@ -53,7 +52,8 @@ public class StraightSkeleton {
   /**
    * Compute a straight skeleton from the input polygon.
    * 
-   * @param p input polygon
+   * @param p
+   *          input polygon
    */
   public StraightSkeleton(Polygon p) {
     this(p, null, 0);
@@ -83,12 +83,19 @@ public class StraightSkeleton {
    */
   public StraightSkeleton(Polygon p, double[] angles, double cap) {
     this.inputPolygon = p;// (Polygon) TopologyPreservingSimplifier.simplify(inputPolygon, 0.1);
+    System.out.println("StraightSkeleton with " + cap + "\n" + p);
     Skeleton s = buildSkeleton(this.inputPolygon, angles);
     if (cap != 0) {
       s.capAt(cap);
     }
     s.skeleton();
-    this.graph = convertOutPut(s.output);
+    try {
+      this.graph = convertOutPut(s.output);
+    } catch (Exception e) {
+      s = buildSkeleton(this.inputPolygon, angles);
+      s.skeleton();
+      this.graph = convertOutPut(s.output);
+    }
   }
 
   public static Skeleton buildSkeleton(Polygon p, double[] angles) {
@@ -160,26 +167,26 @@ public class StraightSkeleton {
     for (Face face : new HashSet<>(out.faces.values())) {
       // create a corresponding face (if it has points - do not export the infinite face)
       if (!face.points.isEmpty()) {
-    	fr.ign.artiscales.graph.Face topoFace = new fr.ign.artiscales.graph.Face();
+        fr.ign.artiscales.graph.Face topoFace = new fr.ign.artiscales.graph.Face();
         LinearRing exterior = null;
         List<LinearRing> interiors = new ArrayList<>();
-        for (Loop<SharedEdge> loop : face.edges) {// can it actually have more than a loop?
-          // for each edge
+        for (Loop<Point3d> ptLoop : face.points) {
           List<Coordinate> coord = new ArrayList<>();
           HalfEdge prev = null;
           HalfEdge first = null;
-          for (SharedEdge se : loop) {
-            Coordinate p1 = pointToCoordinate(se.getStart(face)), p2 = pointToCoordinate(se.getEnd(face));
+          for (Loopable<Point3d> loopable : ptLoop.loopableIterator()) {
+            Coordinate p1 = pointToCoordinate(loopable.get());
+            Coordinate p2 = pointToCoordinate(loopable.getNext().get());
             if (p1 != null && p2 != null) {
               // create or get the nodes
               Node n1 = getNode(p1, nodeMap, graph, factory), n2 = getNode(p2, nodeMap, graph, factory);
-              coord.add(n2.getCoordinate());
-              // Create a new halfedge (inverse the order to have the half edges in CCW order)
-              HalfEdge a = new HalfEdge(n2, n1, factory.createLineString(new Coordinate[] { n2.getCoordinate(), n1.getCoordinate() }));
+              coord.add(n1.getCoordinate());
+              // Create a new halfedge
+              HalfEdge a = new HalfEdge(n1, n2, factory.createLineString(new Coordinate[] { n1.getCoordinate(), n2.getCoordinate() }));
               // Add it to the graph
               graph.getEdges().add(a);
               graph.getEdges().forEach(e -> {
-                if (e.getOrigin() == n1 && e.getTarget() == n2) {
+                if (e.getOrigin() == n2 && e.getTarget() == n1) {
                   e.setTwin(a);
                 }
               });
@@ -199,6 +206,42 @@ public class StraightSkeleton {
           else
             interiors.add(ring);
         }
+        // for (Loop<SharedEdge> loop : face.edges) {// can it actually have more than a loop?
+        // // for each edge
+        // List<Coordinate> coord = new ArrayList<>();
+        // HalfEdge prev = null;
+        // HalfEdge first = null;
+        // for (SharedEdge se : loop) {
+        // Coordinate p1 = pointToCoordinate(se.getStart(face)), p2 = pointToCoordinate(se.getEnd(face));
+        // if (p1 != null && p2 != null) {
+        // // create or get the nodes
+        // Node n1 = getNode(p1, nodeMap, graph, factory), n2 = getNode(p2, nodeMap, graph, factory);
+        // coord.add(n2.getCoordinate());
+        // // Create a new halfedge (inverse the order to have the half edges in CCW order)
+        // HalfEdge a = new HalfEdge(n2, n1, factory.createLineString(new Coordinate[] { n2.getCoordinate(), n1.getCoordinate() }));
+        // // Add it to the graph
+        // graph.getEdges().add(a);
+        // graph.getEdges().forEach(e -> {
+        // if (e.getOrigin() == n1 && e.getTarget() == n2) {
+        // e.setTwin(a);
+        // }
+        // });
+        // a.setFace(topoFace);
+        // if (prev != null)
+        // prev.setNext(a);
+        // else
+        // first = a;
+        // prev = a;
+        // }
+        // }
+        // coord.add(coord.get(0));
+        // prev.setNext(first);
+        // LinearRing ring = factory.createLinearRing(coord.toArray(new Coordinate[coord.size()]));
+        // if (exterior == null)
+        // exterior = ring;
+        // else
+        // interiors.add(ring);
+        // }
         topoFace.setPolygon(factory.createPolygon(exterior, interiors.toArray(new LinearRing[interiors.size()])));
         graph.getFaces().add(topoFace);
       }
@@ -323,7 +366,8 @@ public class StraightSkeleton {
 
   public static void main(String[] args) throws ParseException {
     WKTReader2 reader = new WKTReader2();
-    Polygon polygon = (Polygon) reader.read("MultiPolygon (((936393.43999999994412065 6687559.91000000014901161, 936384.64000000001396984 6687567.15000000037252903, 936376.08999999996740371 6687576.51999999955296516, 936365 6687577.61000000033527613, 936336.14000000001396984 6687595.57000000029802322, 936350 6687599.04999999981373549, 936367.23999999999068677 6687605.88999999966472387, 936385.61999999999534339 6687618.24000000022351742, 936391.43999999994412065 6687627.63999999966472387, 936408.58999999996740371 6687642.67999999970197678, 936459.57999999995809048 6687680.36000000033527613, 936491.71999999997206032 6687701.34999999962747097, 936512.2099999999627471 6687715.16999999992549419, 936540.68000000005122274 6687731.37999999988824129, 936556.5400000000372529 6687714.76999999955296516, 936561 6687708.87999999988824129, 936571.47999999998137355 6687703.59999999962747097, 936588.09999999997671694 6687691.2900000000372529, 936590.64000000001396984 6687688.23000000044703484, 936588.39000000001396984 6687686.51999999955296516, 936559.59999999997671694 6687665.44000000040978193, 936538.06000000005587935 6687649.38999999966472387, 936502.18999999994412065 6687621.92999999970197678, 936480.41000000003259629 6687605.45000000018626451, 936464.77000000001862645 6687593.66999999992549419, 936452.51000000000931323 6687584.46999999973922968, 936434.97999999998137355 6687571.2099999999627471, 936427.41000000003259629 6687565.40000000037252903, 936408.43000000005122274 6687550.58000000007450581, 936393.43999999994412065 6687559.91000000014901161)))");
+    Polygon polygon = (Polygon) reader.read(
+        "MultiPolygon (((936393.43999999994412065 6687559.91000000014901161, 936384.64000000001396984 6687567.15000000037252903, 936376.08999999996740371 6687576.51999999955296516, 936365 6687577.61000000033527613, 936336.14000000001396984 6687595.57000000029802322, 936350 6687599.04999999981373549, 936367.23999999999068677 6687605.88999999966472387, 936385.61999999999534339 6687618.24000000022351742, 936391.43999999994412065 6687627.63999999966472387, 936408.58999999996740371 6687642.67999999970197678, 936459.57999999995809048 6687680.36000000033527613, 936491.71999999997206032 6687701.34999999962747097, 936512.2099999999627471 6687715.16999999992549419, 936540.68000000005122274 6687731.37999999988824129, 936556.5400000000372529 6687714.76999999955296516, 936561 6687708.87999999988824129, 936571.47999999998137355 6687703.59999999962747097, 936588.09999999997671694 6687691.2900000000372529, 936590.64000000001396984 6687688.23000000044703484, 936588.39000000001396984 6687686.51999999955296516, 936559.59999999997671694 6687665.44000000040978193, 936538.06000000005587935 6687649.38999999966472387, 936502.18999999994412065 6687621.92999999970197678, 936480.41000000003259629 6687605.45000000018626451, 936464.77000000001862645 6687593.66999999992549419, 936452.51000000000931323 6687584.46999999973922968, 936434.97999999998137355 6687571.2099999999627471, 936427.41000000003259629 6687565.40000000037252903, 936408.43000000005122274 6687550.58000000007450581, 936393.43999999994412065 6687559.91000000014901161)))");
     StraightSkeleton cs = new StraightSkeleton(polygon);
     TopologicalGraph graph = cs.getGraph();
     for (int id = 0; id < graph.getFaces().size(); id++)
