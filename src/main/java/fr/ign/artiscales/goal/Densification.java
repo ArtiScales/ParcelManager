@@ -39,7 +39,7 @@ public class Densification {
 	/**
 	 * If true, will save a shapefile containing only the simulated parcels in the temporary folder.
 	 */
-	public static boolean SAVEINTERMEDIATERESULT = false;
+	public static boolean SAVEINTERMEDIATERESULT = true;
 	/**
 	 * If true, overwrite the output saved shapefiles. If false, happend the simulated parcels to a potential already existing shapefile.
 	 */
