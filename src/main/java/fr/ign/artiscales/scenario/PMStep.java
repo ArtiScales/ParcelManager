@@ -132,15 +132,13 @@ public class PMStep {
 			switch (goal) {
 			case "zoneDivision":
 				ZoneDivision.PROCESS = parcelProcess;
-				((DefaultFeatureCollection) parcelCut).addAll(ZoneDivision.zoneDivision(parcelMarkedComm, ParcelGetter.getParcelByCommunityCode(parcel, communityNumber), TMPFOLDER,
-						OUTFOLDER, profile.getRoadEpsilon(), profile.getNoise(), profile.getMaximalArea(), profile.getMinimalArea(), profile.getMaximalWidth(),
-						profile.getStreetWidth(), profile.getLargeStreetLevel(), profile.getLargeStreetWidth(),
-						profile.getDecompositionLevelWithoutStreet()));
+				((DefaultFeatureCollection) parcelCut).addAll(ZoneDivision.zoneDivision(parcelMarkedComm, ParcelGetter.getParcelByCommunityCode(parcel, communityNumber),
+						TMPFOLDER, OUTFOLDER, profile, profile.getRoadEpsilon(), profile.getNoise()));
 				break;
 			case "densification":
 				((DefaultFeatureCollection) parcelCut).addAll(Densification.densification(parcelMarkedComm,
 						CityGeneration.createUrbanIslet(parcelMarkedComm), TMPFOLDER, BUILDINGFILE, ROADFILE, profile.getMaximalArea(),
-						profile.getMinimalArea(), profile.getMaximalWidth(), profile.getLenDriveway(),
+						profile.getMinimalArea(), profile.getMinimalWidthContactRoad(), profile.getLenDriveway(),
 						ParcelState.isArt3AllowsIsolatedParcel(parcel.features().next(), PREDICATEFILE), Geom.createBufferBorder(parcelMarkedComm)));
 				break;
 			case "densificationOrNeighborhood":
@@ -152,9 +150,7 @@ public class PMStep {
 			case "consolidationDivision":
 				ConsolidationDivision.PROCESS = parcelProcess;
 				((DefaultFeatureCollection) parcelCut).addAll(ConsolidationDivision.consolidationDivision(parcelMarkedComm, ROADFILE, TMPFOLDER,
-						profile.getRoadEpsilon(), profile.getNoise(), profile.getMaximalArea(), profile.getMinimalArea(), profile.getMaximalWidth(),
-						profile.getStreetWidth(), profile.getLargeStreetLevel(), profile.getLargeStreetWidth(),
-						profile.getDecompositionLevelWithoutStreet()));
+						profile, profile.getRoadEpsilon(), profile.getNoise()));
 				break;
 			case "densificationStudy":
 				DensificationStudy.runDensificationStudy(parcelMarkedComm, BUILDINGFILE, ROADFILE, ZONINGFILE, TMPFOLDER, OUTFOLDER,

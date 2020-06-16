@@ -5,7 +5,7 @@
 	"streetWidth": "9",
 	"maximalArea": "1200",
 	"minimalArea": "400",
-	"maximalWidth": "12",
+	"minimalWidthContactRoad": "12",
 	"nameBuildingType": "multiFamilyHouse",
 	"lenDriveway": "7"
 }

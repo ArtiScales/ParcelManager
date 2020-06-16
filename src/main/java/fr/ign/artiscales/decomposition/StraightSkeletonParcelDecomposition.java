@@ -51,6 +51,8 @@ import org.locationtech.jts.operation.union.CascadedPolygonUnion;
 import org.locationtech.jts.precision.GeometryPrecisionReducer;
 import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.feature.simple.SimpleFeatureType;
+import org.opengis.referencing.FactoryException;
+import org.opengis.referencing.NoSuchAuthorityCodeException;
 
 import fr.ign.artiscales.decomposition.analysis.FindObjectInDirection;
 import fr.ign.artiscales.decomposition.geom.Strip;
@@ -59,6 +61,7 @@ import fr.ign.artiscales.decomposition.graph.Face;
 import fr.ign.artiscales.decomposition.graph.GraphElement;
 import fr.ign.artiscales.decomposition.graph.Node;
 import fr.ign.cogit.FeaturePolygonizer;
+import fr.ign.cogit.geoToolsFunctions.vectors.Geom;
 
 /**
  * Re-implementation of block decomposition into parcels from :
@@ -1396,11 +1399,28 @@ public class StraightSkeletonParcelDecomposition {
     return new ImmutablePair<>(name, Double.parseDouble(impo.replaceAll(",", ".")));
   }
 
+	public static SimpleFeatureCollection decompose(SimpleFeatureCollection sfc, SimpleFeatureCollection roads, double offsetDistance,
+			double maxDistanceForNearestRoad, double minimalArea, double minWidth, double maxWidth, double noiseParameter, RandomGenerator rng)
+			throws SchemaException {
+		DefaultFeatureCollection result = new DefaultFeatureCollection();
+		try (SimpleFeatureIterator it = sfc.features()) {
+			while (it.hasNext()) {
+				Polygon pol = (Polygon) it.next().getDefaultGeometry();
+				result.addAll(decompose(pol, roads, offsetDistance, maxDistanceForNearestRoad, minimalArea, minWidth, maxWidth, noiseParameter, rng));
+
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return result;
+	}
+
   public static SimpleFeatureCollection decompose(Polygon pol, SimpleFeatureCollection roads, double offsetDistance, double maxDistanceForNearestRoad, double minimalArea,
-      double minWidth, double maxWidth, double noiseParameter, RandomGenerator rng) throws SchemaException {
+      double minWidth, double maxWidth, double noiseParameter, RandomGenerator rng) throws SchemaException, NoSuchAuthorityCodeException, IOException, FactoryException {
     // Partial skeleton
     CampSkeleton cs = new CampSkeleton(pol, offsetDistance);
-    cs.getGraph().getFaces().forEach(f->System.out.println(f.getGeometry()));
+//    cs.getGraph().getFaces().forEach(f->System.out.println(f.getGeometry()));
+    Geom.exportGeom(cs.getGraph().getFaces().stream().map(f->f.getGeometry()).collect(Collectors.toList()),new File(FOLDER_OUT_DEBUG+"cs"+pol.getArea()));
     List<Edge> edges = cs.getExteriorEdges();
     System.out.println("ExteriorEdges = " + edges.size());
     List<Edge> orderedEdges = new ArrayList<>();
@@ -1602,7 +1622,7 @@ public class StraightSkeletonParcelDecomposition {
   // featCollOut.addAll(feats);
   // ShapefileWriter.write(featCollOut, FOLDER_OUT_DEBUG + name);
   // }
-  public static void main(String[] args) throws IOException, SchemaException {
+  public static void main(String[] args) throws IOException, SchemaException, NoSuchAuthorityCodeException, FactoryException {
     // Input 1/ the input parcelles to split
     // String inputShapeFile = "src/main/resources/testData/parcelle.shp";
     // Input 3 (facultative) : the exterior of the urban block (it serves to determiner the multicurve)
