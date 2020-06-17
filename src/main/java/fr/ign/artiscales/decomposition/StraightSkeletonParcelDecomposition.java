@@ -78,10 +78,10 @@ public class StraightSkeletonParcelDecomposition {
   //////////////////////////////////////////////////////
   // Input data parameters
   // Must be a double attribute
-  public final static String NAME_ATT_IMPORTANCE = "length";
+  public final static String NAME_ATT_IMPORTANCE = "IMPORTANCE";
   // public final static String NAME_ATT_ROAD = "NOM_VOIE_G";
-  public final static String NAME_ATT_ROAD = "n_sq_vo";
-
+  public final static String NAME_ATT_ROAD = "NOM_RUE_G";
+ 
   //////////////////////////////////////////////////////
 
   // Indicate if a boundary of partial skeleton is at the border of input
