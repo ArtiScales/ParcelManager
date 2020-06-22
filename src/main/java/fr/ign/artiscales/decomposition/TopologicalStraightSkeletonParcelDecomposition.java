@@ -12,6 +12,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
@@ -41,6 +42,9 @@ import org.locationtech.jts.operation.polygonize.Polygonizer;
 import org.locationtech.jts.precision.GeometryPrecisionReducer;
 import org.locationtech.jts.simplify.TopologyPreservingSimplifier;
 import org.opengis.feature.simple.SimpleFeature;
+import org.opengis.filter.expression.PropertyName;
+import org.opengis.filter.sort.SortBy;
+import org.opengis.filter.sort.SortOrder;
 
 import fr.ign.artiscales.decomposition.analysis.FindObjectInDirection;
 import fr.ign.artiscales.graph.Face;
@@ -100,16 +104,17 @@ public class TopologicalStraightSkeletonParcelDecomposition {
   private List<HalfEdge> orderedEdges;
   private TopologicalGraph alphaStrips;
   private TopologicalGraph betaStrips;
+  private Map<Face, LineString> psiMap;
   private Map<HalfEdge, Optional<Pair<String, Double>>> attributes;
   private Geometry snapGeom;
 
   public TopologicalStraightSkeletonParcelDecomposition(Polygon p, SimpleFeatureCollection roads, String roadNameAttribute, String roadImportanceAttribute, double offsetDistance,
-      double maxDistanceForNearestRoad, double minimalArea) throws StraightSkeletonException {
+      double maxDistanceForNearestRoad, double minimalArea) throws StraightSkeletonException, EdgeException {
     this(p, roads, roadNameAttribute, roadImportanceAttribute, offsetDistance, maxDistanceForNearestRoad, minimalArea, 2);
   }
 
   public TopologicalStraightSkeletonParcelDecomposition(Polygon p, SimpleFeatureCollection roads, String roadNameAttribute, String roadImportanceAttribute, double offsetDistance,
-      double maxDistanceForNearestRoad, double minimalArea, int numberOfDigits) throws StraightSkeletonException {
+      double maxDistanceForNearestRoad, double minimalArea, int numberOfDigits) throws StraightSkeletonException, EdgeException {
     this.precisionModel = new PrecisionModel(Math.pow(10, numberOfDigits));
     this.tolerance = 2.0 / Math.pow(10, numberOfDigits);
     p = (Polygon) TopologyPreservingSimplifier.simplify(p, 10 * tolerance);
@@ -136,12 +141,36 @@ public class TopologicalStraightSkeletonParcelDecomposition {
     snapGeom = initialPolygon.getFactory().createGeometryCollection(graph.getFaces().stream().map(f -> f.getGeometry()).collect(Collectors.toList()).toArray(new Geometry[] {}));
     // get the road attributes
     this.attributes = new HashMap<>();
-    orderedEdges.stream()
-        .forEach(e -> attributes.put(e, FindObjectInDirection.find(e.getGeometry(), this.initialPolygon, roads, maxDistanceForNearestRoad).map(s -> getAttributes(s))));
+    for (HalfEdge e : orderedEdges) {
+      Optional<Pair<String, Double>> a = FindObjectInDirection.find(e.getGeometry(), this.initialPolygon, roads, maxDistanceForNearestRoad).map(s -> getAttributes(s));
+      // Optional<Pair<String, Double>> a = getRoad(roads, e.getGeometry(), maxDistanceForNearestRoad).map(s -> getAttributes(s));
+      attributes.put(e, a);
+    }
     this.alphaStrips = mergeOnLogicalStreets();
     export(alphaStrips, new File(FOLDER_OUT_DEBUG, "alpha"));
     this.betaStrips = fixDiagonalEdges(alphaStrips, attributes);
     export(betaStrips, new File(FOLDER_OUT_DEBUG, "beta"));
+  }
+
+  private Optional<SimpleFeature> getRoad(SimpleFeatureCollection roads, LineString line, double maxDistanceForNearestRoad) {
+    SimpleFeatureCollection collection0 = Util.select(roads, line.getPointN(0), maxDistanceForNearestRoad);
+    SimpleFeatureCollection collection1 = Util.select(roads, line.getPointN(1), maxDistanceForNearestRoad);
+    Point middle = line.getCentroid();
+    SimpleFeature closest = null;
+    double dist = Double.POSITIVE_INFINITY;
+    SimpleFeatureIterator iterator = collection0.features();
+    while (iterator.hasNext()) {
+      SimpleFeature f = iterator.next();
+      if (collection1.contains(f)) {
+        double d = ((Geometry) f.getDefaultGeometry()).distance(middle);
+        if (d < dist) {
+          dist = d;
+          closest = f;
+        }
+      }
+    }
+    iterator.close();
+    return (closest != null) ? Optional.of(closest) : Optional.empty();
   }
 
   private static boolean isReflex(Node node, HalfEdge previous, HalfEdge next) {
@@ -201,12 +230,14 @@ public class TopologicalStraightSkeletonParcelDecomposition {
   }
 
   private static List<HalfEdge> getOrderedEdges(List<HalfEdge> edges) throws EdgeException {
-    log("getOrderedEdges");
+    // log("getOrderedEdges");
     edges.forEach(e -> log(e.getGeometry()));
     List<HalfEdge> orderedEdges = new ArrayList<>();
+    if (edges.isEmpty())
+      return orderedEdges;
     boolean forward = true;
     HalfEdge current = edges.remove(0);
-    log("current\n" + current.getGeometry());
+    // log("current\n" + current.getGeometry());
     orderedEdges.add(current);
     Node currentNode = current.getTarget();
     while (!edges.isEmpty()) {
@@ -235,11 +266,22 @@ public class TopologicalStraightSkeletonParcelDecomposition {
     // FIXME here is a hack to get the exterior edges. This is ugly
     List<HalfEdge> edges = graph.getEdges().stream().filter(p -> p.getTwin() == null).filter(e -> !this.initialPolygon.buffer(-0.1).contains(e.getGeometry()))
         .collect(Collectors.toList());
-    // edges.forEach(e -> log(e.getGeometry()));
+    log("getOrderedExteriorEdges");
+    edges.forEach(e -> log(e.getGeometry()));
     graph.getEdges().forEach(e -> e.setAttribute("EXTERIOR", "false"));
     edges.forEach(e -> e.setAttribute("EXTERIOR", "true"));
     // straightSkeleton.getGraph().getEdges().iterator().next().getAttributes().forEach(a -> log("attribute " + a));
     return getOrderedEdgesFromCycle(edges);
+  }
+
+  private boolean merge(HalfEdge e1, HalfEdge e2, boolean mergeStreetsWithoutName) {
+    Optional<Pair<String, Double>> a1 = attributes.get(e1), a2 = attributes.get(e2);
+    log("MERGE?\n" + e1.getGeometry() + "\n" + e2.getGeometry());
+    log(a1.isPresent() ? a1.get().getLeft() : "-");
+    log(a2.isPresent() ? a2.get().getLeft() : "-");
+    // to also merge streets without a name. Otherwise, we do not allow their merging
+    return mergeStreetsWithoutName ? a1.map(p -> p.getLeft()).orElse("").equals(a2.map(p -> p.getLeft()).orElse(""))
+        : a1.isPresent() && a2.isPresent() && a1.map(p -> p.getLeft()).get().equals(a2.map(p -> p.getLeft()).get());
   }
 
   /**
@@ -252,8 +294,8 @@ public class TopologicalStraightSkeletonParcelDecomposition {
     // orderedEdges.forEach(e->log(e.getGeometry()));
     TopologicalGraph alphaStripGraph = new TopologicalGraph();
     HalfEdge firstHE = orderedEdges.get(0);
-//    log("getAlphaStrips:firstHE:\n" + firstHE.getGeometry());
-    Optional<Pair<String, Double>> firstAttributes = attributes.get(firstHE);
+    // log("getAlphaStrips:firstHE:\n" + firstHE.getGeometry());
+    // Optional<Pair<String, Double>> firstAttributes = attributes.get(firstHE);
     HalfEdge currentStripHE = new HalfEdge(firstHE.getOrigin(), null, null);
     currentStripHE.getChildren().add(firstHE);
     alphaStripGraph.getEdges().add(currentStripHE);
@@ -261,8 +303,7 @@ public class TopologicalStraightSkeletonParcelDecomposition {
       HalfEdge e1 = orderedEdges.get(i), e2 = orderedEdges.get((i + 1) % attributes.size());
       straightSkeleton.getGraph();
       int numberOfOutgoing = TopologicalGraph.outgoingEdgesOf(e1.getTarget(), straightSkeleton.getGraph().getEdges()).size();
-      Optional<Pair<String, Double>> a1 = attributes.get(e1), a2 = attributes.get(e2);
-      if (a1.map(p -> p.getLeft()).orElse("").equals(a2.map(p -> p.getLeft()).orElse("")) || numberOfOutgoing == 1) {
+      if (merge(e1, e2, false) || numberOfOutgoing == 1) {
         currentStripHE.getChildren().add(e2);
       } else {
         Node node = straightSkeleton.getGraph().getCommonNode(e1, e2);// FIXME
@@ -274,8 +315,8 @@ public class TopologicalStraightSkeletonParcelDecomposition {
       }
     }
     HalfEdge lastHE = orderedEdges.get(orderedEdges.size() - 1);
-    Optional<Pair<String, Double>> lastAttributes = attributes.get(lastHE);
-    if (lastAttributes.map(p -> p.getLeft()).orElse("").equals(firstAttributes.map(p -> p.getLeft()).orElse(""))) {
+    // Optional<Pair<String, Double>> lastAttributes = attributes.get(lastHE);
+    if (merge(lastHE, firstHE, false)) {
       // we merge the first and last strips
       HalfEdge firstStrip = alphaStripGraph.getEdges().get(0);
       HalfEdge lastStrip = alphaStripGraph.getEdges().get(alphaStripGraph.getEdges().size() - 1);
@@ -353,32 +394,37 @@ public class TopologicalStraightSkeletonParcelDecomposition {
     return widths;
   }
 
-  private Pair<HalfEdge, Coordinate> getIntersection(Coordinate o, Coordinate d) {
+  private Optional<ImmutablePair<HalfEdge, Coordinate>> getIntersection(Coordinate o, Coordinate d, TopologicalGraph graph, List<HalfEdge> edges) {
     Point p = straightSkeleton.getInputPolygon().getFactory().createPoint(o);
-    List<Face> faces = straightSkeleton.getGraph().getFaces().stream().filter(f -> f.getGeometry().intersects(p)).collect(Collectors.toList());
+    log("getIntersection\n" + p + "\n" + d.getX() + "," + d.getY() + "\n" + straightSkeleton.getInputPolygon().getFactory().createPoint(new Coordinate(o.x + d.x, o.y + d.y)));
+    List<Face> faces = graph.getFaces().stream().filter(f -> f.getGeometry().intersects(p)).collect(Collectors.toList());
     if (faces.size() != 1) {
       // log("found " + faces.size() + " faces intersecting " + p);
-      faces = straightSkeleton.getGraph().getFaces().stream().filter(f -> f.getGeometry().intersects(p.buffer(tolerance))).collect(Collectors.toList());
+      faces = graph.getFaces().stream().filter(f -> f.getGeometry().intersects(p.buffer(tolerance))).collect(Collectors.toList());
       if (faces.size() != 1) {
         log("found " + faces.size() + " faces intersecting " + p + " again");
-        return null;
+        return Optional.empty();
       }
       o = Util.project(o, faces.get(0).getGeometry().getExteriorRing());
     }
-    Face face = faces.get(0);
-    List<HalfEdge> edges = face.getEdges().stream().filter(h -> h.getAttribute("EXTERIOR").toString().equals("false")).collect(Collectors.toList());
+    // Face face = faces.get(0);
+    // List<HalfEdge> edges = face.getEdges().stream().filter(h -> h.getAttribute("EXTERIOR").toString().equals("false")).collect(Collectors.toList());
+    // List<HalfEdge> edges = graph.getEdges().stream().filter(h -> h.getAttribute("EXTERIOR").toString().equals("false")).collect(Collectors.toList());
+    // List<HalfEdge> edges = graph.getEdges();
+    edges.forEach(e -> log(e.getGeometry()));
     final Coordinate origin = o;
-    List<Pair<HalfEdge, Coordinate>> intersections = edges.stream().filter(h -> Util.getRayLineSegmentIntersects(origin, d, h.getGeometry()))
-        .map(h -> new ImmutablePair<HalfEdge, Coordinate>(h, Util.getRayLineSegmentIntersection(origin, d, h.getGeometry()))).collect(Collectors.toList());
-    intersections.sort((Pair<HalfEdge, Coordinate> p1, Pair<HalfEdge, Coordinate> p2) -> Double.compare(p1.getRight().distance(origin), p2.getRight().distance(origin)));
-    return intersections.get(0);
+    Optional<ImmutablePair<HalfEdge, Coordinate>> intersections = edges.stream().filter(h -> Util.getRayLineSegmentIntersects(origin, d, h.getGeometry()))
+        .map(h -> new ImmutablePair<>(h, Util.getRayLineSegmentIntersection(origin, d, h.getGeometry())))
+        // .filter(pair->pair.getRight().distance(origin) > tolerance)
+        .sorted((Pair<HalfEdge, Coordinate> p1, Pair<HalfEdge, Coordinate> p2) -> Double.compare(p1.getRight().distance(origin), p2.getRight().distance(origin))).findFirst();
+    return intersections;
   }
 
   private static double getAngle(Coordinate c1, Coordinate c2, Coordinate d) {
     return Angle.angleBetween(c2, c1, new Coordinate(c1.x + d.x, c1.y + d.y));
   }
 
-  private List<Coordinate> getPath(StraightSkeleton straightSkeleton, Polygon strip, Node node, Coordinate direction) {
+  private List<Coordinate> getPath(List<HalfEdge> graphEdges, Polygon strip, Node node, Coordinate direction) {
     // Coordinate stripCoordinate = getCoordinate(stripCoordinates, node.getCoordinate(), 0.01);
     // if (stripCoordinate != null)
     // return Arrays.asList(stripCoordinate);// we reached the border of the strip
@@ -389,28 +435,48 @@ public class TopologicalStraightSkeletonParcelDecomposition {
       return Arrays.asList(projection);
     }
     // find the best edge to follow
-    List<HalfEdge> edges = TopologicalGraph.outgoingEdgesOf(node, straightSkeleton.getGraph().getEdges());
+    List<HalfEdge> edges = TopologicalGraph.outgoingEdgesOf(node, graphEdges);
+    if (edges.isEmpty())
+      return Arrays.asList();
     edges.sort((HalfEdge h1, HalfEdge h2) -> Double.compare(getAngle(h1.getOrigin().getCoordinate(), h1.getTarget().getCoordinate(), direction),
         getAngle(h2.getOrigin().getCoordinate(), h2.getTarget().getCoordinate(), direction)));
     HalfEdge edge = edges.get(0);
+    graphEdges.remove(edge);
+    if (edge.getTwin() != null)
+      graphEdges.remove(edge.getTwin());
     List<Coordinate> path = new ArrayList<>();
     path.add(node.getCoordinate());
     Coordinate d = getUnitVector(node.getCoordinate(), edge.getTarget().getCoordinate());
-    path.addAll(getPath(straightSkeleton, strip, edge.getTarget(), d));
+    path.addAll(getPath(graphEdges, strip, edge.getTarget(), d));
     return path;
   }
 
   private LineString getCutLine(Polygon strip, Coordinate coordinate, LineString support) {
-    log("getCutLine FROM\n" + strip.getFactory().createPoint(coordinate) + "\nWITH EXT STRIP\n" + strip.getExteriorRing());
+    log("getCutLine FROM\n" + strip.getFactory().createPoint(coordinate) + "\nWITH EXT STRIP\n" + strip.getExteriorRing() + "\nWITH SUPPORT\n" + support);
     Node node = straightSkeleton.getGraph().getNode(coordinate, tolerance);
+    // Node node = betaStrips.getNode(coordinate, tolerance);
     GeometryFactory factory = strip.getFactory();
-    if (node == null) {
+    List<HalfEdge> edges = (node == null) ? new ArrayList<>()
+        : straightSkeleton.getGraph().getEdges().stream().filter(h -> h.getOrigin() == node && h.getTwin() != null).collect(Collectors.toList());
+    if (node == null || edges.isEmpty()) {
       // log("NO NODE");
       // no node here, compute perpendicular line
       Coordinate c1 = support.getCoordinateN(1);
       Coordinate c2 = support.getCoordinateN(0);
       Coordinate d = getPerpendicularVector(c1, c2, false);
-      Pair<HalfEdge, Coordinate> intersection = getIntersection(c2, d);
+      edges = straightSkeleton.getGraph().getEdges().stream().filter(h -> h.getAttribute("EXTERIOR").toString().equals("false")).collect(Collectors.toList());
+      Optional<ImmutablePair<HalfEdge, Coordinate>> optionalIntersection = getIntersection(c2, d, straightSkeleton.getGraph(), edges);
+      if (!optionalIntersection.isPresent()) {
+        // try again with exterior edges (but not the one the point is on)
+        edges = straightSkeleton.getGraph().getEdges().stream()
+            .filter(h -> h.getAttribute("EXTERIOR").toString().equals("true") && h.getGeometry().distance(factory.createPoint(c2)) > tolerance).collect(Collectors.toList());
+        optionalIntersection = getIntersection(c2, d, straightSkeleton.getGraph(), edges);
+        if (!optionalIntersection.isPresent()) {
+          return null;
+        }
+        return factory.createLineString(new Coordinate[] { c2, optionalIntersection.get().getRight() });
+      }
+      Pair<HalfEdge, Coordinate> intersection = optionalIntersection.get();
       Coordinate intersectionCoord = intersection.getRight();
       // Polygon snapped = snap(strip, intersectionCoord, tolerance);
       log("INTERSECTION\n" + factory.createPoint(intersectionCoord) + "\n" + strip + "\n" + intersection.getLeft().getGeometry());
@@ -425,6 +491,7 @@ public class TopologicalStraightSkeletonParcelDecomposition {
       coordinateList.add(c2);
       coordinateList.add(intersectionCoord);
       Node currentNode = straightSkeleton.getGraph().getNode(intersectionCoord, tolerance);
+      // Node currentNode = betaStrips.getNode(intersectionCoord, tolerance);
       if (currentNode == null) {
         double angle = getAngle(intersection.getLeft().getOrigin().getCoordinate(), intersection.getLeft().getTarget().getCoordinate(), d);
         currentNode = (angle < Math.PI / 2) ? intersection.getLeft().getTarget() : intersection.getLeft().getOrigin();
@@ -435,10 +502,12 @@ public class TopologicalStraightSkeletonParcelDecomposition {
       } else {
         // log("FOUND NODE\n"+currentNode.getGeometry());
       }
-      coordinateList.addAll(getPath(straightSkeleton, strip, currentNode, d));
+      // coordinateList.addAll(getPath(betaStrips, strip, currentNode, d));
+      coordinateList.addAll(getPath(new ArrayList<>(straightSkeleton.getGraph().getEdges()), strip, currentNode, d));
       return factory.createLineString(coordinateList.toArray(new Coordinate[coordinateList.size()]));
     }
-    List<HalfEdge> edges = straightSkeleton.getGraph().getEdges().stream().filter(h -> h.getOrigin() == node && h.getTwin() != null).collect(Collectors.toList());
+    // List<HalfEdge> edges = betaStrips.getEdges().stream().filter(h -> h.getOrigin() == node && h.getTwin() != null).collect(Collectors.toList());
+    // List<HalfEdge> edges = straightSkeleton.getGraph().getEdges().stream().filter(h -> h.getOrigin() == node && h.getTwin() != null).collect(Collectors.toList());
     if (edges.size() != 1) {
       log("found " + edges.size() + " edges starting at " + node.getGeometry());
     } else {
@@ -449,7 +518,8 @@ public class TopologicalStraightSkeletonParcelDecomposition {
       coordinateList.add(c1);
       // coordinateList.add(c2);
       Coordinate d = getUnitVector(c1, c2);
-      coordinateList.addAll(getPath(straightSkeleton, strip, edge.getTarget(), d));
+      // coordinateList.addAll(getPath(betaStrips, strip, edge.getTarget(), d));
+      coordinateList.addAll(getPath(new ArrayList<>(straightSkeleton.getGraph().getEdges()), strip, edge.getTarget(), d));
       return factory.createLineString(coordinateList.toArray(new Coordinate[coordinateList.size()]));
       // log(edges.get(0).getGeometry());
     }
@@ -462,21 +532,18 @@ public class TopologicalStraightSkeletonParcelDecomposition {
       log("EMPTY STRIP");
       return result;
     }
-    log("potentials");
-    strip.getEdges().stream().filter(e -> e.getTwin() == null).forEach(f -> log(f.getGeometry()));
-    List<HalfEdge> extEdges = getOrderedEdges(
-        strip.getEdges().stream().filter(e -> e.getTwin() == null && !initialPolygon.buffer(-0.1).contains(e.getGeometry())).collect(Collectors.toList()));
-    // LineMerger lsm = new LineMerger();
-    // extEdges.stream().forEach(e -> lsm.add(e.getGeometry()));
-    // Collection<?> merged = lsm.getMergedLineStrings();
-    // TODO check the order of that linestring: should be CCW
-    // LineString phi = (LineString) merged.iterator().next();
-    List<Coordinate> coordinates = extEdges.stream().map(e -> e.getTarget().getCoordinate()).collect(Collectors.toList());
-    coordinates.add(0, extEdges.get(0).getOrigin().getCoordinate());
-    LineString phi = strip.getGeometry().getFactory().createLineString(coordinates.toArray(new Coordinate[coordinates.size()]));
-    LengthIndexedLine lil = new LengthIndexedLine(phi);
-    log("phi\n" + phi);
-    double length = phi.getLength();
+    // log("potentials");
+    // strip.getEdges().stream().filter(e -> e.getTwin() == null).forEach(f -> log(f.getGeometry()));
+    // // create the supporting edge psi
+    // List<HalfEdge> extEdges = getOrderedEdges(
+    // strip.getEdges().stream().filter(e -> e.getTwin() == null && !initialPolygon.buffer(-0.1).contains(e.getGeometry())).collect(Collectors.toList()));
+    // List<Coordinate> coordinates = extEdges.stream().map(e -> e.getTarget().getCoordinate()).collect(Collectors.toList());
+    // coordinates.add(0, extEdges.get(0).getOrigin().getCoordinate());
+    // LineString psi = strip.getGeometry().getFactory().createLineString(coordinates.toArray(new Coordinate[coordinates.size()]));
+    LineString psi = psiMap.get(strip);
+    LengthIndexedLine lil = new LengthIndexedLine(psi);
+    log("phi\n" + psi);
+    double length = psi.getLength();
     List<Double> widths = sampleWidths(length, nd, minWidth, maxWidth);
     if (widths.size() == 1) {
       result.add(strip.getGeometry());
@@ -532,8 +599,23 @@ public class TopologicalStraightSkeletonParcelDecomposition {
    * @param attributes
    *          attributes of the edges (used to classify supporting vertices)
    * @return β-strips
+   * @throws EdgeException
    */
-  private TopologicalGraph fixDiagonalEdges(TopologicalGraph alphaStrips, Map<HalfEdge, Optional<Pair<String, Double>>> attributes) {
+  private TopologicalGraph fixDiagonalEdges(TopologicalGraph alphaStrips, Map<HalfEdge, Optional<Pair<String, Double>>> attributes) throws EdgeException {
+    // name the faces and create supporting edges
+    List<LineString> psiList = new ArrayList<>();
+    for (int id = 0; id < alphaStrips.getFaces().size(); id++) {
+      Face strip = alphaStrips.getFaces().get(id);
+      strip.setAttribute("ID", id);
+      // create the supporting edge psi
+      List<HalfEdge> extEdges = getOrderedEdges(
+          strip.getEdges().stream().filter(e -> e.getTwin() == null && !initialPolygon.buffer(-0.1).contains(e.getGeometry())).collect(Collectors.toList()));
+      List<Coordinate> coordinates = extEdges.stream().flatMap(e -> Arrays.asList(e.getGeometry().getCoordinates()).subList(1, e.getGeometry().getNumPoints()).stream())
+          .collect(Collectors.toList());
+      coordinates.add(0, extEdges.get(0).getOrigin().getCoordinate());
+      LineString psi = strip.getGeometry().getFactory().createLineString(coordinates.toArray(new Coordinate[coordinates.size()]));
+      psiList.add(psi);
+    }
     // classify supporting vertices
     for (Node n : alphaStrips.getNodes()) {
       HalfEdge previousEdge = TopologicalGraph.incomingEdgesOf(n, orderedEdges).get(0);
@@ -543,7 +625,7 @@ public class TopologicalStraightSkeletonParcelDecomposition {
       int supportingVertexClass = classify(n, previousEdge, previousAttributes, nextEdge, nextAttributes);
       Face prevFace = previousEdge.getFace(), nextFace = nextEdge.getFace();
       Face prevAlphaStrip = prevFace.getParent(), nextAlphaStrip = nextFace.getParent();
-      // FIXME use parent edge children
+      // FIXME use parent edge children?
       // get all edges connecting the current and previous strips (they form the diagonal edge)
       List<HalfEdge> edgeList = straightSkeleton.getGraph().getEdges().stream().filter(e -> e.getTwin() != null)
           .filter(e -> (e.getFace().getParent() == prevAlphaStrip && e.getTwin().getFace().getParent() == nextAlphaStrip)).collect(Collectors.toList());
@@ -585,39 +667,46 @@ public class TopologicalStraightSkeletonParcelDecomposition {
         Face gainingBetaSplit = (supportingVertexClass == PREVIOUS) ? prevAlphaStrip : nextAlphaStrip;
         Face loosingBetaSplit = (supportingVertexClass == PREVIOUS) ? nextAlphaStrip : prevAlphaStrip;
         Polygon gainingBetaSplitPolygon = gainingBetaSplit.getGeometry();
-        // Polygon loosingBetaSplitPolygon = loosingBetaSplit.getGeometry();
-        // log((supportingVertexClass == PREVIOUS)?"PREVIOUS":"NEXT");
-        // log("Gaining before:\n" + gainingBetaSplit.getGeometry());
-        // log("Loosing before:\n" + loosingBetaSplit.getGeometry());
-        // log("LEFT:\n"+split.getLeft());
-        // log("RIGHT:\n"+split.getRight());
         Polygon exchangedPolygonPart = (supportingVertexClass == PREVIOUS) ? split.getLeft() : split.getRight();
-        // Polygon remainingPolygonPart = (supportingVertexClass == PREVIOUS) ? split.getRight() : split.getLeft();
-        // log("Exchanged:\n" + exchangedPolygonPart);
-        // log("Remaining:\n" + remainingPolygonPart);
-        // List<Polygon> absorbedPolygons = facesToRemove.subList(0, facesToRemove.size() - 1).stream().map(f -> f.getGeometry()).collect(Collectors.toList());
         List<Polygon> newAbsorbing = new ArrayList<>();
         newAbsorbing.add(gainingBetaSplitPolygon);
         newAbsorbing.add(exchangedPolygonPart);
-        // absorbedPolygons.add(toRemove);
-        // log("absorbing ");
-        // newAbsorbing.forEach(f->log(f));
         gainingBetaSplit.setPolygon(Util.polygonUnion(newAbsorbing, precisionReducer));
-        // log("ABSORBING:\n" + gainingBetaSplit.getGeometry());
-        // loosingBetaSplit.setPolygon(Util.polygonUnion(Arrays.asList(Util.polygonDifference(Arrays.asList(loosingBetaSplitPolygon), absorbedPolygons), remainingPolygonPart)));
         loosingBetaSplit.setPolygon(Util.polygonDifference(Arrays.asList(splitAlphaStripSnapped), Arrays.asList(exchangedPolygonPart)));
-        // log("ABSORBED:\n" + loosingBetaSplit.getGeometry());
+        // clean up the edges
+        log("Removing " + diagonalEdgeList.size() + " diagonal edges and their twins");
+        diagonalEdgeList.forEach(e->log(e.getGeometry()));
+        straightSkeleton.getGraph().getEdges().removeAll(diagonalEdgeList.stream().flatMap(e -> Stream.of(e, e.getTwin())).collect(Collectors.toList()));
+        // get all the nodes on the diagonal except the last one
+        List<Node> nodes = diagonalEdgeList.stream().map(e -> e.getOrigin()).distinct().collect(Collectors.toList());
+        // except the first one too
+        nodes.remove(n);
+        // remove skeleton arcs for the removed region
+        List<HalfEdge> internalEdges = removeInternalEdges(nodes, loosingBetaSplit);
+        log("Removing " + internalEdges.size() + " internal edges");
+        straightSkeleton.getGraph().getEdges().removeAll(internalEdges);
+        // recompute the skeleton arcs to remain perpendicular to the local edges ψ for the dangling edges
+        List<Node> nodesToClean = nodes.stream().filter(node -> !recomputeEdges(node, gainingBetaSplit, cl)).collect(Collectors.toList());
+        internalEdges = removeInternalEdges(nodesToClean, gainingBetaSplit);
+        log("Removing " + internalEdges.size() + " internal edges");
+        straightSkeleton.getGraph().getEdges().removeAll(internalEdges);
+        // add the new edge
+        HalfEdge e = new HalfEdge(straightSkeleton.getGraph().getOrCreateNode(cl.getCoordinateN(0)), currNode);
+        e.setAttribute("EXTERIOR", "false");
+        straightSkeleton.getGraph().getEdges().add(e);
       }
-      // log("DONE");
     }
     export(new TopologicalGraph(alphaStrips.getFaces().stream().map(f -> f.getGeometry()).collect(Collectors.toList())), new File(FOLDER_OUT_DEBUG, "beta_before_snap"));
+    // snap everything back to the original graph
     TopologicalGraph result = new TopologicalGraph(alphaStrips.getFaces().stream().map(f -> snapped(f.getGeometry())).collect(Collectors.toList()));
+    export(result, new File(FOLDER_OUT_DEBUG, "beta_after_snap"));
     // cleanup strips without exterior edge
     orderedEdges = getOrderedExteriorEdges(result);
     List<Face> toRemove = new ArrayList<>();
     for (Face face : result.getFaces()) {
       long extEdges = face.getEdges().stream().filter(e -> orderedEdges.contains(e)).count();
       if (extEdges == 0) {
+        // the face has no access to the road
         log("REMOVING FACE " + face.getGeometry());
         Optional<Face> f = face.getEdges().stream().filter(e -> e.getTwin() != null).map(e -> new ImmutablePair<Double, Face>(e.getGeometry().getLength(), e.getTwin().getFace()))
             .sorted((a, b) -> Double.compare(b.getLeft(), a.getLeft())).map(p -> p.getRight()).findFirst();
@@ -632,9 +721,184 @@ public class TopologicalStraightSkeletonParcelDecomposition {
     }
     result.getFaces().removeAll(toRemove);
     result = new TopologicalGraph(result.getFaces().stream().map(f -> snapped(f.getGeometry())).collect(Collectors.toList()));
+    export(result, new File(FOLDER_OUT_DEBUG, "beta_after_removal"));
     // cleanup strips without exterior edge
     orderedEdges = getOrderedExteriorEdges(result);
+    // add the initial supporting edges reduced to fit into the final beta strips
+    psiMap = new HashMap<>();
+    for (Face face : result.getFaces()) {
+      Optional<LineString> optionalPsi = psiList.stream().map(p -> reduced(p, face)).filter(o -> o.isPresent()).map(o -> new ImmutablePair<>(o.get(), o.get().getLength()))
+          .sorted((a, b) -> Double.compare(b.getRight(), a.getRight())).findFirst().map(p -> p.getLeft());
+      if (optionalPsi.isPresent()) {
+        psiMap.put(face, optionalPsi.get());
+      } else {
+        log("No supporting edge found for face\n" + face.getGeometry());
+      }
+    }
+    // log("SKELETON ARCS");
+    // // add the skeleton arcs
+    // for (Face face : result.getFaces()) {
+    // if (!psiMap.containsKey(face)) {
+    // log("No Supporting edge found for " + face.getGeometry());
+    // } else {
+    // LineString psi = psiMap.get(face);
+    // List<Node> nodes = this.straightSkeleton.getGraph().getNodes().stream().filter(n -> n.getGeometry().isWithinDistance(psi, tolerance)).collect(Collectors.toList());
+    // for (Node node : nodes) {
+    // log("NODE\n" + node.getGeometry());
+    // Optional<HalfEdge> optionalEdge = TopologicalGraph.outgoingEdgesOf(node, this.straightSkeleton.getGraph().getEdges()).stream()
+    // .filter(e -> e.getTwin() != null && e.getFace().getParent() == e.getTwin().getFace().getParent()).findFirst();
+    // if (optionalEdge.isPresent()) {
+    // HalfEdge currEdge = optionalEdge.get();
+    // log("Edge\n" + currEdge.getGeometry());
+    // Optional<HalfEdge> optionalSupport = TopologicalGraph.outgoingEdgesOf(node, this.straightSkeleton.getGraph().getEdges()).stream().filter(e -> e.getTwin() == null)
+    // .findFirst();
+    // Coordinate direction = null;
+    // if (optionalSupport.isPresent()) {
+    // Coordinate c0 = optionalSupport.get().getOrigin().getCoordinate();
+    // Coordinate c1 = optionalSupport.get().getTarget().getCoordinate();
+    // direction = getPerpendicularVector(c0, c1, true);
+    // } else {
+    // direction = getUnitVector(currEdge.getOrigin().getCoordinate(), currEdge.getTarget().getCoordinate());
+    // }
+    // List<HalfEdge> edgeList = new ArrayList<>();
+    // final Face currFace = currEdge.getFace().getParent();
+    // log("Face\n" + currFace.getGeometry());
+    // List<HalfEdge> potentialEdgeList = this.straightSkeleton.getGraph().getEdges().stream()
+    // .filter(e -> e.getFace().getParent() == currFace && e.getTwin() != null && e.getTwin().getFace().getParent() == currFace).collect(Collectors.toList());
+    // potentialEdgeList.forEach(e -> log(e.getGeometry()));
+    // Node currNode = node;
+    // // Node currNodeResult = result.getNode(node.getCoordinate(), tolerance);
+    // while (currEdge != null) {
+    // // Node prevNode = currNodeResult;
+    // currNode = currEdge.getTarget();
+    // log("\tNode\n" + currNode.getGeometry());
+    // edgeList.add(currEdge);
+    // // Node targetNode = result.getOrCreateNode(currNode.getCoordinate());
+    // // HalfEdge e = new HalfEdge(prevNode, targetNode);
+    // // e.setAttribute("EXTERIOR", "false");
+    // // result.getEdges().add(e);
+    // currEdge = TopologicalGraph.next(currNode, currEdge, potentialEdgeList);
+    // potentialEdgeList.remove(currEdge);
+    // }
+    // if (currNode.getGeometry().isWithinDistance(face.getGeometry().getExteriorRing(), tolerance)) {
+    // // we are on the border or close enough to it
+    // } else {
+    // // we should project a line to the border and modify the graph accordingly
+    // Optional<ImmutablePair<HalfEdge, Coordinate>> option = getIntersection(currNode.getCoordinate(), direction, result);
+    // if (option.isPresent()) {
+    // for (HalfEdge edge : edgeList) {
+    // Node originNode = result.getOrCreateNode(edge.getOrigin().getCoordinate());
+    // Node targetNode = result.getOrCreateNode(edge.getTarget().getCoordinate());
+    // HalfEdge e = new HalfEdge(originNode, targetNode);
+    // e.setAttribute("EXTERIOR", "false");
+    // result.getEdges().add(e);
+    // }
+    // Pair<HalfEdge, Coordinate> intersection = option.get();
+    // Coordinate intersectionCoord = intersection.getRight();
+    // Node targetNode = result.getOrCreateNode(intersectionCoord);
+    // Node currNodeResult = result.getNode(currNode.getCoordinate(), tolerance);
+    // result.getEdges().add(new HalfEdge(currNodeResult, targetNode));
+    // }
+    // }
+    // }
+    // }
+    // }
+    // }
+    // add the skeleton arcs
     return result;
+  }
+
+  private Stream<HalfEdge> getSupportingEdges(Node node, Face split, List<HalfEdge> internalEdges) {
+    List<HalfEdge> edges = internalEdges.stream().filter(e -> e.getOrigin() == node).collect(Collectors.toList());
+    log("getSupportingEdges " + edges.size());
+    edges.forEach(e -> log(e.getGeometry()));
+    if (edges.isEmpty()) {
+      // no more internal edge, return the supporting edge(s?)
+      // return TopologicalGraph.outgoingEdgesOf(node, this.straightSkeleton.getGraph().getEdges()).stream().filter(e -> e.getTwin() == null);
+      return TopologicalGraph.incomingEdgesOf(node, this.straightSkeleton.getGraph().getEdges()).stream().filter(e -> e.getTwin() == null);
+    }
+    internalEdges.removeAll(edges.stream().flatMap(e -> Stream.of(e, e.getTwin())).collect(Collectors.toList()));
+    return edges.stream().flatMap(e -> getSupportingEdges(e.getTarget(), split, internalEdges));
+  }
+
+  private boolean recomputeEdges(Node node, Face split, LineString cutline) {
+    log("recomputeEdges\n" + node.getGeometry());
+    // get the supporting edge
+    // get the internal edges of the face
+    List<HalfEdge> internalEdges = this.straightSkeleton.getGraph().getEdges().stream()
+        .filter(e -> e.getFace() != null && e.getFace().getParent() == split && e.getTwin() != null && e.getTwin().getFace() != null && e.getTwin().getFace().getParent() == split)
+        .collect(Collectors.toList());
+    internalEdges.forEach(e -> log(e.getGeometry()));
+    List<HalfEdge> support;
+    try {
+      support = getOrderedEdges(getSupportingEdges(node, split, internalEdges).collect(Collectors.toList()));
+    } catch (EdgeException e1) {
+      // TODO Auto-generated catch block
+      e1.printStackTrace();
+      return false;
+    }
+    if (support.isEmpty()) {
+      log("NO SUPPORT EDGE FOR " + node.getGeometry());
+      return false;
+    }
+    log("SUPPORT");
+    support.forEach(e -> log(e.getGeometry()));
+    // we assume we found at least one supporting edge
+    Coordinate c0 = support.get(0).getOrigin().getCoordinate();
+    Coordinate c1 = support.get(support.size() - 1).getTarget().getCoordinate();
+    Coordinate direction = getPerpendicularVector(c0, c1, true);
+    log("direction\n" + node.getGeometry().getFactory().createPoint(new Coordinate(node.getCoordinate().x + direction.x, node.getCoordinate().y + direction.y)));
+    // project the node in the direction perpendicular to the supporting edge
+    // create the edge and the target node
+
+    // we should project a line to the border and modify the graph accordingly
+    Coordinate intersection = Util.getRayLineSegmentIntersection(node.getCoordinate(), direction, cutline);
+    if (intersection != null) {
+      Node targetNode = this.straightSkeleton.getGraph().getOrCreateNode(intersection);
+      HalfEdge e = new HalfEdge(node, targetNode);
+      e.setAttribute("EXTERIOR", "false");
+      this.straightSkeleton.getGraph().getEdges().add(e);
+      return true;
+    } else {
+      log("NO INTERSECTION WITH\n" + cutline);
+      return false;
+    }
+  }
+
+  private List<HalfEdge> removeInternalEdges(List<Node> nodes, Face split) {
+    // get the internal edges of the face
+    List<HalfEdge> internalEdges = this.straightSkeleton.getGraph().getEdges().stream()
+        .filter(e -> e.getFace() != null && e.getFace().getParent() == split && e.getTwin() != null && e.getTwin().getFace() != null && e.getTwin().getFace().getParent() == split)
+        .collect(Collectors.toList());
+    return nodes.stream().flatMap(n -> removeInternalEdges(n, split, internalEdges)).flatMap(e -> Stream.of(e, e.getTwin())).collect(Collectors.toList());
+  }
+
+  private Stream<HalfEdge> removeInternalEdges(Node node, Face split, List<HalfEdge> internalEdges) {
+    List<HalfEdge> edges = internalEdges.stream().filter(e -> e.getOrigin() == node).collect(Collectors.toList());
+    if (edges.isEmpty())
+      return Stream.empty();
+    internalEdges.removeAll(edges);
+    return edges.stream().flatMap(e -> Stream.concat(Stream.of(e), removeInternalEdges(e.getTarget(), split, internalEdges)));
+  }
+
+  private Optional<LineString> reduced(LineString psi, Face face) {
+    GeometrySnapper snapper = new GeometrySnapper(psi);
+    psi = (LineString) snapper.snapTo(face.getGeometry(), tolerance);
+    List<Coordinate> coords = new ArrayList<>();
+    for (int index = 0; index < psi.getNumPoints(); index++) {
+      Point p = psi.getPointN(index);
+      if (p.intersects(face.getGeometry())) {
+        coords.add(p.getCoordinate());
+      } else {
+        if (!coords.isEmpty())
+          break;
+      }
+    }
+    // log(coords.size());
+    if (coords.size() > 1) {
+      return Optional.of(psi.getFactory().createLineString(coords.toArray(new Coordinate[coords.size()])));
+    }
+    return Optional.empty();
   }
 
   private Polygon snapped(Polygon polygon) {
@@ -764,28 +1028,94 @@ public class TopologicalStraightSkeletonParcelDecomposition {
       return null;
     }
     // try to order them from left to right
-    // get the coordinates (remove the last, duplicated, point)
-    List<Coordinate> coords = Arrays.asList(output.get(0).getExteriorRing().getCoordinates()).subList(0, output.get(0).getExteriorRing().getNumPoints() - 1);
-    int index0 = index(coords, reducedLine.getCoordinateN(0));
-    int index1 = index(coords, reducedLine.getCoordinateN(1));
-    int indexDiff = (index1 - index0 + coords.size()) % coords.size();
-    log("SPLIT WITH (" + coords.size() + ")");
-    log(reducedLine);
+    int position0 = position(output.get(0), reducedLine);
+    int position1 = position(output.get(1), reducedLine);
+    if (position0 == LEFT && position1 == RIGHT) {
+      return new ImmutablePair<>(output.get(0), output.get(1));
+    }
+    if (position0 == RIGHT && position1 == LEFT) {
+      return new ImmutablePair<>(output.get(1), output.get(0));
+    }
+    log("SPLIT WITH\n" + reducedLine);
     log(poly.getFactory().createPoint(reducedLine.getCoordinateN(0)));
     log(poly.getFactory().createPoint(reducedLine.getCoordinateN(1)));
     log(output.get(0).getExteriorRing());
-    log("index " + index0);
-    log("index " + index1);
-    log("index diff = " + indexDiff);
-    if (indexDiff == 1) {
-      // exterior ring is CW so this should be on the right of the line, right?
-      log("LEFT=\n" + output.get(1));
-      log("RIGHT=\n" + output.get(0));
-      return new ImmutablePair<>(output.get(1), output.get(0));
+    log("position " + position0);
+    log("position " + position1);
+    return null;
+    //
+    // // get the coordinates (remove the last, duplicated, point)
+    // List<Coordinate> coords = Arrays.asList(output.get(0).getExteriorRing().getCoordinates()).subList(0, output.get(0).getExteriorRing().getNumPoints() - 1);
+    // int index0 = index(coords, reducedLine.getCoordinateN(0));
+    // int index1 = index(coords, reducedLine.getCoordinateN(1));
+    // int indexDiff = (index1 - index0 + coords.size()) % coords.size();
+    // log("SPLIT WITH (" + coords.size() + ")");
+    // log(reducedLine);
+    // log(poly.getFactory().createPoint(reducedLine.getCoordinateN(0)));
+    // log(poly.getFactory().createPoint(reducedLine.getCoordinateN(1)));
+    // log(output.get(0).getExteriorRing());
+    // log("index " + index0);
+    // log("index " + index1);
+    // log("index diff = " + indexDiff);
+    // if (indexDiff == 1) {
+    // // exterior ring is CW so this should be on the right of the line, right?
+    // log("LEFT=\n" + output.get(1));
+    // log("RIGHT=\n" + output.get(0));
+    // return new ImmutablePair<>(output.get(1), output.get(0));
+    // }
+    // log("LEFT=\n" + output.get(0));
+    // log("RIGHT=\n" + output.get(1));
+    // return new ImmutablePair<>(output.get(0), output.get(1));
+  }
+
+  private static int RIGHT = 1;
+  private static int LEFT = -1;
+  private static int NEITHER = 0;
+
+  private int position(Polygon polygon, LineString line) {
+    GeometrySnapper snapper = new GeometrySnapper(line);
+    line = part(polygon, (LineString) snapper.snapTo(polygon, tolerance));
+    LengthIndexedLine lil = new LengthIndexedLine(line);
+    Coordinate c0 = lil.extractPoint(0);
+    // get the index of the first coordinate of the line along the polygon
+    int firstIndex = -1;
+    for (int index = 0; index < polygon.getExteriorRing().getNumPoints(); index++) {
+      if (c0.equals2D(polygon.getExteriorRing().getCoordinateN(index))) {
+        firstIndex = index;
+        break;
+      }
     }
-    log("LEFT=\n" + output.get(0));
-    log("RIGHT=\n" + output.get(1));
-    return new ImmutablePair<>(output.get(0), output.get(1));
+    if (firstIndex >= 0) {
+      Coordinate c1 = polygon.getExteriorRing().getCoordinateN(firstIndex);
+      double a = lil.indexOf(c1);
+      Coordinate c2 = polygon.getExteriorRing().getCoordinateN(firstIndex + 1);
+      int size = polygon.getExteriorRing().getNumPoints() - 1; // we ignore the last coord
+      if (line.isCoordinate(c2)) {
+        double b = lil.indexOf(c2);
+        log("POLYGON CW (" + size + ")\n" + polygon + "\n" + line);
+        log("LENGTH INDEX: " + a);
+        log("LENGTH INDEX: " + b);
+        log("INDEX: " + firstIndex);
+        log("INDEX: " + (firstIndex + 1));
+        log("P\n" + polygon.getExteriorRing().getPointN(firstIndex));
+        log("P\n" + polygon.getExteriorRing().getPointN(firstIndex + 1));
+        log((b > a) ? "RIGHT" : "LEFT");
+        return (b > a) ? RIGHT : LEFT;
+      } else {
+        c2 = polygon.getExteriorRing().getCoordinateN((firstIndex + size - 1) % size);
+        double b = lil.indexOf(c2);
+        log("POLYGON CCW (" + size + ")\n" + polygon + "\n" + line);
+        log("LENGTH INDEX: " + a);
+        log("LENGTH INDEX: " + b);
+        log("INDEX: " + firstIndex);
+        log("INDEX: " + ((firstIndex + size - 1) % size));
+        log("P\n" + polygon.getExteriorRing().getPointN(firstIndex));
+        log("P\n" + polygon.getExteriorRing().getPointN((firstIndex + size - 1) % size));
+        log((b > a) ? "LEFT" : "RIGHT");
+        return (b > a) ? LEFT : RIGHT;
+      }
+    }
+    return NEITHER;
   }
 
   public static int sharedPoints(Geometry a, Geometry b) {
@@ -808,12 +1138,12 @@ public class TopologicalStraightSkeletonParcelDecomposition {
     // String NAME_ATT_ROAD = "Id";
     String NAME_ATT_ROAD = "l_voie";
     String NAME_ATT_IMPORTANCE = "length";
-    String folderOut = "data/";
-    double maxDepth = 20, maxDistanceForNearestRoad = 1000, minimalArea = 20, minWidth = 2, maxWidth = 5, omega = 0.1;
+    File folderOut = new File("data/");
+    double maxDepth = 20, maxDistanceForNearestRoad = 40, minimalArea = 20, minWidth = 2, maxWidth = 5, omega = 0.1;
     RandomGenerator rng = new MersenneTwister(42);
     // The output file that will contain all the decompositions
     // String shapeFileOut = folderOut + "outflag.shp";
-    (new File(folderOut)).mkdirs();
+    folderOut.mkdirs();
     // Reading collection
     ShapefileDataStore parcelDS = new ShapefileDataStore(parcelFile.toURI().toURL());
     SimpleFeatureCollection parcels = parcelDS.getFeatureSource().getFeatures();
@@ -824,7 +1154,8 @@ public class TopologicalStraightSkeletonParcelDecomposition {
     int count = 0;
     List<Polygon> globalOutputParcels = new ArrayList<>();
     log("wE SHOULD BE HANDLING " + parcels.size() + " POLYGONS");
-    while (iterator.hasNext()) {
+    boolean stop = false;
+    while (iterator.hasNext() && !stop) {
       feature = iterator.next();
       // if (feature.getAttribute("NUMERO").equals("0024") && feature.getAttribute("SECTION").equals("ZA")) break;
       List<Polygon> polygons = Util.getPolygons((Geometry) feature.getDefaultGeometry());
@@ -834,28 +1165,27 @@ public class TopologicalStraightSkeletonParcelDecomposition {
           log("start with polygon " + count);
           TopologicalStraightSkeletonParcelDecomposition decomposition = new TopologicalStraightSkeletonParcelDecomposition(polygon, roads, NAME_ATT_ROAD, NAME_ATT_IMPORTANCE,
               maxDepth, maxDistanceForNearestRoad, minimalArea);
+          export(decomposition.straightSkeleton.getGraph(), new File(FOLDER_OUT_DEBUG, "after_fix"));
           List<Polygon> outputParcels = decomposition.createParcels(minWidth, maxWidth, omega, rng);
           globalOutputParcels.addAll(outputParcels);
-          // log("OUTPUT/");
-          // outputParcels.forEach(p -> log(p));
-          // log("/OUTPUT");
+          log("end with polygon " + count);
           count++;
         } catch (Exception e) {
-          // TODO Auto-generated catch block
-          // log("OUTPUT/");
-          // globalOutputParcels.forEach(p -> log(p));
-          // log("/OUTPUT");
+          log("error with polygon " + count);
+          count++;
           e.printStackTrace();
-          break;
+          stop = true;
         }
       }
     }
     iterator.close();
     roadDS.dispose();
     parcelDS.dispose();
-    log("OUTPUT/");
-    globalOutputParcels.forEach(p -> log(p));
-    log("/OUTPUT");
+    TopologicalGraph output = new TopologicalGraph(globalOutputParcels);
+    export(output, folderOut);
+    // log("OUTPUT/");
+    // globalOutputParcels.forEach(p -> log(p));
+    // log("/OUTPUT");
   }
 
   private static void export(TopologicalGraph graph, File directory) {
@@ -869,7 +1199,10 @@ public class TopologicalStraightSkeletonParcelDecomposition {
       edge.setAttribute("ID", id);
       edge.setAttribute("ORIGIN", edge.getOrigin().getAttribute("ID"));
       edge.setAttribute("TARGET", edge.getTarget().getAttribute("ID"));
-      edge.setAttribute("FACE", edge.getFace().getAttribute("ID"));
+      if (edge.getFace() != null)
+        edge.setAttribute("FACE", edge.getFace().getAttribute("ID"));
+      else
+        edge.setAttribute("FACE", "");
     }
     for (int id = 0; id < graph.getEdges().size(); id++) {
       HalfEdge edge = graph.getEdges().get(id);
@@ -883,12 +1216,14 @@ public class TopologicalStraightSkeletonParcelDecomposition {
     TopologicalGraph.export(graph.getNodes(), new File(directory, "nodes.shp"), "Point");
   }
 }
+
 class EdgeException extends Exception {
   /**
    * 
    */
   private static final long serialVersionUID = -8778686157065646491L;
 }
+
 class StraightSkeletonException extends Exception {
 
   /**

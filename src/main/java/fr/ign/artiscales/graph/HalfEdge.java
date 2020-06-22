@@ -1,5 +1,6 @@
 package fr.ign.artiscales.graph;
 
+import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.LineString;
 
 public class HalfEdge extends GraphElement<LineString,HalfEdge> {
@@ -40,6 +41,9 @@ public class HalfEdge extends GraphElement<LineString,HalfEdge> {
   public void setFace(Face face) {
     this.face = face;
     if (!face.getEdges().contains(this)) face.getEdges().add(this);
+  }
+  public HalfEdge(Node o, Node t) {
+    this(o,t,o.getGeometry().getFactory().createLineString(new Coordinate[] {o.getCoordinate(), t.getCoordinate()}));
   }
   public HalfEdge(Node o, Node t, LineString l) {
     this.origin = o;

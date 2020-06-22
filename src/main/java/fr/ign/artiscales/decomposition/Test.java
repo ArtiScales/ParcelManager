@@ -6,6 +6,7 @@ import java.io.IOException;
 import org.geotools.data.shapefile.ShapefileDataStore;
 import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.geometry.jts.WKTReader2;
+import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.LineString;
 import org.locationtech.jts.geom.Polygon;
 import org.locationtech.jts.io.ParseException;
@@ -53,5 +54,10 @@ public class Test {
     SimpleFeatureCollection selection = Util.select(roads, line);
     System.out.println("selection = " + selection.size());
     roadDS.dispose();
+    Coordinate o = new Coordinate(652810.3017603179, 6857966.40922954);
+    Coordinate d = new Coordinate(0.6571914520563683,-0.7537236863360752);
+    LineString lineString = (LineString) reader.read("LINESTRING (652792.1862488963 6857976.0127653275, 652803.37 6857975.05)");
+    Coordinate inter = Util.getRayLineSegmentIntersection(o, d, lineString);
+    System.out.println("inter\n"+lineString.getFactory().createPoint(inter));
   }
 }

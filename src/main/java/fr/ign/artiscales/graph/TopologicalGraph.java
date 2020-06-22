@@ -29,7 +29,7 @@ public class TopologicalGraph {
   Map<Coordinate,Node> nodes = new HashMap<>();
   List<HalfEdge> edges = new ArrayList<>();
   List<Face> faces = new ArrayList<>();
-
+  private static boolean DEBUG = false;
   public Collection<Node> getNodes() {
     return nodes.values();
   }
@@ -91,7 +91,7 @@ public class TopologicalGraph {
     return this.edges.stream().filter(e->(e.origin == or) && (e.target == ta)).findAny();
   }
 
-  private Node getOrCreateNode(Coordinate c) {
+  public Node getOrCreateNode(Coordinate c) {
     if (this.nodes.containsKey(c)) return this.nodes.get(c);
     Node newNode = new Node(c);
     this.nodes.put(c, newNode);
@@ -131,9 +131,13 @@ public class TopologicalGraph {
       return e1.getOrigin();
     return e1.getTarget();
   }
-  
+  private static void log(Object o) {
+    if (DEBUG) {
+      System.out.println(o);
+    }
+  }
   public static <G extends Geometry, E extends GraphElement<G,E>> void export(Collection<E> feats, File file, String geomType) {
-    System.out.println(Calendar.getInstance().getTime() + " save " + feats.size() + " features to " + file);
+    log(Calendar.getInstance().getTime() + " save " + feats.size() + " features to " + file);
     file.getParentFile().mkdirs();
     if (feats.isEmpty())
       return;
@@ -143,7 +147,7 @@ public class TopologicalGraph {
       for (String attribute : attributes) {
         specs += "," + attribute + ":String";
       }
-      System.out.println(specs);
+      log(specs);
       ShapefileDataStoreFactory factory = new ShapefileDataStoreFactory();
       FileDataStore dataStore = factory.createDataStore(file.toURI().toURL());
       String featureTypeName = "Object";
@@ -152,7 +156,7 @@ public class TopologicalGraph {
       String typeName = dataStore.getTypeNames()[0];
       FeatureWriter<SimpleFeatureType, SimpleFeature> writer = dataStore.getFeatureWriterAppend(typeName, Transaction.AUTO_COMMIT);
       System.setProperty("org.geotools.referencing.forceXY", "true");
-      System.out.println(Calendar.getInstance().getTime() + " write shapefile");
+      log(Calendar.getInstance().getTime() + " write shapefile");
       for (E element : feats) {
         SimpleFeature feature = writer.next();
         Object[] att = new Object[attributes.size() + 1];
@@ -160,11 +164,11 @@ public class TopologicalGraph {
         for (int i = 0; i < attributes.size(); i++) {
           att[i + 1] = element.getAttribute(attributes.get(i));
         }
-        // System.out.println("WRITING " + element.getGeometry());
+        // log("WRITING " + element.getGeometry());
         feature.setAttributes(att);
         writer.write();
       }
-      System.out.println(Calendar.getInstance().getTime() + " done");
+      log(Calendar.getInstance().getTime() + " done");
       writer.close();
       dataStore.dispose();
     } catch (MalformedURLException e) {
