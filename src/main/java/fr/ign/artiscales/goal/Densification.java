@@ -39,7 +39,7 @@ public class Densification {
 	/**
 	 * If true, will save a shapefile containing only the simulated parcels in the temporary folder.
 	 */
-	public static boolean SAVEINTERMEDIATERESULT = true;
+	public static boolean SAVEINTERMEDIATERESULT = false;
 	/**
 	 * If true, overwrite the output saved shapefiles. If false, happend the simulated parcels to a potential already existing shapefile.
 	 */
@@ -110,7 +110,6 @@ public class Densification {
 					try (SimpleFeatureIterator parcelIt = unsortedFlagParcel.features()){
 						while (parcelIt.hasNext()) {
 							if (((Geometry) parcelIt.next().getDefaultGeometry()).getArea() < minimalAreaSplitParcel) {
-//								System.out.println("densifyed parcel is too small");
 								add = false;
 								break;
 							}
@@ -192,7 +191,7 @@ public class Densification {
 			File tmpFolder, File buildingFile, File roadFile, double maximalAreaSplitParcel, double minimalAreaSplitParcel, double maximalWidthSplitParcel,
 			double lenDriveway, boolean allowIsolatedParcel) throws Exception {
 		return densification(parcelCollection, isletCollection, tmpFolder, buildingFile, null, maximalAreaSplitParcel, minimalAreaSplitParcel,
-				maximalWidthSplitParcel, lenDriveway, allowIsolatedParcel,null);
+				maximalWidthSplitParcel, lenDriveway, allowIsolatedParcel, null);
 	}
 	
 	/**
@@ -285,7 +284,7 @@ public class Densification {
 	public static SimpleFeatureCollection densification(SimpleFeatureCollection parcelCollection, SimpleFeatureCollection isletCollection,
 			File tmpFolder, File buildingFile, File roadFile, ProfileUrbanFabric profile, boolean allowIsolatedParcel, Geometry exclusionZone) throws Exception {
 		return densification(parcelCollection, isletCollection, tmpFolder, buildingFile, roadFile,
-				profile.getMaximalArea(), profile.getMinimalArea(), profile.getMaximalWidth(), profile.getLenDriveway(),
+				profile.getMaximalArea(), profile.getMinimalArea(), profile.getMinimalWidthContactRoad(), profile.getLenDriveway(),
 				allowIsolatedParcel, exclusionZone);
 	}
 	
@@ -326,7 +325,7 @@ public class Densification {
 		// We flagcut the parcels which size is inferior to 4x the max parcel size
 				SimpleFeatureCollection parcelInf = MarkParcelAttributeFromPosition.markParcelsInf(parcelCollection, profile.getMaximalArea()*4);
 		SimpleFeatureCollection parcelDensified = densification(parcelInf, isletCollection, tmpFolder, buildingFile, roadFile,
-				profile.getMaximalArea(), profile.getMinimalArea(), profile.getMaximalWidth(), profile.getLenDriveway(),
+				profile.getMaximalArea(), profile.getMinimalArea(), profile.getMinimalWidthContactRoad(), profile.getLenDriveway(),
 				allowIsolatedParcel, exclusionZone);
 		//if parcels are too big, we try to create neighborhoods inside them with the consolidation algorithm
 		//We first re-mark the parcels that were marked.
@@ -335,12 +334,13 @@ public class Densification {
 		SimpleFeatureCollection supParcels = MarkParcelAttributeFromPosition.markParcelsSup(MarkParcelAttributeFromPosition.markAlreadyMarkedParcels(parcelDensified, sds.getFeatureSource().getFeatures()), profile.getMaximalArea()*factorOflargeZoneCreation);
 		sds.dispose();
 		if (!MarkParcelAttributeFromPosition.isNoParcelMarked(supParcels)) {
-			parcelDensified = ConsolidationDivision.consolidationDivision(supParcels, roadFile, tmpFolder, profile.getMaximalArea(),
-					profile.getMinimalArea(), profile.getMaximalWidth(), profile.getStreetWidth(), profile.getDecompositionLevelWithoutStreet());
-		} 
+			profile.setLargeStreetWidth(profile.getStreetWidth());
+			parcelDensified = ConsolidationDivision.consolidationDivision(supParcels, roadFile, tmpFolder, profile, profile.getStreetWidth(),
+					profile.getDecompositionLevelWithoutStreet());
+		}
 		return parcelDensified;
 	}
-	
+
 	/**
 	 * Create a new section name following a precise rule.
 	 * 

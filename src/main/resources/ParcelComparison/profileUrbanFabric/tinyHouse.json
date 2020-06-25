@@ -19,5 +19,5 @@
 	"minwid": "7",
 	"minheight": "3.5",
 	"maxlen": "17",
-	"maximalWidth": "7"
+	"minimalWidthContactRoad": "7"
 }

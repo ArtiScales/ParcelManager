@@ -30,12 +30,12 @@ import fr.ign.cogit.geoToolsFunctions.Attribute;
 import fr.ign.cogit.geoToolsFunctions.vectors.Collec;
 import fr.ign.cogit.geoToolsFunctions.vectors.Geom;
 import fr.ign.cogit.geometryGeneration.CityGeneration;
+import fr.ign.cogit.parameter.ProfileUrbanFabric;
 
 /**
- * Simulation following this goal operates on a zone rather than on parcels. Zones can either be taken from a zoning plan or from a ready-to-use zone parcel collection. 
- * Their integration is anyhow made with the {@link #createZoneToCut(String, SimpleFeatureCollection, File, SimpleFeatureCollection)} method. The parcel which 
- * are across the zone are cut and the parts that aren't contained into  * the zone are kept with their attributes. The chosen parcel division process (OBB by default)
- * is then applied on the zone.
+ * Simulation following this goal operates on a zone rather than on parcels. Zones can either be taken from a zoning plan or from a ready-to-use zone parcel collection. Their
+ * integration is anyhow made with the {@link #createZoneToCut(String, SimpleFeatureCollection, File, SimpleFeatureCollection)} method. The parcel which are across the zone are cut
+ * and the parts that aren't contained into * the zone are kept with their attributes. The chosen parcel division process (OBB by default) is then applied on the zone.
  * 
  * @author Maxime Colomb
  *
@@ -59,10 +59,11 @@ public class ZoneDivision {
 	public static boolean DEBUG = false;
 
 	/**
-	 * Merge and recut a specific zone. Cut first the surrounding parcels to keep them unsplit, then split the zone parcel and remerge them all into the original parcel file A bit
+	 * Merge and recut a specific zone. Cut first the surrounding parcels to keep them unsplit, then split the zone parcel and remerge them all into the original parcel file. A bit
 	 * complicated algorithm to deal with non-existing pieces of parcels (as road).
 	 * 
-	 * overwrite for a single road size.
+	 * Overwrite for no noise or harmonyCoeff.
+	 * 
 	 * @param initialZone
 	 *            Zone which will be used to cut parcels. Will cut parcels that intersects them and keep their infos. Will then fill the empty spaces in between the zones and feed
 	 *            it to the OBB algorithm.
@@ -70,28 +71,19 @@ public class ZoneDivision {
 	 *            {@link SimpleFeatureCollection} of the unmarked parcels.
 	 * @param tmpFolder
 	 *            Folder to stock temporary files
-	 * @param maximalArea
-	 *            Area under which a parcel won"t be anymore cut
-	 * @param minimalArea
-	 *            Area under which a polygon won't be kept as a parcel
-	 * @param maximalWidth
-	 *            The width of parcel connection to street network under which the parcel won"t be anymore cut
-	 * @param streetWidth
-	 *            the width of generated street network. this @overload is setting a single size for those roads
-	 * @param decompositionLevelWithoutStreet
-	 *            Number of the final row on which street generation doesn't apply
+	 * @param profile
+	 *            {@link ProfileUrbanFabric} contains the parameters of the wanted urban scene
 	 * @return The input parcel {@link SimpleFeatureCollection} with the marked parcels replaced by the simulated parcels. All parcels have the
 	 *         {@link fr.ign.artiscales.parcelFunction.ParcelSchema#getSFBMinParcel()} schema.
-	 * @throws SchemaException 
-	 * @throws IOException 
-	 * @throws FactoryException 
-	 * @throws NoSuchAuthorityCodeException 
+	 * @throws SchemaException
+	 * @throws IOException
+	 * @throws FactoryException
+	 * @throws NoSuchAuthorityCodeException
 	 */
-	public static SimpleFeatureCollection zoneDivision(SimpleFeatureCollection initialZone, SimpleFeatureCollection parcels, File tmpFolder, File outFolder,
-			double maximalArea, double minimalArea, double maximalWidth, double streetWidth, int decompositionLevelWithoutStreet)
+	public static SimpleFeatureCollection zoneDivision(SimpleFeatureCollection initialZone, SimpleFeatureCollection parcels,
+			ProfileUrbanFabric profile, File tmpFolder, File outFolder)
 			throws NoSuchAuthorityCodeException, FactoryException, IOException, SchemaException {
-		return zoneDivision(initialZone, parcels, tmpFolder, outFolder, 0.5, 0, maximalArea, minimalArea, maximalWidth, streetWidth, 999, streetWidth,
-				decompositionLevelWithoutStreet);
+		return zoneDivision(initialZone, parcels, tmpFolder, outFolder, profile, 0.5, 0);
 	}
 
 	/**
@@ -105,30 +97,21 @@ public class ZoneDivision {
 	 *            {@link SimpleFeatureCollection} of the unmarked parcels.
 	 * @param tmpFolder
 	 *            Folder to stock temporary files
-	 * @param maximalArea
-	 *            Area under which a parcel won"t be anymore cut
-	 * @param minimalArea
-	 *            Area under which a polygon won't be kept as a parcel
-	 * @param maximalWidth
-	 *            The width of parcel connection to street network under which the parcel won"t be anymore cut
-	 * @param smallStreetWidth
-	 *            The width of small street network segments
-	 * @param largeStreetLevel
-	 *            Level of decomposition after which the streets are considered as large streets
-	 * @param largeStreetWidth
-	 *            The width of large street network segments
-	 * @param decompositionLevelWithoutStreet
-	 *            Number of the final row on which street generation doesn't apply
+	 * @param profile
+	 *            {@link ProfileUrbanFabric} contains the parameters of the wanted urban scene
+	 * @param harmonyCoeff
+	 *            coefficient of minimal ration between length and width of the Oriented Bounding Box
+	 * @param noise
+	 *            level of perturbation
 	 * @return The input parcel {@link SimpleFeatureCollection} with the marked parcels replaced by the simulated parcels. All parcels have the
 	 *         {@link fr.ign.artiscales.parcelFunction.ParcelSchema#getSFBMinParcel()} schema.
-	 * @throws FactoryException 
-	 * @throws NoSuchAuthorityCodeException 
-	 * @throws IOException 
-	 * @throws SchemaException 
+	 * @throws FactoryException
+	 * @throws NoSuchAuthorityCodeException
+	 * @throws IOException
+	 * @throws SchemaException
 	 */
-	public static SimpleFeatureCollection zoneDivision(SimpleFeatureCollection initialZone, SimpleFeatureCollection parcels, File tmpFolder, File outFolder,
-			double roadEpsilon, double noise, double maximalArea, double minimalArea, double maximalWidth, double smallStreetWidth,
-			int largeStreetLevel, double largeStreetWidth, int decompositionLevelWithoutStreet)
+	public static SimpleFeatureCollection zoneDivision(SimpleFeatureCollection initialZone, SimpleFeatureCollection parcels, File tmpFolder,
+			File outFolder, ProfileUrbanFabric profile, double harmonyCoeff, double noise)
 			throws NoSuchAuthorityCodeException, FactoryException, IOException, SchemaException {
 		// parcel geometry name for all
 		String geomName = parcels.getSchema().getGeometryDescriptor().getLocalName();
@@ -179,7 +162,7 @@ public class ZoneDivision {
 			problem.printStackTrace();
 		}
 		// zone verification
-		if (goOdZone.isEmpty() || Collec.area(goOdZone) < minimalArea) {
+		if (goOdZone.isEmpty() || Collec.area(goOdZone) < profile.getMinimalArea()) {
 			System.out.println("ZoneDivision: no zones to cut or zone is too small to be taken into consideration");
 			return parcels;
 		}
@@ -188,14 +171,14 @@ public class ZoneDivision {
 		File fParcelsInAU = Collec.exportSFC(parcelsInZone, new File(tmpFolder, "parcelCible.shp"));
 		File fZone = Collec.exportSFC(goOdZone, new File(tmpFolder, "oneAU.shp"));
 		File[] polyFiles = { fParcelsInAU, fZone };
-		List<Polygon> polygons = FeaturePolygonizer.getPolygons(polyFiles);	
-		// apparently less optimized... but nicer 
-//		List<Geometry> geomList = Arrays.stream(parcels.toArray(new SimpleFeature[0])).map(x -> (Geometry) x.getDefaultGeometry())
-//				.collect(Collectors.toList());
-//		geomList.addAll(Arrays.stream(parcels.toArray(new SimpleFeature[0])).map(x -> (Geometry) x.getDefaultGeometry()).collect(Collectors.toList()));
-//		List<Polygon> polygons = FeaturePolygonizer.getPolygons(geomList);
+		List<Polygon> polygons = FeaturePolygonizer.getPolygons(polyFiles);
+		// apparently less optimized... but nicer
+		// List<Geometry> geomList = Arrays.stream(parcels.toArray(new SimpleFeature[0])).map(x -> (Geometry) x.getDefaultGeometry())
+		// .collect(Collectors.toList());
+		// geomList.addAll(Arrays.stream(parcels.toArray(new SimpleFeature[0])).map(x -> (Geometry) x.getDefaultGeometry()).collect(Collectors.toList()));
+		// List<Polygon> polygons = FeaturePolygonizer.getPolygons(geomList);
 		Geometry geomSelectedZone = Geom.unionSFC(goOdZone);
-		if(DEBUG) {
+		if (DEBUG) {
 			Geom.exportGeom(geomSelectedZone, new File(tmpFolder, "geomSelectedZone"));
 			Geom.exportGeom(polygons, new File(tmpFolder, "polygons"));
 		}
@@ -203,7 +186,7 @@ public class ZoneDivision {
 		for (Geometry poly : polygons) {
 			// if the polygons are not included on the AU zone, we check to which parcel do they belong
 			if (!geomSelectedZone.buffer(0.01).contains(poly)) {
-				try (SimpleFeatureIterator parcelIt = parcelsInZone.features()){
+				try (SimpleFeatureIterator parcelIt = parcelsInZone.features()) {
 					while (parcelIt.hasNext()) {
 						SimpleFeature feat = parcelIt.next();
 						// if that original parcel contains that piece of parcel, we copy the previous parcels informations
@@ -219,7 +202,7 @@ public class ZoneDivision {
 					}
 				} catch (Exception problem) {
 					problem.printStackTrace();
-				} 
+				}
 			}
 		}
 		// Parcel subdivision
@@ -232,10 +215,11 @@ public class ZoneDivision {
 				tmpZoneToCut.add(zone);
 				switch (PROCESS) {
 				case "OBB":
-					((DefaultFeatureCollection) splitedParcels)
-							.addAll(OBBBlockDecomposition.splitParcels(tmpZoneToCut, null, maximalArea, maximalWidth, roadEpsilon, noise,
-									Collec.fromPolygonSFCtoListRingLines(Collec.snapDatas(isletCollection, (Geometry) zone.getDefaultGeometry())),
-									smallStreetWidth, largeStreetLevel, largeStreetWidth, true, decompositionLevelWithoutStreet));
+					((DefaultFeatureCollection) splitedParcels).addAll(OBBBlockDecomposition.splitParcels(tmpZoneToCut, null,
+							profile.getMaximalArea(), profile.getMinimalWidthContactRoad(), harmonyCoeff, noise,
+							Collec.fromPolygonSFCtoListRingLines(Collec.snapDatas(isletCollection, (Geometry) zone.getDefaultGeometry())),
+							profile.getStreetWidth(), profile.getLargeStreetLevel(), profile.getLargeStreetWidth(), true,
+							profile.getDecompositionLevelWithoutStreet()));
 					break;
 				case "SS":
 					System.out.println("not implemented yet");
@@ -250,11 +234,11 @@ public class ZoneDivision {
 		}
 		if (DEBUG)
 			Collec.exportSFC(splitedParcels, new File(tmpFolder, "freshSplitedParcels"));
-		//merge the small parcels to bigger ones
-		splitedParcels = ParcelCollection.mergeTooSmallParcels(splitedParcels, (int) minimalArea);
+		// merge the small parcels to bigger ones
+		splitedParcels = ParcelCollection.mergeTooSmallParcels(splitedParcels, (int) profile.getMinimalArea());
 		DefaultFeatureCollection result = new DefaultFeatureCollection();
 		int num = 0;
-		//fix attribute for the simulated parcels
+		// fix attribute for the simulated parcels
 		try (SimpleFeatureIterator itParcel = splitedParcels.features()) {
 			while (itParcel.hasNext()) {
 				SimpleFeature parcel = itParcel.next();
@@ -280,16 +264,16 @@ public class ZoneDivision {
 			}
 		} catch (Exception problem) {
 			problem.printStackTrace();
-		} 
-		if (DEBUG) 
-			Collec.exportSFC(result, new File(tmpFolder,"parcelZoneDivisionOnly.shp"), false);
+		}
+		if (DEBUG)
+			Collec.exportSFC(result, new File(tmpFolder, "parcelZoneDivisionOnly.shp"), false);
 		if (SAVEINTERMEDIATERESULT) {
-			Collec.exportSFC(result, new File(outFolder,"parcelZoneDivisionOnly.shp"), OVERWRITESHAPEFILES);
+			Collec.exportSFC(result, new File(outFolder, "parcelZoneDivisionOnly.shp"), OVERWRITESHAPEFILES);
 			OVERWRITESHAPEFILES = false;
 		}
 		// add the saved parcels
 		SimpleFeatureType schemaParcel = finalParcelBuilder.getFeatureType();
-		try (SimpleFeatureIterator itSavedParcels = savedParcels.features()){
+		try (SimpleFeatureIterator itSavedParcels = savedParcels.features()) {
 			while (itSavedParcels.hasNext()) {
 				SimpleFeatureBuilder parcelBuilder = ParcelSchema.setSFBMinParcelWithFeat(itSavedParcels.next(), schemaParcel);
 				result.add(parcelBuilder.buildFeature(Attribute.makeUniqueId()));
@@ -301,58 +285,62 @@ public class ZoneDivision {
 	}
 
 	/**
-	 * Create a zone to cut by selecting features from a shapefile regarding a fixed value. Name of the field is by default set to <i>TYPEZONE</i> and must be
-	 * changed if needed with the {@link fr.ign.artiscales.fields.GeneralFields#setZoneGenericNameField(String)} method. Name of a Generic Zone is provided and can be null. 
-	 * If null, inputSFC is usually directly a ready-to-use zone and all given zone are marked. Also takes a bounding {@link SimpleFeatureCollection} to bound the output.
+	 * Create a zone to cut by selecting features from a shapefile regarding a fixed value. Name of the field is by default set to <i>TYPEZONE</i> and must be changed if needed
+	 * with the {@link fr.ign.artiscales.fields.GeneralFields#setZoneGenericNameField(String)} method. Name of a Generic Zone is provided and can be null. If null, inputSFC is
+	 * usually directly a ready-to-use zone and all given zone are marked. Also takes a bounding {@link SimpleFeatureCollection} to bound the output.
 	 * 
-	 * @param genericZone  Name of the generic zone to be cut
-	 * @param inputSFC ShapeFile of zones to extract the wanted zone from
-	 *                     (usually a zoning plan)
-	 * @param zoningFile   The File containing the zoning plan (can be null if no
-	 *                     zoning plan is planned to be used)
-	 * @param boundingSFC  {@link SimpleFeatureCollection} to bound the process on a
-	 *                     wanted location
+	 * @param genericZone
+	 *            Name of the generic zone to be cut
+	 * @param inputSFC
+	 *            ShapeFile of zones to extract the wanted zone from (usually a zoning plan)
+	 * @param zoningFile
+	 *            The File containing the zoning plan (can be null if no zoning plan is planned to be used)
+	 * @param boundingSFC
+	 *            {@link SimpleFeatureCollection} to bound the process on a wanted location
 	 * @return An extraction of the zoning collection
 	 * @throws IOException
 	 * @throws FactoryException
 	 * @throws NoSuchAuthorityCodeException
 	 */
-	public static SimpleFeatureCollection createZoneToCut(String genericZone, SimpleFeatureCollection inputSFC, File zoningFile, SimpleFeatureCollection boundingSFC)
-			throws IOException, NoSuchAuthorityCodeException, FactoryException {
+	public static SimpleFeatureCollection createZoneToCut(String genericZone, SimpleFeatureCollection inputSFC, File zoningFile,
+			SimpleFeatureCollection boundingSFC) throws IOException, NoSuchAuthorityCodeException, FactoryException {
 		return createZoneToCut(genericZone, null, inputSFC, zoningFile, boundingSFC);
 	}
-	
+
 	/**
-	 * Create a zone to cut by selecting features from a shapefile regarding a fixed value. Name of the field is by default set to <i>TYPEZONE</i> and must be
-	 * changed if needed with the {@link fr.ign.artiscales.fields.GeneralFields#setZoneGenericNameField(String)} method. Name of a <i>generic zone</i> and a <i>precise Zone</i>
-	 * can be provided and can be null. If null, inputSFC is usually directly a ready-to-use zone and all given zone are marked. Also takes a bounding {@link SimpleFeatureCollection} to bound the output.
+	 * Create a zone to cut by selecting features from a shapefile regarding a fixed value. Name of the field is by default set to <i>TYPEZONE</i> and must be changed if needed
+	 * with the {@link fr.ign.artiscales.fields.GeneralFields#setZoneGenericNameField(String)} method. Name of a <i>generic zone</i> and a <i>precise Zone</i> can be provided and
+	 * can be null. If null, inputSFC is usually directly a ready-to-use zone and all given zone are marked. Also takes a bounding {@link SimpleFeatureCollection} to bound the
+	 * output.
 	 * 
-	 * @param genericZone  Name of the generic zone to be cut
-	 * @param preciseZone  Name of the precise zone to be cut. Can be null
-	 * @param inputSFC ShapeFile of zones to extract the wanted zone from
-	 *                     (usually a zoning plan)
-	 * @param zoningFile   The File containing the zoning plan (can be null if no
-	 *                     zoning plan is planned to be used)
-	 * @param boundingSFC  {@link SimpleFeatureCollection} to bound the process on a
-	 *                     wanted location
+	 * @param genericZone
+	 *            Name of the generic zone to be cut
+	 * @param preciseZone
+	 *            Name of the precise zone to be cut. Can be null
+	 * @param inputSFC
+	 *            ShapeFile of zones to extract the wanted zone from (usually a zoning plan)
+	 * @param zoningFile
+	 *            The File containing the zoning plan (can be null if no zoning plan is planned to be used)
+	 * @param boundingSFC
+	 *            {@link SimpleFeatureCollection} to bound the process on a wanted location
 	 * @return An extraction of the zoning collection
 	 * @throws IOException
 	 * @throws FactoryException
 	 * @throws NoSuchAuthorityCodeException
 	 */
-	public static SimpleFeatureCollection createZoneToCut(String genericZone, String preciseZone, SimpleFeatureCollection inputSFC, File zoningFile, SimpleFeatureCollection boundingSFC)
-			throws IOException, NoSuchAuthorityCodeException, FactoryException {
+	public static SimpleFeatureCollection createZoneToCut(String genericZone, String preciseZone, SimpleFeatureCollection inputSFC, File zoningFile,
+			SimpleFeatureCollection boundingSFC) throws IOException, NoSuchAuthorityCodeException, FactoryException {
 		// get the wanted zones from the zoning file
 		SimpleFeatureCollection finalZone;
 		if (genericZone != null && genericZone != "" && (preciseZone == null || preciseZone != ""))
-			finalZone = MarkParcelAttributeFromPosition.getOnlyMarkedParcels(MarkParcelAttributeFromPosition.markParcelIntersectGenericZoningType(
-							Collec.snapDatas(inputSFC, Geom.unionSFC(boundingSFC)), genericZone, zoningFile));
+			finalZone = MarkParcelAttributeFromPosition.getOnlyMarkedParcels(MarkParcelAttributeFromPosition
+					.markParcelIntersectGenericZoningType(Collec.snapDatas(inputSFC, Geom.unionSFC(boundingSFC)), genericZone, zoningFile));
 		else if (preciseZone != null && preciseZone != "")
 			finalZone = MarkParcelAttributeFromPosition.getOnlyMarkedParcels(MarkParcelAttributeFromPosition.markParcelIntersectPreciseZoningType(
-							Collec.snapDatas(inputSFC, Geom.unionSFC(boundingSFC)), genericZone, preciseZone, zoningFile));
+					Collec.snapDatas(inputSFC, Geom.unionSFC(boundingSFC)), genericZone, preciseZone, zoningFile));
 		else
-			finalZone = MarkParcelAttributeFromPosition.getOnlyMarkedParcels(MarkParcelAttributeFromPosition.markAllParcel(
-					Collec.snapDatas(inputSFC, Geom.unionSFC(boundingSFC))));
+			finalZone = MarkParcelAttributeFromPosition
+					.getOnlyMarkedParcels(MarkParcelAttributeFromPosition.markAllParcel(Collec.snapDatas(inputSFC, Geom.unionSFC(boundingSFC))));
 		if (finalZone.isEmpty()) {
 			System.out.println("createZoneToCut(): zone is empty");
 		}

@@ -3,6 +3,7 @@ package fr.ign.artiscales.goal;
 import java.io.File;
 import java.util.Arrays;
 
+import org.apache.commons.math3.random.MersenneTwister;
 import org.geotools.data.DataUtilities;
 import org.geotools.data.shapefile.ShapefileDataStore;
 import org.geotools.data.simple.SimpleFeatureCollection;
@@ -11,11 +12,13 @@ import org.geotools.factory.CommonFactoryFinder;
 import org.geotools.feature.DefaultFeatureCollection;
 import org.geotools.feature.simple.SimpleFeatureBuilder;
 import org.locationtech.jts.geom.Geometry;
+import org.locationtech.jts.geom.Polygon;
 import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.feature.simple.SimpleFeatureType;
 import org.opengis.filter.FilterFactory2;
 
 import fr.ign.artiscales.decomposition.OBBBlockDecomposition;
+import fr.ign.artiscales.decomposition.StraightSkeletonParcelDecomposition;
 import fr.ign.artiscales.parcelFunction.MarkParcelAttributeFromPosition;
 import fr.ign.artiscales.parcelFunction.ParcelCollection;
 import fr.ign.artiscales.parcelFunction.ParcelSchema;
@@ -23,9 +26,11 @@ import fr.ign.cogit.geoToolsFunctions.Attribute;
 import fr.ign.cogit.geoToolsFunctions.vectors.Collec;
 import fr.ign.cogit.geoToolsFunctions.vectors.Geom;
 import fr.ign.cogit.geometryGeneration.CityGeneration;
+import fr.ign.cogit.parameter.ProfileUrbanFabric;
 
 /**
- * Simulation following this goal merge together the contiguous marked parcels to create zones. The chosen parcel division process (OBB by default) is then applied on each created zone.
+ * Simulation following this goal merge together the contiguous marked parcels to create zones. The chosen parcel division process (OBB by default) is then applied on each created
+ * zone.
  * 
  * @author Maxime Colomb
  *
@@ -50,8 +55,8 @@ public class ConsolidationDivision {
 
 	/**
 	 * Method that merges the contiguous marked parcels into zones and then split those zones with a given parcel division algorithm (by default, the Oriented Bounding Box)
-	 * overload of {@link #consolidationDivision(SimpleFeatureCollection, File, File, double , double , double , double , double , double , int , double , int )} for a single road
-	 * size.
+	 * overload of {@link #consolidationDivision(SimpleFeatureCollection, File, File, double , double , double , double , double , double , int , double , int )} for no predefined
+	 * harmony coeff and noise.
 	 * 
 	 * @param parcels
 	 *            The parcels to be merged and cut. Must be marked with the SPLIT filed (see markParcelIntersectMUPOutput for example, with the method concerning MUP-City's output)
@@ -59,23 +64,36 @@ public class ConsolidationDivision {
 	 *            ShapeFile of the road segments. Can be null.
 	 * @param tmpFolder
 	 *            A temporary folder where will be saved intermediate results
-	 * @param maximalArea
-	 *            Area under which a parcel won"t be anymore cut
-	 * @param minimalArea
-	 *            Area under which a polygon won't be kept as a parcel
-	 * @param maximalWidth
-	 *            The width of parcel connection to street network under which the parcel won"t be anymore cut
-	 * @param streetWidth
-	 *            the width of generated street network. this @overload is setting a single size for those roads
-	 * @param decompositionLevelWithoutStreet
-	 *            Number of the final row on which street generation doesn't apply
+	 * @param profile
+	 *            {@link ProfileUrbanFabric} contains the parameters of the wanted urban scene
 	 * @return the set of parcel with decomposition
 	 * @throws Exception
 	 */
-	public static SimpleFeatureCollection consolidationDivision(SimpleFeatureCollection parcels, File roadFile, File tmpFolder, double maximalArea,
-			double minimalArea, double maximalWidth, double streetWidth, int decompositionLevelWithoutStreet) throws Exception {
-		return consolidationDivision(parcels, roadFile, tmpFolder, 0.5, 0.0, maximalArea, minimalArea, maximalWidth, streetWidth, 999, streetWidth,
-				decompositionLevelWithoutStreet);
+	public static SimpleFeatureCollection consolidationDivision(SimpleFeatureCollection parcels, File roadFile, File tmpFolder,
+			ProfileUrbanFabric profile) throws Exception {
+		return consolidationDivision(parcels, roadFile, tmpFolder, profile, 0.5, 0.0);
+	}
+
+	/**
+	 * Method that merges the contiguous marked parcels into zones and then split those zones with a given parcel division algorithm (by default, the Oriented Bounding Box).
+	 * Without PolygonItersection used to operate a final selection
+	 * 
+	 * @param parcels
+	 *            The parcels to be merged and cut. Must be marked with the SPLIT filed (see markParcelIntersectMUPOutput for example, with the method concerning MUP-City's output)
+	 * @param tmpFolder
+	 *            A temporary folder where will be saved intermediate results
+	 * @param profile
+	 *            {@link ProfileUrbanFabric} contains the parameters of the wanted urban scene
+	 * @param harmonyCoeff
+	 *            coefficient of minimal ration between length and width of the Oriented Bounding Box
+	 * @param noise
+	 *            level of perturbation
+	 * @return the set of parcel with decomposition
+	 * @throws Exception
+	 */
+	public static SimpleFeatureCollection consolidationDivision(SimpleFeatureCollection parcels, File roadFile, File tmpFolder,
+			ProfileUrbanFabric profile, double harmonyCoeff, double noise) throws Exception {
+		return consolidationDivision(parcels, roadFile, tmpFolder, profile, null, harmonyCoeff, noise);
 	}
 
 	/**
@@ -83,64 +101,25 @@ public class ConsolidationDivision {
 	 * 
 	 * @param parcels
 	 *            The parcels to be merged and cut. Must be marked with the SPLIT filed (see markParcelIntersectMUPOutput for example, with the method concerning MUP-City's output)
-	 * @param tmpFolder
-	 *            A temporary folder where will be saved intermediate results
-	 * @param maximalArea
-	 *            Area under which a parcel won"t be anymore cut
-	 * @param minimalArea
-	 *            Area under which a polygon won't be kept as a parcel
-	 * @param maximalWidth
-	 *            The width of parcel connection to street network under which the parcel won"t be anymore cut
-	 * @param smallStreetWidth
-	 *            The width of small street network segments
-	 * @param largeStreetLevel
-	 *            Level of decomposition after which the streets are considered as large streets
-	 * @param largeStreetWidth
-	 *            The width of large street network segments
-	 * @param decompositionLevelWithoutStreet
-	 *            Number of the final row on which street generation doesn't apply
-	 * @return the set of parcel with decomposition
-	 * @throws Exception
-	 */
-	public static SimpleFeatureCollection consolidationDivision(SimpleFeatureCollection parcels, File roadFile, File tmpFolder, double roadEpsilon, double noise, double maximalArea,
-			double minimalArea, double maximalWidth, double smallStreetWidth, int largeStreetLevel, double largeStreetWidth,
-			int decompositionLevelWithoutStreet) throws Exception {
-		return consolidationDivision(parcels, roadFile, tmpFolder, null, roadEpsilon, noise, maximalArea, minimalArea, maximalWidth, smallStreetWidth, largeStreetLevel,
-				largeStreetWidth, decompositionLevelWithoutStreet);
-	}
-		
-	/**
-	 * Method that merges the contiguous marked parcels into zones and then split those zones with a given parcel division algorithm (by default, the Oriented Bounding Box).
-	 * 
-	 * @param parcels
-	 *            The parcels to be merged and cut. Must be marked with the SPLIT filed (see markParcelIntersectMUPOutput for example, with the method concerning MUP-City's output)
 	 * @param roadFile
 	 *            ShapeFile of the road segments. Can be null.
 	 * @param tmpFolder
 	 *            A temporary folder where will be saved intermediate results
+	 * @param profile
+	 *            {@link ProfileUrbanFabric} contains the parameters of the wanted urban scene
 	 * @param polygonIntersection
 	 *            Optional polygon layer that was used to process to the selection of parcels with their intersection. Used to keep only the intersecting simulated parcels.
-	 * @param maximalArea
-	 *            Area under which a parcel won"t be anymore cut
-	 * @param minimalArea
-	 *            Area under which a polygon won't be kept as a parcel
-	 * @param maximalWidth
-	 *            The width of parcel connection to street network under which the parcel won"t be anymore cut
-	 * @param smallStreetWidth
-	 *            The width of small street network segments
-	 * @param largeStreetLevel
-	 *            Level of decomposition after which the streets are considered as large streets
-	 * @param largeStreetWidth
-	 *            The width of large street network segments
-	 * @param decompositionLevelWithoutStreet
-	 *            Number of the final row on which street generation doesn't apply
+	 * @param harmonyCoeff
+	 *            coefficient of minimal ration between length and width of the Oriented Bounding Box
+	 * @param noise
+	 *            level of perturbation
 	 * @return the set of parcel with decomposition
 	 * @throws Exception
 	 */
 	public static SimpleFeatureCollection consolidationDivision(SimpleFeatureCollection parcels, File roadFile, File tmpFolder,
-			File polygonIntersection, double roadEpsilon, double noise, double maximalArea, double minimalArea, double maximalWidth,
-			double smallStreetWidth, int largeStreetLevel, double largeStreetWidth, int decompositionLevelWithoutStreet) throws Exception {
-	
+			ProfileUrbanFabric profile, File polygonIntersection, double harmonyCoeff, double noise) throws Exception {
+System.out.println(profile.getLargeStreetLevel());
+System.out.println(profile.getLargeStreetWidth());
 		DefaultFeatureCollection parcelSaved = new DefaultFeatureCollection();
 		parcelSaved.addAll(parcels);
 		DefaultFeatureCollection parcelToMerge = new DefaultFeatureCollection();
@@ -194,7 +173,7 @@ public class ConsolidationDivision {
 		SimpleFeatureCollection isletCollection = CityGeneration.createUrbanIslet(parcels);
 		FilterFactory2 ff = CommonFactoryFinder.getFilterFactory2();
 		Arrays.stream(mergedParcels.toArray(new SimpleFeature[0])).forEach(feat -> {
-			if (((Geometry) feat.getDefaultGeometry()).getArea() > maximalArea) {
+			if (((Geometry) feat.getDefaultGeometry()).getArea() > profile.getMaximalArea()) {
 				// Parcel big enough, we cut it
 				feat.setAttribute(MarkParcelAttributeFromPosition.getMarkFieldName(), 1);
 				try {
@@ -203,44 +182,47 @@ public class ConsolidationDivision {
 					case "OBB":
 						freshCutParcel = OBBBlockDecomposition.splitParcels(feat,
 								(roads != null && !roads.isEmpty()) ? Collec.snapDatas(roads, (Geometry) feat.getDefaultGeometry()) : null,
-								maximalArea, maximalWidth, roadEpsilon, noise,
+								profile.getMaximalArea(), profile.getMinimalWidthContactRoad(), harmonyCoeff, noise,
 								Collec.fromPolygonSFCtoListRingLines(isletCollection.subCollection(
 										ff.bbox(ff.property(feat.getFeatureType().getGeometryDescriptor().getLocalName()), feat.getBounds()))),
-								smallStreetWidth, largeStreetLevel, largeStreetWidth, true, decompositionLevelWithoutStreet);
+								profile.getStreetWidth(), profile.getLargeStreetLevel(), profile.getLargeStreetWidth(), true,
+								profile.getDecompositionLevelWithoutStreet());
 						break;
 					case "SS":
-						System.out.println("not implemented yet");
-						break;
-					case "MS":
-						System.out.println("not implemented yet");
+						freshCutParcel = StraightSkeletonParcelDecomposition.decompose((Polygon) feat.getDefaultGeometry(), roads,
+								profile.getMaxDepth(), profile.getMaxDistanceForNearestRoad(), profile.getMinimalArea(), profile.getMinWidth(),
+								profile.getMaxWidth(), noise, new MersenneTwister(42));
 						break;
 					}
-					SimpleFeatureIterator it = freshCutParcel.features();
-					// every single parcel goes into new collection
-					int i = 0;
-					while (it.hasNext()) {
-						SimpleFeature freshCut = it.next();
-						// that takes time but it's the best way I've found to set a correct section number (to look at the step 2 polygons)
-						String sec = "Default";
-						try (SimpleFeatureIterator ilotIt = mergedParcels.features()) {
-							while (ilotIt.hasNext()) {
-								SimpleFeature ilot = ilotIt.next();
-								if (((Geometry) ilot.getDefaultGeometry()).intersects((Geometry) freshCut.getDefaultGeometry())) {
-									sec = (String) ilot.getAttribute(ParcelSchema.getMinParcelSectionField());
-									break;
+					if (freshCutParcel != null && !freshCutParcel.isEmpty() && freshCutParcel.size() > 0) {
+						Collec.exportSFC(freshCutParcel, new File("/tmp/ss"));
+						SimpleFeatureIterator it = freshCutParcel.features();
+						// every single parcel goes into new collection
+						int i = 0;
+						while (it.hasNext()) {
+							SimpleFeature freshCut = it.next();
+							// that takes time but it's the best way I've found to set a correct section number (to look at the step 2 polygons)
+							String sec = "Default";
+							try (SimpleFeatureIterator ilotIt = mergedParcels.features()) {
+								while (ilotIt.hasNext()) {
+									SimpleFeature ilot = ilotIt.next();
+									if (((Geometry) ilot.getDefaultGeometry()).intersects((Geometry) freshCut.getDefaultGeometry())) {
+										sec = (String) ilot.getAttribute(ParcelSchema.getMinParcelSectionField());
+										break;
+									}
 								}
+							} catch (Exception problem) {
+								problem.printStackTrace();
 							}
-						} catch (Exception problem) {
-							problem.printStackTrace();
-						} 
-						sfBuilderFinalParcel.set("the_geom", freshCut.getDefaultGeometry());
-						sfBuilderFinalParcel.set(ParcelSchema.getMinParcelSectionField(), makeNewSection(sec));
-						sfBuilderFinalParcel.set(ParcelSchema.getMinParcelNumberField(), String.valueOf(i++));
-						sfBuilderFinalParcel.set(ParcelSchema.getMinParcelCommunityField(),
-								feat.getAttribute(ParcelSchema.getMinParcelCommunityField()));
-						cutParcels.add(sfBuilderFinalParcel.buildFeature(Attribute.makeUniqueId()));
+							sfBuilderFinalParcel.set("the_geom", freshCut.getDefaultGeometry());
+							sfBuilderFinalParcel.set(ParcelSchema.getMinParcelSectionField(), makeNewSection(sec));
+							sfBuilderFinalParcel.set(ParcelSchema.getMinParcelNumberField(), String.valueOf(i++));
+							sfBuilderFinalParcel.set(ParcelSchema.getMinParcelCommunityField(),
+									feat.getAttribute(ParcelSchema.getMinParcelCommunityField()));
+							cutParcels.add(sfBuilderFinalParcel.buildFeature(Attribute.makeUniqueId()));
+						}
+						it.close();
 					}
-					it.close();
 				} catch (Exception e) {
 					e.printStackTrace();
 				}
@@ -255,17 +237,17 @@ public class ConsolidationDivision {
 			System.out.println("done step 3");
 		}
 		// merge small parcels
-		SimpleFeatureCollection cutBigParcels = ParcelCollection.mergeTooSmallParcels(cutParcels, (int) minimalArea);
+		SimpleFeatureCollection cutBigParcels = ParcelCollection.mergeTooSmallParcels(cutParcels, (int) profile.getMinimalArea());
 		SimpleFeatureType schema = ParcelSchema.getSFBMinParcel().getFeatureType();
 		Arrays.stream(cutBigParcels.toArray(new SimpleFeature[0])).forEach(feat -> {
 			SimpleFeatureBuilder SFBParcel = ParcelSchema.setSFBMinParcelWithFeat(feat, schema);
 			result.add(SFBParcel.buildFeature(Attribute.makeUniqueId()));
 		});
-		if(SAVEINTERMEDIATERESULT) {
+		if (SAVEINTERMEDIATERESULT) {
 			Collec.exportSFC(result, new File(tmpFolder, "parcelConsolidationOnly.shp"), OVERWRITESHAPEFILES);
 			OVERWRITESHAPEFILES = false;
 		}
-		// add initial non cut parcel to final parcels 
+		// add initial non cut parcel to final parcels
 		Arrays.stream(parcelSaved.toArray(new SimpleFeature[0])).forEach(feat -> {
 			SimpleFeatureBuilder SFBParcel = ParcelSchema.setSFBMinParcelWithFeat(feat, schema);
 			result.add(SFBParcel.buildFeature(Attribute.makeUniqueId()));
@@ -274,13 +256,13 @@ public class ConsolidationDivision {
 			Collec.exportSFC(result, new File(tmpFolder, "step4.shp"));
 			System.out.println("done step 4");
 		}
-//		//If the selection of parcel was based on a polygon intersection file, we keep only the intersection parcels
-//		//TODO avec une emprise plus large que juste les parcelles : regarder du côté de morpholim pour un calculer un buffer suffisant ?)
-//		if (polygonIntersection != null && polygonIntersection.exists()) {
-//			ShapefileDataStore sdsInter = new ShapefileDataStore(polygonIntersection.toURI().toURL());
-//			SimpleFeatureCollection sfc = sdsInter.getFeatureSource().getFeatures();
-//			sdsInter.dispose();
-//		}
+		// //If the selection of parcel was based on a polygon intersection file, we keep only the intersection parcels
+		// //TODO avec une emprise plus large que juste les parcelles : regarder du côté de morpholim pour un calculer un buffer suffisant ?)
+		// if (polygonIntersection != null && polygonIntersection.exists()) {
+		// ShapefileDataStore sdsInter = new ShapefileDataStore(polygonIntersection.toURI().toURL());
+		// SimpleFeatureCollection sfc = sdsInter.getFeatureSource().getFeatures();
+		// sdsInter.dispose();
+		// }
 		return result;
 	}
 
