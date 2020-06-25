@@ -12,6 +12,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 import org.geotools.data.DataUtilities;
 import org.geotools.data.FeatureWriter;
 import org.geotools.data.FileDataStore;
@@ -101,7 +103,8 @@ public class TopologicalGraph {
 
   public Node getOrCreateNode(Coordinate c, double tolerance) {
     if (tolerance == 0) {
-      if (this.nodes.containsKey(c)) return this.nodes.get(c);
+      if (this.nodes.containsKey(c))
+        return this.nodes.get(c);
       Node node = new Node(c);
       this.nodes.put(c, node);
       return node;
@@ -116,6 +119,12 @@ public class TopologicalGraph {
 
   public void addNode(Node n) {
     this.nodes.put(n.getCoordinate(), n);
+  }
+
+  public void addNodes(Collection<Node> nodes) {
+    for (Node n : nodes) {
+      this.nodes.put(n.getCoordinate(), n);
+    }
   }
 
   public List<HalfEdge> edgesOf(Node node) {
@@ -208,5 +217,26 @@ public class TopologicalGraph {
       return null;
     candidates.sort((c1, c2) -> Double.compare(c1.distance(c), c2.distance(c)));
     return this.nodes.get(candidates.get(0));
+  }
+
+  public List<HalfEdge> getPath(Node start, Node end) {
+    List<HalfEdge> result = new ArrayList<>();
+    HalfEdge currentEdge = TopologicalGraph.outgoingEdgesOf(start, getEdges()).get(0);
+    result.add(currentEdge);
+    Node currentNode = currentEdge.getTarget();
+    while (currentNode != end) {
+      currentEdge = TopologicalGraph.outgoingEdgesOf(currentNode, getEdges()).get(0);
+      result.add(currentEdge);
+      currentNode = currentEdge.getTarget();
+    }
+    return result;
+  }
+
+  public Pair<List<HalfEdge>, Double> getShortestPath(HalfEdge start, HalfEdge end) {
+    List<HalfEdge> pathForward = getPath(start.getTarget(), end.getOrigin());
+    List<HalfEdge> pathBackward = getPath(end.getTarget(), start.getOrigin());
+    double lengthForward = pathForward.stream().flatMapToDouble(e -> e.getChildren().stream().mapToDouble(c->c.getGeometry().getLength())).sum();
+    double lengthBackward = pathBackward.stream().flatMapToDouble(e -> e.getChildren().stream().mapToDouble(c->c.getGeometry().getLength())).sum();
+    return (lengthForward < lengthBackward) ? new ImmutablePair<>(pathForward, lengthForward) : new ImmutablePair<>(pathBackward, -lengthBackward);
   }
 }
