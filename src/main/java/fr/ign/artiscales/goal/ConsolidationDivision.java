@@ -118,8 +118,6 @@ public class ConsolidationDivision {
 	 */
 	public static SimpleFeatureCollection consolidationDivision(SimpleFeatureCollection parcels, File roadFile, File tmpFolder,
 			ProfileUrbanFabric profile, File polygonIntersection, double harmonyCoeff, double noise) throws Exception {
-System.out.println(profile.getLargeStreetLevel());
-System.out.println(profile.getLargeStreetWidth());
 		DefaultFeatureCollection parcelSaved = new DefaultFeatureCollection();
 		parcelSaved.addAll(parcels);
 		DefaultFeatureCollection parcelToMerge = new DefaultFeatureCollection();

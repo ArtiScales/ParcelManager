@@ -80,7 +80,7 @@ public class StraightSkeletonParcelDecomposition {
   // Must be a double attribute
   public final static String NAME_ATT_IMPORTANCE = "IMPORTANCE";
   // public final static String NAME_ATT_ROAD = "NOM_VOIE_G";
-  public final static String NAME_ATT_ROAD = "NOM_RUE_G";
+  public final static String NAME_ATT_ROAD = "NOM_VOIE_G";
  
   //////////////////////////////////////////////////////
 
@@ -1420,9 +1420,13 @@ public class StraightSkeletonParcelDecomposition {
     // Partial skeleton
     CampSkeleton cs = new CampSkeleton(pol, offsetDistance);
 //    cs.getGraph().getFaces().forEach(f->System.out.println(f.getGeometry()));
-    Geom.exportGeom(cs.getGraph().getFaces().stream().map(f->f.getGeometry()).collect(Collectors.toList()),new File(FOLDER_OUT_DEBUG+"cs"+pol.getArea()));
     List<Edge> edges = cs.getExteriorEdges();
-    System.out.println("ExteriorEdges = " + edges.size());
+    if (DEBUG) {
+		File tmpResult = new File(FOLDER_OUT_DEBUG, "CampSkeletonValues");
+		tmpResult.mkdirs();
+		Geom.exportGeom(cs.getGraph().getFaces().stream().map(f->f.getGeometry()).collect(Collectors.toList()),new File(tmpResult, "cs"+pol.getArea()));
+		System.out.println("ExteriorEdges = " + edges.size());
+    }
     List<Edge> orderedEdges = new ArrayList<>();
     Edge first = edges.get(0);
     orderedEdges.add(first);
