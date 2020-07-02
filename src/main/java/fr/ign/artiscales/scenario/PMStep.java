@@ -104,6 +104,7 @@ public class PMStep {
 	 * @throws Exception
 	 */
 	public File execute() throws Exception {
+		OUTFOLDER.mkdirs();
 		//convert the parcel to a common type
 		ShapefileDataStore shpDSParcel = new ShapefileDataStore(PARCELFILE.toURI().toURL());
 		SimpleFeatureCollection parcel = new SpatialIndexFeatureCollection(shpDSParcel.getFeatureSource().getFeatures());
@@ -120,7 +121,7 @@ public class PMStep {
 		} else
 			parcelMarked = getSimulationParcels(parcel);
 		if (DEBUG)
-			Collec.exportSFC(parcelMarked, new File(TMPFOLDER, "parcelMarked" + this.getZoneStudied()));
+			Collec.exportSFC(parcelMarked, new File(TMPFOLDER, "parcelMarked" + this.getZoneStudied()), false);
 		SimpleFeatureCollection parcelCut = new DefaultFeatureCollection(null, ParcelSchema.getSFBMinParcel().getFeatureType());
 		// get the wanted building profile
 		ProfileUrbanFabric profile = ProfileUrbanFabric.convertJSONtoProfile(new File(PROFILEFOLDER + "/" + urbanFabricType + ".json"));
@@ -133,7 +134,7 @@ public class PMStep {
 			case "zoneDivision":
 				ZoneDivision.PROCESS = parcelProcess;
 				((DefaultFeatureCollection) parcelCut).addAll(ZoneDivision.zoneDivision(parcelMarkedComm, ParcelGetter.getParcelByCommunityCode(parcel, communityNumber),
-						TMPFOLDER, OUTFOLDER, profile, profile.getRoadEpsilon(), profile.getNoise()));
+						TMPFOLDER, OUTFOLDER, profile, profile.getHarmonyCoeff(), profile.getNoise()));
 				break;
 			case "densification":
 				((DefaultFeatureCollection) parcelCut).addAll(Densification.densification(parcelMarkedComm,
@@ -150,7 +151,7 @@ public class PMStep {
 			case "consolidationDivision":
 				ConsolidationDivision.PROCESS = parcelProcess;
 				((DefaultFeatureCollection) parcelCut).addAll(ConsolidationDivision.consolidationDivision(parcelMarkedComm, ROADFILE, TMPFOLDER,
-						profile, profile.getRoadEpsilon(), profile.getNoise()));
+						profile, profile.getHarmonyCoeff(), profile.getNoise()));
 				break;
 			case "densificationStudy":
 				DensificationStudy.runDensificationStudy(parcelMarkedComm, BUILDINGFILE, ROADFILE, ZONINGFILE, TMPFOLDER, OUTFOLDER,
@@ -204,7 +205,7 @@ public class PMStep {
 	 * @throws NoSuchAuthorityCodeException 
 	 */
 	public SimpleFeatureCollection getSimulationParcels(SimpleFeatureCollection parcelIn) throws IOException, NoSuchAuthorityCodeException, FactoryException  {
-		
+
 		// special case where zoneDivision will return other than parcel
 		if (goal.equals("zoneDivision")) {
 			ParcelSchema.setMinParcelCommunityField(GeneralFields.getZoneCommunityCode());
@@ -252,7 +253,7 @@ public class PMStep {
 		// parcel marking with input polygons (disabled if we use a specific zone)
 		if (POLYGONINTERSECTION != null && POLYGONINTERSECTION.exists() && !goal.equals("zoneDivision")) 
 			parcel = MarkParcelAttributeFromPosition.markParcelIntersectPolygonIntersection(parcel, POLYGONINTERSECTION);
-	
+
 		SimpleFeatureCollection result = new DefaultFeatureCollection(); 
 		// parcel marking with a zoning plan (possible to be hacked for any attribute feature selection by setting the field name to the genericZoning scenario parameter) 
 		if (ZONINGFILE != null && ZONINGFILE.exists() && genericZone != null && !genericZone.equals("")) {
@@ -329,7 +330,7 @@ public class PMStep {
 			if (MarkParcelAttributeFromPosition.isNoParcelMarked(parcel))
 				result = parcel;
 			else 
-			result = MarkParcelAttributeFromPosition.getOnlyMarkedParcels(parcel);
+				result = MarkParcelAttributeFromPosition.getOnlyMarkedParcels(parcel);
 		}
 		return new SpatialIndexFeatureCollection(result);
 	}

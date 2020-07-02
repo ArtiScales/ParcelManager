@@ -19,6 +19,7 @@ import fr.ign.artiscales.parcelFunction.MarkParcelAttributeFromPosition;
 import fr.ign.artiscales.parcelFunction.ParcelAttribute;
 import fr.ign.artiscales.parcelFunction.ParcelSchema;
 import fr.ign.cogit.geoToolsFunctions.Attribute;
+import fr.ign.cogit.geoToolsFunctions.Schemas;
 import fr.ign.cogit.geoToolsFunctions.vectors.Collec;
 
 public class GeneralFields {
@@ -212,7 +213,7 @@ public class GeneralFields {
 	public static SimpleFeatureCollection transformSFCToMinParcel(SimpleFeatureCollection sfc, SimpleFeatureCollection sfcWithInfo)
 			throws NoSuchAuthorityCodeException, FactoryException, IOException {
 		DefaultFeatureCollection result = new DefaultFeatureCollection();
-		SimpleFeatureBuilder builder = ParcelSchema.getSFBMinParcel();
+		SimpleFeatureBuilder builder = Schemas.getSFBSchemaWithMultiPolygon(ParcelSchema.getSFBMinParcel().getFeatureType());
 		try (SimpleFeatureIterator it = sfc.features()) {
 			while (it.hasNext()) {
 				SimpleFeature feat = it.next();
