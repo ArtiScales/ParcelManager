@@ -335,8 +335,7 @@ public class Densification {
 		sds.dispose();
 		if (!MarkParcelAttributeFromPosition.isNoParcelMarked(supParcels)) {
 			profile.setLargeStreetWidth(profile.getStreetWidth());
-			parcelDensified = ConsolidationDivision.consolidationDivision(supParcels, roadFile, tmpFolder, profile, profile.getStreetWidth(),
-					profile.getDecompositionLevelWithoutStreet());
+			parcelDensified = ConsolidationDivision.consolidationDivision(supParcels, roadFile, tmpFolder, profile);
 		}
 		return parcelDensified;
 	}
