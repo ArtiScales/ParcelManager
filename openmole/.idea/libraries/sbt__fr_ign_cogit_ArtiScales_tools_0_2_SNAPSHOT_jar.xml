@@ -1,0 +1,11 @@
+<component name="libraryTable">
+  <library name="sbt: fr.ign.cogit:ArtiScales-tools:0.2-SNAPSHOT:jar">
+    <CLASSES>
+      <root url="jar://$MAVEN_REPOSITORY$/fr/ign/cogit/ArtiScales-tools/0.2-SNAPSHOT/ArtiScales-tools-0.2-SNAPSHOT.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES>
+      <root url="jar://$MAVEN_REPOSITORY$/fr/ign/cogit/ArtiScales-tools/0.2-SNAPSHOT/ArtiScales-tools-0.2-SNAPSHOT-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>

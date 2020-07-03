@@ -52,13 +52,13 @@ public class PMScenario {
 				token = parser.nextToken();
 				if (token == JsonToken.VALUE_STRING) {
 					String rootFolder = parser.getText();
-					zoningFile = new File(rootFolder, "zoning.shp");
-					buildingFile = new File(rootFolder, "building.shp");
-					roadFile = new File(rootFolder, "road.shp");
-					polygonIntersection = new File(rootFolder, "polygonIntersection.shp");
-					zone = new File(rootFolder,"zone.shp");
+					zoningFile = new File(rootFolder, "zoning.gpkg");
+					buildingFile = new File(rootFolder, "building.gpkg");
+					roadFile = new File(rootFolder, "road.gpkg");
+					polygonIntersection = new File(rootFolder, "polygonIntersection.gpkg");
+					zone = new File(rootFolder,"zone.gpkg");
 					predicateFile = new File(rootFolder, "predicate.csv");
-					parcelFile = new File(rootFolder, "parcel.shp");
+					parcelFile = new File(rootFolder, "parcel.gpkg");
 					profileFolder = new File(rootFolder, "profileUrbanFabric");
 				}
 			}

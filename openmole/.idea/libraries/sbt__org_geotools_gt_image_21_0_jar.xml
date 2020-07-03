@@ -1,0 +1,11 @@
+<component name="libraryTable">
+  <library name="sbt: org.geotools:gt-image:21.0:jar">
+    <CLASSES>
+      <root url="jar://$MAVEN_REPOSITORY$/org/geotools/gt-image/21.0/gt-image-21.0.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES>
+      <root url="jar://$MAVEN_REPOSITORY$/org/geotools/gt-image/21.0/gt-image-21.0-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>

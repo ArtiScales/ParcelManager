@@ -80,7 +80,7 @@ public class StraightSkeletonParcelDecomposition {
   // Must be a double attribute
   public final static String NAME_ATT_IMPORTANCE = "IMPORTANCE";
   // public final static String NAME_ATT_ROAD = "NOM_VOIE_G";
-  public final static String NAME_ATT_ROAD = "NOM_VOIE_G";
+  public final static String NAME_ATT_ROAD = "NOM_RUE_G";
  
   //////////////////////////////////////////////////////
 
@@ -1635,9 +1635,9 @@ public class StraightSkeletonParcelDecomposition {
     // ShapefileDataStore blockDS = new ShapefileDataStore(new File(inputUrbanBlock).toURI().toURL());
     // SimpleFeatureCollection blocks = blockDS.getFeatureSource().getFeatures();
     // String inputParcelShapeFile = "/home/julien/data/PLU_PARIS/PARCELLE_CADASTRALE/PARCELLE_13.shp";
-    String inputParcelShapeFile = "/home/julien/data/PLU_PARIS/ilots_13.shp";
-    String inputRoadShapeFile = "/home/julien/data/PLU_PARIS/voie/voie_l93.shp";
-    String folderOut = "data/";
+    String inputParcelShapeFile = "/tmp/ex.shp";
+    String inputRoadShapeFile = "/home/thema/Documents/MC/workspace/ParcelManager/src/main/resources/ParcelComparison/road.shp";
+    String folderOut = "/tmp/";
     // The output file that will contain all the decompositions
     String shapeFileOut = folderOut + "outflag.shp";
     (new File(folderOut)).mkdirs();
@@ -1657,7 +1657,7 @@ public class StraightSkeletonParcelDecomposition {
     SimpleFeatureIterator iterator = parcels.features();
     SimpleFeature feature = iterator.next();
     List<Polygon> polygons = Util.getPolygons((Geometry) feature.getDefaultGeometry());
-    double maxDepth = 10, maxDistanceForNearestRoad = 100, minimalArea = 20, minWidth = 5, maxWidth = 40, noiseParameter = 0.1;
+    double maxDepth = 50, maxDistanceForNearestRoad = 100, minimalArea = 20, minWidth = 5, maxWidth = 40, noiseParameter = 0.1;
     // SimpleFeatureCollection result = runStraightSkeleton2(polygons.get(0), roads, maxDepth, maxDistanceForNearestRoad, minimalArea, minWidth, maxWidth, noiseParameter,
     // new MersenneTwister(42));
     //
@@ -1680,6 +1680,7 @@ public class StraightSkeletonParcelDecomposition {
     // }
     // dataStore.dispose();
     iterator.close();
+    DEBUG = true;
     decompose(polygons.get(0), roads, maxDepth, maxDistanceForNearestRoad, minimalArea, minWidth, maxWidth, noiseParameter, new MersenneTwister(42));
     roadDS.dispose();
     parcelDS.dispose();

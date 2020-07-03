@@ -10,7 +10,7 @@
 		<maven.compiler.source>1.8</maven.compiler.source>
 		<maven.compiler.target>1.8</maven.compiler.target>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<geotools.version>21.0</geotools.version>
+		<geotools.version>23.0</geotools.version>
 		<artiscales.tools.version>0.2-SNAPSHOT</artiscales.tools.version>
 	</properties>
 
@@ -90,6 +90,36 @@
 					</execution>
 				</executions>
 			</plugin>
+			<plugin>
+			    <groupId>org.apache.maven.plugins</groupId>
+			    <artifactId>maven-shade-plugin</artifactId>
+			    <version>2.4.3</version>
+			    <executions>
+				<execution>
+				    <goals>
+					<goal>shade</goal>
+				    </goals>
+				    <configuration>
+					<filters>
+					    <filter>
+						<artifact>*:*</artifact>
+						<excludes>
+						    <exclude>META-INF/*.SF</exclude>
+						    <exclude>META-INF/*.DSA</exclude>
+						    <exclude>META-INF/*.RSA</exclude>
+						</excludes>
+					    </filter>
+					</filters>
+					<shadedArtifactAttached>true</shadedArtifactAttached>
+					<!-- This bit merges the various META-INF/services files. -->
+					<transformers>
+					    <transformer
+					  implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer" />
+					</transformers>
+				    </configuration>
+				</execution>
+			    </executions>
+			</plugin>
 		</plugins>
 	</build>
 
@@ -105,15 +135,15 @@
 			<version>${artiscales.tools.version}</version>
 		</dependency>
 		<dependency>
-			<groupId>org.geotools</groupId>
-			<artifactId>gt-grid</artifactId>
-			<version>${geotools.version}</version>
-		</dependency>
-		<dependency>
+		   <groupId>org.geotools</groupId>
+		   <artifactId>gt-geopkg</artifactId>
+		   <version>${geotools.version}</version>
+		 </dependency>
+<!--		<dependency>
 			<groupId>org.geotools</groupId>
 			<artifactId>gt-graph</artifactId>
 			<version>${geotools.version}</version>
-		</dependency>
+		</dependency> -->
 		<dependency>
 			<groupId>org.geotools</groupId>
 			<artifactId>gt-shapefile</artifactId>
@@ -121,19 +151,14 @@
 		</dependency>
 		<dependency>
 			<groupId>org.geotools</groupId>
-			<artifactId>gt-arcgrid</artifactId>
-			<version>${geotools.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>org.geotools</groupId>
 			<artifactId>gt-coverage</artifactId>
 			<version>${geotools.version}</version>
 		</dependency>
-		<dependency>
+<!--		<dependency>
 			<groupId>org.geotools</groupId>
 			<artifactId>gt-geotiff</artifactId>
 			<version>${geotools.version}</version>
-		</dependency>
+		</dependency> -->
 		<dependency>
 			<groupId>org.geotools</groupId>
 			<artifactId>gt-image</artifactId>
@@ -147,12 +172,28 @@
 		<dependency>
 			<groupId>org.apache.commons</groupId>
 			<artifactId>commons-math3</artifactId>
-			<version>3.6</version>
+			<version>3.6.1</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.commons</groupId>
+			<artifactId>commons-lang3</artifactId>
+			<version>3.10</version>
+		</dependency>
+		<dependency>
+			<groupId>com.github.twak</groupId>
+			<artifactId>jutils</artifactId>
+			<version>master-0b29deb63f-1</version>
 		</dependency>
 		<dependency>
 			<groupId>com.github.twak</groupId>
 			<artifactId>campskeleton</artifactId>
 			<version>master-450b39a53e-1</version>
+			<exclusions>
+				<exclusion>
+					<groupId>com.github.twak</groupId>
+					<artifactId>jutils</artifactId>
+				</exclusion>
+			</exclusions>			
 		</dependency>
 		<dependency>
 			<groupId>com.fasterxml.jackson.core</groupId>

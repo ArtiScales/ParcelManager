@@ -1,0 +1,11 @@
+<component name="libraryTable">
+  <library name="sbt: it.geosolutions.imageio-ext:imageio-ext-utilities:1.2.1:jar">
+    <CLASSES>
+      <root url="jar://$MAVEN_REPOSITORY$/it/geosolutions/imageio-ext/imageio-ext-utilities/1.2.1/imageio-ext-utilities-1.2.1.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES>
+      <root url="jar://$MAVEN_REPOSITORY$/it/geosolutions/imageio-ext/imageio-ext-utilities/1.2.1/imageio-ext-utilities-1.2.1-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>

@@ -1,0 +1,11 @@
+<component name="libraryTable">
+  <library name="sbt: net.sf.geographiclib:GeographicLib-Java:1.49:jar">
+    <CLASSES>
+      <root url="jar://$MAVEN_REPOSITORY$/net/sf/geographiclib/GeographicLib-Java/1.49/GeographicLib-Java-1.49.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES>
+      <root url="jar://$MAVEN_REPOSITORY$/net/sf/geographiclib/GeographicLib-Java/1.49/GeographicLib-Java-1.49-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>

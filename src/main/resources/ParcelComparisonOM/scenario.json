@@ -1,0 +1,13 @@
+{
+	"rootfile": "src/main/resources/ParcelComparisonOM/",
+	"parcelFile":"src/main/resources/ParcelComparisonOM/parcel2003.shp",
+	"polygonIntersectionFile":"src/main/resources/ParcelComparisonOM/out/place.shp",
+	"zoneFile":"src/main/resources/ParcelComparisonOM/out/zone.shp",
+	"outFolder": "src/main/resources/ParcelComparisonOM/out/",
+	"steps": [
+		{
+			"goal": "zoneDivision",
+			"parcelProcess": "null",
+			"urbanFabricType": "smallHouse"
+		}]
+}

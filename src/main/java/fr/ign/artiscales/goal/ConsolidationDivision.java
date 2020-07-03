@@ -4,8 +4,8 @@ import java.io.File;
 import java.util.Arrays;
 
 import org.apache.commons.math3.random.MersenneTwister;
+import org.geotools.data.DataStore;
 import org.geotools.data.DataUtilities;
-import org.geotools.data.shapefile.ShapefileDataStore;
 import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.data.simple.SimpleFeatureIterator;
 import org.geotools.factory.CommonFactoryFinder;
@@ -25,6 +25,7 @@ import fr.ign.artiscales.parcelFunction.ParcelSchema;
 import fr.ign.cogit.geoToolsFunctions.Attribute;
 import fr.ign.cogit.geoToolsFunctions.vectors.Collec;
 import fr.ign.cogit.geoToolsFunctions.vectors.Geom;
+import fr.ign.cogit.geoToolsFunctions.vectors.Geopackages;
 import fr.ign.cogit.geometryGeneration.CityGeneration;
 import fr.ign.cogit.parameter.ProfileUrbanFabric;
 
@@ -71,7 +72,7 @@ public class ConsolidationDivision {
 	 */
 	public static SimpleFeatureCollection consolidationDivision(SimpleFeatureCollection parcels, File roadFile, File tmpFolder,
 			ProfileUrbanFabric profile) throws Exception {
-		return consolidationDivision(parcels, roadFile, tmpFolder, profile, 0.5, 0.0);
+		return consolidationDivision(parcels, roadFile, tmpFolder, profile, profile.getHarmonyCoeff(), profile.getNoise());
 	}
 
 	/**
@@ -161,8 +162,8 @@ public class ConsolidationDivision {
 		////////////////
 		SimpleFeatureCollection roads;
 		if (roadFile != null && roadFile.exists()) {
-			ShapefileDataStore sdsRoad = new ShapefileDataStore(roadFile.toURI().toURL());
-			roads = DataUtilities.collection(Collec.snapDatas(sdsRoad.getFeatureSource().getFeatures(), mergedParcels));
+			DataStore sdsRoad = Geopackages.getDataStore(roadFile);
+			roads = DataUtilities.collection(Collec.snapDatas(sdsRoad.getFeatureSource(sdsRoad.getTypeNames()[0]).getFeatures(), mergedParcels));
 			sdsRoad.dispose();
 		} else
 			roads = null;
@@ -178,7 +179,7 @@ public class ConsolidationDivision {
 					SimpleFeatureCollection freshCutParcel = new DefaultFeatureCollection();
 					switch (PROCESS) {
 					case "OBB":
-						freshCutParcel = OBBBlockDecomposition.splitParcels(feat,
+						freshCutParcel = OBBBlockDecomposition.splitParcel(feat,
 								(roads != null && !roads.isEmpty()) ? Collec.snapDatas(roads, (Geometry) feat.getDefaultGeometry()) : null,
 								profile.getMaximalArea(), profile.getMinimalWidthContactRoad(), harmonyCoeff, noise,
 								Collec.fromPolygonSFCtoListRingLines(isletCollection.subCollection(

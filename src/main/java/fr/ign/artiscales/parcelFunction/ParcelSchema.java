@@ -60,7 +60,7 @@ public class ParcelSchema {
 	public static SimpleFeatureBuilder getSFBMinParcelSplit() throws NoSuchAuthorityCodeException, FactoryException {
 		SimpleFeatureTypeBuilder sfTypeBuilder = new SimpleFeatureTypeBuilder();
 		sfTypeBuilder.setName("minParcelSplit");
-		sfTypeBuilder.setCRS( CRS.decode("EPSG:2154"));
+		sfTypeBuilder.setCRS(CRS.decode("EPSG:2154"));
 		sfTypeBuilder.add("the_geom", Polygon.class);
 		sfTypeBuilder.setDefaultGeometry("the_geom");
 		sfTypeBuilder.add(minParcelSectionField, String.class);

@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import org.geotools.data.DataStore;
 import org.geotools.data.DataUtilities;
 import org.geotools.data.collection.SpatialIndexFeatureCollection;
 import org.geotools.data.shapefile.ShapefileDataStore;
@@ -30,6 +31,7 @@ import fr.ign.artiscales.parcelFunction.ParcelState;
 import fr.ign.artiscales.workflow.DensificationStudy;
 import fr.ign.cogit.geoToolsFunctions.vectors.Collec;
 import fr.ign.cogit.geoToolsFunctions.vectors.Geom;
+import fr.ign.cogit.geoToolsFunctions.vectors.Geopackages;
 import fr.ign.cogit.geometryGeneration.CityGeneration;
 import fr.ign.cogit.parameter.ProfileUrbanFabric;
 
@@ -106,8 +108,8 @@ public class PMStep {
 	public File execute() throws Exception {
 		OUTFOLDER.mkdirs();
 		//convert the parcel to a common type
-		ShapefileDataStore shpDSParcel = new ShapefileDataStore(PARCELFILE.toURI().toURL());
-		SimpleFeatureCollection parcel = new SpatialIndexFeatureCollection(shpDSParcel.getFeatureSource().getFeatures());
+		DataStore dSParcel = Geopackages.getDataStore(PARCELFILE);
+		SimpleFeatureCollection parcel = new SpatialIndexFeatureCollection(dSParcel.getFeatureSource(dSParcel.getTypeNames()[0]).getFeatures());
 		switch (GeneralFields.getParcelFieldType()) {
 		case "french":
 			parcel = FrenchParcelFields.frenchParcelToMinParcel(parcel);
@@ -121,7 +123,7 @@ public class PMStep {
 		} else
 			parcelMarked = getSimulationParcels(parcel);
 		if (DEBUG)
-			Collec.exportSFC(parcelMarked, new File(TMPFOLDER, "parcelMarked" + this.getZoneStudied()), false);
+			Collec.exportSFC(parcelMarked, new File(TMPFOLDER, "parcelMarked" + this.goal + "-" + this.parcelProcess + this.preciseZone), false);
 		SimpleFeatureCollection parcelCut = new DefaultFeatureCollection(null, ParcelSchema.getSFBMinParcel().getFeatureType());
 		// get the wanted building profile
 		ProfileUrbanFabric profile = ProfileUrbanFabric.convertJSONtoProfile(new File(PROFILEFOLDER + "/" + urbanFabricType + ".json"));
@@ -174,12 +176,12 @@ public class PMStep {
 			switch (GeneralFields.getParcelFieldType()) {
 			case "french":
 				System.out.println("we set attribute as a french parcel");
-				parcelCut = FrenchParcelFields.setOriginalFrenchParcelAttributes(parcelCut, shpDSParcel.getFeatureSource().getFeatures());
+				parcelCut = FrenchParcelFields.setOriginalFrenchParcelAttributes(parcelCut, dSParcel.getFeatureSource(dSParcel.getTypeNames()[0]).getFeatures());
 				break;
 			}
 		}
 		Collec.exportSFC(parcelCut, lastOutput);
-		shpDSParcel.dispose();
+		dSParcel.dispose();
 		//if the step produces no output, we return the input parcels
 		if(!lastOutput.exists()) {
 			System.out.println("PMstep "+this.toString() +" returns nothing");

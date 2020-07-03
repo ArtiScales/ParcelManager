@@ -6,7 +6,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import org.geotools.data.shapefile.ShapefileDataStore;
+import org.geotools.data.DataStore;
 import org.geotools.data.simple.SimpleFeatureCollection;
 import org.locationtech.jts.geom.Geometry;
 import org.opengis.feature.simple.SimpleFeature;
@@ -20,6 +20,7 @@ import fr.ign.artiscales.scenario.PMStep;
 import fr.ign.cogit.geoToolsFunctions.Csv;
 import fr.ign.cogit.geoToolsFunctions.vectors.Collec;
 import fr.ign.cogit.geoToolsFunctions.vectors.Geom;
+import fr.ign.cogit.geoToolsFunctions.vectors.Geopackages;
 import fr.ign.cogit.geometryGeneration.CityGeneration;
 import fr.ign.cogit.parameter.ProfileUrbanFabric;
 
@@ -108,8 +109,8 @@ public class DensificationStudy {
 		System.out.println();
 		System.out.println("possible to have " + vacantParcelU.size() + " parcels with densification process");
 
-		ShapefileDataStore sds = new ShapefileDataStore(zoningFile.toURI().toURL());
-		SimpleFeatureCollection zoning = sds.getFeatureSource().getFeatures();
+		DataStore sds = Geopackages.getDataStore(zoningFile);
+		SimpleFeatureCollection zoning = sds.getFeatureSource(sds.getTypeNames()[0]).getFeatures();
 		long nbParcelsInUrbanizableZones = Arrays.stream(parcels.toArray(new SimpleFeature[0]))
 				.filter(feat -> FrenchZoningSchemas
 						.isUrbanZoneUsuallyAdmitResidentialConstruction(Collec.getSimpleFeatureFromSFC((Geometry) feat.getDefaultGeometry(), zoning)))

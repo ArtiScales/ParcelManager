@@ -1,0 +1,11 @@
+<component name="libraryTable">
+  <library name="sbt: org.jdom:jdom2:2.0.6:jar">
+    <CLASSES>
+      <root url="jar://$MAVEN_REPOSITORY$/org/jdom/jdom2/2.0.6/jdom2-2.0.6.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES>
+      <root url="jar://$MAVEN_REPOSITORY$/org/jdom/jdom2/2.0.6/jdom2-2.0.6-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>

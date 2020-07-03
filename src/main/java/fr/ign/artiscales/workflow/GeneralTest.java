@@ -101,7 +101,7 @@ public class GeneralTest {
 //		MakeStatisticGraphs.makeAreaGraph(Arrays.stream(finalNormalZone.toArray(new SimpleFeature[0]))
 //				.filter(sf -> ConsolidationDivision.isNewSection(sf)).collect(Collectors.toList()), statFolder,
 //				"Consolidation-division - detached houses simulation");
-
+//
 //		/////////////////////////
 //		//////// try the parcelDensification method
 //		/////////////////////////

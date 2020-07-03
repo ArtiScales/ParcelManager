@@ -1,0 +1,11 @@
+<component name="libraryTable">
+  <library name="sbt: org.jaitools:jt-utils:1.5.0:jar">
+    <CLASSES>
+      <root url="jar://$MAVEN_REPOSITORY$/org/jaitools/jt-utils/1.5.0/jt-utils-1.5.0.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES>
+      <root url="jar://$MAVEN_REPOSITORY$/org/jaitools/jt-utils/1.5.0/jt-utils-1.5.0-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>

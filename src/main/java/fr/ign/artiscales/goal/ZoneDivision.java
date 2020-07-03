@@ -5,6 +5,8 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 
+import org.geotools.data.DataUtilities;
+import org.geotools.data.shapefile.ShapefileDataStore;
 import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.data.simple.SimpleFeatureIterator;
 import org.geotools.feature.DefaultFeatureCollection;
@@ -20,6 +22,7 @@ import org.opengis.feature.type.AttributeDescriptor;
 import org.opengis.referencing.FactoryException;
 import org.opengis.referencing.NoSuchAuthorityCodeException;
 
+import fr.ign.artiscales.analysis.SingleParcelStat;
 import fr.ign.artiscales.decomposition.OBBBlockDecomposition;
 import fr.ign.artiscales.parcelFunction.MarkParcelAttributeFromPosition;
 import fr.ign.artiscales.parcelFunction.ParcelAttribute;
@@ -58,6 +61,36 @@ public class ZoneDivision {
 	 */
 	public static boolean DEBUG = false;
 
+	public static void main(String[] args) throws Exception {
+		File evolvedParcel = new File(
+				"/home/thema/.openmole/thema-HP-ZBook-14/webui/projects/compare/donnee/evolvedParcel.shp");
+		File outFile = new File("/tmp/out");
+		outFile.mkdirs();
+		File simuledFile = zoneDivision(
+				new File("/home/thema/.openmole/thema-HP-ZBook-14/webui/projects/compare/donnee/zone.shp"),
+				new File("/home/thema/.openmole/thema-HP-ZBook-14/webui/projects/compare/donnee/parcel2003.shp"),
+				ProfileUrbanFabric.convertJSONtoProfile(new File(
+						"/home/thema/Documents/MC/workspace/ParcelManager/src/main/resources/ParcelComparison/profileUrbanFabric/smallHouse.json")),
+				new File("/tmp/"), outFile);
+		System.out.println(SingleParcelStat.diffNumberOfParcel(simuledFile, evolvedParcel));
+		System.out.println(SingleParcelStat.diffAreaAverage(simuledFile, evolvedParcel));
+		System.out.println(SingleParcelStat.hausdorfDistanceAverage(simuledFile, evolvedParcel));
+	}
+	
+	public static File zoneDivision(File zoneFile, File parcelFile, ProfileUrbanFabric profile, File tmpFolder,
+			File outFolder) throws NoSuchAuthorityCodeException, FactoryException, IOException, SchemaException {
+		ShapefileDataStore sdsZone = new ShapefileDataStore(zoneFile.toURI().toURL());
+		ShapefileDataStore sdsParcel = new ShapefileDataStore(parcelFile.toURI().toURL());
+		SimpleFeatureCollection zone = DataUtilities.collection(sdsZone.getFeatureSource().getFeatures());
+		SimpleFeatureCollection parcel = DataUtilities.collection(sdsParcel.getFeatureSource().getFeatures());
+		sdsZone.dispose();
+		sdsParcel.dispose();
+		DEBUG = true;
+		Collec.exportSFC(zoneDivision(zone, parcel, tmpFolder, outFolder, profile, profile.getHarmonyCoeff(),
+				profile.getNoise()),new File(tmpFolder, "res"));
+		return new File(tmpFolder, "freshSplitedParcels.shp");
+	}
+
 	/**
 	 * Merge and recut a specific zone. Cut first the surrounding parcels to keep them unsplit, then split the zone parcel and remerge them all into the original parcel file. A bit
 	 * complicated algorithm to deal with non-existing pieces of parcels (as road).
@@ -83,7 +116,7 @@ public class ZoneDivision {
 	public static SimpleFeatureCollection zoneDivision(SimpleFeatureCollection initialZone, SimpleFeatureCollection parcels,
 			ProfileUrbanFabric profile, File tmpFolder, File outFolder)
 			throws NoSuchAuthorityCodeException, FactoryException, IOException, SchemaException {
-		return zoneDivision(initialZone, parcels, tmpFolder, outFolder, profile, 0.5, 0);
+		return zoneDivision(initialZone, parcels, tmpFolder, outFolder, profile, profile.getHarmonyCoeff(), profile.getNoise());
 	}
 
 	/**
@@ -132,7 +165,7 @@ public class ZoneDivision {
 		// complete the void left by the existing roads from the zones
 		// Also assess a section number
 		SimpleFeatureBuilder sfBuilder = ParcelSchema.getSFBMinParcelSplit();
-		SimpleFeatureBuilder originalSFB = new SimpleFeatureBuilder(savedParcels.getSchema());
+		SimpleFeatureBuilder originalSFB = new SimpleFeatureBuilder(parcelsInZone.getSchema());
 		if (DEBUG)
 			Collec.exportSFC(parcelsInZone, new File(tmpFolder, "parcelsInZone.shp"));
 		int numZone = 0;

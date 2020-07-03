@@ -49,7 +49,9 @@ public class CompareSimulatedParcelsWithEvolution {
 
 		// definition of a parameter file
 		File scenarioFile = new File(rootFolder, "scenario.json");
-		
+//	}
+//	
+//	public static void  compareSimulatedParcelsWithEvolution() { 
 		// Mark and export the parcels that have changed between the two set of time
 		ParcelCollection.sortDifferentParcel(fileParcelPast, fileParcelNow, outFolder);
 

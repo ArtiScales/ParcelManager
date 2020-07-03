@@ -1,0 +1,38 @@
+{
+	"rootfile": "src/main/resources/ParcelComparisonOM/",
+	"parcelFile":"src/main/resources/ParcelComparisonOM/parcel2003.shp",
+	"polygonIntersectionFile":"src/main/resources/ParcelComparisonOM/out/place.shp",
+	"zoneFile":"src/main/resources/ParcelComparisonOM/out/zone.shp",
+	"outFolder": "src/main/resources/ParcelComparisonOM/out/",
+	"steps": [
+		{
+			"goal": "zoneDivision",
+			"parcelProcess": "null",
+			"urbanFabricType": "smallHouse"
+		},	
+		{
+			"goal": "densificationOrNeighborhood",
+			"parcelProcess": "null",
+			"genericZone": "U",
+			"preciseZone":"UD",
+			"communityNumber":"77470,77390,77243",
+			"urbanFabricType": "largeCollective"
+		},	
+		{
+			"goal": "densificationOrNeighborhood",
+			"genericZone": "null",
+			"urbanFabricType": "smallHouse"
+		},		
+		{
+			"goal": "consolidationDivision",
+			"parcelProcess": "null",
+			"genericZone": "AU",
+			"urbanFabricType": "smallHouse"
+		},	
+		{
+			"goal": "consolidationDivision",
+			"parcelProcess": "null",
+			"genericZone": "NC",
+			"urbanFabricType": "smallHouse"
+		}]
+}

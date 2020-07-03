@@ -5,6 +5,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Arrays;
 
+import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.geotools.data.shapefile.ShapefileDataStore;
 import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.data.simple.SimpleFeatureIterator;
@@ -98,7 +99,7 @@ public class SingleParcelStat {
 					boolean contactWithRoad = false;
 					if (widthRoadContact != 0)
 						contactWithRoad = true;
-					// if we set a parcel plan to compare, we calculate the haudrof distances for the parcels that intersects the most parts.
+					// if we set a parcel plan to compare, we calculate the Hausdorf distances for the parcels that intersects the most parts.
 					double HausDist = 0;
 					double DisHausDst = 0;
 					String CodeAppar = "";
@@ -136,6 +137,53 @@ public class SingleParcelStat {
 	//// return mic.getRadiusLine().getLength() / mbc.getDiameter().getLength();
 	// return mbc.getDiameter().getLength();
 	// }
+	public static double hausdorfDistanceAverage(File parcelInFile, File parcelToCompareFile) throws IOException {
+		ShapefileDataStore sdsParcelIn = new ShapefileDataStore(parcelInFile.toURI().toURL());
+		ShapefileDataStore sdsParcelToCompareFile = new ShapefileDataStore(parcelToCompareFile.toURI().toURL());
+		double result = hausdorfDistanceAverage(sdsParcelIn.getFeatureSource().getFeatures(),
+				sdsParcelToCompareFile.getFeatureSource().getFeatures());
+		sdsParcelIn.dispose();
+		sdsParcelToCompareFile.dispose();
+		return result;
+	}
+
+	public static int diffNumberOfParcel(File parcelInFile, File parcelToCompareFile) throws IOException {
+		ShapefileDataStore sdsParcelIn = new ShapefileDataStore(parcelInFile.toURI().toURL());
+		ShapefileDataStore sdsParcelToCompareFile = new ShapefileDataStore(parcelToCompareFile.toURI().toURL());
+		int result = sdsParcelIn.getFeatureSource().getFeatures().size()
+				- sdsParcelToCompareFile.getFeatureSource().getFeatures().size();
+		sdsParcelIn.dispose();
+		sdsParcelToCompareFile.dispose();
+		return result;
+	}
+
+	public static double diffAreaAverage(File parcelInFile, File parcelToCompareFile) throws IOException {
+		ShapefileDataStore sdsParcelIn = new ShapefileDataStore(parcelInFile.toURI().toURL());
+		ShapefileDataStore sdsParcelToCompareFile = new ShapefileDataStore(parcelToCompareFile.toURI().toURL());
+		double result = Collec.area(sdsParcelIn.getFeatureSource().getFeatures())
+				- -Collec.area(sdsParcelToCompareFile.getFeatureSource().getFeatures());
+		sdsParcelIn.dispose();
+		sdsParcelToCompareFile.dispose();
+		return result;
+	}
+	
+	
+	public static double hausdorfDistanceAverage(SimpleFeatureCollection parcelIn, SimpleFeatureCollection parcelToCompare) {
+		HausdorffSimilarityMeasure hausDis = new HausdorffSimilarityMeasure();
+		DescriptiveStatistics stat = new DescriptiveStatistics();
+		try (SimpleFeatureIterator parcelIt = parcelIn.features()) {
+			while (parcelIt.hasNext()) {
+				SimpleFeature parcel = parcelIt.next();
+				Geometry parcelGeom = (Geometry) parcel.getDefaultGeometry();
+				SimpleFeature parcelCompare = Collec.getSimpleFeatureFromSFC(parcelGeom, parcelToCompare);
+				if (parcelCompare != null)
+					stat.addValue(hausDis.measure(parcelGeom, (Geometry) parcelCompare.getDefaultGeometry()));
+			}
+		} catch (Exception problem) {
+			problem.printStackTrace();
+		}
+		return stat.getMean();
+	}
 
 	public static SimpleFeatureCollection makeHausdorfDistanceMaps(SimpleFeatureCollection parcelIn, SimpleFeatureCollection parcelToCompare)
 			throws NoSuchAuthorityCodeException, FactoryException, IOException {

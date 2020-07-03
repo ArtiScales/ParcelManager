@@ -1,0 +1,1 @@
+[0m[[0m[33mwarn[0m] [0m[0minsecure HTTP request is deprecated 'Artifact(jai_core, jar, jar, None, Vector(), Some(http://download.osgeo.org/webdav/geotools/javax/media/jai_core/1.1.3/jai_core-1.1.3.jar), Map(), None, false)'; switch to HTTPS or opt-in using from(url(...), allowInsecureProtocol = true) on ModuleID or .withAllowInsecureProtocol(true) on Artifact[0m

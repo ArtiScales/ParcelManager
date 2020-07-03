@@ -10,8 +10,8 @@ import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
+import org.geotools.data.DataStore;
 import org.geotools.data.DataUtilities;
-import org.geotools.data.shapefile.ShapefileDataStore;
 import org.geotools.data.simple.SimpleFeatureCollection;
 import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.geom.LineString;
@@ -27,6 +27,7 @@ import fr.ign.cogit.FeaturePolygonizer;
 import fr.ign.cogit.geoToolsFunctions.Schemas;
 import fr.ign.cogit.geoToolsFunctions.vectors.Collec;
 import fr.ign.cogit.geoToolsFunctions.vectors.Geom;
+import fr.ign.cogit.geoToolsFunctions.vectors.Geopackages;
 
 /**
  * Re-implementation of block decomposition into parcels with flag shape. The algorithm is an adaptation from :
@@ -107,20 +108,20 @@ public class FlagParcelDecomposition {
 	public static SimpleFeatureCollection generateFlagSplitedParcels(SimpleFeature feat, List<LineString> extLines, double noise, File tmpFolder, File buildingFile,
 			File roadFile, Double maximalAreaSplitParcel, Double maximalWidthSplitParcel, Double lenDriveway, boolean allowIsolatedParcel,
 			Geometry exclusionZone) throws Exception {
-		ShapefileDataStore buildingDS = new ShapefileDataStore(buildingFile.toURI().toURL());
+		DataStore buildingDS = Geopackages.getDataStore(buildingFile);
 		List<Polygon> surfaces = Util.getPolygons((Geometry) feat.getDefaultGeometry());
 		// as the road shapefile can be left as null, we differ the FlagParcelDecomposition constructor
 		FlagParcelDecomposition fpd;
 		if (roadFile != null && roadFile.exists()) {
-			ShapefileDataStore roadSDS = new ShapefileDataStore(roadFile.toURI().toURL());
+			DataStore roadSDS = Geopackages.getDataStore(roadFile);
 			Geometry geom = ((Geometry) feat.getDefaultGeometry()).buffer(10);
-			fpd = new FlagParcelDecomposition(surfaces.get(0), Collec.snapDatas(buildingDS.getFeatureSource().getFeatures(), geom),
-					DataUtilities.collection(Collec.snapDatas(roadSDS.getFeatureSource().getFeatures(), geom)), maximalAreaSplitParcel, maximalWidthSplitParcel, lenDriveway,
+			fpd = new FlagParcelDecomposition(surfaces.get(0), Collec.snapDatas(buildingDS.getFeatureSource(buildingDS.getTypeNames()[0]).getFeatures(), geom),
+					DataUtilities.collection(Collec.snapDatas(roadSDS.getFeatureSource(roadSDS.getTypeNames()[0]).getFeatures(), geom)), maximalAreaSplitParcel, maximalWidthSplitParcel, lenDriveway,
 					extLines, exclusionZone);
 			roadSDS.dispose();
 		} else {
 			fpd = new FlagParcelDecomposition(surfaces.get(0),
-					Collec.snapDatas(buildingDS.getFeatureSource().getFeatures(), ((Geometry) feat.getDefaultGeometry()).buffer(10)),
+					Collec.snapDatas(buildingDS.getFeatureSource(buildingDS.getTypeNames()[0]).getFeatures(), ((Geometry) feat.getDefaultGeometry()).buffer(10)),
 					maximalAreaSplitParcel, maximalWidthSplitParcel, lenDriveway, extLines, exclusionZone);
 		}
 		List<Polygon> decomp = fpd.decompParcel(noise);
