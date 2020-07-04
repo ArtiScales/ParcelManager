@@ -46,7 +46,7 @@ public class ArtiScalesParcelFields {
 				boolean newlyGenerate = true;
 				i++;
 				SimpleFeature parcel = parcelIt.next();
-				featureBuilder.set("the_geom", parcel.getDefaultGeometry());
+				featureBuilder.set(Collec.getDefaultGeomName(), parcel.getDefaultGeometry());
 
 				String section = (String) parcel.getAttribute("SECTION");
 				featureBuilder.set("INSEE", FrenchParcelFields.makeINSEECode(parcel));

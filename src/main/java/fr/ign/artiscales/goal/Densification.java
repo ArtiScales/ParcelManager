@@ -153,7 +153,7 @@ public class Densification {
 			e.printStackTrace();
 		}
 		if (SAVEINTERMEDIATERESULT) {
-			Collec.exportSFC(onlyCutedParcels, new File(tmpFolder, "parcelDensificationOnly.shp"), OVERWRITESHAPEFILES) ;
+			Collec.exportSFC(onlyCutedParcels, new File(tmpFolder, "parcelDensificationOnly"), OVERWRITESHAPEFILES) ;
 			OVERWRITESHAPEFILES = false;
 		}
 		return resultParcels.collection();

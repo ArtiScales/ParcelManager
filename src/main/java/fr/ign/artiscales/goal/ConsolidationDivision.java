@@ -123,7 +123,7 @@ public class ConsolidationDivision {
 		parcelSaved.addAll(parcels);
 		DefaultFeatureCollection parcelToMerge = new DefaultFeatureCollection();
 		if (DEBUG) {
-			Collec.exportSFC(parcels, new File(tmpFolder, "step0.shp"));
+			Collec.exportSFC(parcels, new File(tmpFolder, "step0"));
 			System.out.println("done step 0");
 		}
 		////////////////
@@ -137,7 +137,7 @@ public class ConsolidationDivision {
 			}
 		});
 		if (DEBUG) {
-			Collec.exportSFC(parcelToMerge.collection(), new File(tmpFolder, "step1.shp"));
+			Collec.exportSFC(parcelToMerge.collection(), new File(tmpFolder, "step1"));
 			System.out.println("done step 1");
 		}
 		////////////////
@@ -154,7 +154,7 @@ public class ConsolidationDivision {
 			mergedParcels.add(sfBuilder.buildFeature(Attribute.makeUniqueId()));
 		}
 		if (DEBUG) {
-			Collec.exportSFC(mergedParcels.collection(), new File(tmpFolder, "step2.shp"));
+			Collec.exportSFC(mergedParcels.collection(), new File(tmpFolder, "step2"));
 			System.out.println("done step 2");
 		}
 		////////////////
@@ -194,7 +194,6 @@ public class ConsolidationDivision {
 						break;
 					}
 					if (freshCutParcel != null && !freshCutParcel.isEmpty() && freshCutParcel.size() > 0) {
-						Collec.exportSFC(freshCutParcel, new File("/tmp/ss"));
 						SimpleFeatureIterator it = freshCutParcel.features();
 						// every single parcel goes into new collection
 						int i = 0;
@@ -213,7 +212,7 @@ public class ConsolidationDivision {
 							} catch (Exception problem) {
 								problem.printStackTrace();
 							}
-							sfBuilderFinalParcel.set("the_geom", freshCut.getDefaultGeometry());
+							sfBuilderFinalParcel.set(Collec.getDefaultGeomName(), freshCut.getDefaultGeometry());
 							sfBuilderFinalParcel.set(ParcelSchema.getMinParcelSectionField(), makeNewSection(sec));
 							sfBuilderFinalParcel.set(ParcelSchema.getMinParcelNumberField(), String.valueOf(i++));
 							sfBuilderFinalParcel.set(ParcelSchema.getMinParcelCommunityField(),
@@ -232,7 +231,7 @@ public class ConsolidationDivision {
 		});
 		DefaultFeatureCollection result = new DefaultFeatureCollection();
 		if (DEBUG) {
-			Collec.exportSFC(cutParcels, new File(tmpFolder, "step3.shp"));
+			Collec.exportSFC(cutParcels, new File(tmpFolder, "step3"));
 			System.out.println("done step 3");
 		}
 		// merge small parcels
@@ -243,7 +242,7 @@ public class ConsolidationDivision {
 			result.add(SFBParcel.buildFeature(Attribute.makeUniqueId()));
 		});
 		if (SAVEINTERMEDIATERESULT) {
-			Collec.exportSFC(result, new File(tmpFolder, "parcelConsolidationOnly.shp"), OVERWRITESHAPEFILES);
+			Collec.exportSFC(result, new File(tmpFolder, "parcelConsolidationOnly"), OVERWRITESHAPEFILES);
 			OVERWRITESHAPEFILES = false;
 		}
 		// add initial non cut parcel to final parcels
@@ -252,7 +251,7 @@ public class ConsolidationDivision {
 			result.add(SFBParcel.buildFeature(Attribute.makeUniqueId()));
 		});
 		if (DEBUG) {
-			Collec.exportSFC(result, new File(tmpFolder, "step4.shp"));
+			Collec.exportSFC(result, new File(tmpFolder, "step4"));
 			System.out.println("done step 4");
 		}
 		// //If the selection of parcel was based on a polygon intersection file, we keep only the intersection parcels

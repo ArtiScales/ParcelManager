@@ -41,8 +41,8 @@ public class ParcelState {
 
 //	public static void main(String[] args) throws Exception {
 //		File geoFile = new File("/home/ubuntu/boulot/these/result2903/dataGeo/");
-//		File batiFile = new File(geoFile, "building.shp");
-//		File parcelFile = new File("/tmp/parcelTested.shp");
+//		File batiFile = new File(geoFile, "building");
+//		File parcelFile = new File("/tmp/parcelTested");
 //		ShapefileDataStore sds = new ShapefileDataStore(parcelFile.toURI().toURL());
 //		SimpleFeatureIterator sfc = sds.getFeatureSource().getFeatures().features();
 //

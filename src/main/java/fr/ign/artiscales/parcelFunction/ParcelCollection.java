@@ -44,10 +44,10 @@ import fr.ign.cogit.geoToolsFunctions.vectors.Geom;
 
 public class ParcelCollection {
 
-	public static void main(String[] args) throws Exception {
-		File rootFile = new File("src/main/resources/ParcelComparison/");
-		sortDifferentParcel(new File(rootFile,"parcel2003.shp"), new File(rootFile,"parcel2018.shp"), new File("/tmp/"));
-	}
+//	public static void main(String[] args) throws Exception {
+//		File rootFile = new File("src/main/resources/ParcelComparison/");
+//		sortDifferentParcel(new File(rootFile,"parcel2003.shp"), new File(rootFile,"parcel2018.shp"), new File("/tmp/"));
+//	}
 	
 	/**
 	 * method that compares two set of parcels and sort the reference plan parcels between the ones that changed and the ones that doesn't We compare the parcels area of the
@@ -55,12 +55,12 @@ public class ParcelCollection {
 	 * 
 	 * This method creates four shapefiles in the tmpFolder:
 	 * <ul>
-	 * <li><b>same.shp</b> contains the reference parcels that have not evolved</li>
-	 * <li><b>notSame.shp</b> contains the reference parcels that have changed</li>
-	 * <li><b>place.shp</b> contains the <i>notSame.shp</i> parcels with a reduction buffer, used for a precise intersection with other parcel in Parcel Manager
+	 * <li><b>same</b> contains the reference parcels that have not evolved</li>
+	 * <li><b>notSame</b> contains the reference parcels that have changed</li>
+	 * <li><b>place</b> contains the <i>notSame.shp</i> parcels with a reduction buffer, used for a precise intersection with other parcel in Parcel Manager
 	 * scenarios. The large parcels that are selected for a zone simulation (see below) aren't present.</li>
-	 * <li><b>zone.shp</b> contains special zones to be simulated</li>
-	 * <li><b>evolvedParcel.shp</b> contains only the compared parcels that have evolved</li>
+	 * <li><b>zone</b> contains special zones to be simulated</li>
+	 * <li><b>evolvedParcel</b> contains only the compared parcels that have evolved</li>
 	 * </ul>
 	 * 
 	 * @param parcelRefFile
@@ -81,11 +81,11 @@ public class ParcelCollection {
 
 	public static void sortDifferentParcel(File parcelRefFile, File parcelToCompareFile, File parcelOutFolder, double minParcelSimulatedSize,
 			double maxParcelSimulatedSize) throws IOException, NoSuchAuthorityCodeException, FactoryException {
-		File fSame = new File(parcelOutFolder, "same.shp");
-		File fEvolved = new File(parcelOutFolder, "evolvedParcel.shp");
-		File fNotSame = new File(parcelOutFolder, "notSame.shp");
-		File fInter = new File(parcelOutFolder, "place.shp");
-		File fZone = new File(parcelOutFolder, "zone.shp");
+		File fSame = new File(parcelOutFolder, "same"+Collec.getDefaultGISFileType());
+		File fEvolved = new File(parcelOutFolder, "evolvedParcel"+Collec.getDefaultGISFileType());
+		File fNotSame = new File(parcelOutFolder, "notSame"+Collec.getDefaultGISFileType());
+		File fInter = new File(parcelOutFolder, "place"+Collec.getDefaultGISFileType());
+		File fZone = new File(parcelOutFolder, "zone"+Collec.getDefaultGISFileType());
 		if (fSame.exists() && fEvolved.exists() && fNotSame.exists() && fInter.exists() && fZone.exists()) {
 			System.out.println("markDiffParcel(...) already calculated");
 			return ;
@@ -348,7 +348,7 @@ public class ParcelCollection {
 					Arrays.stream(intersect.toArray(new SimpleFeature[0])).forEach(thaParcel -> {
 						if (thaParcel.getID().equals(idToMerge)) {
 							for (AttributeDescriptor attr : thaParcel.getFeatureType().getAttributeDescriptors()) {
-								if (attr.getLocalName().equals("the_geom"))
+								if (attr.getLocalName().equals(Collec.getDefaultGeomName()))
 									continue;
 								build.set(attr.getName(),thaParcel.getAttribute(attr.getName()) );
 							}
@@ -362,7 +362,7 @@ public class ParcelCollection {
 						System.out.println("problem with +"+lG);
 						g = Geom.scaledGeometryReductionIntersection(lG);
 					}
-					build.set("the_geom", g);
+					build.set(Collec.getDefaultGeomName(), g);
 					SimpleFeature f = build.buildFeature(idToMerge);
 					result.add(f);
 				}

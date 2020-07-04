@@ -399,7 +399,7 @@ public class ParcelGetter {
 
 		// if we cut all the parcel regarding to the zoning code
 		if (preCutParcels) {
-			File tmpParcel = Collec.exportSFC(parcelsSFC, new File(tmpFolder, "tmpParcel.shp"));
+			File tmpParcel = Collec.exportSFC(parcelsSFC, new File(tmpFolder, "tmpParcel"));
 			File[] polyFiles = { tmpParcel, zoningFile };
 			List<Polygon> polygons = FeaturePolygonizer.getPolygons(polyFiles);
 			// register to precise every parcel that are in the output
@@ -419,7 +419,7 @@ public class ParcelGetter {
 						SimpleFeature feat = parcelIt.next();
 						// if the polygon part was between that parcel, we add its attribute
 						if (((Geometry) feat.getDefaultGeometry()).buffer(1).contains(poly)) {
-							sfSimpleBuilder.set("the_geom", GeometryPrecisionReducer.reduce(poly, new PrecisionModel(100)));
+							sfSimpleBuilder.set(Collec.getDefaultGeomName(), GeometryPrecisionReducer.reduce(poly, new PrecisionModel(100)));
 							sfSimpleBuilder.set("CODE_DEP", feat.getAttribute("CODE_DEP"));
 							sfSimpleBuilder.set("CODE_COM", feat.getAttribute("CODE_COM"));
 							sfSimpleBuilder.set("COM_ABS", feat.getAttribute("COM_ABS"));
@@ -506,7 +506,7 @@ public class ParcelGetter {
 						else
 							continue parc;
 					}
-					finalParcelBuilder.set("the_geom", geom);
+					finalParcelBuilder.set(Collec.getDefaultGeomName(), geom);
 					finalParcelBuilder.set("CODE", FrenchParcelFields.makeFrenchParcelCode(feat));
 					finalParcelBuilder.set("CODE_DEP", feat.getAttribute("CODE_DEP"));
 					finalParcelBuilder.set("CODE_COM", feat.getAttribute("CODE_COM"));
@@ -528,7 +528,7 @@ public class ParcelGetter {
 		} 
 		parcelSDS.dispose();
 		shpDSBati.dispose();
-		return Collec.exportSFC(newParcel.collection(), new File(tmpFolder, "parcelProcessed.shp"));
+		return Collec.exportSFC(newParcel.collection(), new File(tmpFolder, "parcelProcessed"));
 	}
 
 	public static String getCodeDepFiled() {

@@ -79,7 +79,7 @@ public class FrenchParcelFields {
 			while (parcelIt.hasNext()) {
 				SimpleFeature parcel = parcelIt.next();
 				SimpleFeature iniParcel;
-				String insee ;
+				String insee;
 				if (GeneralFields.isParcelLikeFrenchHasSimulatedFileds(parcel)) {
 					iniParcel = parcel ; 
 					insee = (String) iniParcel.getAttribute(ParcelSchema.getMinParcelCommunityField());
@@ -94,7 +94,7 @@ public class FrenchParcelFields {
 						System.out.println("rr " + iniParcel);
 					}
 				}
-				featureBuilder.set("the_geom", parcel.getDefaultGeometry());
+				featureBuilder.set(Collec.getDefaultGeomName(), parcel.getDefaultGeometry());
 				String section = (String) iniParcel.getAttribute(ParcelSchema.getMinParcelSectionField());
 				featureBuilder.set("SECTION", section);
 				String numero = (String) iniParcel.getAttribute(ParcelSchema.getMinParcelNumberField());

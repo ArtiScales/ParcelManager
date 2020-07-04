@@ -11,6 +11,7 @@ import org.opengis.referencing.FactoryException;
 import org.opengis.referencing.NoSuchAuthorityCodeException;
 
 import fr.ign.artiscales.parcelFunction.MarkParcelAttributeFromPosition;
+import fr.ign.cogit.geoToolsFunctions.vectors.Collec;
 
 public class FrenchParcelSchemas {
 	/////////////////////
@@ -23,8 +24,8 @@ public class FrenchParcelSchemas {
 		SimpleFeatureTypeBuilder sfTypeBuilder = new SimpleFeatureTypeBuilder();
 		sfTypeBuilder.setName("frenchZoning");
 		sfTypeBuilder.setCRS(CRS.decode("EPSG:2154"));
-		sfTypeBuilder.add("the_geom", Polygon.class);
-		sfTypeBuilder.setDefaultGeometry("the_geom");
+		sfTypeBuilder.add(Collec.getDefaultGeomName(), Polygon.class);
+		sfTypeBuilder.setDefaultGeometry(Collec.getDefaultGeomName());
 		sfTypeBuilder.add("LIBELLE", String.class);
 		sfTypeBuilder.add("TYPEZONE", String.class);
 		sfTypeBuilder.add("TYPEPLAN", String.class);
@@ -42,8 +43,8 @@ public class FrenchParcelSchemas {
 		SimpleFeatureTypeBuilder sfTypeBuilder = new SimpleFeatureTypeBuilder();
 		sfTypeBuilder.setName("frenchParcel");
 		sfTypeBuilder.setCRS(CRS.decode("EPSG:2154"));
-		sfTypeBuilder.add("the_geom", Polygon.class);
-		sfTypeBuilder.setDefaultGeometry("the_geom");
+		sfTypeBuilder.add(Collec.getDefaultGeomName(), Polygon.class);
+		sfTypeBuilder.setDefaultGeometry(Collec.getDefaultGeomName());
 		sfTypeBuilder.add("NUMERO", String.class);
 		sfTypeBuilder.add("FEUILLE", String.class);
 		sfTypeBuilder.add("SECTION", String.class);
@@ -79,8 +80,8 @@ public class FrenchParcelSchemas {
 		SimpleFeatureTypeBuilder sfTypeBuilder = new SimpleFeatureTypeBuilder();
 		sfTypeBuilder.setName("frenchParcelSplit");
 		sfTypeBuilder.setCRS(CRS.decode("EPSG:2154"));
-		sfTypeBuilder.add("the_geom", Polygon.class);
-		sfTypeBuilder.setDefaultGeometry("the_geom");
+		sfTypeBuilder.add(Collec.getDefaultGeomName(), Polygon.class);
+		sfTypeBuilder.setDefaultGeometry(Collec.getDefaultGeomName());
 		sfTypeBuilder.add("NUMERO", String.class);
 		sfTypeBuilder.add("FEUILLE", String.class);
 		sfTypeBuilder.add("SECTION", String.class);

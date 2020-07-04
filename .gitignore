@@ -37,3 +37,12 @@ src/main/resources/*/out/*
 
 # not necessary test
 src/main/resources/smallTest/*
+
+
+.idea
+**/target
+project/*~
+bin/
+.project
+.history
+.classpath

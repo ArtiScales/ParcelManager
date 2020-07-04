@@ -5,7 +5,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;
 
-import org.geotools.data.shapefile.ShapefileDataStore;
+import org.geotools.data.DataStore;
 import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.data.simple.SimpleFeatureIterator;
 import org.geotools.factory.CommonFactoryFinder;
@@ -29,6 +29,7 @@ import fr.ign.cogit.geoToolsFunctions.Attribute;
 import fr.ign.cogit.geoToolsFunctions.Csv;
 import fr.ign.cogit.geoToolsFunctions.vectors.Collec;
 import fr.ign.cogit.geoToolsFunctions.vectors.Geom;
+import fr.ign.cogit.geoToolsFunctions.vectors.Geopackages;
 import fr.ign.cogit.geometryGeneration.CityGeneration;
 
 /**
@@ -129,8 +130,8 @@ public class StreetRatioParcels {
 		System.out.println("++++++++++Road Ratios++++++++++");
 		HashMap<String, String[]> stat = new HashMap<String, String[]>();
 
-		ShapefileDataStore sdsRoad = new ShapefileDataStore(roadFile.toURI().toURL());
-		SimpleFeatureCollection roads = Collec.snapDatas(sdsRoad.getFeatureSource().getFeatures(), zone);
+		DataStore sdsRoad = Geopackages.getDataStore(roadFile);
+		SimpleFeatureCollection roads = Collec.snapDatas(sdsRoad.getFeatureSource(sdsRoad.getTypeNames()[0]).getFeatures(), zone);
 		SimpleFeatureCollection islets = CityGeneration.createUrbanIslet(cutParcel);
 
 		String[] firstLine = { "CODE", "Urban fabric type", ParcelSchema.getMinParcelCommunityField(), GeneralFields.getZonePreciseNameField(),

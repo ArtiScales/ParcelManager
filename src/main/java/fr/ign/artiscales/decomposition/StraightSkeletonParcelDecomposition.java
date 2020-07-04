@@ -102,7 +102,7 @@ public class StraightSkeletonParcelDecomposition {
 
   /**
    * Main algorithm to process the algorithm
-   * 
+   *  
    * @param pol
    *          : polygon block that will be decomposed
    * @param roads

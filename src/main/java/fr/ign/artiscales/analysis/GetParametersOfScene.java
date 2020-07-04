@@ -2,13 +2,12 @@ package fr.ign.artiscales.analysis;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.stream.Collectors;
 
+import org.geotools.data.DataStore;
 import org.geotools.data.DataUtilities;
-import org.geotools.data.shapefile.ShapefileDataStore;
 import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.data.simple.SimpleFeatureIterator;
 import org.locationtech.jts.geom.Geometry;
@@ -22,6 +21,7 @@ import fr.ign.artiscales.parcelFunction.ParcelAttribute;
 import fr.ign.artiscales.parcelFunction.ParcelGetter;
 import fr.ign.cogit.geoToolsFunctions.vectors.Collec;
 import fr.ign.cogit.geoToolsFunctions.vectors.Geom;
+import fr.ign.cogit.geoToolsFunctions.vectors.Geopackages;
 import fr.ign.cogit.geometryGeneration.CityGeneration;
 
 /**
@@ -43,7 +43,7 @@ public class GetParametersOfScene {
 	public static void main(String[] args) throws NoSuchAuthorityCodeException, IOException, FactoryException {
 		outFolder = new File("/tmp/ParametersOfScene");
 		setFiles(new File("src/main/resources/ParcelComparison/"));
-		parcelFile = new File("/tmp/parcelChosen.shp");
+		parcelFile = new File("/tmp/parcelChosen"+Collec.getDefaultGISFileType());
 		// genParcelAreaBoundaries(pF);
 		scaleZone = "genericZone";
 		// genParcelAreaBoundaries(pF);
@@ -52,29 +52,29 @@ public class GetParametersOfScene {
 	}
 
 	public static void setFiles(File mainFolder) {
-		parcelFile = new File(mainFolder, "parcel.shp");
+		parcelFile = new File(mainFolder, "parcel"+Collec.getDefaultGISFileType());
 		if (!parcelFile.exists())
 			System.out.println(parcelFile + " doesn't exist");
-		buildingFile = new File(mainFolder, "building.shp");
+		buildingFile = new File(mainFolder, "building"+Collec.getDefaultGISFileType());
 		if (!buildingFile.exists())
 			System.out.println(buildingFile + " doesn't exist");
-		zoningFile = new File(mainFolder, "zoning.shp");
+		zoningFile = new File(mainFolder, "zoning"+Collec.getDefaultGISFileType());
 		if (!zoningFile.exists())
 			System.out.println(zoningFile + " doesn't exist");
-		roadFile = new File(mainFolder, "road.shp");
+		roadFile = new File(mainFolder, "road"+Collec.getDefaultGISFileType());
 		if (!roadFile.exists())
 			System.out.println(roadFile + " doesn't exist");
 		outFolder.mkdirs();
 	}
 
 	public static void genParcelAreaBoundaries() throws NoSuchAuthorityCodeException, IOException, FactoryException {
-		ShapefileDataStore sds = new ShapefileDataStore(parcelFile.toURI().toURL());
-		ShapefileDataStore sdsRoad = new ShapefileDataStore(roadFile.toURI().toURL());
-		sdsRoad.setCharset(Charset.forName("UTF-8"));
-		SimpleFeatureCollection parcels = sds.getFeatureSource().getFeatures();
+		DataStore sds = Geopackages.getDataStore(parcelFile);
+		DataStore sdsRoad = Geopackages.getDataStore(roadFile);
+//		sdsRoad.setCharset(Charset.forName("UTF-8"));.shp
+		SimpleFeatureCollection parcels = sds.getFeatureSource(sds.getTypeNames()[0]).getFeatures();
 		HashMap<String, SimpleFeatureCollection> listSFC = new HashMap<String, SimpleFeatureCollection>();
-		ShapefileDataStore sdsZone = new ShapefileDataStore(zoningFile.toURI().toURL());
-		SimpleFeatureCollection zonings = DataUtilities.collection(Collec.snapDatas(sdsZone.getFeatureSource().getFeatures(), parcels));
+		DataStore sdsZone = Geopackages.getDataStore(zoningFile);
+		SimpleFeatureCollection zonings = DataUtilities.collection(Collec.snapDatas(sdsZone.getFeatureSource(sdsZone.getTypeNames()[0]).getFeatures(), parcels));
 		sdsZone.dispose();
 		switch (scaleZone) {
 		case "community":
@@ -125,7 +125,7 @@ public class GetParametersOfScene {
 					buffer = 10;
 					break;
 				}
-				SimpleFeatureCollection roads = Collec.snapDatas(sdsRoad.getFeatureSource().getFeatures(),
+				SimpleFeatureCollection roads = Collec.snapDatas(sdsRoad.getFeatureSource(sdsRoad.getTypeNames()[0]).getFeatures(),
 						Geom.unionSFC(sfc).buffer(buffer).buffer(-buffer));
 				if (roads.size() > 1)
 					MakeStatisticGraphs.roadGraph(roads, "length of the " + scaleZone + " " + zone + " roads ", "width of the road",

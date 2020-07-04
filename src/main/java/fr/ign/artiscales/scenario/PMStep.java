@@ -136,7 +136,7 @@ public class PMStep {
 			case "zoneDivision":
 				ZoneDivision.PROCESS = parcelProcess;
 				((DefaultFeatureCollection) parcelCut).addAll(ZoneDivision.zoneDivision(parcelMarkedComm, ParcelGetter.getParcelByCommunityCode(parcel, communityNumber),
-						TMPFOLDER, OUTFOLDER, profile, profile.getHarmonyCoeff(), profile.getNoise()));
+						TMPFOLDER, OUTFOLDER, profile));
 				break;
 			case "densification":
 				((DefaultFeatureCollection) parcelCut).addAll(Densification.densification(parcelMarkedComm,
@@ -170,7 +170,7 @@ public class PMStep {
 			((DefaultFeatureCollection) parcelCut)
 					.addAll(GeneralFields.transformSFCToMinParcel(ParcelGetter.getParcelByCommunityCode(parcel, communityCode)));
 		}
-		lastOutput = new File(OUTFOLDER, "parcelCuted-" + goal + "-"+ urbanFabricType + "-" + genericZone +"_" + preciseZone + ".shp");
+		lastOutput = new File(OUTFOLDER, "parcelCuted-" + goal + "-"+ urbanFabricType + "-" + genericZone +"_" + preciseZone + Collec.getDefaultGISFileType());
 		//Attribute generation (optional)
 		if (GENERATEATTRIBUTES) {
 			switch (GeneralFields.getParcelFieldType()) {
@@ -250,7 +250,7 @@ public class PMStep {
 		}
 		
 		if (DEBUG)
-			Collec.exportSFC(parcel, new File(OUTFOLDER, "selectedParcels.shp"));		
+			Collec.exportSFC(parcel, new File(OUTFOLDER, "selectedParcels"));		
 		
 		// parcel marking with input polygons (disabled if we use a specific zone)
 		if (POLYGONINTERSECTION != null && POLYGONINTERSECTION.exists() && !goal.equals("zoneDivision")) 

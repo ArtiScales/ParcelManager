@@ -51,7 +51,7 @@ public class OBBBlockDecomposition {
 	 *            Area of the parcel under which the parcel won't be anymore cut
 	 * @param maximalWidth
 	 *            Width of the parcel under which the parcel won't be anymore cut
-	 * @param streetEpsilon
+	 * @param harmonyCoeff
 	 *            intensity of the forcing of a parcel to be connected with a road
 	 * @param extBlock
 	 *            outside of the parcels (representing road or public space)
@@ -64,15 +64,15 @@ public class OBBBlockDecomposition {
 	 * @return a collection of subdivised parcels
 	 * @throws Exception
 	 */
-	public static SimpleFeatureCollection splitParcels(SimpleFeature toSplit, double maximalArea, double maximalWidth, double streetEpsilon,
+	public static SimpleFeatureCollection splitParcels(SimpleFeature toSplit, double maximalArea, double maximalWidth, double harmonyCoeff,
 			double noise, List<LineString> extBlock, double streetWidth, boolean forceStreetAccess, int decompositionLevelWithoutStreet)
 			throws Exception {
-		return splitParcel(toSplit, null, maximalArea, maximalWidth, streetEpsilon, noise, extBlock, streetWidth, 999, streetWidth,
+		return splitParcel(toSplit, null, maximalArea, maximalWidth, harmonyCoeff, noise, extBlock, streetWidth, 999, streetWidth,
 				forceStreetAccess, decompositionLevelWithoutStreet);
 	}
 
 	public static SimpleFeatureCollection splitParcel(SimpleFeature featToSplit, SimpleFeatureCollection roads, double maximalArea, double maximalWidth,
-			double streetEpsilon, double noise, List<LineString> extBlock, double smallStreetWidth, int largeStreetLevel, double largeStreetWidth,
+			double harmonyCoeff, double noise, List<LineString> extBlock, double smallStreetWidth, int largeStreetLevel, double largeStreetWidth,
 			boolean forceStreetAccess, int decompositionLevelWithoutStreet) throws Exception {
 			DefaultFeatureCollection result = new DefaultFeatureCollection();
 			SimpleFeatureBuilder builder = new SimpleFeatureBuilder(featToSplit.getFeatureType());
@@ -83,12 +83,12 @@ public class OBBBlockDecomposition {
 	        } else {
 	          Polygon polygon = (Polygon) Geom.getPolygon((Geometry) featToSplit.getDefaultGeometry());
 	          DescriptiveStatistics dS = new DescriptiveStatistics();
-			  OBBBlockDecomposition.decompose(polygon, extBlock, (roads != null && !roads.isEmpty()) ?  Collec.snapDatas(roads, (Geometry) featToSplit.getDefaultGeometry()) : null, maximalArea, maximalWidth, noise, streetEpsilon, smallStreetWidth, largeStreetLevel,
+			  OBBBlockDecomposition.decompose(polygon, extBlock, (roads != null && !roads.isEmpty()) ?  Collec.snapDatas(roads, (Geometry) featToSplit.getDefaultGeometry()) : null, maximalArea, maximalWidth, noise, harmonyCoeff, smallStreetWidth, largeStreetLevel,
 										largeStreetWidth, forceStreetAccess, 0, decompositionLevelWithoutStreet)
 								.stream().forEach(c -> dS.addValue(c.getValue()));
 			  int decompositionLevelWithRoad = (int) dS.getPercentile(50) - decompositionLevelWithoutStreet;
 			  int decompositionLevelWithLargeRoad = (int) dS.getPercentile(50) - largeStreetLevel ;
-			  OBBBlockDecomposition.decompose(polygon, extBlock, (roads != null && !roads.isEmpty()) ?  Collec.snapDatas(roads, (Geometry) featToSplit.getDefaultGeometry()) : null, maximalArea, maximalWidth, noise, streetEpsilon, smallStreetWidth, decompositionLevelWithLargeRoad ,
+			  OBBBlockDecomposition.decompose(polygon, extBlock, (roads != null && !roads.isEmpty()) ?  Collec.snapDatas(roads, (Geometry) featToSplit.getDefaultGeometry()) : null, maximalArea, maximalWidth, noise, harmonyCoeff, smallStreetWidth, decompositionLevelWithLargeRoad ,
 										largeStreetWidth, forceStreetAccess, decompositionLevelWithRoad, decompositionLevelWithoutStreet)
 			  	.childrenStream().forEach(p-> {
 	            SimpleFeature newFeature = builder.buildFeature(Attribute.makeUniqueId());
@@ -111,7 +111,7 @@ public class OBBBlockDecomposition {
 	 *            Area of the parcel under which the parcel won't be anymore cut
 	 * @param maximalWidth
 	 *            Width of the parcel under which the parcel won't be anymore cut
-	 * @param streetEpsilon
+	 * @param harmonyCoeff
 	 *            intensity of the forcing of a parcel to be connected with a road
 	 * @param noise
 	 *            irregularity into parcel shape
@@ -128,13 +128,13 @@ public class OBBBlockDecomposition {
 	 * @throws Exception
 	 */
 	public static SimpleFeatureCollection splitParcels(SimpleFeatureCollection toSplit, SimpleFeatureCollection roads,
-			double maximalArea, double maximalWidth, double streetEpsilon, double noise, List<LineString> extBlock,
+			double maximalArea, double maximalWidth, double harmonyCoeff, double noise, List<LineString> extBlock,
 			double smallStreetWidth, int largeStreetLevel, double largeStreetWidth, boolean forceStreetAccess,
 			int decompositionLevelWithoutStreet) throws Exception {
 		DefaultFeatureCollection result = new DefaultFeatureCollection();
 		try (SimpleFeatureIterator featIt = toSplit.features()) {
 			while (featIt.hasNext()) {
-				result.addAll(splitParcel(featIt.next(), roads, maximalArea, maximalWidth, streetEpsilon, noise, extBlock,
+				result.addAll(splitParcel(featIt.next(), roads, maximalArea, maximalWidth, harmonyCoeff, noise, extBlock,
 						smallStreetWidth, largeStreetLevel, largeStreetWidth, forceStreetAccess,
 						decompositionLevelWithoutStreet));
 			}

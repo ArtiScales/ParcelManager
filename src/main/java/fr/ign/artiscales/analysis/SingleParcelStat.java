@@ -6,7 +6,7 @@ import java.io.IOException;
 import java.util.Arrays;
 
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
-import org.geotools.data.shapefile.ShapefileDataStore;
+import org.geotools.data.DataStore;
 import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.data.simple.SimpleFeatureIterator;
 import org.geotools.feature.DefaultFeatureCollection;
@@ -31,6 +31,7 @@ import fr.ign.artiscales.parcelFunction.ParcelState;
 import fr.ign.cogit.geoToolsFunctions.Attribute;
 import fr.ign.cogit.geoToolsFunctions.vectors.Collec;
 import fr.ign.cogit.geoToolsFunctions.vectors.Geom;
+import fr.ign.cogit.geoToolsFunctions.vectors.Geopackages;
 import fr.ign.cogit.geometryGeneration.CityGeneration;
 
 /**
@@ -66,8 +67,8 @@ public class SingleParcelStat {
 
 	public static void writeStatSingleParcel(SimpleFeatureCollection parcels, File roadFile, File parcelStatCsv)
 			throws NoSuchAuthorityCodeException, IOException, FactoryException {
-		ShapefileDataStore sds = new ShapefileDataStore(roadFile.toURI().toURL());
-		writeStatSingleParcel(parcels, sds.getFeatureSource().getFeatures(), parcelStatCsv);
+		DataStore sds = Geopackages.getDataStore(roadFile);
+		writeStatSingleParcel(parcels, sds.getFeatureSource(sds.getTypeNames()[0]).getFeatures(), parcelStatCsv);
 		sds.dispose();
 	}
 
@@ -138,30 +139,30 @@ public class SingleParcelStat {
 	// return mbc.getDiameter().getLength();
 	// }
 	public static double hausdorfDistanceAverage(File parcelInFile, File parcelToCompareFile) throws IOException {
-		ShapefileDataStore sdsParcelIn = new ShapefileDataStore(parcelInFile.toURI().toURL());
-		ShapefileDataStore sdsParcelToCompareFile = new ShapefileDataStore(parcelToCompareFile.toURI().toURL());
-		double result = hausdorfDistanceAverage(sdsParcelIn.getFeatureSource().getFeatures(),
-				sdsParcelToCompareFile.getFeatureSource().getFeatures());
+		DataStore sdsParcelIn = Geopackages.getDataStore(parcelInFile);
+		DataStore sdsParcelToCompareFile = Geopackages.getDataStore(parcelToCompareFile);
+		double result = hausdorfDistanceAverage(sdsParcelIn.getFeatureSource(sdsParcelIn.getTypeNames()[0]).getFeatures(),
+				sdsParcelToCompareFile.getFeatureSource(sdsParcelToCompareFile.getTypeNames()[0]).getFeatures());
 		sdsParcelIn.dispose();
 		sdsParcelToCompareFile.dispose();
 		return result;
 	}
 
 	public static int diffNumberOfParcel(File parcelInFile, File parcelToCompareFile) throws IOException {
-		ShapefileDataStore sdsParcelIn = new ShapefileDataStore(parcelInFile.toURI().toURL());
-		ShapefileDataStore sdsParcelToCompareFile = new ShapefileDataStore(parcelToCompareFile.toURI().toURL());
-		int result = sdsParcelIn.getFeatureSource().getFeatures().size()
-				- sdsParcelToCompareFile.getFeatureSource().getFeatures().size();
+		DataStore sdsParcelIn = Geopackages.getDataStore(parcelInFile);
+		DataStore sdsParcelToCompareFile = Geopackages.getDataStore(parcelToCompareFile);
+		int result = sdsParcelIn.getFeatureSource(sdsParcelIn.getTypeNames()[0]).getFeatures().size()
+				- sdsParcelToCompareFile.getFeatureSource(sdsParcelIn.getTypeNames()[0]).getFeatures().size();
 		sdsParcelIn.dispose();
 		sdsParcelToCompareFile.dispose();
 		return result;
 	}
 
 	public static double diffAreaAverage(File parcelInFile, File parcelToCompareFile) throws IOException {
-		ShapefileDataStore sdsParcelIn = new ShapefileDataStore(parcelInFile.toURI().toURL());
-		ShapefileDataStore sdsParcelToCompareFile = new ShapefileDataStore(parcelToCompareFile.toURI().toURL());
-		double result = Collec.area(sdsParcelIn.getFeatureSource().getFeatures())
-				- -Collec.area(sdsParcelToCompareFile.getFeatureSource().getFeatures());
+		DataStore sdsParcelIn = Geopackages.getDataStore(parcelInFile);
+		DataStore sdsParcelToCompareFile = Geopackages.getDataStore(parcelToCompareFile);
+		double result = Collec.area(sdsParcelIn.getFeatureSource(sdsParcelIn.getTypeNames()[0]).getFeatures())
+				- -Collec.area(sdsParcelToCompareFile.getFeatureSource(sdsParcelToCompareFile.getTypeNames()[0]).getFeatures());
 		sdsParcelIn.dispose();
 		sdsParcelToCompareFile.dispose();
 		return result;

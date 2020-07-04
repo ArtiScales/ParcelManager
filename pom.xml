@@ -4,14 +4,14 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>fr.ign.cogit</groupId>
 	<artifactId>ParcelManager</artifactId>
-	<version>0.1-SNAPSHOT</version>
+	<version>0.2-SNAPSHOT</version>
 	<name>ParcelManager</name>
 	<properties>
 		<maven.compiler.source>1.8</maven.compiler.source>
 		<maven.compiler.target>1.8</maven.compiler.target>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<geotools.version>23.0</geotools.version>
-		<artiscales.tools.version>0.2-SNAPSHOT</artiscales.tools.version>
+		<artiscales.tools.version>0.3-SNAPSHOT</artiscales.tools.version>
 	</properties>
 
 	<description></description>

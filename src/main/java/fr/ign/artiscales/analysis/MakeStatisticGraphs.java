@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
-import org.geotools.data.shapefile.ShapefileDataStore;
+import org.geotools.data.DataStore;
 import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.data.simple.SimpleFeatureIterator;
 import org.knowm.xchart.BitmapEncoder;
@@ -22,6 +22,7 @@ import org.locationtech.jts.geom.Geometry;
 import org.opengis.feature.simple.SimpleFeature;
 
 import fr.ign.artiscales.fields.GeneralFields;
+import fr.ign.cogit.geoToolsFunctions.vectors.Geopackages;
 
 /**
  * Class to automate the creation of stat graphs
@@ -46,8 +47,8 @@ public class MakeStatisticGraphs {
 	 * @throws IOException
 	 */
 	public static void makeAreaGraph(File parcelFile, File outFolder, String name) throws IOException {
-		ShapefileDataStore sds = new ShapefileDataStore(parcelFile.toURI().toURL());
-		makeGraphHisto(sortValuesAndCategorize(GeneralFields.getParcelWithSimulatedFileds(sds.getFeatureSource().getFeatures()), "area"), outFolder,
+		DataStore sds = Geopackages.getDataStore(parcelFile);
+		makeGraphHisto(sortValuesAndCategorize(GeneralFields.getParcelWithSimulatedFileds(sds.getFeatureSource(sds.getTypeNames()[0]).getFeatures()), "area"), outFolder,
 				name, "parcels area (m2)", "Number of parcels", 10);
 		sds.dispose();
 	}

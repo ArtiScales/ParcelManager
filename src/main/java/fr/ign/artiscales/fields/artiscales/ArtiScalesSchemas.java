@@ -11,6 +11,7 @@ import org.opengis.referencing.FactoryException;
 import org.opengis.referencing.NoSuchAuthorityCodeException;
 
 import fr.ign.artiscales.fields.french.FrenchParcelFields;
+import fr.ign.cogit.geoToolsFunctions.vectors.Collec;
 
 public class ArtiScalesSchemas {
 	/////////////////////
@@ -22,8 +23,8 @@ public class ArtiScalesSchemas {
 		SimpleFeatureTypeBuilder sfTypeBuilder = new SimpleFeatureTypeBuilder();
 		sfTypeBuilder.setName("parcelAsAS");
 		sfTypeBuilder.setCRS(CRS.decode("EPSG:2154"));
-		sfTypeBuilder.add("the_geom", Polygon.class);
-		sfTypeBuilder.setDefaultGeometry("the_geom");
+		sfTypeBuilder.add(Collec.getDefaultGeomName(), Polygon.class);
+		sfTypeBuilder.setDefaultGeometry(Collec.getDefaultGeomName());
 		sfTypeBuilder.add("CODE", String.class);
 		sfTypeBuilder.add("CODE_DEP", String.class);
 		sfTypeBuilder.add("CODE_COM", String.class);
@@ -104,8 +105,8 @@ public class ArtiScalesSchemas {
 		SimpleFeatureTypeBuilder sfTypeBuilder = new SimpleFeatureTypeBuilder();
 		sfTypeBuilder.setName("parcelAsASSplit");
 		sfTypeBuilder.setCRS(CRS.decode("EPSG:2154"));
-		sfTypeBuilder.add("the_geom", Polygon.class);
-		sfTypeBuilder.setDefaultGeometry("the_geom");
+		sfTypeBuilder.add(Collec.getDefaultGeomName(), Polygon.class);
+		sfTypeBuilder.setDefaultGeometry(Collec.getDefaultGeomName());
 		sfTypeBuilder.add("CODE", String.class);
 		sfTypeBuilder.add("CODE_DEP", String.class);
 		sfTypeBuilder.add("CODE_COM", String.class);

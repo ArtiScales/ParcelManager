@@ -29,8 +29,8 @@ public class ParcelSchema {
 		SimpleFeatureTypeBuilder sfTypeBuilder = new SimpleFeatureTypeBuilder();
 		sfTypeBuilder.setName("minParcel");
 		sfTypeBuilder.setCRS(CRS.decode("EPSG:2154"));
-		sfTypeBuilder.add("the_geom", Polygon.class);
-		sfTypeBuilder.setDefaultGeometry("the_geom");
+		sfTypeBuilder.add(Collec.getDefaultGeomName(), Polygon.class);
+		sfTypeBuilder.setDefaultGeometry(Collec.getDefaultGeomName());
 		sfTypeBuilder.add(minParcelSectionField, String.class);
 		sfTypeBuilder.add(minParcelNumberField, String.class);
 		sfTypeBuilder.add(minParcelCommunityField, String.class);
@@ -61,8 +61,8 @@ public class ParcelSchema {
 		SimpleFeatureTypeBuilder sfTypeBuilder = new SimpleFeatureTypeBuilder();
 		sfTypeBuilder.setName("minParcelSplit");
 		sfTypeBuilder.setCRS(CRS.decode("EPSG:2154"));
-		sfTypeBuilder.add("the_geom", Polygon.class);
-		sfTypeBuilder.setDefaultGeometry("the_geom");
+		sfTypeBuilder.add(Collec.getDefaultGeomName(), Polygon.class);
+		sfTypeBuilder.setDefaultGeometry(Collec.getDefaultGeomName());
 		sfTypeBuilder.add(minParcelSectionField, String.class);
 		sfTypeBuilder.add(minParcelCommunityField, String.class);
 		sfTypeBuilder.add(minParcelNumberField, String.class);

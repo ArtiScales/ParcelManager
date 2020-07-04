@@ -4,9 +4,10 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
+import org.geotools.data.DataStore;
 import org.geotools.data.DataUtilities;
-import org.geotools.data.shapefile.ShapefileDataStore;
 import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.data.simple.SimpleFeatureIterator;
 import org.geotools.feature.DefaultFeatureCollection;
@@ -22,7 +23,6 @@ import org.opengis.feature.type.AttributeDescriptor;
 import org.opengis.referencing.FactoryException;
 import org.opengis.referencing.NoSuchAuthorityCodeException;
 
-import fr.ign.artiscales.analysis.SingleParcelStat;
 import fr.ign.artiscales.decomposition.OBBBlockDecomposition;
 import fr.ign.artiscales.parcelFunction.MarkParcelAttributeFromPosition;
 import fr.ign.artiscales.parcelFunction.ParcelAttribute;
@@ -32,6 +32,7 @@ import fr.ign.cogit.FeaturePolygonizer;
 import fr.ign.cogit.geoToolsFunctions.Attribute;
 import fr.ign.cogit.geoToolsFunctions.vectors.Collec;
 import fr.ign.cogit.geoToolsFunctions.vectors.Geom;
+import fr.ign.cogit.geoToolsFunctions.vectors.Geopackages;
 import fr.ign.cogit.geometryGeneration.CityGeneration;
 import fr.ign.cogit.parameter.ProfileUrbanFabric;
 
@@ -61,62 +62,34 @@ public class ZoneDivision {
 	 */
 	public static boolean DEBUG = false;
 
-	public static void main(String[] args) throws Exception {
-		File evolvedParcel = new File(
-				"/home/thema/.openmole/thema-HP-ZBook-14/webui/projects/compare/donnee/evolvedParcel.shp");
-		File outFile = new File("/tmp/out");
-		outFile.mkdirs();
-		File simuledFile = zoneDivision(
-				new File("/home/thema/.openmole/thema-HP-ZBook-14/webui/projects/compare/donnee/zone.shp"),
-				new File("/home/thema/.openmole/thema-HP-ZBook-14/webui/projects/compare/donnee/parcel2003.shp"),
-				ProfileUrbanFabric.convertJSONtoProfile(new File(
-						"/home/thema/Documents/MC/workspace/ParcelManager/src/main/resources/ParcelComparison/profileUrbanFabric/smallHouse.json")),
-				new File("/tmp/"), outFile);
-		System.out.println(SingleParcelStat.diffNumberOfParcel(simuledFile, evolvedParcel));
-		System.out.println(SingleParcelStat.diffAreaAverage(simuledFile, evolvedParcel));
-		System.out.println(SingleParcelStat.hausdorfDistanceAverage(simuledFile, evolvedParcel));
-	}
+//	public static void main(String[] args) throws Exception {
+//		File evolvedParcel = new File(
+//				"/home/thema/.openmole/thema-HP-ZBook-14/webui/projects/compare/donnee/evolvedParcel");
+//		File outFile = new File("/tmp/out");
+//		outFile.mkdirs();
+//		File simuledFile = zoneDivision(
+//				new File("/home/thema/.openmole/thema-HP-ZBook-14/webui/projects/compare/donnee/zone"),
+//				new File("/home/thema/.openmole/thema-HP-ZBook-14/webui/projects/compare/donnee/parcel2003"),
+//				ProfileUrbanFabric.convertJSONtoProfile(new File(
+//						"/home/thema/Documents/MC/workspace/ParcelManager/src/main/resources/ParcelComparison/profileUrbanFabric/smallHouse.json")),
+//				new File("/tmp/"), outFile);
+//		System.out.println(SingleParcelStat.diffNumberOfParcel(simuledFile, evolvedParcel));
+//		System.out.println(SingleParcelStat.diffAreaAverage(simuledFile, evolvedParcel));
+//		System.out.println(SingleParcelStat.hausdorfDistanceAverage(simuledFile, evolvedParcel));
+//	}
 	
 	public static File zoneDivision(File zoneFile, File parcelFile, ProfileUrbanFabric profile, File tmpFolder,
 			File outFolder) throws NoSuchAuthorityCodeException, FactoryException, IOException, SchemaException {
-		ShapefileDataStore sdsZone = new ShapefileDataStore(zoneFile.toURI().toURL());
-		ShapefileDataStore sdsParcel = new ShapefileDataStore(parcelFile.toURI().toURL());
-		SimpleFeatureCollection zone = DataUtilities.collection(sdsZone.getFeatureSource().getFeatures());
-		SimpleFeatureCollection parcel = DataUtilities.collection(sdsParcel.getFeatureSource().getFeatures());
+		DataStore sdsZone = Geopackages.getDataStore(zoneFile);
+		DataStore sdsParcel = Geopackages.getDataStore(parcelFile);
+		SimpleFeatureCollection zone = DataUtilities.collection(sdsZone.getFeatureSource(sdsZone.getTypeNames()[0]).getFeatures());
+		SimpleFeatureCollection parcel = DataUtilities.collection(sdsParcel.getFeatureSource(sdsParcel.getTypeNames()[0]).getFeatures());
 		sdsZone.dispose();
 		sdsParcel.dispose();
-		DEBUG = true;
-		Collec.exportSFC(zoneDivision(zone, parcel, tmpFolder, outFolder, profile, profile.getHarmonyCoeff(),
-				profile.getNoise()),new File(tmpFolder, "res"));
-		return new File(tmpFolder, "freshSplitedParcels.shp");
-	}
-
-	/**
-	 * Merge and recut a specific zone. Cut first the surrounding parcels to keep them unsplit, then split the zone parcel and remerge them all into the original parcel file. A bit
-	 * complicated algorithm to deal with non-existing pieces of parcels (as road).
-	 * 
-	 * Overwrite for no noise or harmonyCoeff.
-	 * 
-	 * @param initialZone
-	 *            Zone which will be used to cut parcels. Will cut parcels that intersects them and keep their infos. Will then fill the empty spaces in between the zones and feed
-	 *            it to the OBB algorithm.
-	 * @param parcels
-	 *            {@link SimpleFeatureCollection} of the unmarked parcels.
-	 * @param tmpFolder
-	 *            Folder to stock temporary files
-	 * @param profile
-	 *            {@link ProfileUrbanFabric} contains the parameters of the wanted urban scene
-	 * @return The input parcel {@link SimpleFeatureCollection} with the marked parcels replaced by the simulated parcels. All parcels have the
-	 *         {@link fr.ign.artiscales.parcelFunction.ParcelSchema#getSFBMinParcel()} schema.
-	 * @throws SchemaException
-	 * @throws IOException
-	 * @throws FactoryException
-	 * @throws NoSuchAuthorityCodeException
-	 */
-	public static SimpleFeatureCollection zoneDivision(SimpleFeatureCollection initialZone, SimpleFeatureCollection parcels,
-			ProfileUrbanFabric profile, File tmpFolder, File outFolder)
-			throws NoSuchAuthorityCodeException, FactoryException, IOException, SchemaException {
-		return zoneDivision(initialZone, parcels, tmpFolder, outFolder, profile, profile.getHarmonyCoeff(), profile.getNoise());
+		SAVEINTERMEDIATERESULT = true;
+		zoneDivision(zone, parcel, tmpFolder, outFolder, profile);
+//		return new File(tmpFolder, "freshSplitedParcels");
+		return new File(outFolder, "parcelZoneDivisionOnly");
 	}
 
 	/**
@@ -144,7 +117,7 @@ public class ZoneDivision {
 	 * @throws SchemaException
 	 */
 	public static SimpleFeatureCollection zoneDivision(SimpleFeatureCollection initialZone, SimpleFeatureCollection parcels, File tmpFolder,
-			File outFolder, ProfileUrbanFabric profile, double harmonyCoeff, double noise)
+			File outFolder, ProfileUrbanFabric profile)
 			throws NoSuchAuthorityCodeException, FactoryException, IOException, SchemaException {
 		// parcel geometry name for all
 		String geomName = parcels.getSchema().getGeometryDescriptor().getLocalName();
@@ -166,8 +139,11 @@ public class ZoneDivision {
 		// Also assess a section number
 		SimpleFeatureBuilder sfBuilder = ParcelSchema.getSFBMinParcelSplit();
 		SimpleFeatureBuilder originalSFB = new SimpleFeatureBuilder(parcelsInZone.getSchema());
-		if (DEBUG)
-			Collec.exportSFC(parcelsInZone, new File(tmpFolder, "parcelsInZone.shp"));
+		if (DEBUG) {
+			Collec.exportSFC(parcelsInZone, new File(tmpFolder, "parcelsInZone"));
+			Collec.exportSFC(savedParcels, new File(tmpFolder, "parcelsSaved"));
+			System.out.println("parcels in zone exported");
+		}
 		int numZone = 0;
 		Geometry unionParcel = Geom.unionSFC(parcels);
 		DefaultFeatureCollection goOdZone = new DefaultFeatureCollection();
@@ -200,24 +176,20 @@ public class ZoneDivision {
 			return parcels;
 		}
 		// parts of parcel outside the zone must not be cut by the algorithm and keep their attributes
-		// temporary shapefiles that serves to do polygons with the polygonizer
-		File fParcelsInAU = Collec.exportSFC(parcelsInZone, new File(tmpFolder, "parcelCible.shp"));
-		File fZone = Collec.exportSFC(goOdZone, new File(tmpFolder, "oneAU.shp"));
-		File[] polyFiles = { fParcelsInAU, fZone };
-		List<Polygon> polygons = FeaturePolygonizer.getPolygons(polyFiles);
-		// apparently less optimized... but nicer
-		// List<Geometry> geomList = Arrays.stream(parcels.toArray(new SimpleFeature[0])).map(x -> (Geometry) x.getDefaultGeometry())
-		// .collect(Collectors.toList());
-		// geomList.addAll(Arrays.stream(parcels.toArray(new SimpleFeature[0])).map(x -> (Geometry) x.getDefaultGeometry()).collect(Collectors.toList()));
-		// List<Polygon> polygons = FeaturePolygonizer.getPolygons(geomList);
+		List<Geometry> geomList = Arrays.stream(parcelsInZone.toArray(new SimpleFeature[0]))
+				.map(x -> (Geometry) x.getDefaultGeometry()).collect(Collectors.toList());
+		geomList.addAll(Arrays.stream(goOdZone.toArray(new SimpleFeature[0])).map(x -> (Geometry) x.getDefaultGeometry()).collect(Collectors.toList()));
+		List<Polygon> polygons = FeaturePolygonizer.getPolygons(geomList);
 		Geometry geomSelectedZone = Geom.unionSFC(goOdZone);
 		if (DEBUG) {
 			Geom.exportGeom(geomSelectedZone, new File(tmpFolder, "geomSelectedZone"));
 			Geom.exportGeom(polygons, new File(tmpFolder, "polygons"));
+			System.out.println("geomz and polygonz exported");
 		}
-		// big loop on each generated geometry to save the parts that are not contained in the zones. We add them to the savedParcels collection.
+		// Big loop on each generated geometry to save the parts that are not contained in the zones.
+		// We add them to the savedParcels collection.
 		for (Geometry poly : polygons) {
-			// if the polygons are not included on the AU zone, we check to which parcel do they belong
+			// if the polygons are not included on the zone, we check to which parcel do they belong
 			if (!geomSelectedZone.buffer(0.01).contains(poly)) {
 				try (SimpleFeatureIterator parcelIt = parcelsInZone.features()) {
 					while (parcelIt.hasNext()) {
@@ -249,7 +221,7 @@ public class ZoneDivision {
 				switch (PROCESS) {
 				case "OBB":
 					((DefaultFeatureCollection) splitedParcels).addAll(OBBBlockDecomposition.splitParcels(tmpZoneToCut, null,
-							profile.getMaximalArea(), profile.getMinimalWidthContactRoad(), harmonyCoeff, noise,
+							profile.getMaximalArea(), profile.getMinimalWidthContactRoad(), profile.getHarmonyCoeff(), profile.getNoise(),
 							Collec.fromPolygonSFCtoListRingLines(Collec.snapDatas(isletCollection, (Geometry) zone.getDefaultGeometry())),
 							profile.getStreetWidth(), profile.getLargeStreetLevel(), profile.getLargeStreetWidth(), true,
 							profile.getDecompositionLevelWithoutStreet()));
@@ -265,8 +237,10 @@ public class ZoneDivision {
 		} catch (Exception problem) {
 			problem.printStackTrace();
 		}
-		if (DEBUG)
+		if (DEBUG) {
 			Collec.exportSFC(splitedParcels, new File(tmpFolder, "freshSplitedParcels"));
+			System.out.println("fresh cuted parcels exported");
+		}
 		// merge the small parcels to bigger ones
 		splitedParcels = ParcelCollection.mergeTooSmallParcels(splitedParcels, (int) profile.getMinimalArea());
 		DefaultFeatureCollection result = new DefaultFeatureCollection();
@@ -299,9 +273,9 @@ public class ZoneDivision {
 			problem.printStackTrace();
 		}
 		if (DEBUG)
-			Collec.exportSFC(result, new File(tmpFolder, "parcelZoneDivisionOnly.shp"), false);
+			Collec.exportSFC(result, new File(tmpFolder, "parcelZoneDivisionOnly"), false);
 		if (SAVEINTERMEDIATERESULT) {
-			Collec.exportSFC(result, new File(outFolder, "parcelZoneDivisionOnly.shp"), OVERWRITESHAPEFILES);
+			Collec.exportSFC(result, new File(outFolder, "parcelZoneDivisionOnly"), OVERWRITESHAPEFILES);
 			OVERWRITESHAPEFILES = false;
 		}
 		// add the saved parcels
