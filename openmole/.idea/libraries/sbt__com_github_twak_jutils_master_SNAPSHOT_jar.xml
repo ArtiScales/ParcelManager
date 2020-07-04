@@ -1,9 +1,0 @@
-<component name="libraryTable">
-  <library name="sbt: com.github.twak:jutils:master-SNAPSHOT:jar">
-    <CLASSES>
-      <root url="jar://$MAVEN_REPOSITORY$/com/github/twak/jutils/master-0b29deb63f-1/jutils-master-0b29deb63f-1.jar!/" />
-    </CLASSES>
-    <JAVADOC />
-    <SOURCES />
-  </library>
-</component>
