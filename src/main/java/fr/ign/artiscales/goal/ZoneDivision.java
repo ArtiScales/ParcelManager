@@ -105,10 +105,6 @@ public class ZoneDivision {
 	 *            Folder to stock temporary files
 	 * @param profile
 	 *            {@link ProfileUrbanFabric} contains the parameters of the wanted urban scene
-	 * @param harmonyCoeff
-	 *            coefficient of minimal ration between length and width of the Oriented Bounding Box
-	 * @param noise
-	 *            level of perturbation
 	 * @return The input parcel {@link SimpleFeatureCollection} with the marked parcels replaced by the simulated parcels. All parcels have the
 	 *         {@link fr.ign.artiscales.parcelFunction.ParcelSchema#getSFBMinParcel()} schema.
 	 * @throws FactoryException

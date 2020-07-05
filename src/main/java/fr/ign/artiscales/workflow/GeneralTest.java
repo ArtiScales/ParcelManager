@@ -38,6 +38,8 @@ public class GeneralTest {
 	public static void main(String[] args) throws Exception {
 //		org.geotools.util.logging.Logging.getLogger("org.hsqldb.persist.Logger").setLevel(Level.OFF);
 //		org.geotools.util.logging.Logging.getLogger("org.geotools.jdbc.JDBCDataStore").setLevel(Level.OFF);
+		long start  = System.currentTimeMillis();
+
 		File tmpFolder = new File("/tmp/");
 		File rootFolder = new File("src/main/resources/GeneralTest/");
 		File roadFile = new File(rootFolder, "road.gpkg");
@@ -121,5 +123,6 @@ public class GeneralTest {
 				.collect(Collectors.toList()), statFolder, "Densification - small houses simulation");
 		SingleParcelStat.writeStatSingleParcel(MarkParcelAttributeFromPosition.markSimulatedParcel(finaux3), roadFile,
 				new File(outFolder, "stat/statParcel.csv"));
+		System.out.println(start - System.currentTimeMillis());
 	}
 }
