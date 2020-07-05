@@ -134,7 +134,7 @@ public class PMStep {
 			case "zoneDivision":
 				ZoneDivision.PROCESS = parcelProcess;
 				((DefaultFeatureCollection) parcelCut).addAll(ZoneDivision.zoneDivision(parcelMarkedComm, ParcelGetter.getParcelByCommunityCode(parcel, communityNumber),
-						TMPFOLDER, OUTFOLDER, profile, profile.getHarmonyCoeff(), profile.getNoise()));
+						TMPFOLDER, OUTFOLDER, profile, profile.getRoadEpsilon(), profile.getNoise()));
 				break;
 			case "densification":
 				((DefaultFeatureCollection) parcelCut).addAll(Densification.densification(parcelMarkedComm,
@@ -151,7 +151,7 @@ public class PMStep {
 			case "consolidationDivision":
 				ConsolidationDivision.PROCESS = parcelProcess;
 				((DefaultFeatureCollection) parcelCut).addAll(ConsolidationDivision.consolidationDivision(parcelMarkedComm, ROADFILE, TMPFOLDER,
-						profile, profile.getHarmonyCoeff(), profile.getNoise()));
+						profile, profile.getRoadEpsilon(), profile.getNoise()));
 				break;
 			case "densificationStudy":
 				DensificationStudy.runDensificationStudy(parcelMarkedComm, BUILDINGFILE, ROADFILE, ZONINGFILE, TMPFOLDER, OUTFOLDER,
