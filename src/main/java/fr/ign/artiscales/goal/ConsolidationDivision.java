@@ -56,7 +56,7 @@ public class ConsolidationDivision {
 
 	/**
 	 * Method that merges the contiguous marked parcels into zones and then split those zones with a given parcel division algorithm (by default, the Oriented Bounding Box)
-	 * overload of {@link #consolidationDivision(SimpleFeatureCollection, File, File, double , double , double , double , double , double , int , double , int )} for no predefined
+	 * overload of {@link #consolidationDivision(SimpleFeatureCollection, File, File, ProfileUrbanFabric)} for no predefined
 	 * harmony coeff and noise.
 	 * 
 	 * @param parcels

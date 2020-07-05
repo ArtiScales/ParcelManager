@@ -57,11 +57,11 @@ public class StreetRatioParcels {
 
 	/**
 	 * Calculate the ratio between the parcel area and the total area of a zone. It express the quantity of not parcel land, which could be either streets or public spaces.
-	 * Calculate zones and then send the whole to the {@link #streetRatioZone(SimpleFeatureCollection, SimpleFeatureCollection, File, File)} method.
+	 * Calculate zones and then send the whole to the {@link #streetRatioZone(SimpleFeatureCollection, SimpleFeatureCollection,String, File, File)} method.
 	 * 
 	 * @param initialMarkedParcel
 	 *            {@link SimpleFeatureCollection} of the initial set of parcels which are marked if they had to simulated. Marks could be made with the methods contained in the
-	 *            class {@link fr.ign.artiscales.parcelFunction}. The field attribute is named <i>SPLIT</i> by default. It is possible to change it with the
+	 *            class {@link fr.ign.artiscales.parcelFunction.MarkParcelAttributeFromPosition}. The field attribute is named <i>SPLIT</i> by default. It is possible to change it with the
 	 *            {@link fr.ign.artiscales.parcelFunction.MarkParcelAttributeFromPosition#setMarkFieldName(String)} function.
 	 * @param cutParcel
 	 *            A collection of parcels after a Parcel Manager simulation

@@ -169,14 +169,13 @@ public class ParcelGetter {
 
 	/**
 	 * Get parcels out of a parcel collection with the zip code of them parcels. Zipcodes are not directly contained in a field of the collection but is composed of two fields.
-	 * Their values are set by default but it's possible to change them with the methods {@link #setCodeComFiled(String) setCodeComFiled} and {@link #setCodeDepFiled(String).
-	 * setCodeDepFiled}
+	 * Their values are set by default but it's possible to change them with the methods {@link #setCodeComFiled(String)} and {@link #setCodeDepFiled(String)}
 	 * 
 	 * @param parcelIn
-	 *            : input parcel collection
+	 *            Input parcel collection
 	 * @param val
-	 *            : value of the zipcode
-	 * @return a simple feature collection of parcels having the <i>val</i> value. * @throws IOException
+	 *            Value of the zipcode
+	 * @return A simple feature collection of parcels having the <i>val</i> value. * @throws IOException
 	 * @throws IOException
 	 */
 	public static SimpleFeatureCollection getFrenchParcelByZip(SimpleFeatureCollection parcelIn, String val) throws IOException {

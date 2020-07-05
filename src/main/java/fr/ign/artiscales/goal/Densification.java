@@ -4,7 +4,7 @@ import java.io.File;
 import java.util.Arrays;
 import java.util.List;
 
-import org.geotools.data.shapefile.ShapefileDataStore;
+import org.geotools.data.DataUtilities;
 import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.data.simple.SimpleFeatureIterator;
 import org.geotools.factory.CommonFactoryFinder;
@@ -291,7 +291,7 @@ public class Densification {
 	/**
 	 * Apply a hybrid densification process on the coming parcel collection. The parcels that size are inferior to 4x the maximal area of parcel type to create are runned with the
 	 * densication goal. The parcels that size are superior to 4x the maximal area are considered as able to build neighborhood. They are divided with the
-	 * {@link fr.ign.artiscales.goal.ConsolidationDivision#consolidationDivision(SimpleFeatureCollection, File, File, double, double, double, double, int)} method.
+	 * {@link fr.ign.artiscales.goal.ConsolidationDivision#consolidationDivision(SimpleFeatureCollection, File, File, ProfileUrbanFabric)} method.
 	 *
 	 * @param parcelCollection
 	 *            SimpleFeatureCollection of marked parcels.
@@ -312,27 +312,24 @@ public class Densification {
 	 *            Exclude a zone that won't be considered as a potential road connection. Useful to represent border of the parcel plan. Can be null.
 	 * @param factorOflargeZoneCreation
 	 *            If the area of the parcel to be simulated is superior to the maximal size of parcels multiplied by this factor, the simulation will be done with the
-	 *            {@link fr.ign.artiscales.goal.ConsolidationDivision#consolidationDivision(SimpleFeatureCollection, File, File, double, double, double, double, int)} method.
+	 *            {@link fr.ign.artiscales.goal.ConsolidationDivision#consolidationDivision(SimpleFeatureCollection, File, File, ProfileUrbanFabric)} method.
 	 * @return The input parcel {@link SimpleFeatureCollection} with the marked parcels replaced by the simulated parcels. All parcels have the
 	 *         {@link fr.ign.artiscales.parcelFunction.ParcelSchema#getSFBMinParcel()} schema.
 	 * @throws Exception
 	 */
-	public static SimpleFeatureCollection densificationOrNeighborhood(SimpleFeatureCollection parcelCollection, SimpleFeatureCollection isletCollection,
-			File tmpFolder, File buildingFile, File roadFile, ProfileUrbanFabric profile, boolean allowIsolatedParcel, Geometry exclusionZone, int factorOflargeZoneCreation) throws Exception {
-		//this is an ugly temporary fix but i cannot see 	
-		//TODO find a better solution
-		Collec.exportSFC(parcelCollection, new File(tmpFolder, "start.shp"));
+	public static SimpleFeatureCollection densificationOrNeighborhood(SimpleFeatureCollection parcelCollection,
+			SimpleFeatureCollection isletCollection, File tmpFolder, File buildingFile, File roadFile, ProfileUrbanFabric profile,
+			boolean allowIsolatedParcel, Geometry exclusionZone, int factorOflargeZoneCreation) throws Exception {
 		// We flagcut the parcels which size is inferior to 4x the max parcel size
-				SimpleFeatureCollection parcelInf = MarkParcelAttributeFromPosition.markParcelsInf(parcelCollection, profile.getMaximalArea()*4);
+		SimpleFeatureCollection parcelInf = MarkParcelAttributeFromPosition.markParcelsInf(parcelCollection, profile.getMaximalArea() * 4);
 		SimpleFeatureCollection parcelDensified = densification(parcelInf, isletCollection, tmpFolder, buildingFile, roadFile,
 				profile.getMaximalArea(), profile.getMinimalArea(), profile.getMinimalWidthContactRoad(), profile.getLenDriveway(),
 				allowIsolatedParcel, exclusionZone);
-		//if parcels are too big, we try to create neighborhoods inside them with the consolidation algorithm
-		//We first re-mark the parcels that were marked.
-		//TODO second part of the ugly fix
-		ShapefileDataStore sds = new ShapefileDataStore( new File(tmpFolder, "start.shp").toURI().toURL());
-		SimpleFeatureCollection supParcels = MarkParcelAttributeFromPosition.markParcelsSup(MarkParcelAttributeFromPosition.markAlreadyMarkedParcels(parcelDensified, sds.getFeatureSource().getFeatures()), profile.getMaximalArea()*factorOflargeZoneCreation);
-		sds.dispose();
+		// if parcels are too big, we try to create neighborhoods inside them with the consolidation algorithm
+		// We first re-mark the parcels that were marked.
+		SimpleFeatureCollection supParcels = MarkParcelAttributeFromPosition.markParcelsSup(
+				MarkParcelAttributeFromPosition.markAlreadyMarkedParcels(parcelDensified, DataUtilities.collection(parcelCollection)),
+				profile.getMaximalArea() * factorOflargeZoneCreation);
 		if (!MarkParcelAttributeFromPosition.isNoParcelMarked(supParcels)) {
 			profile.setLargeStreetWidth(profile.getStreetWidth());
 			parcelDensified = ConsolidationDivision.consolidationDivision(supParcels, roadFile, tmpFolder, profile);

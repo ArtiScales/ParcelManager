@@ -352,7 +352,7 @@ public class MarkParcelAttributeFromPosition {
 	 */
 	public static SimpleFeatureCollection markUnBuiltParcel(SimpleFeatureCollection parcels, File buildingFile)
 			throws IOException, NoSuchAuthorityCodeException, FactoryException {
-		DataStore sds = Geopackages.getDataStore(new File ("/tmp/build.gpkg"));
+		DataStore sds = Geopackages.getDataStore(buildingFile);
 		SimpleFeatureCollection buildings = Collec.snapDatas(sds.getFeatureSource(sds.getTypeNames()[0]).getFeatures(), parcels);
 		final SimpleFeatureType featureSchema = ParcelSchema.getSFBMinParcelSplit().getFeatureType();
 		DefaultFeatureCollection result = new DefaultFeatureCollection();

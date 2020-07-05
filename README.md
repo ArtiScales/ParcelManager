@@ -27,5 +27,5 @@ Still under developpement.
 </ul>
 <br />
 <div style="text-align:center">
-<img src="misc/schema.png" alt="drawing" width="300" position="middle"/>
+<img src="misc/schema.png" alt="drawing" width="900" position="middle"/>
 </div>

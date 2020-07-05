@@ -25,7 +25,7 @@ public class FrenchZoningSchemas {
 			return false;
 		}
 		String libelle = ((String) zone.getAttribute(GeneralFields.getZonePreciseNameField())).toLowerCase();
-		if (normalizeNameFrenchBigZone((String) zone.getAttribute(GeneralFields.getZoneGenericNameField())).equals("U")
+		if (normalizeNameFrenchBigZone((String) zone.getAttribute(GeneralFields.getZoneGenericNameField())).equals("U") && libelle != null
 				&& (libelle.equals("u") || libelle.startsWith("ua") || libelle.startsWith("ub") || libelle.startsWith("uc")
 						|| libelle.startsWith("ud") || libelle.startsWith("c"))) {
 			return true;
