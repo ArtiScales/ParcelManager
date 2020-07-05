@@ -24,14 +24,16 @@ object compSimuParcel {
             largeStreetWidth: Double,
             minimalWidthContactRoad: Double,
             harmonyCoeff: Double
-           ) : (Double, Int, Double) = {
+ //          ) : (Double, Int, Double) = {
+             ) : (Int, Double) = {
     val profile = new ProfileUrbanFabric(maximalArea, decompositionLevelWithoutStreet, largeStreetLevel, streetWidth,
       largeStreetWidth, minimalWidthContactRoad, harmonyCoeff)
     val parcelSimuled = ZoneDivision.zoneDivision(zoneFile, parcelFile, profile, tmpFolder, outFolder)
-    val hausdorfDistance = SingleParcelStat.hausdorfDistanceAverage(parcelSimuled, parcelEvolved)
+ //   val hausdorfDistance = SingleParcelStat.hausdorfDistanceAverage(parcelSimuled, parcelEvolved)
     val nbParcelDiff = SingleParcelStat.diffNumberOfParcel(parcelSimuled, parcelEvolved)
     val areaParcelDiff = SingleParcelStat.diffAreaAverage(parcelSimuled, parcelEvolved)
-    (-hausdorfDistance, nbParcelDiff, areaParcelDiff)
+ //   (-hausdorfDistance, nbParcelDiff, areaParcelDiff)
+   (nbParcelDiff, areaParcelDiff)
   }
 }
 

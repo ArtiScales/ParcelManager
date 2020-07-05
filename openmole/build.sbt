@@ -4,7 +4,7 @@ version := "1.0"
 
 scalaVersion := "2.13.2"
 
-val parcelManagerVersion = "0.1-SNAPSHOT"
+val parcelManagerVersion = "0.2-SNAPSHOT"
 
 enablePlugins(SbtOsgi)
 
