@@ -39,13 +39,4 @@ libraryDependencies ++= Seq (
   "javax.media" % "jai_imageio" % "1.1"
 )
 
-OsgiKeys.additionalHeaders :=  Map(
-  "Specification-Title" -> "Spec Title",
-  "Specification-Version" -> "Spec Version",
-  "Specification-Vendor" -> "IGN",
-  "Implementation-Title" -> "Impl Title",
-  "Implementation-Version" -> "Impl Version",
-  "Implementation-Vendor" -> "IGN"
-)
-
 OsgiKeys.embeddedJars := (Keys.externalDependencyClasspath in Compile).value map (_.data) filter (f=> (f.getName startsWith "gt-"))
