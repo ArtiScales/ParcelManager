@@ -87,7 +87,7 @@ public class FrenchParcelFields {
 				else {
 					iniParcel = Collec.getSimpleFeatureFromSFC((Geometry) parcel.getDefaultGeometry(), initialParcels);
 					try {
-						insee = makeINSEECode(iniParcel);
+						insee = makeDEPCOMCode(iniParcel);
 					} catch (Exception c) {
 						insee = "";
 						c.printStackTrace();
@@ -169,6 +169,40 @@ public class FrenchParcelFields {
 		}
 		return result;
 	}
+	
+	
+	/**
+	 * Add a "CODE" field for every french parcel like of a {@link SimpleFeatureCollection}.
+	 * 
+	 * @param parcels
+	 *            {@link SimpleFeatureCollection} of French parcels.
+	 * @return The collection with the "CODE" field added.
+	 */
+	public static SimpleFeatureCollection addCommunityCode(SimpleFeatureCollection parcels) {
+		DefaultFeatureCollection result = new DefaultFeatureCollection();
+		SimpleFeatureTypeBuilder sfTypeBuilder = new SimpleFeatureTypeBuilder();
+		SimpleFeatureType schema = parcels.getSchema();
+		for (AttributeDescriptor attr : schema.getAttributeDescriptors())
+			sfTypeBuilder.add(attr);
+		sfTypeBuilder.add(GeneralFields.getZoneCommunityCode(), String.class);
+		sfTypeBuilder.setName(schema.getName());
+		sfTypeBuilder.setCRS(schema.getCoordinateReferenceSystem());
+		sfTypeBuilder.setDefaultGeometry(schema.getGeometryDescriptor().getLocalName());
+		SimpleFeatureBuilder builder = new SimpleFeatureBuilder(sfTypeBuilder.buildFeatureType());
+		try (SimpleFeatureIterator parcelIt = parcels.features()) {
+			while (parcelIt.hasNext()) {
+				SimpleFeature feat = parcelIt.next();
+				for (AttributeDescriptor attr : feat.getFeatureType().getAttributeDescriptors())
+					builder.set(attr.getName(), feat.getAttribute(attr.getName()));
+				builder.set(GeneralFields.getZoneCommunityCode(), makeDEPCOMCode(feat));
+				result.add(builder.buildFeature(Attribute.makeUniqueId()));
+			}
+		} catch (Exception problem) {
+			problem.printStackTrace();
+		}
+		return result;
+	}
+	
 
 	/**
 	 * Get the parcel codes (Attribute CODE of the given SimpleFeatureCollection)
@@ -205,7 +239,7 @@ public class FrenchParcelFields {
 	 * @param parcel
 	 * @return the INSEE number
 	 */
-	public static String makeINSEECode(SimpleFeature parcel) {
+	public static String makeDEPCOMCode(SimpleFeature parcel) {
 		if (Collec.isSimpleFeatureContainsAttribute(parcel, "CODE_DEP") && Collec.isSimpleFeatureContainsAttribute(parcel, "CODE_COM")) {
 			return ((String) parcel.getAttribute("CODE_DEP")) + ((String) parcel.getAttribute("CODE_COM"));
 		} else {

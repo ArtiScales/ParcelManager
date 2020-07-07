@@ -47,7 +47,7 @@ public class ParcelAttribute {
 		if (!Collec.isCollecContainsAttribute(sFCWithCommunityCode, ParcelSchema.getMinParcelCommunityField())) {
 			switch (GeneralFields.getParcelFieldType()) {
 			case ("french"):
-				return FrenchParcelFields.makeINSEECode(Collec.getSimpleFeatureFromSFC((Geometry) feat.getDefaultGeometry(), sFCWithCommunityCode));
+				return FrenchParcelFields.makeDEPCOMCode(Collec.getSimpleFeatureFromSFC((Geometry) feat.getDefaultGeometry(), sFCWithCommunityCode));
 			default:
 				return "";
 			}
@@ -114,7 +114,7 @@ public class ParcelAttribute {
 				}
 			} else {
 				try {
-					String c = FrenchParcelFields.makeINSEECode(feat);
+					String c = FrenchParcelFields.makeDEPCOMCode(feat);
 					if (c != null && !result.contains(c)) {
 						result.add(c);
 					}
@@ -143,7 +143,7 @@ public class ParcelAttribute {
 					result.put(code, result.getOrDefault(code, 1));
 				} else {
 					try {
-						String c = FrenchParcelFields.makeINSEECode(feat);
+						String c = FrenchParcelFields.makeDEPCOMCode(feat);
 						if (c != null && !result.containsKey(c)) {
 							result.put(code, result.getOrDefault(code, 1));
 						}

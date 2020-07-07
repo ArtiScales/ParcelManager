@@ -114,7 +114,7 @@ public class SingleParcelStat {
 							DisHausDst = dhd.distance();
 							if (!Collec.isSchemaContainsAttribute(parcelCompare.getFeatureType(), "CODE")
 									&& GeneralFields.getParcelFieldType().equals("french"))
-								CodeAppar = FrenchParcelFields.makeINSEECode(parcelCompare);
+								CodeAppar = FrenchParcelFields.makeDEPCOMCode(parcelCompare);
 							else
 								CodeAppar = (String) parcelCompare.getAttribute("CODE");
 						}

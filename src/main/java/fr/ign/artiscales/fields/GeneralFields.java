@@ -114,6 +114,22 @@ public class GeneralFields {
 		System.out.println("No parcel field type defined for GeneralFields.addParcelCode. Return null");
 		return null;
 	}
+	
+	/**
+	 * Add the {@link #zoneCommunityCode} field for every parcels of a {@link SimpleFeatureCollection}. Only french solution implemented yet.
+	 * 
+	 * @param parcels
+	 *            {@link SimpleFeatureCollection} of parcels.
+	 * @return The collection with the "CODE" field added.
+	 */
+	public static SimpleFeatureCollection addCommunityCode(SimpleFeatureCollection parcels) throws IOException {
+		switch (parcelFieldType) {
+		case "french":
+			return FrenchParcelFields.addCommunityCode(parcels);
+		}
+		System.out.println("No parcel field type defined for GeneralFields.addCommunityCode. Return null");
+		return null;
+	}
 
 	/**
 	 * Trivial method to get the genericZone list of a type

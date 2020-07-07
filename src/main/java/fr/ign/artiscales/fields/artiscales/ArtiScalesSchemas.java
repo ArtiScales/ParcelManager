@@ -86,7 +86,7 @@ public class ArtiScalesSchemas {
 		finalParcelBuilder.set("COM_ABS", feat.getAttribute("COM_ABS"));
 		finalParcelBuilder.set("SECTION", feat.getAttribute("SECTION"));
 		finalParcelBuilder.set("NUMERO", feat.getAttribute("NUMERO"));
-		finalParcelBuilder.set("INSEE", FrenchParcelFields.makeINSEECode(feat));
+		finalParcelBuilder.set("INSEE", FrenchParcelFields.makeDEPCOMCode(feat));
 		finalParcelBuilder.set("eval", "0");
 		finalParcelBuilder.set("DoWeSimul", "false");
 		finalParcelBuilder.set("IsBuild", "false");

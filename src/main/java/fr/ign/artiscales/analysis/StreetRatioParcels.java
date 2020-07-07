@@ -96,7 +96,7 @@ public class StreetRatioParcels {
 				while (it.hasNext()) {
 					SimpleFeature feat = it.next();
 					if (zoneGeom.contains(((Geometry) feat.getDefaultGeometry()))) {
-						sfBuilderZone.set(ParcelSchema.getMinParcelCommunityField(), FrenchParcelFields.makeINSEECode(feat));
+						sfBuilderZone.set(ParcelSchema.getMinParcelCommunityField(), FrenchParcelFields.makeDEPCOMCode(feat));
 						sfBuilderZone.set(GeneralFields.getZonePreciseNameField(), feat.getAttribute(ParcelSchema.getMinParcelSectionField()));
 						break;
 					}

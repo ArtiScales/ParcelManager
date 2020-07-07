@@ -11,12 +11,15 @@ import org.geotools.data.simple.SimpleFeatureCollection;
 import org.locationtech.jts.geom.Geometry;
 import org.opengis.feature.simple.SimpleFeature;
 
+import fr.ign.artiscales.fields.GeneralFields;
 import fr.ign.artiscales.fields.french.FrenchZoningSchemas;
 import fr.ign.artiscales.goal.Densification;
 import fr.ign.artiscales.parcelFunction.MarkParcelAttributeFromPosition;
 import fr.ign.artiscales.parcelFunction.ParcelAttribute;
 import fr.ign.artiscales.scenario.PMScenario;
 import fr.ign.artiscales.scenario.PMStep;
+import fr.ign.cogit.carto.JoinCSVToGeoFile;
+import fr.ign.cogit.carto.MergeByAttribute;
 import fr.ign.cogit.geoToolsFunctions.Csv;
 import fr.ign.cogit.geoToolsFunctions.vectors.Collec;
 import fr.ign.cogit.geoToolsFunctions.vectors.Geom;
@@ -36,11 +39,20 @@ import fr.ign.cogit.parameter.ProfileUrbanFabric;
 public class DensificationStudy {
 	public static void main(String[] args) throws Exception {
 		File rootFile = new File("src/main/resources/DensificationStudy/");
+		File outFolder = new File(rootFile, "out");
 		PMStep.setGENERATEATTRIBUTES(false);
 		PMScenario pmScen = new PMScenario(new File(rootFile, "scenario.json"), new File("/tmp"));
 		pmScen.executeStep();
 		for (int i = 1; i <= 4; i++)
-			Csv.calculateColumnsBasicStat(new File(rootFile, "/out/densificationStudyResult.csv"), i, true);
+			Csv.calculateColumnsBasicStat(new File(outFolder, "densificationStudyResult.csv"), i, true);
+		// make a (nice) map out of it
+		DataStore ds = Geopackages.getDataStore(new File(rootFile, "parcel.gpkg"));
+		JoinCSVToGeoFile.joinCSVToGeoFile(
+				MergeByAttribute.mergeByAttribute(GeneralFields.addCommunityCode(ds.getFeatureSource(ds.getTypeNames()[0]).getFeatures()),
+						GeneralFields.getZoneCommunityCode()),
+				GeneralFields.getZoneCommunityCode(), new File(outFolder, "densificationStudyResult.csv"), GeneralFields.getZoneCommunityCode(),
+				new File(outFolder, "CityStat"), null);
+		ds.dispose();
 	}
 
 	/**
@@ -80,6 +92,7 @@ public class DensificationStudy {
 		// Collec.exportSFC(parcelsDensifCreated, new File("/tmp/parcelsDensifCreated"));
 
 		// change split name to show if they can be built and start postprocessing
+		String firstMarkFieldName = MarkParcelAttributeFromPosition.getMarkFieldName();
 		MarkParcelAttributeFromPosition.setMarkFieldName("BUILDABLE");
 		MarkParcelAttributeFromPosition.setPostMark(true);
 		// Mark the simulated parcels that doesn't contains buildings (and therefore can be build)
@@ -118,15 +131,14 @@ public class DensificationStudy {
 		sds.dispose();
 
 		// saving the stats in a .csv file
-		String[] firstline = { "DEPCOM", "parcels in urbanizable zones", "number of vacant lots", "parcels simulated in vacant lots",
+		String[] firstline = { GeneralFields.getZoneCommunityCode(), "parcels in urbanizable zones", "number of vacant lots", "parcels simulated in vacant lots",
 				"parcels simulated by densification" };
 		Object[] line = { nbParcelsInUrbanizableZones, nbVacantLot, nbVacantLotParcels, vacantParcelU.size() };
 		HashMap<String, Object[]> l = new HashMap<String, Object[]>();
 		l.put(ParcelAttribute.getCityCodeOfParcels(parcelsDensifCreated), line);
 		Csv.generateCsvFile(l, outFolder, "densificationStudyResult", firstline, true);
 		Csv.needFLine = false;
-
 		// redo normal mark name
-		MarkParcelAttributeFromPosition.setMarkFieldName("SPLIT");
+		MarkParcelAttributeFromPosition.setMarkFieldName(firstMarkFieldName);
 	}
 }

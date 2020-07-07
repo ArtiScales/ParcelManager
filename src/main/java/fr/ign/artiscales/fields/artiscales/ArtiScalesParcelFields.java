@@ -49,7 +49,7 @@ public class ArtiScalesParcelFields {
 				featureBuilder.set(Collec.getDefaultGeomName(), parcel.getDefaultGeometry());
 
 				String section = (String) parcel.getAttribute("SECTION");
-				featureBuilder.set("INSEE", FrenchParcelFields.makeINSEECode(parcel));
+				featureBuilder.set("INSEE", FrenchParcelFields.makeDEPCOMCode(parcel));
 				featureBuilder.set("CODE_DEP", parcel.getAttribute("CODE_DEP"));
 				featureBuilder.set("CODE_COM", parcel.getAttribute("CODE_COM"));
 				featureBuilder.set("SECTION", section);

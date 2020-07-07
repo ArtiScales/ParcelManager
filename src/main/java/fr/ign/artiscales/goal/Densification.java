@@ -4,7 +4,7 @@ import java.io.File;
 import java.util.Arrays;
 import java.util.List;
 
-import org.geotools.data.DataUtilities;
+import org.geotools.data.DataStore;
 import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.data.simple.SimpleFeatureIterator;
 import org.geotools.factory.CommonFactoryFinder;
@@ -22,6 +22,7 @@ import fr.ign.artiscales.parcelFunction.MarkParcelAttributeFromPosition;
 import fr.ign.artiscales.parcelFunction.ParcelSchema;
 import fr.ign.cogit.geoToolsFunctions.Attribute;
 import fr.ign.cogit.geoToolsFunctions.vectors.Collec;
+import fr.ign.cogit.geoToolsFunctions.vectors.Geopackages;
 import fr.ign.cogit.parameter.ProfileUrbanFabric;
 
 /**
@@ -53,7 +54,7 @@ public class Densification {
 	 *            {@link SimpleFeatureCollection} of marked parcels.
 	 * @param isletCollection
 	 *            {@link SimpleFeatureCollection} containing the morphological islet. Can be generated with the
-	 *            {@link fr.ign.cogit.geometryGeneration.CityGeneration#createUrbanIslet(File, File)} method.
+	 *            {@link fr.ign.cogit.geometryGeneration.CityGeneration#createUrbanIslet(SimpleFeatureCollection)} method.
 	 * @param tmpFolder
 	 *            Folder to store temporary files
 	 * @param buildingFile
@@ -169,7 +170,7 @@ public class Densification {
 	 *            SimpleFeatureCollection of marked parcels.
 	 * @param isletCollection
 	 *            SimpleFeatureCollection containing the morphological islet. Can be generated with the
-	 *            {@link fr.ign.cogit.geometryGeneration.CityGeneration#createUrbanIslet(File, File)} method.
+	 *            {@link fr.ign.cogit.geometryGeneration.CityGeneration#createUrbanIslet(SimpleFeatureCollection)} method.
 	 * @param tmpFolder
 	 *            folder to store temporary files
 	 * @param buildingFile
@@ -204,7 +205,7 @@ public class Densification {
 	 *            SimpleFeatureCollection of marked parcels.
 	 * @param isletCollection
 	 *            SimpleFeatureCollection containing the morphological islet. Can be generated with the
-	 *            {@link fr.ign.cogit.geometryGeneration.CityGeneration#createUrbanIslet(File, File)} method.
+	 *            {@link fr.ign.cogit.geometryGeneration.CityGeneration#createUrbanIslet(SimpleFeatureCollection)} method.
 	 * @param tmpFolder
 	 *            folder to store temporary files
 	 * @param buildingFile
@@ -238,7 +239,7 @@ public class Densification {
 	 *            SimpleFeatureCollection of marked parcels.
 	 * @param isletCollection
 	 *            SimpleFeatureCollection containing the morphological islet. Can be generated with the
-	 *            {@link fr.ign.cogit.geometryGeneration.CityGeneration#createUrbanIslet(File, File)} method.
+	 *            {@link fr.ign.cogit.geometryGeneration.CityGeneration#createUrbanIslet(SimpleFeatureCollection)} method.
 	 * @param tmpFolder
 	 *            folder to store temporary files.
 	 * @param buildingFile
@@ -267,7 +268,7 @@ public class Densification {
 	 *            SimpleFeatureCollection of marked parcels.
 	 * @param isletCollection
 	 *            SimpleFeatureCollection containing the morphological islet. Can be generated with the
-	 *            {@link fr.ign.cogit.geometryGeneration.CityGeneration#createUrbanIslet(File, File)} method.
+	 *            {@link fr.ign.cogit.geometryGeneration.CityGeneration#createUrbanIslet(SimpleFeatureCollection)} method.
 	 * @param tmpFolder
 	 *            folder to store temporary files.
 	 * @param buildingFile
@@ -297,7 +298,7 @@ public class Densification {
 	 *            SimpleFeatureCollection of marked parcels.
 	 * @param isletCollection
 	 *            SimpleFeatureCollection containing the morphological islet. Can be generated with the
-	 *            {@link fr.ign.cogit.geometryGeneration.CityGeneration#createUrbanIslet(File, File)} method.
+	 *            {@link fr.ign.cogit.geometryGeneration.CityGeneration#createUrbanIslet(SimpleFeatureCollection)} method.
 	 * @param tmpFolder
 	 *            folder to store temporary files.
 	 * @param buildingFile
@@ -320,20 +321,24 @@ public class Densification {
 	public static SimpleFeatureCollection densificationOrNeighborhood(SimpleFeatureCollection parcelCollection,
 			SimpleFeatureCollection isletCollection, File tmpFolder, File buildingFile, File roadFile, ProfileUrbanFabric profile,
 			boolean allowIsolatedParcel, Geometry exclusionZone, int factorOflargeZoneCreation) throws Exception {
+		//TODO stupid hack but I can't figure out how those SimpleFeatuceCollection's attributes are changed if not wrote in hard
+		File tmpDens = Collec.exportSFC(parcelCollection, new File(tmpFolder, "tmpDens"));
 		// We flagcut the parcels which size is inferior to 4x the max parcel size
-		SimpleFeatureCollection parcelInf = MarkParcelAttributeFromPosition.markParcelsInf(parcelCollection, profile.getMaximalArea() * 4);
-		SimpleFeatureCollection parcelDensified = densification(parcelInf, isletCollection, tmpFolder, buildingFile, roadFile,
+		SimpleFeatureCollection parcelDensified = densification(MarkParcelAttributeFromPosition.markParcelsInf(parcelCollection,
+				profile.getMaximalArea() * factorOflargeZoneCreation), isletCollection, tmpFolder, buildingFile, roadFile,
 				profile.getMaximalArea(), profile.getMinimalArea(), profile.getMinimalWidthContactRoad(), profile.getLenDriveway(),
 				allowIsolatedParcel, exclusionZone);
 		// if parcels are too big, we try to create neighborhoods inside them with the consolidation algorithm
 		// We first re-mark the parcels that were marked.
+		DataStore ds = Geopackages.getDataStore(tmpDens);
 		SimpleFeatureCollection supParcels = MarkParcelAttributeFromPosition.markParcelsSup(
-				MarkParcelAttributeFromPosition.markAlreadyMarkedParcels(parcelDensified, DataUtilities.collection(parcelCollection)),
+				MarkParcelAttributeFromPosition.markAlreadyMarkedParcels(parcelDensified, ds.getFeatureSource(ds.getTypeNames()[0]).getFeatures()),
 				profile.getMaximalArea() * factorOflargeZoneCreation);
 		if (!MarkParcelAttributeFromPosition.isNoParcelMarked(supParcels)) {
 			profile.setLargeStreetWidth(profile.getStreetWidth());
 			parcelDensified = ConsolidationDivision.consolidationDivision(supParcels, roadFile, tmpFolder, profile);
 		}
+		ds.dispose();
 		return parcelDensified;
 	}
 

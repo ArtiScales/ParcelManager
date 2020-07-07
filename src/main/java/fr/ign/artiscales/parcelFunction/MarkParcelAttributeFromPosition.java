@@ -87,7 +87,7 @@ public class MarkParcelAttributeFromPosition {
 	 *            Input parcel {@link SimpleFeatureCollection}
 	 * @param islet
 	 *            {@link SimpleFeatureCollection} containing the morphological islet. Can be generated with the
-	 *            {@link fr.ign.cogit.geometryGeneration.CityGeneration#createUrbanIslet(File, File)} method.
+	 *            {@link fr.ign.cogit.geometryGeneration.CityGeneration#createUrbanIslet(SimpleFeatureCollection)} method.
 	 * @param roadFile
 	 *            Shapefile containing the road segments
 	 * @return {@link SimpleFeatureCollection} of the input parcels with marked parcels on the {@link #markFieldName} field.
@@ -108,7 +108,7 @@ public class MarkParcelAttributeFromPosition {
 	 *            Input parcel {@link SimpleFeatureCollection}
 	 * @param islet
 	 *            {@link SimpleFeatureCollection} containing the morphological islet. Can be generated with the
-	 *            {@link fr.ign.cogit.geometryGeneration.CityGeneration#createUrbanIslet(File, File)} method.
+	 *            {@link fr.ign.cogit.geometryGeneration.CityGeneration#createUrbanIslet(SimpleFeatureCollection)} method.
 	 * @param roadFile
 	 *            Shapefile containing the road segments
 	 * @param exclusionZone
