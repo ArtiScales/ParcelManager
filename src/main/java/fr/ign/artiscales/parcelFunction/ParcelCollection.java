@@ -16,8 +16,8 @@ import java.util.stream.Collectors;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
+import org.geotools.data.DataStore;
 import org.geotools.data.collection.SpatialIndexFeatureCollection;
-import org.geotools.data.shapefile.ShapefileDataStore;
 import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.data.simple.SimpleFeatureIterator;
 import org.geotools.factory.CommonFactoryFinder;
@@ -41,6 +41,7 @@ import fr.ign.cogit.geoToolsFunctions.Attribute;
 import fr.ign.cogit.geoToolsFunctions.Schemas;
 import fr.ign.cogit.geoToolsFunctions.vectors.Collec;
 import fr.ign.cogit.geoToolsFunctions.vectors.Geom;
+import fr.ign.cogit.geoToolsFunctions.vectors.Geopackages;
 
 public class ParcelCollection {
 
@@ -91,10 +92,10 @@ public class ParcelCollection {
 			return ;
 		}
 		
-		ShapefileDataStore sds = new ShapefileDataStore(parcelToCompareFile.toURI().toURL());
-		SimpleFeatureCollection parcelToSort = new SpatialIndexFeatureCollection(sds.getFeatureSource().getFeatures());
-		ShapefileDataStore sdsRef = new ShapefileDataStore(parcelRefFile.toURI().toURL());
-		SimpleFeatureCollection parcelRef = sdsRef.getFeatureSource().getFeatures();
+		DataStore sds = Geopackages.getDataStore(parcelToCompareFile);
+		SimpleFeatureCollection parcelToSort = new SpatialIndexFeatureCollection(sds.getFeatureSource(sds.getTypeNames()[0]).getFeatures());
+		DataStore sdsRef = Geopackages.getDataStore(parcelRefFile);
+		SimpleFeatureCollection parcelRef = sdsRef.getFeatureSource(sdsRef.getTypeNames()[0]).getFeatures();
 		FilterFactory2 ff = CommonFactoryFinder.getFilterFactory2();
 		PropertyName pName = ff.property(parcelRef.getSchema().getGeometryDescriptor().getLocalName());
 		SimpleFeatureBuilder intersecPolygon = Schemas.getBasicSchemaMultiPolygon("intersectionPolygon");

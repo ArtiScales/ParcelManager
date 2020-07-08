@@ -9,7 +9,6 @@ import java.util.List;
 import org.geotools.data.DataStore;
 import org.geotools.data.DataUtilities;
 import org.geotools.data.collection.SpatialIndexFeatureCollection;
-import org.geotools.data.shapefile.ShapefileDataStore;
 import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.feature.DefaultFeatureCollection;
 import org.locationtech.jts.geom.Geometry;
@@ -346,20 +345,20 @@ public class PMStep {
 	 * @throws NoSuchAuthorityCodeException
 	 */
 	public List<Geometry> getBoundsOfZone() throws IOException, NoSuchAuthorityCodeException, FactoryException {
-		ShapefileDataStore sds = new ShapefileDataStore(PARCELFILE.toURI().toURL());
+		DataStore ds = Geopackages.getDataStore(PARCELFILE);
 		List<Geometry> lG = new ArrayList<Geometry>();
 		if (goal.equals("zoneDivision")) {
-			Arrays.stream(getZone(sds.getFeatureSource().getFeatures()).toArray(new SimpleFeature[0])).forEach(parcel -> {
+			Arrays.stream(getZone(ds.getFeatureSource(ds.getTypeNames()[0]).getFeatures()).toArray(new SimpleFeature[0])).forEach(parcel -> {
 				lG.add((Geometry) parcel.getDefaultGeometry());
 			});
 		} else {
-			Arrays.stream(getSimulationParcels(new SpatialIndexFeatureCollection(sds.getFeatureSource().getFeatures())).toArray(new SimpleFeature[0]))
+			Arrays.stream(getSimulationParcels(ds.getFeatureSource(ds.getTypeNames()[0]).getFeatures()).toArray(new SimpleFeature[0]))
 					.forEach(parcel -> {
 						if (parcel.getAttribute(MarkParcelAttributeFromPosition.getMarkFieldName()).equals(1))
 							lG.add((Geometry) parcel.getDefaultGeometry());
 					});
 		}
-		sds.dispose();
+		ds.dispose();
 		return lG;
 	}
 	
@@ -375,14 +374,14 @@ public class PMStep {
 		SimpleFeatureCollection zoneIn;
 		// If a specific zone is an input, we take them directly. We also have to set attributes from pre-existing parcel field.
 		if (ZONE != null && ZONE.exists()) {
-			ShapefileDataStore shpDSZone = new ShapefileDataStore(ZONE.toURI().toURL());
-			zoneIn = GeneralFields.transformSFCToMinParcel(shpDSZone.getFeatureSource().getFeatures(), parcel);
+			DataStore shpDSZone = Geopackages.getDataStore(ZONE);
+			zoneIn = GeneralFields.transformSFCToMinParcel(shpDSZone.getFeatureSource(shpDSZone.getTypeNames()[0]).getFeatures(), parcel);
 			shpDSZone.dispose();
 		}
 		// If no zone have been set, it means we have to use the zoning plan.
 		else {
-			ShapefileDataStore shpDSZoning= new ShapefileDataStore(ZONINGFILE.toURI().toURL());
-			SimpleFeatureCollection zoning = new SpatialIndexFeatureCollection(DataUtilities.collection((shpDSZoning.getFeatureSource().getFeatures())));
+			DataStore shpDSZoning= Geopackages.getDataStore(ZONINGFILE);
+			SimpleFeatureCollection zoning = new SpatialIndexFeatureCollection(DataUtilities.collection((shpDSZoning.getFeatureSource(shpDSZoning.getTypeNames()[0]).getFeatures())));
 			shpDSZoning.dispose();
 			zoneIn = ZoneDivision.createZoneToCut(genericZone, preciseZone, zoning, ZONINGFILE, parcel);
 		}
