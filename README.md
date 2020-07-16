@@ -5,11 +5,11 @@ There are three way of using this library as shown in the schema bellow.
 <ul>
     <li>To divide a single parcel, choose one of the multiple implemented <b>processes</b>.</li>
     <li>To process various operations on a zone, use a <b>goal</b> that runs various processes such as parcel division, agregation, or other (attribute attribution, sizes thresholds, etc.) </li>
-    <li>On a community or on multiple communities, create advanced scenarios using simple .json files ([see here](https://github.com/ArtiScales/ParcelManager/blob/master/src/main/resources/doc/scenarioCreation.md)).
+    <li>On a community or on multiple communities, create advanced <b>scenarios</b> using simple .json files (<a href = "https://github.com/ArtiScales/ParcelManager/blob/master/src/main/resources/doc/scenarioCreation.md">see documentation here</a>).
 Based</li>
 </ul>
-Library based on the function from the library [ArtiScales-tools](https://github.com/ArtiScales/ArtiScales-tools) (no stable version yet) and on the GeoTools 23.0 library.
-JavaDoc is available [here](https://artiscales.github.io/javadoc/ParcelManager/) and more can be found on a coming article and on the [PhD thesis of Maxime Colomb]().
+Library based on the function from the library <a href = "https://github.com/ArtiScales/ArtiScales-tools">ArtiScales-tools</a> (no stable version yet) and on the GeoTools 23.0 library.
+JavaDoc is available <a href="https://artiscales.github.io/javadoc/ParcelManager/">here</a> and more can be found on a coming article and on the <a href = "https://www.theses.fr/2019PESC2070">PhD thesis of Maxime Colomb</a>.
 .
 
 Still under developpement.
