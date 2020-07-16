@@ -1,10 +1,16 @@
 # Parcel Manager
 
-Library providing functions, algorithms and workflows to operate various parcel reshaping operations.
-Documentation can be found on a coming article and on the PhD thesis of Maxime Colomb.
-The easiest way of using this library is to create scenarios using .json files ([see here](https://github.com/ArtiScales/ParcelManager/blob/master/src/main/resources/doc/scenarioCreation.md)).
-Based on the function from the library [ArtiScales-tools](https://github.com/ArtiScales/ArtiScales-tools) (no stable version yet) and on the GeoTools 23.0 library.
-JavaDoc is available [here](https://artiscales.github.io/javadoc/ParcelManager/).
+Library providing functions, algorithms and workflows to process various parcel reshaping operations.
+There are three way of using this library as shown in the schema bellow. 
+<ul>
+    <li>To divide a single parcel, choose one of the multiple implemented <b>processes</b>.</li>
+    <li>To process various operations on a zone, use a <b>goal</b> that runs various processes such as parcel division, agregation, or other (attribute attribution, sizes thresholds, etc.) </li>
+    <li>On a community or on multiple communities, create advanced scenarios using simple .json files ([see here](https://github.com/ArtiScales/ParcelManager/blob/master/src/main/resources/doc/scenarioCreation.md)).
+Based</li>
+</ul>
+Library based on the function from the library [ArtiScales-tools](https://github.com/ArtiScales/ArtiScales-tools) (no stable version yet) and on the GeoTools 23.0 library.
+JavaDoc is available [here](https://artiscales.github.io/javadoc/ParcelManager/) and more can be found on a coming article and on the [PhD thesis of Maxime Colomb]().
+.
 
 Still under developpement.
 
@@ -23,7 +29,7 @@ Still under developpement.
 </li>
 <li><b>parcelFunction</b>: Various functions for single parcels, sort by type (collection, state, schemas, attribute, marking, etc.).</li>
 <li><b>scenario</b>: Contains objects used for processing an automated simulation on a large zone (<a href="https://github.com/ArtiScales/ParcelManager/blob/master/src/main/resources/doc/scenarioCreation.md">technical description can be found here</a>).</li>
-<li><b>scenario</b>: Cerate automated workflows for Parcel Manager which apply different goals on specified zones</li>
+<li><b>workflow</b>: Cerate automated workflows for Parcel Manager which apply different goals on specified zones</li>
 </ul>
 <br />
 <div style="text-align:center">
