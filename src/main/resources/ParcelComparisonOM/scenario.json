@@ -1,8 +1,8 @@
 {
 	"rootfile": "src/main/resources/ParcelComparisonOM/",
-	"parcelFile":"src/main/resources/ParcelComparisonOM/parcel2003.shp",
-	"polygonIntersectionFile":"src/main/resources/ParcelComparisonOM/out/place.shp",
-	"zoneFile":"src/main/resources/ParcelComparisonOM/out/zone.shp",
+	"parcelFile":"src/main/resources/ParcelComparisonOM/parcel2003.gpkg",
+	"polygonIntersectionFile":"src/main/resources/ParcelComparisonOM/out/place.gpkg",
+	"zoneFile":"src/main/resources/ParcelComparisonOM/out/zone.gpkg",
 	"outFolder": "src/main/resources/ParcelComparisonOM/out/",
 	"steps": [
 		{

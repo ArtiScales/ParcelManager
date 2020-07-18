@@ -29,9 +29,9 @@ import fr.ign.cogit.geoToolsFunctions.vectors.Geom;
 public class OBBBlockDecomposition {
 
 //	public static void main(String[] args) throws Exception {
-//		ShapefileDataStore sds = new ShapefileDataStore((new File("src/main/resources/smallTest/parcel.shp")).toURI().toURL());
+//		ShapefileDataStore sds = new ShapefileDataStore((new File("src/main/resources/smallTest/parcel.gpkg")).toURI().toURL());
 //		SimpleFeatureCollection toSplit = sds.getFeatureSource().getFeatures();
-//		ShapefileDataStore sdsRoad = new ShapefileDataStore((new File("src/main/resources/smallTest/road.shp")).toURI().toURL());
+//		ShapefileDataStore sdsRoad = new ShapefileDataStore((new File("src/main/resources/smallTest/road.gpkg")).toURI().toURL());
 //		SimpleFeatureCollection roads = sdsRoad.getFeatureSource().getFeatures();
 //		List<LineString> lines = Collec.fromPolygonSFCtoListRingLines(CityGeneration.createUrbanIslet(toSplit));
 //		Collec.exportSFC(splitParcels(toSplit, roads, 800, 15, 0, 0, lines, 10, 6, 20, false, 3), new File("/tmp/normal"));
@@ -106,7 +106,7 @@ public class OBBBlockDecomposition {
 	 * @param toSplit
 	 *            {@link SimpleFeatureCollection} of parcels
 	 * @param roads
-	 *            Road Shapefile (can be null)
+	 *            Road Geopackage (can be null)
 	 * @param maximalArea
 	 *            Area of the parcel under which the parcel won't be anymore cut
 	 * @param maximalWidth

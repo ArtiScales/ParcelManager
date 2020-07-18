@@ -1,6 +1,5 @@
 package fr.ign.artiscales.decomposition;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -387,8 +386,7 @@ public class StraightSkeleton {
       edge.setAttribute("TWIN", (edge.getTwin() != null) ? edge.getTwin().getAttribute("ID") : null);
       edge.setAttribute("NEXT", (edge.getNext() != null) ? edge.getNext().getAttribute("ID") : null);
     }
-    TopologicalGraph.export(graph.getFaces(), new File("/tmp/faces.shp"), "Polygon");
-    TopologicalGraph.export(graph.getEdges(), new File("/tmp/edges.shp"), "LineString");
-    TopologicalGraph.export(graph.getNodes(), new File("/tmp/nodes.shp"), "Point");
+//    TopologicalGraph.export(graph.getFaces(), new File("/tmp/faces.gpkg"), Polygon.class);
+//    TopologicalGraph.export(graph.getEdges(), new File("/tmp/edges.gpkg"), LineString.class);
   }
 }

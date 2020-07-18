@@ -38,7 +38,7 @@ public class CompareSimulatedParcelsWithEvolution {
 
 	public static void main(String[] args) throws Exception {
 		Instant start = Instant.now();
-		// definition of the shapefiles representing two set of parcel
+		// definition of the geopackages representing two set of parcel
 		File rootFolder = new File("src/main/resources/ParcelComparison/");
 		File outFolder = new File(rootFolder, "out");
 		outFolder.mkdirs();

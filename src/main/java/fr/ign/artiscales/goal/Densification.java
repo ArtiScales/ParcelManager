@@ -38,13 +38,13 @@ import fr.ign.cogit.parameter.ProfileUrbanFabric;
 public class Densification {
 	
 	/**
-	 * If true, will save a shapefile containing only the simulated parcels in the temporary folder.
+	 * If true, will save a Geopackage containing only the simulated parcels in the temporary folder.
 	 */
 	public static boolean SAVEINTERMEDIATERESULT = false;
 	/**
-	 * If true, overwrite the output saved shapefiles. If false, happend the simulated parcels to a potential already existing shapefile.
+	 * If true, overwrite the output saved Geopackages. If false, happend the simulated parcels to a potential already existing Geopackage.
 	 */
-	public static boolean OVERWRITESHAPEFILES = true;
+	public static boolean OVERWRITEGEOPACKAGE = true;
 
 
 	/**
@@ -58,9 +58,9 @@ public class Densification {
 	 * @param tmpFolder
 	 *            Folder to store temporary files
 	 * @param buildingFile
-	 *            Shapefile representing the buildings
+	 *            Geopackage representing the buildings
 	 * @param roadFile
-	 *            Shapefile representing the roads. If road not needed, use the overloaded method.
+	 *            Geopackage representing the roads. If road not needed, use the overloaded method.
 	 * @param maximalAreaSplitParcel
 	 *            threshold of parcel area above which the OBB algorithm stops to decompose parcels
 	 * @param minimalAreaSplitParcel
@@ -99,15 +99,15 @@ public class Densification {
 				if (feat.getAttribute(MarkParcelAttributeFromPosition.getMarkFieldName()) != null
 						&& feat.getAttribute(MarkParcelAttributeFromPosition.getMarkFieldName()).equals(1)
 						&& ((Geometry) feat.getDefaultGeometry()).getArea() > maximalAreaSplitParcel) {
-					//we get the needed ilot lines
+					//we get the needed islet lines
 					List<LineString> lines = Collec.fromPolygonSFCtoListRingLines(isletCollection.subCollection(
 							ff.bbox(ff.property(feat.getFeatureType().getGeometryDescriptor().getLocalName()), feat.getBounds())));
-					// we falg cut the parcel
+					// we flag cut the parcel
 					SimpleFeatureCollection unsortedFlagParcel = FlagParcelDecomposition.generateFlagSplitedParcels(feat, lines, 0.0, tmpFolder, buildingFile,
 							roadFile, maximalAreaSplitParcel, maximalWidthSplitParcel, lenDriveway, allowIsolatedParcel, exclusionZone);
 					// if the cut parcels are inferior to the minimal size, we cancel all and add the initial parcel
 					boolean add = true;
-					// If the flag parcel size is too small, we won't add anything
+					// If the flag cut parcel size is too small, we won't add anything
 					try (SimpleFeatureIterator parcelIt = unsortedFlagParcel.features()){
 						while (parcelIt.hasNext()) {
 							if (((Geometry) parcelIt.next().getDefaultGeometry()).getArea() < minimalAreaSplitParcel) {
@@ -154,8 +154,8 @@ public class Densification {
 			e.printStackTrace();
 		}
 		if (SAVEINTERMEDIATERESULT) {
-			Collec.exportSFC(onlyCutedParcels, new File(tmpFolder, "parcelDensificationOnly"), OVERWRITESHAPEFILES) ;
-			OVERWRITESHAPEFILES = false;
+			Collec.exportSFC(onlyCutedParcels, new File(tmpFolder, "parcelDensificationOnly"), OVERWRITEGEOPACKAGE) ;
+			OVERWRITEGEOPACKAGE = false;
 		}
 		return resultParcels.collection();
 	}
@@ -164,7 +164,7 @@ public class Densification {
 	 * Apply the densification goal on a set of marked parcels.
 	 *
 	 * overload of the {@link #densification(SimpleFeatureCollection, SimpleFeatureCollection, File, File, File, double, double, double, double, boolean)} method if we choose to
-	 * not use a road Shapefile and no geometry of exclusion
+	 * not use a road Geopackage and no geometry of exclusion
 	 * 
 	 * @param parcelCollection
 	 *            SimpleFeatureCollection of marked parcels.
@@ -174,7 +174,7 @@ public class Densification {
 	 * @param tmpFolder
 	 *            folder to store temporary files
 	 * @param buildingFile
-	 *            Shapefile representing the buildings
+	 *            Geopackage representing the buildings
 	 * @param maximalAreaSplitParcel
 	 *            threshold of parcel area above which the OBB algorithm stops to decompose parcels
 	 * @param minimalAreaSplitParcel
@@ -182,7 +182,7 @@ public class Densification {
 	 * @param maximalWidthSplitParcel
 	 *            threshold of parcel connection to road under which the OBB algorithm stops to decompose parcels
 	 * @param lenDriveway
-	 *            lenght of the driveway to connect a parcel through another parcel to the road
+	 *            length of the driveway to connect a parcel through another parcel to the road
 	 * @param allowIsolatedParcel
 	 *            true if the simulated parcels have the right to be isolated from the road, false otherwise.
 	 * @return The input parcel {@link SimpleFeatureCollection} with the marked parcels replaced by the simulated parcels. All parcels have the
@@ -199,7 +199,7 @@ public class Densification {
 	 * Apply the densification goal on a set of marked parcels.
 	 *
 	 * overload of the {@link #densification(SimpleFeatureCollection, SimpleFeatureCollection, File, File, File, double, double, double, double, boolean)} method if we choose to
-	 * not use a road Shapefile
+	 * not use a road Geopackage
 	 * 
 	 * @param parcelCollection
 	 *            SimpleFeatureCollection of marked parcels.
@@ -209,7 +209,7 @@ public class Densification {
 	 * @param tmpFolder
 	 *            folder to store temporary files
 	 * @param buildingFile
-	 *            Shapefile representing the buildings
+	 *            Geopackage representing the buildings
 	 * @param maximalAreaSplitParcel
 	 *            threshold of parcel area above which the OBB algorithm stops to decompose parcels
 	 * @param minimalAreaSplitParcel
@@ -243,9 +243,9 @@ public class Densification {
 	 * @param tmpFolder
 	 *            folder to store temporary files.
 	 * @param buildingFile
-	 *            Shapefile representing the buildings.
+	 *            Geopackage representing the buildings.
 	 * @param roadFile
-	 *            Shapefile representing the roads (optional).
+	 *            Geopackage representing the roads (optional).
 	 * @param profile
 	 *            Description of the urban fabric profile planed to be simulated on this zone.
 	 * @param allowIsolatedParcel
@@ -272,9 +272,9 @@ public class Densification {
 	 * @param tmpFolder
 	 *            folder to store temporary files.
 	 * @param buildingFile
-	 *            Shapefile representing the buildings.
+	 *            Geopackage representing the buildings.
 	 * @param roadFile
-	 *            Shapefile representing the roads (optional).
+	 *            Geopackage representing the roads (optional).
 	 * @param profile
 	 *            Description of the urban fabric profile planed to be simulated on this zone.
 	 * @param allowIsolatedParcel
@@ -302,9 +302,9 @@ public class Densification {
 	 * @param tmpFolder
 	 *            folder to store temporary files.
 	 * @param buildingFile
-	 *            Shapefile representing the buildings.
+	 *            Geopackage representing the buildings.
 	 * @param roadFile
-	 *            Shapefile representing the roads (optional).
+	 *            Geopackage representing the roads (optional).
 	 * @param profile
 	 *            ProfileUrbanFabric of the simulated urban scene.
 	 * @param allowIsolatedParcel

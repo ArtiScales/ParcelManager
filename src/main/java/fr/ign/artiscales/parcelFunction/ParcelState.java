@@ -13,7 +13,7 @@ import java.util.List;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
 
-import org.geotools.data.shapefile.ShapefileDataStore;
+import org.geotools.data.DataStore;
 import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.data.simple.SimpleFeatureIterator;
 import org.geotools.factory.CommonFactoryFinder;
@@ -36,6 +36,7 @@ import fr.ign.artiscales.fields.french.FrenchZoningSchemas;
 import fr.ign.cogit.geoToolsFunctions.Attribute;
 import fr.ign.cogit.geoToolsFunctions.vectors.Collec;
 import fr.ign.cogit.geoToolsFunctions.vectors.Geom;
+import fr.ign.cogit.geoToolsFunctions.vectors.Geopackages;
 
 public class ParcelState {
 
@@ -112,7 +113,7 @@ public class ParcelState {
 	 * @param p
 	 *            input {@link Polygon}
 	 * @param roads
-	 *            Road ShapeFile (can be null)
+	 *            Road Geopackage (can be null)
 	 * @param ext
 	 *            lines
 	 * @return width of the parcel on road
@@ -159,13 +160,13 @@ public class ParcelState {
 
 	
 	/**
-	 * Indicate if the given polygon has a proximity to the road, which can be represented by multiple ways. This could be a road shapefile or a {@link Geometry} representing the
+	 * Indicate if the given polygon has a proximity to the road, which can be represented by multiple ways. This could be a road Geopackage or a {@link Geometry} representing the
 	 * exterior of a parcel plan.
 	 * 
 	 * @param poly
 	 *            input polygon
 	 * @param roads
-	 *            input road shapefile (can be null)
+	 *            input road Geopacakge (can be null)
 	 * @param ext
 	 *            External polygon
 	 * @return true is the polygon has a road access
@@ -175,13 +176,13 @@ public class ParcelState {
 	}
 
 	/**
-	 * Indicate if the given polygon has a proximity to the road, which can be represented by multiple ways. This could be a road shapefile or a {@link Geometry} representing the
+	 * Indicate if the given polygon has a proximity to the road, which can be represented by multiple ways. This could be a road Geopacakge or a {@link Geometry} representing the
 	 * exterior of a parcel plan. Some empty {@link Geometry} can represent an exclusion zone which won't be taken as a road space when empty of parcels
 	 * 
 	 * @param poly
 	 *            input polygon
 	 * @param roads
-	 *            input road shapefile (can be null)
+	 *            input road Geopacakge (can be null)
 	 * @param ext
 	 *            External polygon
 	 * @param disabledBuffer
@@ -274,8 +275,8 @@ public class ParcelState {
 	 * @throws Exception
 	 */
 	public static boolean isAlreadyBuilt(File buildingFile, SimpleFeature parcel, Geometry emprise) throws Exception {
-		ShapefileDataStore batiSDS = new ShapefileDataStore(buildingFile.toURI().toURL());
-		boolean result = isAlreadyBuilt(Collec.snapDatas(batiSDS.getFeatureSource().getFeatures(), emprise), parcel, 0.0);
+		DataStore batiSDS = Geopackages.getDataStore(buildingFile);
+		boolean result = isAlreadyBuilt(Collec.snapDatas(batiSDS.getFeatureSource(batiSDS.getTypeNames()[0]).getFeatures(), emprise), parcel, 0.0);
 		batiSDS.dispose();
 		return result;
 	}
@@ -314,8 +315,8 @@ public class ParcelState {
 	 * @throws IOException
 	 */
 	public static Double getEvalInParcel(SimpleFeature parcel, File outMup) throws IOException {
-		ShapefileDataStore cellsSDS = new ShapefileDataStore(outMup.toURI().toURL());
-		Double result = getEvalInParcel(parcel, cellsSDS.getFeatureSource().getFeatures());
+		DataStore cellsSDS = Geopackages.getDataStore(outMup);
+		Double result = getEvalInParcel(parcel, cellsSDS.getFeatureSource(cellsSDS.getTypeNames()[0]).getFeatures());
 		cellsSDS.dispose();
 		return result;
 	}
@@ -409,7 +410,7 @@ public class ParcelState {
 	 */
 	public static List<String> parcelInBigZone(SimpleFeature parcelIn, File zoningFile) throws Exception {
 		List<String> result = new LinkedList<String>();
-		ShapefileDataStore shpDSZone = new ShapefileDataStore(zoningFile.toURI().toURL());
+		DataStore dsZone = Geopackages.getDataStore(zoningFile);
 		// if there's two zones, we need to sort them by making collection. zis iz évy
 		// calculation, but it could worth it
 		boolean twoZones = false;
@@ -419,7 +420,7 @@ public class ParcelState {
 		Geometry parcelInGeometry = GeometryPrecisionReducer.reduce((Geometry) parcelIn.getDefaultGeometry(), precMod);
 
 		try (SimpleFeatureIterator featuresZones = Collec
-				.snapDatas(shpDSZone.getFeatureSource().getFeatures(), (Geometry) parcelIn.getDefaultGeometry()).features()) {
+				.snapDatas(dsZone.getFeatureSource(dsZone.getTypeNames()[0]).getFeatures(), (Geometry) parcelIn.getDefaultGeometry()).features()) {
 			zoneLoop: while (featuresZones.hasNext()) {
 				SimpleFeature feat = featuresZones.next();
 				Geometry featGeometry = GeometryPrecisionReducer.reduce((Geometry) feat.getDefaultGeometry(), precMod);
@@ -474,7 +475,7 @@ public class ParcelState {
 		} catch (Exception problem) {
 			problem.printStackTrace();
 		}
-		shpDSZone.dispose();
+		dsZone.dispose();
 
 		//in case of multi zones, we sort the entries relatively to the highest area
 		if (twoZones == true) {
@@ -515,19 +516,19 @@ public class ParcelState {
 	 */
 	public static List<String> parcelInTypo(SimpleFeature parcelIn, File communityFile) throws Exception {
 		List<String> result = new ArrayList<String>();
-		ShapefileDataStore shpDSZone = new ShapefileDataStore(communityFile.toURI().toURL());
+		DataStore dsZone = Geopackages.getDataStore(communityFile);
 		// objects for crossed zones
 		boolean twoZones = false;
 		HashMap<String, Double> repart = new HashMap<String, Double>();
 
 		try (SimpleFeatureIterator featuresZones = Collec
-				.snapDatas(shpDSZone.getFeatureSource().getFeatures(), (Geometry) parcelIn.getDefaultGeometry()).features()) {
+				.snapDatas(dsZone.getFeatureSource(dsZone.getTypeNames()[0]).getFeatures(), (Geometry) parcelIn.getDefaultGeometry()).features()) {
 			zone: while (featuresZones.hasNext()) {
 				SimpleFeature feat = featuresZones.next();
 				Geometry parcelInGeometry = (Geometry) parcelIn.getDefaultGeometry();
 				Geometry featGeometry = (Geometry) feat.getDefaultGeometry();
 				// TODO if same typo in two different typo, won't fall into that trap =>
-				// create a big zone shapefile instead?
+				// create a big Geopacakge zone instead?
 				if (featGeometry.buffer(1).contains(parcelInGeometry)) {
 					switch ((String) feat.getAttribute("typo")) {
 					case "rural":
@@ -612,7 +613,7 @@ public class ParcelState {
 			}
 		}
 
-		shpDSZone.dispose();
+		dsZone.dispose();
 
 		if (result.isEmpty()) {
 			result.add("null");

@@ -29,10 +29,10 @@ import fr.ign.cogit.parameter.ProfileUrbanFabric;
 
 /**
  * This class provides a workflow in order to help densification studies. They can be asked in French Schémas de Cohérence Territoriale (SCoT). It isolate empty parcels within
- * urban zones (called <i>vacant lot</i> and simulates their densification. If they are too big, it simulates the creation of a whole neighborhood. The output shapefile is called
+ * urban zones (called <i>vacant lot</i> and simulates their densification. If they are too big, it simulates the creation of a whole neighborhood. The output Geopackages is called
  * <i>parcelDentCreusesDensified</i>
  * 
- * It also simulates the parcels that can be created with the flag parcels on already built parcels. The shapefile containing those parcels is called
+ * It also simulates the parcels that can be created with the flag parcels on already built parcels. The geopackage containing those parcels is called
  * <i>parcelPossiblyDensified</i>
  *
  */
@@ -106,7 +106,7 @@ public class DensificationStudy {
 			parcelsVacantLotCreated = MarkParcelAttributeFromPosition.markParcelsConnectedToRoad(parcelsVacantLotCreated, CityGeneration.createUrbanIslet(parcelsVacantLotCreated), roadFile, buffer);
 			parcelsDensifCreated = MarkParcelAttributeFromPosition.markParcelsConnectedToRoad(parcelsDensifCreated, islet, roadFile, buffer);
 		}
-		// exporting output shapefiles and countings
+		// exporting output geopackages and countings
 		List<SimpleFeature> vacantParcelU = Arrays.stream(parcelsDensifCreated.toArray(new SimpleFeature[0]))
 				.filter(feat -> feat.getAttribute(MarkParcelAttributeFromPosition.getMarkFieldName()).equals(1)).collect(Collectors.toList());
 		Collec.exportSFC(parcelsVacantLot, new File(outFolder, "parcelVacantLot"), false);

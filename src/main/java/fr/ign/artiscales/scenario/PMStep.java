@@ -92,7 +92,7 @@ public class PMStep {
 	 */
 	private static boolean GENERATEATTRIBUTES = true;
 	/**
-	 * If true, save a shapefile containing only the simulated parcels in the temporary folder for every goal simulated.
+	 * If true, save a geopackage containing only the simulated parcels in the temporary folder for every goal simulated.
 	 */
 	private static boolean SAVEINTERMEDIATERESULT = false; 
 	/**
@@ -363,7 +363,7 @@ public class PMStep {
 	}
 	
 	/**
-	 * Get the zones to simulate for the <i>Zone Division</i> goal. If a specific zone Shapefile is set at the {@link #ZONE} location, it will automatically get and return it. 
+	 * Get the zones to simulate for the <i>Zone Division</i> goal. If a specific zone input is set at the {@link #ZONE} location, it will automatically get and return it. 
 	 * @param parcel
 	 * @return
 	 * @throws NoSuchAuthorityCodeException
@@ -374,15 +374,15 @@ public class PMStep {
 		SimpleFeatureCollection zoneIn;
 		// If a specific zone is an input, we take them directly. We also have to set attributes from pre-existing parcel field.
 		if (ZONE != null && ZONE.exists()) {
-			DataStore shpDSZone = Geopackages.getDataStore(ZONE);
-			zoneIn = GeneralFields.transformSFCToMinParcel(shpDSZone.getFeatureSource(shpDSZone.getTypeNames()[0]).getFeatures(), parcel);
-			shpDSZone.dispose();
+			DataStore dsZone = Geopackages.getDataStore(ZONE);
+			zoneIn = GeneralFields.transformSFCToMinParcel(dsZone.getFeatureSource(dsZone.getTypeNames()[0]).getFeatures(), parcel);
+			dsZone.dispose();
 		}
 		// If no zone have been set, it means we have to use the zoning plan.
 		else {
-			DataStore shpDSZoning= Geopackages.getDataStore(ZONINGFILE);
-			SimpleFeatureCollection zoning = new SpatialIndexFeatureCollection(DataUtilities.collection((shpDSZoning.getFeatureSource(shpDSZoning.getTypeNames()[0]).getFeatures())));
-			shpDSZoning.dispose();
+			DataStore dsZoning= Geopackages.getDataStore(ZONINGFILE);
+			SimpleFeatureCollection zoning = new SpatialIndexFeatureCollection(DataUtilities.collection((dsZoning.getFeatureSource(dsZoning.getTypeNames()[0]).getFeatures())));
+			dsZoning.dispose();
 			zoneIn = ZoneDivision.createZoneToCut(genericZone, preciseZone, zoning, ZONINGFILE, parcel);
 		}
 		return zoneIn;

@@ -3,7 +3,7 @@ package fr.ign.artiscales.decomposition;
 import java.io.File;
 import java.io.IOException;
 
-import org.geotools.data.shapefile.ShapefileDataStore;
+import org.geotools.data.DataStore;
 import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.geometry.jts.WKTReader2;
 import org.locationtech.jts.geom.Coordinate;
@@ -15,6 +15,7 @@ import fr.ign.artiscales.decomposition.graph.Edge;
 import fr.ign.artiscales.decomposition.graph.Face;
 import fr.ign.artiscales.decomposition.graph.Node;
 import fr.ign.artiscales.decomposition.graph.TopologicalGraph;
+import fr.ign.cogit.geoToolsFunctions.vectors.Geopackages;
 
 public class Test {
 
@@ -46,10 +47,9 @@ public class Test {
     }
     //
     System.out.println(CampSkeleton.shrink(polygon, 2));
-    
-    String inputRoadShapeFile = "/home/julien/data/PLU_PARIS/voie/voie_l93.shp";
-    ShapefileDataStore roadDS = new ShapefileDataStore(new File(inputRoadShapeFile).toURI().toURL());
-    SimpleFeatureCollection roads = roadDS.getFeatureSource().getFeatures();
+    String inputRoadGPKG = "/home/julien/data/PLU_PARIS/voie/voie_l93.gpkg";
+    DataStore roadDS = Geopackages.getDataStore(new File(inputRoadGPKG));
+    SimpleFeatureCollection roads = roadDS.getFeatureSource(roadDS.getTypeNames()[0]).getFeatures();
     LineString line = (LineString) reader.read("LineString (653608.67376999428961426 6859509.79754020832479, 653622.56625000014901161 6859524.18500000052154064)");
     SimpleFeatureCollection selection = Util.select(roads, line);
     System.out.println("selection = " + selection.size());

@@ -23,7 +23,7 @@ import org.apache.commons.math3.distribution.NormalDistribution;
 import org.apache.commons.math3.distribution.RealDistribution;
 import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
-import org.geotools.data.shapefile.ShapefileDataStore;
+import org.geotools.data.DataStore;
 import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.data.simple.SimpleFeatureIterator;
 import org.geotools.feature.SchemaException;
@@ -51,6 +51,7 @@ import fr.ign.artiscales.graph.Face;
 import fr.ign.artiscales.graph.HalfEdge;
 import fr.ign.artiscales.graph.Node;
 import fr.ign.artiscales.graph.TopologicalGraph;
+import fr.ign.cogit.geoToolsFunctions.vectors.Geopackages;
 
 /**
  * Re-implementation of block decomposition into parcels from :
@@ -1235,13 +1236,13 @@ public class TopologicalStraightSkeletonParcelDecomposition {
 
   public static void main(String[] args) throws IOException, SchemaException {
     // File rootFolder = new File("src/main/resources/GeneralTest/");
-    // File roadFile = new File(rootFolder, "road.shp");
-    // File parcelFile = new File(rootFolder, "parcel.shp");
-    // String inputParcelShapeFile = "/home/julien/data/PLU_PARIS/ilots_13.shp";
-    // String inputRoadShapeFile = "/home/julien/data/PLU_PARIS/voie/voie_l93.shp";
+    // File roadFile = new File(rootFolder, "road.gpkg");
+    // File parcelFile = new File(rootFolder, "parcel.gpkg");
+    // String inputParcelShapeFile = "/home/julien/data/PLU_PARIS/ilots_13.gpkg";
+    // String inputRoadShapeFile = "/home/julien/data/PLU_PARIS/voie/voie_l93.gpkg";
 
-    File roadFile = new File("/home/julien/data/PLU_PARIS/voie/voie_l93.shp");
-    File parcelFile = new File("/home/julien/data/PLU_PARIS/ilots_13.shp");
+    File roadFile = new File("/home/julien/data/PLU_PARIS/voie/voie_l93.gpkg");
+    File parcelFile = new File("/home/julien/data/PLU_PARIS/ilots_13.gpkg");
     // String NAME_ATT_IMPORTANCE = "Type";
     // String NAME_ATT_ROAD = "Id";
     String NAME_ATT_ROAD = "l_longmin";
@@ -1250,13 +1251,13 @@ public class TopologicalStraightSkeletonParcelDecomposition {
     double maxDepth = 20, maxDistanceForNearestRoad = 40, minimalArea = 20, minWidth = 2, maxWidth = 5, omega = 0.1;
     RandomGenerator rng = new MersenneTwister(42);
     // The output file that will contain all the decompositions
-    // String shapeFileOut = folderOut + "outflag.shp";
+    // String shapeFileOut = folderOut + "outflag.gpkg";
     folderOut.mkdirs();
     // Reading collection
-    ShapefileDataStore parcelDS = new ShapefileDataStore(parcelFile.toURI().toURL());
-    SimpleFeatureCollection parcels = parcelDS.getFeatureSource().getFeatures();
-    ShapefileDataStore roadDS = new ShapefileDataStore(roadFile.toURI().toURL());
-    SimpleFeatureCollection roads = roadDS.getFeatureSource().getFeatures();
+    DataStore parcelDS = Geopackages.getDataStore(parcelFile);
+    SimpleFeatureCollection parcels = parcelDS.getFeatureSource(parcelDS.getTypeNames()[0]).getFeatures();
+    DataStore roadDS = Geopackages.getDataStore(roadFile);
+    SimpleFeatureCollection roads = roadDS.getFeatureSource(roadDS.getTypeNames()[0]).getFeatures();
     SimpleFeatureIterator iterator = parcels.features();
     SimpleFeature feature = null;
     int count = 0;
@@ -1319,9 +1320,9 @@ public class TopologicalStraightSkeletonParcelDecomposition {
     }
     if (!directory.isDirectory())
       directory.mkdirs();
-    TopologicalGraph.export(graph.getFaces(), new File(directory, "faces.shp"), "Polygon");
-    TopologicalGraph.export(graph.getEdges(), new File(directory, "edges.shp"), "LineString");
-    TopologicalGraph.export(graph.getNodes(), new File(directory, "nodes.shp"), "Point");
+//    TopologicalGraph.export(graph.getFaces(), new File(directory, "faces.gpkg"), Polygon.class);
+//    TopologicalGraph.export(graph.getEdges(), new File(directory, "edges.gpkg"), LineString.class);
+//    TopologicalGraph.export(graph.getNodes(), new File(directory, "nodes.shgpkgp"), Point.class);
   }
 }
 

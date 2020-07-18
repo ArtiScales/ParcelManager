@@ -26,7 +26,7 @@ public class PMScenario {
 	 */
 	private static boolean REUSESIMULATEDPARCELS = true;
 	/**
-	 * If true, save a shapefile containing only the simulated parcels in the temporary folder for every goal simulated.
+	 * If true, save a geopackage containing only the simulated parcels in the temporary folder for every goal simulated.
 	 */
 	private static boolean SAVEINTERMEDIATERESULT = false; 
 
@@ -222,7 +222,7 @@ public class PMScenario {
 		SAVEINTERMEDIATERESULT = saveIntermediateResult;
 	}
 
-	public boolean isReuseSimulatedParcels() {
+	public static boolean isReuseSimulatedParcels() {
 		return REUSESIMULATEDPARCELS;
 	}
 

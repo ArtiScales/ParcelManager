@@ -2,7 +2,6 @@ package fr.ign.artiscales.graph;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.MalformedURLException;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collection;
@@ -14,18 +13,20 @@ import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
-import org.geotools.data.DataUtilities;
-import org.geotools.data.FeatureWriter;
-import org.geotools.data.FileDataStore;
-import org.geotools.data.Transaction;
-import org.geotools.data.shapefile.ShapefileDataStoreFactory;
-import org.geotools.feature.SchemaException;
+import org.geotools.feature.DefaultFeatureCollection;
+import org.geotools.feature.simple.SimpleFeatureBuilder;
+import org.geotools.feature.simple.SimpleFeatureTypeBuilder;
+import org.geotools.referencing.CRS;
 import org.locationtech.jts.algorithm.Orientation;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.geom.Polygon;
-import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.feature.simple.SimpleFeatureType;
+import org.opengis.referencing.FactoryException;
+
+import fr.ign.artiscales.decomposition.graph.GraphElement;
+import fr.ign.cogit.geoToolsFunctions.Attribute;
+import fr.ign.cogit.geoToolsFunctions.vectors.Collec;
 
 public class TopologicalGraph {
   Map<Coordinate, Node> nodes = new HashMap<>();
@@ -162,50 +163,43 @@ public class TopologicalGraph {
       System.out.println(o);
     }
   }
-
-  public static <G extends Geometry, E extends GraphElement<G, E>> void export(Collection<E> feats, File file, String geomType) {
-    log(Calendar.getInstance().getTime() + " save " + feats.size() + " features to " + file);
-    file.getParentFile().mkdirs();
-    if (feats.isEmpty())
-      return;
-    try {
-      String specs = "geom:" + geomType + ":srid=2154";// FIXME should not force lambert93
-      List<String> attributes = feats.iterator().next().getAttributes();
-      for (String attribute : attributes) {
-        specs += "," + attribute + ":String";
-      }
-      log(specs);
-      ShapefileDataStoreFactory factory = new ShapefileDataStoreFactory();
-      FileDataStore dataStore = factory.createDataStore(file.toURI().toURL());
-      String featureTypeName = "Object";
-      SimpleFeatureType featureType = DataUtilities.createType(featureTypeName, specs);
-      dataStore.createSchema(featureType);
-      String typeName = dataStore.getTypeNames()[0];
-      FeatureWriter<SimpleFeatureType, SimpleFeature> writer = dataStore.getFeatureWriterAppend(typeName, Transaction.AUTO_COMMIT);
-      System.setProperty("org.geotools.referencing.forceXY", "true");
-      log(Calendar.getInstance().getTime() + " write shapefile");
-      for (E element : feats) {
-        SimpleFeature feature = writer.next();
-        Object[] att = new Object[attributes.size() + 1];
-        att[0] = element.getGeometry();
-        for (int i = 0; i < attributes.size(); i++) {
-          att[i + 1] = element.getAttribute(attributes.get(i));
-        }
-        // log("WRITING " + element.getGeometry());
-        feature.setAttributes(att);
-        writer.write();
-      }
-      log(Calendar.getInstance().getTime() + " done");
-      writer.close();
-      dataStore.dispose();
-    } catch (MalformedURLException e) {
-      e.printStackTrace();
-    } catch (IOException e) {
-      e.printStackTrace();
-    } catch (SchemaException e) {
-      e.printStackTrace();
-    }
-  }
+  
+  public static <G extends Geometry, E extends GraphElement<G>> void export(List<E> feats, File fileOut,
+			Class<? extends Geometry> geomType) {
+		System.out.println("save " + feats.size() + " to " + fileOut);
+		if (feats.isEmpty())
+			return;
+		SimpleFeatureTypeBuilder sfTypeBuilder = new SimpleFeatureTypeBuilder();
+		try {
+			sfTypeBuilder.setCRS(CRS.decode("EPSG:" + feats.get(0).getGeometry().getSRID()));
+		} catch (FactoryException e) {
+			e.printStackTrace();
+		}
+		sfTypeBuilder.setName(fileOut.getName());
+		sfTypeBuilder.add(Collec.getDefaultGeomName(), geomType);
+		sfTypeBuilder.setDefaultGeometry(Collec.getDefaultGeomName());
+		SimpleFeatureType featureType = sfTypeBuilder.buildFeatureType();
+		List<String> attributes = feats.get(0).getAttributes();
+		for (String attribute : attributes)
+			sfTypeBuilder.add(attribute, String.class);
+		SimpleFeatureBuilder builder = new SimpleFeatureBuilder(featureType);
+		if (DEBUG)
+			System.out.println(Calendar.getInstance().getTime() + " write geopackage");
+		DefaultFeatureCollection dfc = new DefaultFeatureCollection();
+		for (E element : feats) {
+			builder.set(Collec.getDefaultGeomName(), element.getGeometry());
+			for (int i = 0; i < attributes.size(); i++)
+				builder.set(i, element.getAttribute(attributes.get(i)));
+			dfc.add(builder.buildFeature(Attribute.makeUniqueId()));
+		}
+		try {
+			Collec.exportSFC(dfc, fileOut);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		if (DEBUG)
+			System.out.println(Calendar.getInstance().getTime() + " done");
+	}
 
   public Node getNode(Coordinate c) {
     return this.nodes.get(c);

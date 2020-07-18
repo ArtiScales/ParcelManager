@@ -34,12 +34,12 @@ public class CompareSimulatedParcelsWithEvolutionOM {
 		simulateUrbanFabricOfCSV(new File("/tmp/outOM/optimized.csv"));	
 	}
 	public static void run() throws Exception{
-		// definition of the shapefiles representing two set of parcel
+		// definition of the geopackages representing two set of parcel
 		File rootFolder = new File("src/main/resources/ParcelComparisonOM/");
 		File outFolder = new File(rootFolder, "out");
 		outFolder.mkdirs();
-		File fileParcelPast = new File(rootFolder, "parcel2003.shp");
-		File fileParcelNow = new File(rootFolder, "parcel2018.shp");
+		File fileParcelPast = new File(rootFolder, "parcel2003.gpkg");
+		File fileParcelNow = new File(rootFolder, "parcel2018.gpkg");
 
 		// definition of a parameter file
 		File scenarioFile = new File(rootFolder, "scenario.json");
@@ -64,9 +64,9 @@ public class CompareSimulatedParcelsWithEvolutionOM {
 
 		//get the intermediate files resulting of the PM steps and merge them together
 		for (File f : outFolder.listFiles())
-			if ((f.getName().contains(("Only")) && f.getName().contains(".shp")))
+			if ((f.getName().contains(("Only")) && f.getName().contains(".gpkg")))
 				lF.add(f);
-		File simulatedFile = new File(outFolder, "simulatedParcels.shp");
+		File simulatedFile = new File(outFolder, "simulatedParcels.gpkg");
 		Shp.mergeVectFiles(lF, simulatedFile);
 	
 		PMStep.setParcel(fileParcelPast);
@@ -77,8 +77,8 @@ public class CompareSimulatedParcelsWithEvolutionOM {
 			throws IOException, NoSuchAuthorityCodeException, FactoryException, SchemaException {
 		CSVReader r = new CSVReader(new FileReader(csvIn));
 		File zoneFile = new File(
-				"/home/thema/.openmole/thema-HP-ZBook-14/webui/projects/compare/donnee/parcel2003.shp");
-		File parcelFile = new File("/home/thema/.openmole/thema-HP-ZBook-14/webui/projects/compare/donnee/zone.shp");
+				"/home/thema/.openmole/thema-HP-ZBook-14/webui/projects/compare/donnee/parcel2003.gpkg");
+		File parcelFile = new File("/home/thema/.openmole/thema-HP-ZBook-14/webui/projects/compare/donnee/zone.gpkg");
 		File tmpFolder = new File("/tmp/");
 		File outFolder = new File("/tmp/outOM/");
 		ZoneDivision.DEBUG = false;

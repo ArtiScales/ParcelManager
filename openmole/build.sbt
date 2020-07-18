@@ -8,6 +8,8 @@ val parcelManagerVersion = "0.2-SNAPSHOT"
 
 enablePlugins(SbtOsgi)
 
+//excludeFilter in Runtime in unmanagedResources := "/*"
+
 OsgiKeys.exportPackage := Seq("fr.ign.artiscales.*")
 
 OsgiKeys.importPackage := Seq("*;resolution:=optional")
@@ -21,19 +23,17 @@ resolvers += Resolver.mavenLocal
 libraryDependencies += "fr.ign.cogit" % "ParcelManager" % parcelManagerVersion  excludeAll(ExclusionRule(organization = "org.geotools"))
 
 val geotoolsGridVersion = "21.0"
+val geotoolsVersion = "23.0"
 
 libraryDependencies ++= Seq (
   "org.geotools" % "gt-grid" % geotoolsGridVersion,
-  "org.geotools" % "gt-coverage" % geotoolsGridVersion,
+  "org.geotools" % "gt-coverage" % geotoolsVersion,
   "org.geotools" % "gt-geotiff" % geotoolsGridVersion,
-  "org.geotools" % "gt-image" % geotoolsGridVersion,
-  "org.geotools" % "gt-epsg-hsql" % geotoolsGridVersion,
-  "org.geotools" % "gt-referencing" % geotoolsGridVersion,
-  "org.geotools" % "gt-shapefile" % geotoolsGridVersion,
-  "org.geotools" % "gt-graph" % geotoolsGridVersion,
-  "org.geotools" % "gt-metadata" % geotoolsGridVersion,
-  "org.geotools" % "gt-opengis" % geotoolsGridVersion,
-  "org.geotools" % "gt-main" % geotoolsGridVersion,
+  "org.geotools" % "gt-image" % geotoolsVersion,
+  "org.geotools" % "gt-epsg-hsql" % geotoolsVersion,
+  "org.geotools" % "gt-geopkg" % geotoolsVersion,
+  "org.geotools" % "gt-opengis" % geotoolsVersion,
+  "org.geotools" % "gt-main" % geotoolsVersion,
   "javax.media" % "jai_core" % "1.1.3" from "http://download.osgeo.org/webdav/geotools/javax/media/jai_core/1.1.3/jai_core-1.1.3.jar",
   "javax.media" % "jai_codec" % "1.1.3",
   "javax.media" % "jai_imageio" % "1.1"

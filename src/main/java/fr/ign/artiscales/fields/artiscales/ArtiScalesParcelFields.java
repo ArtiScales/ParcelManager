@@ -4,7 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.List;
 
-import org.geotools.data.shapefile.ShapefileDataStore;
+import org.geotools.data.DataStore;
 import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.data.simple.SimpleFeatureIterator;
 import org.geotools.feature.DefaultFeatureCollection;
@@ -17,6 +17,7 @@ import org.opengis.referencing.NoSuchAuthorityCodeException;
 import fr.ign.artiscales.fields.french.FrenchParcelFields;
 import fr.ign.artiscales.parcelFunction.ParcelState;
 import fr.ign.cogit.geoToolsFunctions.vectors.Collec;
+import fr.ign.cogit.geoToolsFunctions.vectors.Geopackages;
 
 public class ArtiScalesParcelFields {
 	/**
@@ -25,9 +26,9 @@ public class ArtiScalesParcelFields {
 	 * @param parcels
 	 *            Whole set of parcels
 	 * @param buildingFile
-	 *            A shapefile containing the builings of the zone.
+	 *            A Geopacakge containing the builings of the zone.
 	 * @param polygonIntersectionFile
-	 *            A shapefile containing outputs of MUP-City. Can be empty
+	 *            A Geopacakge containing outputs of MUP-City. Can be empty
 	 * @return The parcel set with the right attributes
 	 * @throws IOException 
 	 * @throws FactoryException 
@@ -39,8 +40,8 @@ public class ArtiScalesParcelFields {
 		DefaultFeatureCollection parcelFinal = new DefaultFeatureCollection();
 		int i = 0;
 		SimpleFeatureBuilder featureBuilder = ArtiScalesSchemas.getSFBParcelAsAS();
-		ShapefileDataStore shpDSCells = new ShapefileDataStore(polygonIntersectionFile.toURI().toURL());
-		SimpleFeatureCollection cellsSFS = shpDSCells.getFeatureSource().getFeatures();
+		DataStore dsCells = Geopackages.getDataStore(polygonIntersectionFile);
+		SimpleFeatureCollection cellsSFS = dsCells.getFeatureSource(dsCells.getTypeNames()[0]).getFeatures();
 		try (SimpleFeatureIterator parcelIt = parcelsFrenched.features()){
 			while (parcelIt.hasNext()) {
 				boolean newlyGenerate = true;
@@ -104,7 +105,7 @@ public class ArtiScalesParcelFields {
 		} catch (Exception problem) {
 			problem.printStackTrace();
 		}
-		shpDSCells.dispose();
+		dsCells.dispose();
 		return parcelFinal.collection();
 	}
 }

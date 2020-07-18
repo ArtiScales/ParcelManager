@@ -45,15 +45,15 @@ public class SingleParcelStat {
 	// public static void main(String[] args) throws Exception {
 	// long strat = System.currentTimeMillis();
 	// // ShapefileDataStore sdsParcel = new ShapefileDataStore(
-	// // new File("/home/ubuntu/workspace/ParcelManager/src/main/resources/GeneralTest/parcel.shp").toURI().toURL());
+	// // new File("/home/ubuntu/workspace/ParcelManager/src/main/resources/GeneralTest/parcel.gpkg").toURI().toURL());
 	// ShapefileDataStore sdsParcelEv = new ShapefileDataStore(
-	// new File("/home/thema/Documents/ParcelManager/ParcelComparison/out/evolvedParcelsSort.shp").toURI().toURL());
+	// new File("/home/thema/Documents/ParcelManager/ParcelComparison/out/evolvedParcelsSort.gpkg").toURI().toURL());
 	// ShapefileDataStore sdsSimu = new ShapefileDataStore(
-	// new File("/home/thema/Documents/ParcelManager/ParcelComparison/out/simulatedParcels.shp").toURI().toURL());
+	// new File("/home/thema/Documents/ParcelManager/ParcelComparison/out/simulatedParcels.gpkg").toURI().toURL());
 	// SimpleFeatureCollection parcelEv = MarkParcelAttributeFromPosition.markAllParcel(sdsParcelEv.getFeatureSource().getFeatures());
 	// SimpleFeatureCollection parcelSimu = MarkParcelAttributeFromPosition.markAllParcel(sdsSimu.getFeatureSource().getFeatures());
 	// ShapefileDataStore sdsRoad = new ShapefileDataStore(
-	// new File("/home/thema/Documents/MC/workspace/ParcelManager/src/main/resources/ParcelComparison/road.shp").toURI().toURL());
+	// new File("/home/thema/Documents/MC/workspace/ParcelManager/src/main/resources/ParcelComparison/road.gpkg").toURI().toURL());
 	// SimpleFeatureCollection road = sdsRoad.getFeatureSource().getFeatures();
 	//
 	// writeStatSingleParcel(parcelEv, road, new File("/home/thema/Documents/ParcelManager/ParcelComparison/out/statEvol"));
@@ -152,17 +152,27 @@ public class SingleParcelStat {
 		DataStore sdsParcelIn = Geopackages.getDataStore(parcelInFile);
 		DataStore sdsParcelToCompareFile = Geopackages.getDataStore(parcelToCompareFile);
 		int result = sdsParcelIn.getFeatureSource(sdsParcelIn.getTypeNames()[0]).getFeatures().size()
-				- sdsParcelToCompareFile.getFeatureSource(sdsParcelIn.getTypeNames()[0]).getFeatures().size();
+				- sdsParcelToCompareFile.getFeatureSource(sdsParcelToCompareFile.getTypeNames()[0]).getFeatures().size();
 		sdsParcelIn.dispose();
 		sdsParcelToCompareFile.dispose();
 		return result;
 	}
 
+	/**
+	 * Calculate the difference between the average area of two Geopackages.
+	 * 
+	 * @param parcelInFile        
+	 * 			The reference Geopackage
+	 * @param parcelToCompareFile 
+	 * 			The Geopackage to compare
+	 * @return the difference of average.
+	 * @throws IOException
+	 */
 	public static double diffAreaAverage(File parcelInFile, File parcelToCompareFile) throws IOException {
 		DataStore sdsParcelIn = Geopackages.getDataStore(parcelInFile);
 		DataStore sdsParcelToCompareFile = Geopackages.getDataStore(parcelToCompareFile);
 		double result = Collec.area(sdsParcelIn.getFeatureSource(sdsParcelIn.getTypeNames()[0]).getFeatures())
-				- -Collec.area(sdsParcelToCompareFile.getFeatureSource(sdsParcelToCompareFile.getTypeNames()[0]).getFeatures());
+				- Collec.area(sdsParcelToCompareFile.getFeatureSource(sdsParcelToCompareFile.getTypeNames()[0]).getFeatures());
 		sdsParcelIn.dispose();
 		sdsParcelToCompareFile.dispose();
 		return result;

@@ -15,7 +15,7 @@ Other methods such as <i>setOriginalFrenchParcelAttributes(...)</i> helps re-ass
 The zoning plan also have specific attribute policy. It must contains two specific fields:
 
 <ul>
-    <li>a <i>gereric name</i> represent the general permission of the zones. Its default name is '<b>TYPEZONE</b>' and can be of three different types:
+    <li>a <i>generic name</i> represent the general permission of the zones. Its default name is '<b>TYPEZONE</b>' and can be of three different types:
 <ul>
     <li> <b>U</b>: Already urbanized land,</li>
     <li> <b>AU</b>: Not urbanized land but open to new developments,</li>

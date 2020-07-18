@@ -23,6 +23,7 @@ import org.opengis.feature.type.AttributeDescriptor;
 import org.opengis.referencing.FactoryException;
 import org.opengis.referencing.NoSuchAuthorityCodeException;
 
+import fr.ign.artiscales.analysis.SingleParcelStat;
 import fr.ign.artiscales.decomposition.OBBBlockDecomposition;
 import fr.ign.artiscales.parcelFunction.MarkParcelAttributeFromPosition;
 import fr.ign.artiscales.parcelFunction.ParcelAttribute;
@@ -50,33 +51,33 @@ public class ZoneDivision {
 	 */
 	public static String PROCESS = "OBB";
 	/**
-	 * If true, will save a shapefile containing only the simulated parcels in the temporary folder.
+	 * If true, will save a Geopackage containing only the simulated parcels in the temporary folder.
 	 */
 	public static boolean SAVEINTERMEDIATERESULT = false;
 	/**
-	 * If true, overwrite the output saved shapefiles. If false, happend the simulated parcels to a potential already existing shapefile.
+	 * If true, overwrite the output saved Geopackages. If false, happend the simulated parcels to a potential already existing Geopackage.
 	 */
-	public static boolean OVERWRITESHAPEFILES = true;
+	public static boolean OVERWRITEGEOPACKAGE = true;
 	/**
 	 * If true, will save all the intermediate results in the temporary folder
 	 */
 	public static boolean DEBUG = false;
 
-//	public static void main(String[] args) throws Exception {
-//		File evolvedParcel = new File(
-//				"/home/thema/.openmole/thema-HP-ZBook-14/webui/projects/compare/donnee/evolvedParcel");
-//		File outFile = new File("/tmp/out");
-//		outFile.mkdirs();
-//		File simuledFile = zoneDivision(
-//				new File("/home/thema/.openmole/thema-HP-ZBook-14/webui/projects/compare/donnee/zone"),
-//				new File("/home/thema/.openmole/thema-HP-ZBook-14/webui/projects/compare/donnee/parcel2003"),
-//				ProfileUrbanFabric.convertJSONtoProfile(new File(
-//						"/home/thema/Documents/MC/workspace/ParcelManager/src/main/resources/ParcelComparison/profileUrbanFabric/smallHouse.json")),
-//				new File("/tmp/"), outFile);
-//		System.out.println(SingleParcelStat.diffNumberOfParcel(simuledFile, evolvedParcel));
-//		System.out.println(SingleParcelStat.diffAreaAverage(simuledFile, evolvedParcel));
-//		System.out.println(SingleParcelStat.hausdorfDistanceAverage(simuledFile, evolvedParcel));
-//	}
+	public static void main(String[] args) throws Exception {
+		File evolvedParcel = new File(
+				"/home/thema/.openmole/thema-HP-ZBook-14/webui/projects/compare/donnee/evolvedParcel.gpkg");
+		File outFile = new File("/tmp/out");
+		outFile.mkdirs();
+		File simuledFile = zoneDivision(
+				new File("/home/thema/.openmole/thema-HP-ZBook-14/webui/projects/compare/donnee/zone.gpkg"),
+				new File("/home/thema/.openmole/thema-HP-ZBook-14/webui/projects/compare/donnee/parcel2003.gpkg"),
+				ProfileUrbanFabric.convertJSONtoProfile(new File(
+						"/home/thema/Documents/MC/workspace/ParcelManager/src/main/resources/ParcelComparison/profileUrbanFabric/smallHouse.json")),
+				new File("/tmp/"), outFile);
+		System.out.println(SingleParcelStat.diffNumberOfParcel(simuledFile, evolvedParcel));
+		System.out.println(SingleParcelStat.diffAreaAverage(simuledFile, evolvedParcel));
+		System.out.println(SingleParcelStat.hausdorfDistanceAverage(simuledFile, evolvedParcel));
+	}
 	
 	public static File zoneDivision(File zoneFile, File parcelFile, ProfileUrbanFabric profile, File tmpFolder,
 			File outFolder) throws NoSuchAuthorityCodeException, FactoryException, IOException, SchemaException {
@@ -84,12 +85,12 @@ public class ZoneDivision {
 		DataStore sdsParcel = Geopackages.getDataStore(parcelFile);
 		SimpleFeatureCollection zone = DataUtilities.collection(sdsZone.getFeatureSource(sdsZone.getTypeNames()[0]).getFeatures());
 		SimpleFeatureCollection parcel = DataUtilities.collection(sdsParcel.getFeatureSource(sdsParcel.getTypeNames()[0]).getFeatures());
-		sdsZone.dispose();
+		sdsZone.dispose(); 
 		sdsParcel.dispose();
 		SAVEINTERMEDIATERESULT = true;
 		zoneDivision(zone, parcel, tmpFolder, outFolder, profile);
 //		return new File(tmpFolder, "freshSplitedParcels");
-		return new File(outFolder, "parcelZoneDivisionOnly");
+		return new File(outFolder, "parcelZoneDivisionOnly" + Collec.getDefaultGISFileType());
 	}
 
 	/**
@@ -271,8 +272,8 @@ public class ZoneDivision {
 		if (DEBUG)
 			Collec.exportSFC(result, new File(tmpFolder, "parcelZoneDivisionOnly"), false);
 		if (SAVEINTERMEDIATERESULT) {
-			Collec.exportSFC(result, new File(outFolder, "parcelZoneDivisionOnly"), OVERWRITESHAPEFILES);
-			OVERWRITESHAPEFILES = false;
+			Collec.exportSFC(result, new File(outFolder, "parcelZoneDivisionOnly"), OVERWRITEGEOPACKAGE);
+			OVERWRITEGEOPACKAGE = false;
 		}
 		// add the saved parcels
 		SimpleFeatureType schemaParcel = finalParcelBuilder.getFeatureType();
@@ -288,14 +289,14 @@ public class ZoneDivision {
 	}
 
 	/**
-	 * Create a zone to cut by selecting features from a shapefile regarding a fixed value. Name of the field is by default set to <i>TYPEZONE</i> and must be changed if needed
+	 * Create a zone to cut by selecting features from a Geopackage regarding a fixed value. Name of the field is by default set to <i>TYPEZONE</i> and must be changed if needed
 	 * with the {@link fr.ign.artiscales.fields.GeneralFields#setZoneGenericNameField(String)} method. Name of a Generic Zone is provided and can be null. If null, inputSFC is
 	 * usually directly a ready-to-use zone and all given zone are marked. Also takes a bounding {@link SimpleFeatureCollection} to bound the output.
 	 * 
 	 * @param genericZone
 	 *            Name of the generic zone to be cut
 	 * @param inputSFC
-	 *            ShapeFile of zones to extract the wanted zone from (usually a zoning plan)
+	 *            Geopackage of zones to extract the wanted zone from (usually a zoning plan)
 	 * @param zoningFile
 	 *            The File containing the zoning plan (can be null if no zoning plan is planned to be used)
 	 * @param boundingSFC
@@ -311,7 +312,7 @@ public class ZoneDivision {
 	}
 
 	/**
-	 * Create a zone to cut by selecting features from a shapefile regarding a fixed value. Name of the field is by default set to <i>TYPEZONE</i> and must be changed if needed
+	 * Create a zone to cut by selecting features from a Geopackage regarding a fixed value. Name of the field is by default set to <i>TYPEZONE</i> and must be changed if needed
 	 * with the {@link fr.ign.artiscales.fields.GeneralFields#setZoneGenericNameField(String)} method. Name of a <i>generic zone</i> and a <i>precise Zone</i> can be provided and
 	 * can be null. If null, inputSFC is usually directly a ready-to-use zone and all given zone are marked. Also takes a bounding {@link SimpleFeatureCollection} to bound the
 	 * output.
@@ -321,7 +322,7 @@ public class ZoneDivision {
 	 * @param preciseZone
 	 *            Name of the precise zone to be cut. Can be null
 	 * @param inputSFC
-	 *            ShapeFile of zones to extract the wanted zone from (usually a zoning plan)
+	 *            Geopackage of zones to extract the wanted zone from (usually a zoning plan)
 	 * @param zoningFile
 	 *            The File containing the zoning plan (can be null if no zoning plan is planned to be used)
 	 * @param boundingSFC

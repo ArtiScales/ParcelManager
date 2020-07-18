@@ -56,13 +56,13 @@ public class FlagParcelDecomposition {
 //		File rootFolder = new File("src/main/resources/GeneralTest/");
 //
 //		// Input 1/ the input parcels to split
-//		File inputShapeFile = new File(rootFolder, "parcel.shp");
+//		File inputShapeFile = new File(rootFolder, "parcel.gpkg");
 //		// Input 2 : the buildings that mustnt intersects the allowed roads (facultatif)
-//		File inputBuildingFile = new File(rootFolder, "building.shp");
-//		// Input 4 (facultative) : a road shapefile (it can be used to check road access
+//		File inputBuildingFile = new File(rootFolder, "building.gpkg");
+//		// Input 4 (facultative) : a road Geopacakge (it can be used to check road access
 //		// if this is better than characerizing road as an absence of parcel)
-//		File inputRoad = new File(rootFolder, "road.shp");
-//		File zoningFile = new File(rootFolder, "zoning.shp");
+//		File inputRoad = new File(rootFolder, "road.gpkg");
+//		File zoningFile = new File(rootFolder, "zoning.gpkg");
 //
 //		File tmpFolder = new File("/tmp/");
 //		FilterFactory2 ff = CommonFactoryFinder.getFilterFactory2();
@@ -110,7 +110,7 @@ public class FlagParcelDecomposition {
 			Geometry exclusionZone) throws Exception {
 		DataStore buildingDS = Geopackages.getDataStore(buildingFile);
 		List<Polygon> surfaces = Util.getPolygons((Geometry) feat.getDefaultGeometry());
-		// as the road shapefile can be left as null, we differ the FlagParcelDecomposition constructor
+		// as the road Geopacakge can be left as null, we differ the FlagParcelDecomposition constructor
 		FlagParcelDecomposition fpd;
 		if (roadFile != null && roadFile.exists()) {
 			DataStore roadSDS = Geopackages.getDataStore(roadFile);
@@ -486,7 +486,7 @@ private Pair<Geometry,Geometry> getIntersectionDifference(Geometry a, Geometry b
 	 * argument out of {@link #FlagParcelDecomposition(Polygon, SimpleFeatureCollection, double, double, double, List, Geometry)} the FlagParcelDecomposition constructor or if not
 	 * set, the bounds of the {@link #polygonInit initial polygon}.
 	 * 
-	 * If no roads have been found and a road shapefile has been set, we look if a road shapefile has been set and if the given road is nearby
+	 * If no roads have been found and a road Geopacakge has been set, we look if a road Geopacakge has been set and if the given road is nearby
 	 * 
 	 * @param poly
 	 */

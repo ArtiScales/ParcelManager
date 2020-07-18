@@ -42,14 +42,14 @@ import fr.ign.cogit.geoToolsFunctions.vectors.Geopackages;
 public class MarkParcelAttributeFromPosition {
 
 	// public static void main(String[] args) throws Exception {
-	// File parcelsMarkedF = new File("/home/ubuntu/workspace/ParcelManager/src/main/resources/testData/out/parcelTotZone.shp");
-	// File roadFile = new File("/home/ubuntu/workspace/ParcelManager/src/main/resources/testData/road.shp");
-	// File isletFileF = new File("/tmp/Islet.shp");
-	// long startTime = System.currentTimeMillis();
-	// ShapefileDataStore sdsParcel = new ShapefileDataStore(parcelsMarkedF.toURI().toURL());
-	// SimpleFeatureCollection parcels = sdsParcel.getFeatureSource().getFeatures();
-	// ShapefileDataStore sdsIslet = new ShapefileDataStore(isletFileF.toURI().toURL());
-	// SimpleFeatureCollection islet = sdsIslet.getFeatureSource().getFeatures();
+	// File parcelsMarkedF = new File("/home/ubuntu/workspace/ParcelManager/src/main/resources/testData/out/parcelTotZone.gpkg");
+	// File roadFile = new File("/home/ubuntu/workspace/ParcelManager/src/main/resources/testData/road.gpkg");
+	// File isletFileF = new File("/tmp/Islet.gpkg");
+	// long startTime = System.currentTimeMillis(); 
+	// DataStore sdsParcel = Geopackages.getDataStore(parcelsMarkedF);
+	// SimpleFeatureCollection parcels = sdsParcel.getFeatureSource(sdsParcel.getTypeNames()[0]).getFeatures();
+	// DataStore sdsIslet = Geopackages.getDataStore(isletFileF);
+	// SimpleFeatureCollection islet = sdsIslet.getFeatureSource(sdsIslet.getTypeNames()[0]).getFeatures();
 	// markParcelsConnectedToRoad(parcels, islet, roadFile);
 	// sdsParcel.dispose();
 	// long stopTime = System.currentTimeMillis();
@@ -57,8 +57,8 @@ public class MarkParcelAttributeFromPosition {
 	// sdsIslet.dispose();
 	// sdsParcel.dispose();
 	//
-	// File parcelsMarkedF = new File("/tmp/start.shp");
-	// File parcelsToMarkF = new File("/tmp/dens.shp");
+	// File parcelsMarkedF = new File("/tmp/start.gpkg");
+	// File parcelsToMarkF = new File("/tmp/dens.gpkg");
 	//
 	// ShapefileDataStore sdsParcelMarked = new ShapefileDataStore(parcelsMarkedF.toURI().toURL());
 	// ShapefileDataStore sdsparcelsToMark = new ShapefileDataStore(parcelsToMarkF.toURI().toURL());
@@ -89,7 +89,7 @@ public class MarkParcelAttributeFromPosition {
 	 *            {@link SimpleFeatureCollection} containing the morphological islet. Can be generated with the
 	 *            {@link fr.ign.cogit.geometryGeneration.CityGeneration#createUrbanIslet(SimpleFeatureCollection)} method.
 	 * @param roadFile
-	 *            Shapefile containing the road segments
+	 *            Geopackage containing the road segments
 	 * @return {@link SimpleFeatureCollection} of the input parcels with marked parcels on the {@link #markFieldName} field.
 	 * 
 	 * @throws NoSuchAuthorityCodeException
@@ -110,7 +110,7 @@ public class MarkParcelAttributeFromPosition {
 	 *            {@link SimpleFeatureCollection} containing the morphological islet. Can be generated with the
 	 *            {@link fr.ign.cogit.geometryGeneration.CityGeneration#createUrbanIslet(SimpleFeatureCollection)} method.
 	 * @param roadFile
-	 *            Shapefile containing the road segments
+	 *            Geopackage containing the road segments
 	 * @param exclusionZone
 	 *            Zone to be excluded for not counting an empty parcel as a road
 	 * @return {@link SimpleFeatureCollection} of the input parcels with marked parcels on the {@link #markFieldName} field.
@@ -313,7 +313,7 @@ public class MarkParcelAttributeFromPosition {
 	 * @param genericZone
 	 *            Type of the zoning plan to take into consideration
 	 * @param zoningFile
-	 *            Shapefile containing the zoning plan
+	 *            Geopackage containing the zoning plan
 	 * @param nbParcelToMark
 	 *            Number of parcel wanted
 	 * @return {@link SimpleFeatureCollection} of the input parcels with random marked parcels on the {@link #markFieldName} field.
@@ -344,7 +344,7 @@ public class MarkParcelAttributeFromPosition {
 	 * @param parcels
 	 *            Input parcel {@link SimpleFeatureCollection}
 	 * @param buildingFile
-	 *            Shapefile containing building features
+	 *            Geopackage containing building features
 	 * @return {@link SimpleFeatureCollection} of the input parcels with marked parcels on the {@link #markFieldName} field.
 	 * @throws IOException
 	 * @throws NoSuchAuthorityCodeException
@@ -397,7 +397,7 @@ public class MarkParcelAttributeFromPosition {
 	 * @param parcels
 	 *            Input parcel {@link SimpleFeatureCollection}
 	 * @param buildingFile
-	 *            Shapefile representing the buildings
+	 *            Geopackage representing the buildings
 	 * @return {@link SimpleFeatureCollection} of the input parcels with marked parcels on the {@link #markFieldName} field.
 	 * @throws IOException
 	 * @throws NoSuchAuthorityCodeException
@@ -507,7 +507,7 @@ public class MarkParcelAttributeFromPosition {
 	 * @param parcels
 	 *            Input parcel {@link SimpleFeatureCollection}
 	 * @param polygonIntersectionFile
-	 *            A shapefile containing the collection of polygons
+	 *            A Geopackage containing the collection of polygons
 	 * @return {@link SimpleFeatureCollection} of the input parcels with marked parcels on the {@link #markFieldName} field.
 	 * @throws IOException
 	 * @throws FactoryException
@@ -562,7 +562,7 @@ public class MarkParcelAttributeFromPosition {
 	 * @param genericZone
 	 *            The big kind of the zoning (either not constructible (NC), urbanizable (U) or to be urbanize (TBU). Other keywords can be tolerate
 	 * @param zoningFile
-	 *            A shapefile containing the zoning plan
+	 *            A Geopackage containing the zoning plan
 	 * @return {@link SimpleFeatureCollection} of the input parcels with marked parcels on the {@link #markFieldName} field.
 	 * @throws FactoryException
 	 * @throws NoSuchAuthorityCodeException
@@ -573,8 +573,8 @@ public class MarkParcelAttributeFromPosition {
 			throws NoSuchAuthorityCodeException, FactoryException, IOException {
 		final SimpleFeatureType featureSchema = ParcelSchema.getSFBMinParcelSplit().getFeatureType();
 		DefaultFeatureCollection result = new DefaultFeatureCollection();
-		DataStore shpDSZone = Geopackages.getDataStore(zoningFile);
-		SimpleFeatureCollection zoningSFC = Collec.snapDatas(new SpatialIndexFeatureCollection(shpDSZone.getFeatureSource(shpDSZone.getTypeNames()[0]).getFeatures()),parcels);
+		DataStore dsZone = Geopackages.getDataStore(zoningFile);
+		SimpleFeatureCollection zoningSFC = Collec.snapDatas(new SpatialIndexFeatureCollection(dsZone.getFeatureSource(dsZone.getTypeNames()[0]).getFeatures()),parcels);
 		List<String> genericZoneUsualNames = GeneralFields.getGenericZoneUsualNames(genericZone);
 		// if features have the schema that the one intended to set, we bypass
 		if (featureSchema.equals(parcels.getSchema())) {
@@ -619,7 +619,7 @@ public class MarkParcelAttributeFromPosition {
 	 * @param preciseZone
 	 *            List of precise zone to not take into account
 	 * @param zoningFile
-	 *            A shapefile containing the zoning plan
+	 *            A Geopackage containing the zoning plan
 	 * @return {@link SimpleFeatureCollection} of the input parcels with marked parcels on the {@link #markFieldName} field.
 	 * @throws NoSuchAuthorityCodeException
 	 * @throws FactoryException
@@ -631,8 +631,8 @@ public class MarkParcelAttributeFromPosition {
 		DefaultFeatureCollection result = new DefaultFeatureCollection();
 		SimpleFeatureBuilder featureBuilder = ParcelSchema.getSFBMinParcelSplit();
 		List<String> genericZoneUsualNames = GeneralFields.getGenericZoneUsualNames(genericZone);
-		DataStore shpDSZone = Geopackages.getDataStore(zoningFile);
-		SimpleFeatureCollection zoningSFC = Collec.snapDatas(new SpatialIndexFeatureCollection(shpDSZone.getFeatureSource(shpDSZone.getTypeNames()[0]).getFeatures()),parcels);
+		DataStore dsZone = Geopackages.getDataStore(zoningFile);
+		SimpleFeatureCollection zoningSFC = Collec.snapDatas(new SpatialIndexFeatureCollection(dsZone.getFeatureSource(dsZone.getTypeNames()[0]).getFeatures()),parcels);
 		try (SimpleFeatureIterator it = parcels.features()) {
 			while (it.hasNext()) {
 				SimpleFeature feat = it.next();
@@ -648,7 +648,7 @@ public class MarkParcelAttributeFromPosition {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		shpDSZone.dispose();
+		dsZone.dispose();
 		signalIfNoParcelMarked(result, "markParcelIntersectZoningWithoutPreciseZonings");
 		return result;
 	}
@@ -663,7 +663,7 @@ public class MarkParcelAttributeFromPosition {
 	 * @param preciseZone
 	 *            The precise zoning type. Can be anything.
 	 * @param zoningFile
-	 *            A shapefile containing the zoning plan
+	 *            A Geopackage containing the zoning plan
 	 * @return {@link SimpleFeatureCollection} of the input parcels with marked parcels on the {@link #markFieldName} field.
 	 * @throws FactoryException
 	 * @throws NoSuchAuthorityCodeException
@@ -675,8 +675,8 @@ public class MarkParcelAttributeFromPosition {
 		// Get the zoning usual names
 		List<String> genericZoneUsualNames = GeneralFields.getGenericZoneUsualNames(genericZone);
 		DefaultFeatureCollection result = new DefaultFeatureCollection();
-		DataStore shpDSZone = Geopackages.getDataStore(zoningFile);
-		SimpleFeatureCollection zoningSFC = Collec.snapDatas(new SpatialIndexFeatureCollection(shpDSZone.getFeatureSource(shpDSZone.getTypeNames()[0]).getFeatures()),parcels);
+		DataStore dsZone = Geopackages.getDataStore(zoningFile);
+		SimpleFeatureCollection zoningSFC = Collec.snapDatas(new SpatialIndexFeatureCollection(dsZone.getFeatureSource(dsZone.getTypeNames()[0]).getFeatures()),parcels);
 		SimpleFeatureBuilder featureBuilder = ParcelSchema.getSFBMinParcelSplit();
 		// if features have the schema that the one intended to set, we bypass
 		if (featureSchema.equals(parcels.getSchema())) {
@@ -696,7 +696,7 @@ public class MarkParcelAttributeFromPosition {
 				}
 				result.add(feat);
 			});
-			shpDSZone.dispose();
+			dsZone.dispose();
 			return result;
 		}
 		try (SimpleFeatureIterator it = parcels.features()) {
@@ -716,7 +716,7 @@ public class MarkParcelAttributeFromPosition {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		shpDSZone.dispose();
+		dsZone.dispose();
 		signalIfNoParcelMarked(result, "markParcelIntersectPreciseZoningType with " + preciseZone);
 		return result;
 	}
@@ -727,7 +727,7 @@ public class MarkParcelAttributeFromPosition {
 	 * @param parcels
 	 *            Input parcel {@link SimpleFeatureCollection}
 	 * @param zoningFile
-	 *            A shapefile containing the zoning plan
+	 *            A Geopackage containing the zoning plan
 	 * @return {@link SimpleFeatureCollection} of the input parcels with marked parcels on the {@link #markFieldName} field.
 	 * @throws FactoryException
 	 * @throws NoSuchAuthorityCodeException

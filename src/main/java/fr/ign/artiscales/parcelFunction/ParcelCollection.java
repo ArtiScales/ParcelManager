@@ -47,18 +47,18 @@ public class ParcelCollection {
 
 //	public static void main(String[] args) throws Exception {
 //		File rootFile = new File("src/main/resources/ParcelComparison/");
-//		sortDifferentParcel(new File(rootFile,"parcel2003.shp"), new File(rootFile,"parcel2018.shp"), new File("/tmp/"));
+//		sortDifferentParcel(new File(rootFile,"parcel2003.gpkg"), new File(rootFile,"parcel2018.gpkg"), new File("/tmp/"));
 //	}
 	
 	/**
 	 * method that compares two set of parcels and sort the reference plan parcels between the ones that changed and the ones that doesn't We compare the parcels area of the
 	 * reference parcel to the ones that are intersected. If they are similar with a 3% error rate, we conclude that they are the same.
 	 * 
-	 * This method creates four shapefiles in the tmpFolder:
+	 * This method creates four geopackages in the tmpFolder:
 	 * <ul>
 	 * <li><b>same</b> contains the reference parcels that have not evolved</li>
 	 * <li><b>notSame</b> contains the reference parcels that have changed</li>
-	 * <li><b>place</b> contains the <i>notSame.shp</i> parcels with a reduction buffer, used for a precise intersection with other parcel in Parcel Manager
+	 * <li><b>place</b> contains the <i>notSame.gpkg</i> parcels with a reduction buffer, used for a precise intersection with other parcel in Parcel Manager
 	 * scenarios. The large parcels that are selected for a zone simulation (see below) aren't present.</li>
 	 * <li><b>zone</b> contains special zones to be simulated</li>
 	 * <li><b>evolvedParcel</b> contains only the compared parcels that have evolved</li>
@@ -69,7 +69,7 @@ public class ParcelCollection {
 	 * @param parcelToCompareFile
 	 *            The parcel plan to compare
 	 * @param parcelOutFolder
-	 *            Folder where are stored the result shapefiles
+	 *            Folder where are stored the result geopackages
 	 * @throws IOException
 	 * @throws FactoryException 
 	 * @throws NoSuchAuthorityCodeException 
@@ -678,7 +678,7 @@ public class ParcelCollection {
 //			itParcel.close();
 //		}
 //
-//		Collec.exportSFC(toMergeIftouch, new File("/tmp/toMergeIfTouch.shp"));
+//		Collec.exportSFC(toMergeIftouch, new File("/tmp/toMergeIfTouch.gpkg"));
 //
 //		SimpleFeatureIterator ItToMergeIftouch = toMergeIftouch.features();
 //
@@ -713,7 +713,7 @@ public class ParcelCollection {
 //			ItToMergeIftouch.close();
 //		}
 //
-//		Collec.exportSFC(reuniteParcel, new File("/tmp/unitedParcels.shp"));
+//		Collec.exportSFC(reuniteParcel, new File("/tmp/unitedParcels.gpkg"));
 //
 //		return toMergeIftouch;
 //

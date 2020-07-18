@@ -45,11 +45,11 @@ public class StreetRatioParcels {
 
 	// public static void main(String[] args) throws Exception {
 	// long start = System.currentTimeMillis();
-	// ShapefileDataStore sds = new ShapefileDataStore(new File("/home/ubuntu/workspace/ParcelManager/src/main/resources/testData/out/zone.shp").toURI().toURL());
+	// ShapefileDataStore sds = new ShapefileDataStore(new File("/home/ubuntu/workspace/ParcelManager/src/main/resources/testData/out/zone.gpkg").toURI().toURL());
 	// SimpleFeatureCollection sfc = sds.getFeatureSource().getFeatures();
-	// ShapefileDataStore sds2 = new ShapefileDataStore(new File("//home/ubuntu/workspace/ParcelManager/src/main/resources/testData/out/parcelTotZone.shp").toURI().toURL());
+	// ShapefileDataStore sds2 = new ShapefileDataStore(new File("//home/ubuntu/workspace/ParcelManager/src/main/resources/testData/out/parcelTotZone.gpkg").toURI().toURL());
 	// SimpleFeatureCollection sfc2 = sds2.getFeatureSource().getFeatures();
-	// streetRatioParcels(sfc, sfc2, new File("/tmp/"), new File("/home/ubuntu/workspace/ParcelManager/src/main/resources/testData/road.shp"));
+	// streetRatioParcels(sfc, sfc2, new File("/tmp/"), new File("/home/ubuntu/workspace/ParcelManager/src/main/resources/testData/road.gpkg"));
 	// sds.dispose();
 	// sds2.dispose();
 	// System.out.println(System.currentTimeMillis()-start);

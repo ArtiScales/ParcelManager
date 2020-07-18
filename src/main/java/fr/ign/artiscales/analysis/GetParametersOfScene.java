@@ -70,7 +70,7 @@ public class GetParametersOfScene {
 	public static void genParcelAreaBoundaries() throws NoSuchAuthorityCodeException, IOException, FactoryException {
 		DataStore sds = Geopackages.getDataStore(parcelFile);
 		DataStore sdsRoad = Geopackages.getDataStore(roadFile);
-//		sdsRoad.setCharset(Charset.forName("UTF-8"));.shp
+//		sdsRoad.setCharset(Charset.forName("UTF-8"));
 		SimpleFeatureCollection parcels = sds.getFeatureSource(sds.getTypeNames()[0]).getFeatures();
 		HashMap<String, SimpleFeatureCollection> listSFC = new HashMap<String, SimpleFeatureCollection>();
 		DataStore sdsZone = Geopackages.getDataStore(zoningFile);
@@ -113,7 +113,7 @@ public class GetParametersOfScene {
 				vals.toCSV(outFolder);
 				MakeStatisticGraphs.makeGraphHisto(vals, outFolder, "area of the built parcel of the " + scaleZone + " " + zone + " without crests",
 						"parcel area", "nb parcels", 15);
-				// Road informations is harder to produce. We are based on the road shapefile and on the ratio of road/area calculation to produce estimations
+				// Road informations is harder to produce. We are based on the road Geopackage and on the ratio of road/area calculation to produce estimations
 				// we create a buffer around the zone to get corresponding road segments. The buffer length depends on the type of scale
 				double buffer = 42;
 				switch (scaleZone) {

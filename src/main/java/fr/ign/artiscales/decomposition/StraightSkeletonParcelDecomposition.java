@@ -2,10 +2,8 @@ package fr.ign.artiscales.decomposition;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.MalformedURLException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Calendar;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -20,14 +18,8 @@ import java.util.stream.Collectors;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.math3.random.GaussianRandomGenerator;
-import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.geotools.data.DataUtilities;
-import org.geotools.data.FeatureWriter;
-import org.geotools.data.FileDataStore;
-import org.geotools.data.Transaction;
-import org.geotools.data.shapefile.ShapefileDataStore;
-import org.geotools.data.shapefile.ShapefileDataStoreFactory;
 import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.data.simple.SimpleFeatureIterator;
 import org.geotools.feature.DefaultFeatureCollection;
@@ -58,8 +50,8 @@ import fr.ign.artiscales.decomposition.analysis.FindObjectInDirection;
 import fr.ign.artiscales.decomposition.geom.Strip;
 import fr.ign.artiscales.decomposition.graph.Edge;
 import fr.ign.artiscales.decomposition.graph.Face;
-import fr.ign.artiscales.decomposition.graph.GraphElement;
 import fr.ign.artiscales.decomposition.graph.Node;
+import fr.ign.artiscales.graph.TopologicalGraph;
 import fr.ign.cogit.FeaturePolygonizer;
 import fr.ign.cogit.geoToolsFunctions.vectors.Geom;
 
@@ -150,11 +142,11 @@ public class StraightSkeletonParcelDecomposition {
         // AttributeManager.addAttribute(a, "FG", str2, "String");
         a.setAttribute("FG", str2);
       }
-      debugExport(cs.getGraph().getFaces(), "initialFaces", "Polygon");
-      debugExport(cs.getGraph().getEdges(), "allArcs", "LineString");
-      debugExport(cs.getInteriorEdges(), "interiorArcs", "LineString");
-      debugExport(cs.getExteriorEdges(), "exteriorArcs", "LineString");
-      debugExport(cs.getIncludedEdges(), "includedArcs", "LineString");
+      TopologicalGraph.export(cs.getGraph().getFaces(), new File(FOLDER_OUT_DEBUG, "initialFaces"), Polygon.class);
+      TopologicalGraph.export(cs.getGraph().getEdges(), new File(FOLDER_OUT_DEBUG, "allArcs"), LineString.class);
+      TopologicalGraph.export(cs.getInteriorEdges(), new File(FOLDER_OUT_DEBUG, "interiorArcs"), LineString.class);
+      TopologicalGraph.export(cs.getExteriorEdges(), new File(FOLDER_OUT_DEBUG, "exteriorArcs"), LineString.class);
+      TopologicalGraph.export(cs.getIncludedEdges(), new File(FOLDER_OUT_DEBUG, "includedArcs"), LineString.class);
     }
     System.out.println("------Annotation of external edges-----");
     // Information is stored in getPoids method
@@ -163,7 +155,7 @@ public class StraightSkeletonParcelDecomposition {
       System.out.println("------Saving for debug  ...-----");
       System.out.println("llFace = " + llFace.size());
       llFace.keySet().stream().forEach(key -> System.out.println("\t" + key + " with " + llFace.get(key).size()));
-      debugExport(cs.getGraph().getFaces(), "striproad", "Polygon");
+      TopologicalGraph.export(cs.getGraph().getFaces(), new File(FOLDER_OUT_DEBUG, "striproad"), Polygon.class);
     }
     List<List<Face>> stripFace = splittingInAdjacentStrip(llFace);
     if (DEBUG) {
@@ -177,13 +169,13 @@ public class StraightSkeletonParcelDecomposition {
         count++;
       }
       System.out.println("striproadCorrected " + count);
-      debugExport(lf, "striproadCorrected", "Polygon");
+      TopologicalGraph.export(lf, new File(FOLDER_OUT_DEBUG, "striproadCorrected"), Polygon.class);
     }
     System.out.println("------Fast strip cleaning...-----");
     stripFace = fastStripCleaning(stripFace, minimalArea);
     if (DEBUG) {
       System.out.println("------Saving for debug ...-----");
-      debugExport(cs.getGraph().getFaces(), "fastStripCleaning", "Polygon");
+      TopologicalGraph.export(cs.getGraph().getFaces(), new File(FOLDER_OUT_DEBUG, "fastStripCleaning"), Polygon.class);
     }
     List<LineString> interiorEdgesByStrip = detectInteriorEdges(stripFace);
     if (DEBUG) {
@@ -198,7 +190,7 @@ public class StraightSkeletonParcelDecomposition {
         count++;
       }
       System.out.println("interiorEdgesByStrip = " + count);
-      debugExport(lf, "interiorEdgesByStrip", "LineString");
+      TopologicalGraph.export(lf, new File(FOLDER_OUT_DEBUG, "interiorEdgesByStrip"), LineString.class);
     }
     HashMap<String, Coordinate> limitsPoints = interiorLimitPointsBetweenStrip(stripFace, pol);
     if (DEBUG) {
@@ -210,7 +202,7 @@ public class StraightSkeletonParcelDecomposition {
         temp.setAttribute("inter", str);
         list.add(temp);
       }
-      debugExport(list, "interPoints", "Point");
+      TopologicalGraph.export(list, new File(FOLDER_OUT_DEBUG, "interPoints"), Point.class);
     }
     System.out.println("------Fixing diagonal edges...-----");
     // 3 group of edges : interior/exterior/side
@@ -224,7 +216,7 @@ public class StraightSkeletonParcelDecomposition {
           list.add(new Edge(null, null, lls));
         }
       }
-      debugExport(list, "stepanotation5", "LineString");
+      TopologicalGraph.export(list, new File(FOLDER_OUT_DEBUG, "stepanotation5"), LineString.class);
     }
     return generateParcel(listOfLists, minWidth, maxWidth, noiseParameter, rng);
   }
@@ -396,7 +388,7 @@ public class StraightSkeletonParcelDecomposition {
       double importance = 0;
       // For each arc we determine the nearest road
       Optional<Pair<String, Double>> option = arcs.stream().map(e -> new ImmutablePair<>(e, FindObjectInDirection.find(e.getGeometry(), pol, roads, thresholdRoad)))
-          .filter(p -> p.right != null).max((p1, p2) -> new Double(p1.left.getGeometry().getLength()).compareTo(new Double(p2.left.getGeometry().getLength())))
+          .filter(p -> p.right != null).max((p1, p2) -> ((Double) p1.left.getGeometry().getLength()).compareTo((Double) (p2.left.getGeometry().getLength())))
           .map(p -> new ImmutablePair<>(p.right.map(o -> o.getAttribute(NAME_ATT_ROAD)), Optional.ofNullable(p.left.getAttribute(ATT_IMPORTANCE))))
           .map(p -> new ImmutablePair<>(p.left.orElse("").toString(), Double.parseDouble(p.right.orElse("0.0").toString())));
       if (option.isPresent()) {
@@ -622,11 +614,10 @@ public class StraightSkeletonParcelDecomposition {
     CampSkeleton cs = new CampSkeleton(pol, maxDepth);
     if (DEBUG) {
       System.out.println("------Saving for debug  ...-----");
-      debugExport(cs.getGraph().getEdges(), "initialFaces", "Polygon");
-      debugExport(cs.getExteriorEdges(), "extArcs", "LineString");
-      debugExport(cs.getInteriorEdges(), "intArcs", "LineString");
-      debugExport(cs.getIncludedEdges(), "incArcs", "LineString");
-
+      TopologicalGraph.export(cs.getGraph().getEdges(), new File(FOLDER_OUT_DEBUG, "initialFaces"), Polygon.class);
+      TopologicalGraph.export(cs.getExteriorEdges(), new File(FOLDER_OUT_DEBUG, "extArcs"), LineString.class);
+      TopologicalGraph.export(cs.getInteriorEdges(), new File(FOLDER_OUT_DEBUG, "intArcs"), LineString.class);
+      TopologicalGraph.export(cs.getIncludedEdges(), new File(FOLDER_OUT_DEBUG, "incArcs"), LineString.class);
     }
 
     System.out.println("------Annotation of external edges-----");
@@ -635,7 +626,7 @@ public class StraightSkeletonParcelDecomposition {
 
     if (DEBUG) {
       System.out.println("------Saving for debug  ...-----");
-      debugExport(cs.getExteriorEdges(), "stepanotation", "LineString");
+      TopologicalGraph.export(cs.getExteriorEdges(), new File(FOLDER_OUT_DEBUG, "stepanotation"), LineString.class);
     }
 
     System.out.println("------Detecting neighbour roads and affecting importance ...-----");
@@ -643,7 +634,7 @@ public class StraightSkeletonParcelDecomposition {
 
     if (DEBUG) {
       System.out.println("------Saving for debug ...-----");
-      debugExport(cs.getExteriorEdges(), "stepanotation2", "LineString");
+      TopologicalGraph.export(cs.getExteriorEdges(), new File(FOLDER_OUT_DEBUG, "stepanotation2"), LineString.class);
     }
 
     System.out.println("------Grouping faces in strips...-----");
@@ -651,7 +642,7 @@ public class StraightSkeletonParcelDecomposition {
 
     if (DEBUG) {
       System.out.println("------Saving for debug ...-----");
-      debugExport(cs.getGraph().getFaces(), "stepanotation3", "Polygon");
+      TopologicalGraph.export(cs.getGraph().getFaces(), new File(FOLDER_OUT_DEBUG, "stepanotation3"), Polygon.class);
     }
 
     System.out.println("------Fast strip cleaning...-----");
@@ -659,7 +650,7 @@ public class StraightSkeletonParcelDecomposition {
 
     if (DEBUG) {
       System.out.println("------Saving for debug ...-----");
-      debugExport(cs.getGraph().getFaces(), "stepanotation4", "Polygon");
+      TopologicalGraph.export(cs.getGraph().getFaces(), new File(FOLDER_OUT_DEBUG, "stepanotation4"), Polygon.class);
     }
 
     System.out.println("------Fixing diagonal edges...-----");
@@ -1318,54 +1309,6 @@ public class StraightSkeletonParcelDecomposition {
   // return tab;
   // }
 
-  // ////////////////////////
-  // ////// DEBUG METHODS
-  // ///////////////////////
-  //
-  private static <G extends Geometry, E extends GraphElement<G>> void debugExport(List<E> feats, String name, String geomType) {
-    System.out.println("save " + feats.size() + " to " + (FOLDER_OUT_DEBUG + name));
-    if (feats.isEmpty())
-      return;
-    try {
-      String specs = "geom:" + geomType + ":srid=2154";
-      List<String> attributes = feats.get(0).getAttributes();
-      for (String attribute : attributes) {
-        specs += "," + attribute + ":String";
-      }
-      ShapefileDataStoreFactory factory = new ShapefileDataStoreFactory();
-      FileDataStore dataStore = factory.createDataStore(new File(FOLDER_OUT_DEBUG + name + ".shp").toURI().toURL());
-      String featureTypeName = "Object";
-      SimpleFeatureType featureType = DataUtilities.createType(featureTypeName, specs);
-      dataStore.createSchema(featureType);
-      String typeName = dataStore.getTypeNames()[0];
-      FeatureWriter<SimpleFeatureType, SimpleFeature> writer = dataStore.getFeatureWriterAppend(typeName, Transaction.AUTO_COMMIT);
-      System.setProperty("org.geotools.referencing.forceXY", "true");
-      if (DEBUG)
-        System.out.println(Calendar.getInstance().getTime() + " write shapefile");
-      for (E element : feats) {
-        SimpleFeature feature = writer.next();
-        Object[] att = new Object[attributes.size() + 1];
-        att[0] = element.getGeometry();
-        for (int i = 0; i < attributes.size(); i++) {
-          att[i + 1] = element.getAttribute(attributes.get(i));
-        }
-        feature.setAttributes(att);
-        writer.write();
-      }
-      if (DEBUG)
-        System.out.println(Calendar.getInstance().getTime() + " done");
-      writer.close();
-      dataStore.dispose();
-      // FeaturePolygonizer.saveGeometries(feats.stream().map(e -> e.getGeometry()).collect(Collectors.toList()), new File(FOLDER_OUT_DEBUG + name + ".shp"), geomType);
-    } catch (MalformedURLException e) {
-      e.printStackTrace();
-    } catch (IOException e) {
-      e.printStackTrace();
-    } catch (SchemaException e) {
-      e.printStackTrace();
-    }
-  }
-
   private static boolean isReflex(Node node, Edge previous, Edge next) {
     return isReflex(node.getCoordinate(), previous.getGeometry(), next.getGeometry());
   }
@@ -1626,64 +1569,64 @@ public class StraightSkeletonParcelDecomposition {
   // featCollOut.addAll(feats);
   // ShapefileWriter.write(featCollOut, FOLDER_OUT_DEBUG + name);
   // }
-  public static void main(String[] args) throws IOException, SchemaException, NoSuchAuthorityCodeException, FactoryException {
-    // Input 1/ the input parcelles to split
-    // String inputShapeFile = "src/main/resources/testData/parcelle.shp";
-    // Input 3 (facultative) : the exterior of the urban block (it serves to determiner the multicurve)
-    // String inputUrbanBlock = "src/main/resources/testData/ilot.shp";
-    // IFeatureCollection<IFeature> featC = ShapefileReader.read(inputUrbanBlock);
-    // ShapefileDataStore blockDS = new ShapefileDataStore(new File(inputUrbanBlock).toURI().toURL());
-    // SimpleFeatureCollection blocks = blockDS.getFeatureSource().getFeatures();
-    // String inputParcelShapeFile = "/home/julien/data/PLU_PARIS/PARCELLE_CADASTRALE/PARCELLE_13.shp";
-    String inputParcelShapeFile = "/tmp/ex.shp";
-    String inputRoadShapeFile = "/home/thema/Documents/MC/workspace/ParcelManager/src/main/resources/ParcelComparison/road.shp";
-    String folderOut = "/tmp/";
-    // The output file that will contain all the decompositions
-    String shapeFileOut = folderOut + "outflag.shp";
-    (new File(folderOut)).mkdirs();
-    // Reading collection
-    ShapefileDataStore parcelDS = new ShapefileDataStore(new File(inputParcelShapeFile).toURI().toURL());
-    SimpleFeatureCollection parcels = parcelDS.getFeatureSource().getFeatures();
-    ShapefileDataStore roadDS = new ShapefileDataStore(new File(inputRoadShapeFile).toURI().toURL());
-    SimpleFeatureCollection roads = roadDS.getFeatureSource().getFeatures();
-    // SimpleFeatureIterator iterator = Util.select(blocks, JTS.toGeometry(parcels.getBounds())).features();
-    // DefaultFeatureCollection roads = new DefaultFeatureCollection();
-    // SimpleFeatureType ROADTYPE = DataUtilities.createType("road", "geom:LineString");
-    // while (iterator.hasNext()) {
-    // SimpleFeature f = iterator.next();
-    // Util.getPolygons((Geometry) f.getDefaultGeometry()).stream().forEach(p -> roads.add(SimpleFeatureBuilder.build(ROADTYPE, new Object[] { p.getExteriorRing() }, null)));
-    // }
-    // iterator.close();
-    SimpleFeatureIterator iterator = parcels.features();
-    SimpleFeature feature = iterator.next();
-    List<Polygon> polygons = Util.getPolygons((Geometry) feature.getDefaultGeometry());
-    double maxDepth = 50, maxDistanceForNearestRoad = 100, minimalArea = 20, minWidth = 5, maxWidth = 40, noiseParameter = 0.1;
-    // SimpleFeatureCollection result = runStraightSkeleton2(polygons.get(0), roads, maxDepth, maxDistanceForNearestRoad, minimalArea, minWidth, maxWidth, noiseParameter,
-    // new MersenneTwister(42));
-    //
-    // ShapefileDataStoreFactory factory = new ShapefileDataStoreFactory();
-    // FileDataStore dataStore = factory.createDataStore(new File(shapeFileOut).toURI().toURL());
-    // dataStore.createSchema(result.getSchema());
-    // String typeName = dataStore.getTypeNames()[0];
-    // SimpleFeatureSource featureSource = dataStore.getFeatureSource(typeName);
-    // Transaction transaction = new DefaultTransaction("create");
-    // SimpleFeatureStore featureStore = (SimpleFeatureStore) featureSource;
-    // featureStore.setTransaction(transaction);
-    // try {
-    // featureStore.addFeatures(result);
-    // transaction.commit();
-    // } catch (Exception problem) {
-    // problem.printStackTrace();
-    // transaction.rollback();
-    // } finally {
-    // transaction.close();
-    // }
-    // dataStore.dispose();
-    iterator.close();
-    DEBUG = true;
-    decompose(polygons.get(0), roads, maxDepth, maxDistanceForNearestRoad, minimalArea, minWidth, maxWidth, noiseParameter, new MersenneTwister(42));
-    roadDS.dispose();
-    parcelDS.dispose();
-    // blockDS.dispose();
-  }
+//  public static void main(String[] args) throws IOException, SchemaException, NoSuchAuthorityCodeException, FactoryException {
+//    // Input 1/ the input parcelles to split
+//    // String inputShapeFile = "src/main/resources/testData/parcelle.gpkg";
+//    // Input 3 (facultative) : the exterior of the urban block (it serves to determiner the multicurve)
+//    // String inputUrbanBlock = "src/main/resources/testData/ilot.gpkg";
+//    // IFeatureCollection<IFeature> featC = ShapefileReader.read(inputUrbanBlock);
+//    // ShapefileDataStore blockDS = new ShapefileDataStore(new File(inputUrbanBlock).toURI().toURL());
+//    // SimpleFeatureCollection blocks = blockDS.getFeatureSource().getFeatures();
+//    // String inputParcelShapeFile = "/home/julien/data/PLU_PARIS/PARCELLE_CADASTRALE/PARCELLE_13.gpkg";
+//    String inputParcelGpkg = "/tmp/ex.gpkg";
+//    String inputRoadGpkg = "/home/thema/Documents/MC/workspace/ParcelManager/src/main/resources/ParcelComparison/road.gpkg";
+//    String folderOut = "/tmp/";
+//    // The output file that will contain all the decompositions
+//    String gpkgOut = folderOut + "outflag.gpkg";
+//    (new File(folderOut)).mkdirs();
+//    // Reading collection
+//    DataStore parcelDS = Geopackages.getDataStore(new File(inputParcelGpkg));
+//    SimpleFeatureCollection parcels = parcelDS.getFeatureSource().getFeatures();
+//    ShapefileDataStore roadDS = new ShapefileDataStore(new File(inputRoadShapeFile).toURI().toURL());
+//    SimpleFeatureCollection roads = roadDS.getFeatureSource().getFeatures();
+//    // SimpleFeatureIterator iterator = Util.select(blocks, JTS.toGeometry(parcels.getBounds())).features();
+//    // DefaultFeatureCollection roads = new DefaultFeatureCollection();
+//    // SimpleFeatureType ROADTYPE = DataUtilities.createType("road", "geom:LineString");
+//    // while (iterator.hasNext()) {
+//    // SimpleFeature f = iterator.next();
+//    // Util.getPolygons((Geometry) f.getDefaultGeometry()).stream().forEach(p -> roads.add(SimpleFeatureBuilder.build(ROADTYPE, new Object[] { p.getExteriorRing() }, null)));
+//    // }
+//    // iterator.close();
+//    SimpleFeatureIterator iterator = parcels.features();
+//    SimpleFeature feature = iterator.next();
+//    List<Polygon> polygons = Util.getPolygons((Geometry) feature.getDefaultGeometry());
+//    double maxDepth = 50, maxDistanceForNearestRoad = 100, minimalArea = 20, minWidth = 5, maxWidth = 40, noiseParameter = 0.1;
+//    // SimpleFeatureCollection result = runStraightSkeleton2(polygons.get(0), roads, maxDepth, maxDistanceForNearestRoad, minimalArea, minWidth, maxWidth, noiseParameter,
+//    // new MersenneTwister(42));
+//    //
+//    // ShapefileDataStoreFactory factory = new ShapefileDataStoreFactory();
+//    // FileDataStore dataStore = factory.createDataStore(new File(shapeFileOut).toURI().toURL());
+//    // dataStore.createSchema(result.getSchema());
+//    // String typeName = dataStore.getTypeNames()[0];
+//    // SimpleFeatureSource featureSource = dataStore.getFeatureSource(typeName);
+//    // Transaction transaction = new DefaultTransaction("create");
+//    // SimpleFeatureStore featureStore = (SimpleFeatureStore) featureSource;
+//    // featureStore.setTransaction(transaction);
+//    // try {
+//    // featureStore.addFeatures(result);
+//    // transaction.commit();
+//    // } catch (Exception problem) {
+//    // problem.printStackTrace();
+//    // transaction.rollback();
+//    // } finally {
+//    // transaction.close();
+//    // }
+//    // dataStore.dispose();
+//    iterator.close();
+//    DEBUG = true;
+//    decompose(polygons.get(0), roads, maxDepth, maxDistanceForNearestRoad, minimalArea, minWidth, maxWidth, noiseParameter, new MersenneTwister(42));
+//    roadDS.dispose();
+//    parcelDS.dispose();
+//    // blockDS.dispose();
+//  }
 }

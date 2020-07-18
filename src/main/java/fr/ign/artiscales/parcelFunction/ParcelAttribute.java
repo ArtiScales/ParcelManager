@@ -25,7 +25,7 @@ public class ParcelAttribute {
 	private static String communityTypeFieldName = "armature";
 
 //	public static void main(String[] args) throws Exception {
-//	File parcelFile = new File("/home/ubuntu/workspace/ParcelManager/src/main/resources/testData/parcelle.shp");
+//	File parcelFile = new File("/home/ubuntu/workspace/ParcelManager/src/main/resources/testData/parcelle.gpkg");
 //	ShapefileDataStore sds = new ShapefileDataStore(parcelFile.toURI().toURL());
 //	SimpleFeatureCollection sfc = sds.getFeatureSource().getFeatures();
 //	long start = System.currentTimeMillis();

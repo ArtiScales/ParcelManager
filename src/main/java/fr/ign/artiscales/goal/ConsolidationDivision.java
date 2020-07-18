@@ -46,13 +46,13 @@ public class ConsolidationDivision {
 	 */
 	public static String PROCESS = "OBB";
 	/**
-	 * If true, will save a shapefile containing only the simulated parcels in the temporary folder.
+	 * If true, will save a Geopackages containing only the simulated parcels in the temporary folder.
 	 */
 	public static boolean SAVEINTERMEDIATERESULT = false;
 	/**
-	 * If true, overwrite the output saved shapefiles. If false, happend the simulated parcels to a potential already existing shapefile.
+	 * If true, overwrite the output saved Geopackagess. If false, happend the simulated parcels to a potential already existing Geopackages.
 	 */
-	public static boolean OVERWRITESHAPEFILES = true;
+	public static boolean OVERWRITEGEOPACKAGES = true;
 
 	/**
 	 * Method that merges the contiguous marked parcels into zones and then split those zones with a given parcel division algorithm (by default, the Oriented Bounding Box)
@@ -62,7 +62,7 @@ public class ConsolidationDivision {
 	 * @param parcels
 	 *            The parcels to be merged and cut. Must be marked with the SPLIT filed (see markParcelIntersectMUPOutput for example, with the method concerning MUP-City's output)
 	 * @param roadFile
-	 *            ShapeFile of the road segments. Can be null.
+	 *            Geopackages of the road segments. Can be null.
 	 * @param tmpFolder
 	 *            A temporary folder where will be saved intermediate results
 	 * @param profile
@@ -103,7 +103,7 @@ public class ConsolidationDivision {
 	 * @param parcels
 	 *            The parcels to be merged and cut. Must be marked with the SPLIT filed (see markParcelIntersectMUPOutput for example, with the method concerning MUP-City's output)
 	 * @param roadFile
-	 *            ShapeFile of the road segments. Can be null.
+	 *            Geopackages of the road segments. Can be null.
 	 * @param tmpFolder
 	 *            A temporary folder where will be saved intermediate results
 	 * @param profile
@@ -242,8 +242,8 @@ public class ConsolidationDivision {
 			result.add(SFBParcel.buildFeature(Attribute.makeUniqueId()));
 		});
 		if (SAVEINTERMEDIATERESULT) {
-			Collec.exportSFC(result, new File(tmpFolder, "parcelConsolidationOnly"), OVERWRITESHAPEFILES);
-			OVERWRITESHAPEFILES = false;
+			Collec.exportSFC(result, new File(tmpFolder, "parcelConsolidationOnly"), OVERWRITEGEOPACKAGES);
+			OVERWRITEGEOPACKAGES = false;
 		}
 		// add initial non cut parcel to final parcels
 		Arrays.stream(parcelSaved.toArray(new SimpleFeature[0])).forEach(feat -> {

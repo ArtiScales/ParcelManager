@@ -32,7 +32,7 @@ import fr.ign.cogit.geoToolsFunctions.vectors.Geopackages;
 public class MakeStatisticGraphs {
 
 	// public static void main(String[] args) throws IOException {
-	// makeAreaGraph(new File("/tmp/parcelCuted-consolid.shp"), new File("/tmp/"));
+	// makeAreaGraph(new File("/tmp/parcelCuted-consolid.gpkg"), new File("/tmp/"));
 	// }
 
 	/**
