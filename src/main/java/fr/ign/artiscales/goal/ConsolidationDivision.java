@@ -63,16 +63,16 @@ public class ConsolidationDivision {
 	 *            The parcels to be merged and cut. Must be marked with the SPLIT filed (see markParcelIntersectMUPOutput for example, with the method concerning MUP-City's output)
 	 * @param roadFile
 	 *            Geopackages of the road segments. Can be null.
-	 * @param tmpFolder
-	 *            A temporary folder where will be saved intermediate results
+	 * @param outFolder
+	 *            The folder where will be saved intermediate results and temporary files for debug
 	 * @param profile
 	 *            {@link ProfileUrbanFabric} contains the parameters of the wanted urban scene
 	 * @return the set of parcel with decomposition
 	 * @throws Exception
 	 */
-	public static SimpleFeatureCollection consolidationDivision(SimpleFeatureCollection parcels, File roadFile, File tmpFolder,
+	public static SimpleFeatureCollection consolidationDivision(SimpleFeatureCollection parcels, File roadFile, File outFolder,
 			ProfileUrbanFabric profile) throws Exception {
-		return consolidationDivision(parcels, roadFile, tmpFolder, profile, profile.getHarmonyCoeff(), profile.getNoise());
+		return consolidationDivision(parcels, roadFile, outFolder, profile, profile.getHarmonyCoeff(), profile.getNoise());
 	}
 
 	/**
@@ -81,8 +81,8 @@ public class ConsolidationDivision {
 	 * 
 	 * @param parcels
 	 *            The parcels to be merged and cut. Must be marked with the SPLIT filed (see markParcelIntersectMUPOutput for example, with the method concerning MUP-City's output)
-	 * @param tmpFolder
-	 *            A temporary folder where will be saved intermediate results
+	 * @param outFolder
+	 *            The folder where will be saved intermediate results and temporary files for debug
 	 * @param profile
 	 *            {@link ProfileUrbanFabric} contains the parameters of the wanted urban scene
 	 * @param harmonyCoeff
@@ -92,9 +92,9 @@ public class ConsolidationDivision {
 	 * @return the set of parcel with decomposition
 	 * @throws Exception
 	 */
-	public static SimpleFeatureCollection consolidationDivision(SimpleFeatureCollection parcels, File roadFile, File tmpFolder,
+	public static SimpleFeatureCollection consolidationDivision(SimpleFeatureCollection parcels, File roadFile, File outFolder,
 			ProfileUrbanFabric profile, double harmonyCoeff, double noise) throws Exception {
-		return consolidationDivision(parcels, roadFile, tmpFolder, profile, null, harmonyCoeff, noise);
+		return consolidationDivision(parcels, roadFile, outFolder, profile, null, harmonyCoeff, noise);
 	}
 
 	/**
@@ -104,8 +104,8 @@ public class ConsolidationDivision {
 	 *            The parcels to be merged and cut. Must be marked with the SPLIT filed (see markParcelIntersectMUPOutput for example, with the method concerning MUP-City's output)
 	 * @param roadFile
 	 *            Geopackages of the road segments. Can be null.
-	 * @param tmpFolder
-	 *            A temporary folder where will be saved intermediate results
+	 * @param outFolder
+	 *            The folder where will be saved intermediate results and temporary files for debug
 	 * @param profile
 	 *            {@link ProfileUrbanFabric} contains the parameters of the wanted urban scene
 	 * @param polygonIntersection
@@ -117,8 +117,11 @@ public class ConsolidationDivision {
 	 * @return the set of parcel with decomposition
 	 * @throws Exception
 	 */
-	public static SimpleFeatureCollection consolidationDivision(SimpleFeatureCollection parcels, File roadFile, File tmpFolder,
+	public static SimpleFeatureCollection consolidationDivision(SimpleFeatureCollection parcels, File roadFile, File outFolder,
 			ProfileUrbanFabric profile, File polygonIntersection, double harmonyCoeff, double noise) throws Exception {
+		File tmpFolder = new File(outFolder, "tmp");
+		if (DEBUG)
+			tmpFolder.mkdirs();
 		DefaultFeatureCollection parcelSaved = new DefaultFeatureCollection();
 		parcelSaved.addAll(parcels);
 		DefaultFeatureCollection parcelToMerge = new DefaultFeatureCollection();
@@ -242,7 +245,7 @@ public class ConsolidationDivision {
 			result.add(SFBParcel.buildFeature(Attribute.makeUniqueId()));
 		});
 		if (SAVEINTERMEDIATERESULT) {
-			Collec.exportSFC(result, new File(tmpFolder, "parcelConsolidationOnly"), OVERWRITEGEOPACKAGES);
+			Collec.exportSFC(result, new File(outFolder, "parcelConsolidationOnly"), OVERWRITEGEOPACKAGES);
 			OVERWRITEGEOPACKAGES = false;
 		}
 		// add initial non cut parcel to final parcels

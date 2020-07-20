@@ -64,12 +64,10 @@ public class PMStep {
 	 * except for the parcel file that must be updated after each PMStep to make the new PMStep simulation on an already simulated parcel plan
 	 * 
 	 */
-	public static void setFiles(File parcelFile, File zoningFile, File tmpFolder, File buildingFile, File roadFile, File predicateFile,
+	public static void setFiles(File parcelFile, File zoningFile, File buildingFile, File roadFile, File predicateFile,
 			File polygonIntersection, File zone, File outFolder, File profileFolder) {
 		PARCELFILE = parcelFile;
 		ZONINGFILE = zoningFile;
-		TMPFOLDER = tmpFolder;
-		tmpFolder.mkdirs();
 		BUILDINGFILE = buildingFile;
 		ROADFILE = roadFile;
 		POLYGONINTERSECTION = polygonIntersection;
@@ -83,7 +81,7 @@ public class PMStep {
 	List<String> communityNumbers = new ArrayList<String>(); 
 	private File lastOutput;
 	
-	private static File PARCELFILE, ZONINGFILE, TMPFOLDER, BUILDINGFILE, ROADFILE, PREDICATEFILE, 
+	private static File PARCELFILE, ZONINGFILE, BUILDINGFILE, ROADFILE, PREDICATEFILE, 
 	POLYGONINTERSECTION, ZONE, OUTFOLDER, PROFILEFOLDER;
 	public static List<String> cachePlacesSimulates = new ArrayList<String>();
 
@@ -121,8 +119,11 @@ public class PMStep {
 			parcelMarked = getSimulationParcels(getZone(parcel));
 		} else
 			parcelMarked = getSimulationParcels(parcel);
-		if (DEBUG)
-			Collec.exportSFC(parcelMarked, new File(TMPFOLDER, "parcelMarked" + this.goal + "-" + this.parcelProcess + this.preciseZone), false);
+		if (DEBUG) {
+			File tmpFolder = new File(OUTFOLDER, "tmp");
+			tmpFolder.mkdirs(); 
+			Collec.exportSFC(parcelMarked, new File(tmpFolder, "parcelMarked" + this.goal + "-" + this.parcelProcess + this.preciseZone), false);
+		}
 		SimpleFeatureCollection parcelCut = new DefaultFeatureCollection(null, ParcelSchema.getSFBMinParcel().getFeatureType());
 		// get the wanted building profile
 		ProfileUrbanFabric profile = ProfileUrbanFabric.convertJSONtoProfile(new File(PROFILEFOLDER + "/" + urbanFabricType + ".json"));
@@ -135,27 +136,27 @@ public class PMStep {
 			case "zoneDivision":
 				ZoneDivision.PROCESS = parcelProcess;
 				((DefaultFeatureCollection) parcelCut).addAll(ZoneDivision.zoneDivision(parcelMarkedComm, ParcelGetter.getParcelByCommunityCode(parcel, communityNumber),
-						TMPFOLDER, OUTFOLDER, profile));
+						OUTFOLDER, profile));
 				break;
 			case "densification":
 				((DefaultFeatureCollection) parcelCut).addAll(Densification.densification(parcelMarkedComm,
-						CityGeneration.createUrbanIslet(parcelMarkedComm), TMPFOLDER, BUILDINGFILE, ROADFILE, profile.getMaximalArea(),
+						CityGeneration.createUrbanIslet(parcelMarkedComm), OUTFOLDER, BUILDINGFILE, ROADFILE, profile.getMaximalArea(),
 						profile.getMinimalArea(), profile.getMinimalWidthContactRoad(), profile.getLenDriveway(),
 						ParcelState.isArt3AllowsIsolatedParcel(parcel.features().next(), PREDICATEFILE), Geom.createBufferBorder(parcelMarkedComm)));
 				break;
 			case "densificationOrNeighborhood":
 				((DefaultFeatureCollection) parcelCut).addAll(
-						Densification.densificationOrNeighborhood(parcelMarkedComm, CityGeneration.createUrbanIslet(parcelMarkedComm), TMPFOLDER,
+						Densification.densificationOrNeighborhood(parcelMarkedComm, CityGeneration.createUrbanIslet(parcelMarkedComm), OUTFOLDER,
 								BUILDINGFILE, ROADFILE, profile, ParcelState.isArt3AllowsIsolatedParcel(parcel.features().next(), PREDICATEFILE),
 								Geom.createBufferBorder(parcelMarkedComm), 5));
 				break;
 			case "consolidationDivision":
 				ConsolidationDivision.PROCESS = parcelProcess;
-				((DefaultFeatureCollection) parcelCut).addAll(ConsolidationDivision.consolidationDivision(parcelMarkedComm, ROADFILE, TMPFOLDER,
+				((DefaultFeatureCollection) parcelCut).addAll(ConsolidationDivision.consolidationDivision(parcelMarkedComm, ROADFILE, OUTFOLDER,
 						profile, profile.getHarmonyCoeff(), profile.getNoise()));
 				break;
 			case "densificationStudy":
-				DensificationStudy.runDensificationStudy(parcelMarkedComm, BUILDINGFILE, ROADFILE, ZONINGFILE, TMPFOLDER, OUTFOLDER,
+				DensificationStudy.runDensificationStudy(parcelMarkedComm, BUILDINGFILE, ROADFILE, ZONINGFILE, OUTFOLDER,
 						ParcelState.isArt3AllowsIsolatedParcel(parcel.features().next(), PREDICATEFILE), profile);
 				break;
 			default:

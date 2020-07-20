@@ -155,17 +155,17 @@ public class SingleParcelStat {
 				- sdsParcelToCompareFile.getFeatureSource(sdsParcelToCompareFile.getTypeNames()[0]).getFeatures().size();
 		sdsParcelIn.dispose();
 		sdsParcelToCompareFile.dispose();
-		return result;
+		return Math.abs(result);
 	}
 
 	/**
-	 * Calculate the difference between the average area of two Geopackages.
+	 * Calculate the difference between the average area of two Geopackages. Find a better indicator to compare distribution.
 	 * 
 	 * @param parcelInFile        
 	 * 			The reference Geopackage
 	 * @param parcelToCompareFile 
 	 * 			The Geopackage to compare
-	 * @return the difference of average.
+	 * @return the difference of average (absolute value)
 	 * @throws IOException
 	 */
 	public static double diffAreaAverage(File parcelInFile, File parcelToCompareFile) throws IOException {
@@ -175,9 +175,8 @@ public class SingleParcelStat {
 				- Collec.area(sdsParcelToCompareFile.getFeatureSource(sdsParcelToCompareFile.getTypeNames()[0]).getFeatures());
 		sdsParcelIn.dispose();
 		sdsParcelToCompareFile.dispose();
-		return result;
+		return Math.abs(result);
 	}
-	
 	
 	public static double hausdorfDistanceAverage(SimpleFeatureCollection parcelIn, SimpleFeatureCollection parcelToCompare) {
 		HausdorffSimilarityMeasure hausDis = new HausdorffSimilarityMeasure();

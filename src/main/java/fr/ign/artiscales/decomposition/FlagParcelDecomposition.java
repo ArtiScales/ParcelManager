@@ -64,7 +64,6 @@ public class FlagParcelDecomposition {
 //		File inputRoad = new File(rootFolder, "road.gpkg");
 //		File zoningFile = new File(rootFolder, "zoning.gpkg");
 //
-//		File tmpFolder = new File("/tmp/");
 //		FilterFactory2 ff = CommonFactoryFinder.getFilterFactory2();
 //		ShapefileDataStore sds = new ShapefileDataStore(inputShapeFile.toURI().toURL());
 //		SimpleFeatureCollection parcels = MarkParcelAttributeFromPosition.markParcelIntersectGenericZoningType(sds.getFeatureSource().getFeatures(),"U",zoningFile);
@@ -85,9 +84,9 @@ public class FlagParcelDecomposition {
 //		System.out.println("time : " + (System.currentTimeMillis() - start));
 //	}
 
-	public static SimpleFeatureCollection generateFlagSplitedParcels(SimpleFeature feat, List<LineString> extLines, double noise, File tmpFolder, File buildingFile,
+	public static SimpleFeatureCollection generateFlagSplitedParcels(SimpleFeature feat, List<LineString> extLines, double noise, File buildingFile,
 			Double maximalAreaSplitParcel, Double maximalWidthSplitParcel, Double lenDriveway, boolean allowIsolatedParcel) throws Exception {
-		return generateFlagSplitedParcels(feat, extLines, noise, tmpFolder, buildingFile, null, maximalAreaSplitParcel, maximalWidthSplitParcel, lenDriveway,
+		return generateFlagSplitedParcels(feat, extLines, noise, buildingFile, null, maximalAreaSplitParcel, maximalWidthSplitParcel, lenDriveway,
 				allowIsolatedParcel, null);
 	}
 
@@ -95,7 +94,6 @@ public class FlagParcelDecomposition {
 	 * Main way to access to the flag parcel split algorithm. 
 	 * @param feat
 	 * @param extLines
-	 * @param tmpFolder
 	 * @param buildingFile
 	 * @param roadFile
 	 * @param maximalAreaSplitParcel
@@ -105,7 +103,7 @@ public class FlagParcelDecomposition {
 	 * @param exclusionZone
 	 * @throws Exception
 	 */
-	public static SimpleFeatureCollection generateFlagSplitedParcels(SimpleFeature feat, List<LineString> extLines, double noise, File tmpFolder, File buildingFile,
+	public static SimpleFeatureCollection generateFlagSplitedParcels(SimpleFeature feat, List<LineString> extLines, double noise, File buildingFile,
 			File roadFile, Double maximalAreaSplitParcel, Double maximalWidthSplitParcel, Double lenDriveway, boolean allowIsolatedParcel,
 			Geometry exclusionZone) throws Exception {
 		DataStore buildingDS = Geopackages.getDataStore(buildingFile);

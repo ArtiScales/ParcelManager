@@ -12,10 +12,9 @@ object compSimuParcel {
 "parcelProcess": "OBB",
 "urbanFabricType": "smallHouse"
 */
-  def step1(zoneFile: File,
+  def ZoneDivisionOM(zoneFile: File,
             parcelFile: File,
             parcelEvolved:File,
-            tmpFolder: File,
             outFolder: File,
             maximalArea: Double,
             decompositionLevelWithoutStreet: Int,
@@ -28,7 +27,7 @@ object compSimuParcel {
 //             ) : (Int, Double) = {
     val profile = new ProfileUrbanFabric(maximalArea, decompositionLevelWithoutStreet, largeStreetLevel, streetWidth,
       largeStreetWidth, minimalWidthContactRoad, harmonyCoeff)
-    val parcelSimuled = ZoneDivision.zoneDivision(zoneFile, parcelFile, profile, tmpFolder, outFolder)
+    val parcelSimuled = ZoneDivision.zoneDivision(zoneFile, parcelFile, profile, outFolder)
     val hausdorfDistance = SingleParcelStat.hausdorfDistanceAverage(parcelSimuled, parcelEvolved)
     val nbParcelDiff = SingleParcelStat.diffNumberOfParcel(parcelSimuled, parcelEvolved)
     val areaParcelDiff = SingleParcelStat.diffAreaAverage(parcelSimuled, parcelEvolved)

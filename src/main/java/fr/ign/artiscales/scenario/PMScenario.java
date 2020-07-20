@@ -17,7 +17,7 @@ import com.fasterxml.jackson.core.JsonToken;
  */
 public class PMScenario {
 
-	private File zoningFile, buildingFile, roadFile, polygonIntersection, zone, predicateFile, parcelFile, profileFolder, tmpFolder, outFolder;
+	private File zoningFile, buildingFile, roadFile, polygonIntersection, zone, predicateFile, parcelFile, profileFolder, outFolder;
 
 	private List<PMStep> stepList = new ArrayList<PMStep>();
 	private boolean fileSet = false;
@@ -38,7 +38,6 @@ public class PMScenario {
 //	}
 
 	public PMScenario(File jSON, File tmpfolder) throws Exception {
-		tmpFolder = tmpfolder;
 		PMStep.setSaveIntermediateResult(SAVEINTERMEDIATERESULT);
 		JsonFactory factory = new JsonFactory();
 		JsonParser parser = factory.createParser(jSON);
@@ -184,7 +183,7 @@ public class PMScenario {
 			}
 		}
 		parser.close();
-		PMStep.setFiles(parcelFile, zoningFile, tmpFolder, buildingFile, roadFile, predicateFile, polygonIntersection, zone, outFolder,
+		PMStep.setFiles(parcelFile, zoningFile, buildingFile, roadFile, predicateFile, polygonIntersection, zone, outFolder,
 				profileFolder);
 	}
 
@@ -209,8 +208,7 @@ public class PMScenario {
 	@Override
 	public String toString() {
 		return "PMScenario [zoningFile=" + zoningFile + ", buildingFile=" + buildingFile + ", roadFile=" + roadFile + ", polygonIntersection="
-				+ polygonIntersection + ", zone=" + zone + ", predicateFile=" + predicateFile + ", parcelFile=" + parcelFile + ", tmpFolder="
-				+ tmpFolder + ", outFolder=" + outFolder + ", stepList=" + stepList + ", fileSet=" + fileSet + ", profileFolder=" + profileFolder
+				+ polygonIntersection + ", zone=" + zone + ", predicateFile=" + predicateFile + ", parcelFile=" + parcelFile + ", outFolder=" + outFolder + ", stepList=" + stepList + ", fileSet=" + fileSet + ", profileFolder=" + profileFolder
 				+ "]";
 	}
 

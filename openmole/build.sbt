@@ -8,7 +8,7 @@ val parcelManagerVersion = "0.2-SNAPSHOT"
 
 enablePlugins(SbtOsgi)
 
-//excludeFilter in Runtime in unmanagedResources := "/*"
+//(unmanagedResourceDirectories in Compile) := (unmanagedResourceDirectories in Compile).value.filter(_.getName.startsWith("resources"))
 
 OsgiKeys.exportPackage := Seq("fr.ign.artiscales.*")
 

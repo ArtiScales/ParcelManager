@@ -1,7 +1,6 @@
 val zoneFile = Val[File]
 val parcelFile = Val[File]
 val parcelEvolved = Val[File]
-val tmpFolder = Val[File]
 val outFolder = Val[File]
 val maximalArea = Val[Double]
 val decompositionLevelWithoutStreet = Val[Int]
@@ -15,12 +14,12 @@ val nbParcelDiff = Val[Int]
 val areaParcelDiff = Val[Double]
 
 
-val step1 = ScalaTask("val (hausdorfDistance,nbParcelDiff,areaParcelDiff) = withThreadClassLoader(classLoader(fr.ign.artiscales.compSimuParcel))(fr.ign.artiscales.compSimuParcel.step1(zoneFile, parcelFile, parcelEvolved, tmpFolder, outFolder, maximalArea, decompositionLevelWithoutStreet ,largeStreetLevel,streetWidth,largeStreetWidth, minimalWidthContactRoad , harmonyCoeff))") set (
+val step1 = ScalaTask("val (hausdorfDistance,nbParcelDiff,areaParcelDiff) = withThreadClassLoader(classLoader(fr.ign.artiscales.compSimuParcel))(fr.ign.artiscales.compSimuParcel.ZoneDivisionOM(zoneFile, parcelFile, parcelEvolved, outFolder, maximalArea, decompositionLevelWithoutStreet ,largeStreetLevel,streetWidth,largeStreetWidth, minimalWidthContactRoad , harmonyCoeff))") set (
+//val step1 = ScalaTask("val (nbParcelDiff,areaParcelDiff) = withThreadClassLoader(classLoader(fr.ign.artiscales.compSimuParcel))(fr.ign.artiscales.compSimuParcel.step1(zoneFile, parcelFile, parcelEvolved, outFolder, maximalArea, decompositionLevelWithoutStreet ,largeStreetLevel,streetWidth,largeStreetWidth, minimalWidthContactRoad , harmonyCoeff))") set (
     plugins += pluginsOf(fr.ign.artiscales.compSimuParcel),
-    zoneFile := workDirectory / "donnee" / "zone.shp",
-    parcelFile := workDirectory / "donnee" / "parcel2003.shp",
-    parcelEvolved := workDirectory / "donnee" / "evolvedParcel.shp",
-    tmpFolder := workDirectory / "tmp",
+    zoneFile := workDirectory / "donnee" / "zone.gpkg",
+    parcelFile := workDirectory / "donnee" / "parcel2003.gpkg",
+    parcelEvolved := workDirectory / "donnee" / "evolvedParcel.gpkg",
     outFolder := workDirectory / "out",
  /*  maximalArea := 800.0,
     decompositionLevelWithoutStreet := 3,
@@ -30,15 +29,17 @@ val step1 = ScalaTask("val (hausdorfDistance,nbParcelDiff,areaParcelDiff) = with
     minimalWidthContactRoad := 15, 
     harmonyCoeff := 0.5, */
     inputs += (
-        zoneFile,parcelFile,parcelEvolved,tmpFolder,outFolder,
+        zoneFile,parcelFile,parcelEvolved,outFolder,
         maximalArea, decompositionLevelWithoutStreet, largeStreetLevel, streetWidth, largeStreetWidth, 
         minimalWidthContactRoad , harmonyCoeff), 
     outputs += (hausdorfDistance,nbParcelDiff,areaParcelDiff)
+//      outputs += (nbParcelDiff,areaParcelDiff)
     )
 
 val evol = NSGA2Evolution(
-  evaluation = step1 ,
+  evaluation = step1,
   objective = Seq(hausdorfDistance,nbParcelDiff,areaParcelDiff),
+ //   objective = Seq(nbParcelDiff,areaParcelDiff),
 //  mu = 200,
   genome = Seq(
     maximalArea in (80.0 to 1500.0),
@@ -49,7 +50,7 @@ val evol = NSGA2Evolution(
     minimalWidthContactRoad in (5.0 to 30.0),
     harmonyCoeff in (0.1 to 1)
 ),
-  termination = 100,
+  termination = 150,
   parallelism = 10
 ) hook display
 

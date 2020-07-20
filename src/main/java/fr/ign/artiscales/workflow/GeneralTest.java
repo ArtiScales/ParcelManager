@@ -40,7 +40,6 @@ public class GeneralTest {
 //		org.geotools.util.logging.Logging.getLogger("org.geotools.jdbc.JDBCDataStore").setLevel(Level.OFF);
 		long start  = System.currentTimeMillis();
 
-		File tmpFolder = new File("/tmp/");
 		File rootFolder = new File("src/main/resources/GeneralTest/");
 		File roadFile = new File(rootFolder, "road.gpkg");
 		File zoningFile = new File(rootFolder, "zoning.gpkg");
@@ -77,7 +76,7 @@ public class GeneralTest {
 			System.exit(1);
 		}
 		ZoneDivision.SAVEINTERMEDIATERESULT = true;
-		SimpleFeatureCollection parcelCuted = ZoneDivision.zoneDivision(zone, parcel, tmpFolder, outFolder, profileLargeCollective);
+		SimpleFeatureCollection parcelCuted = ZoneDivision.zoneDivision(zone, parcel, outFolder, profileLargeCollective);
 		SimpleFeatureCollection finaux = FrenchParcelFields.setOriginalFrenchParcelAttributes(parcelCuted, parcel);
 		Collec.exportSFC(finaux, new File(outFolder, "parcelTotZone.gpkg"));
 		Collec.exportSFC(zone, new File(outFolder, "zone.gpkg"));
@@ -98,7 +97,7 @@ public class GeneralTest {
 		SimpleFeatureCollection markedZone = MarkParcelAttributeFromPosition.markParcelIntersectGenericZoningType(
 				MarkParcelAttributeFromPosition.markParcelIntersectPolygonIntersection(parcel, polygonIntersection), "NC", zoningFile);
 		System.out.println(profileDetached);
-		SimpleFeatureCollection cutedNormalZone = ConsolidationDivision.consolidationDivision(markedZone, roadFile, tmpFolder, profileDetached);
+		SimpleFeatureCollection cutedNormalZone = ConsolidationDivision.consolidationDivision(markedZone, roadFile, outFolder, profileDetached);
 		SimpleFeatureCollection finalNormalZone = FrenchParcelFields.setOriginalFrenchParcelAttributes(cutedNormalZone, parcel);
 		Collec.exportSFC(finalNormalZone, new File(outFolder, "ParcelConsolidRecomp.gpkg"));
 		StreetRatioParcels.streetRatioParcels(markedZone, finalNormalZone, profileDetached.getNameBuildingType(), statFolder, roadFile);
@@ -115,7 +114,7 @@ public class GeneralTest {
 		SimpleFeatureCollection parcelDensified = Densification.densification(
 				MarkParcelAttributeFromPosition.markParcelIntersectFrenchConstructibleZoningType(
 						MarkParcelAttributeFromPosition.markParcelIntersectPolygonIntersection(finalNormalZone, polygonIntersection), zoningFile),
-				CityGeneration.createUrbanIslet(finalNormalZone), tmpFolder, buildingFile, roadFile, profileSmallHouse.getMaximalArea(),
+				CityGeneration.createUrbanIslet(finalNormalZone), outFolder, buildingFile, roadFile, profileSmallHouse.getMaximalArea(),
 				profileSmallHouse.getMinimalArea(), profileSmallHouse.getMinimalWidthContactRoad(), profileSmallHouse.getLenDriveway(), allowIsolatedParcel);
 		SimpleFeatureCollection finaux3 = FrenchParcelFields.setOriginalFrenchParcelAttributes(parcelDensified, parcel);
 		Collec.exportSFC(finaux3, new File(outFolder, "parcelDensification.gpkg"));

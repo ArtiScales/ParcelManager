@@ -68,7 +68,7 @@ public class DensificationStudy {
 	 * @param profile
 	 * @throws Exception
 	 */
-	public static void runDensificationStudy(SimpleFeatureCollection parcels, File buildingFile, File roadFile, File zoningFile, File tmpFolder,
+	public static void runDensificationStudy(SimpleFeatureCollection parcels, File buildingFile, File roadFile, File zoningFile,
 			File outFolder, boolean isParcelWithoutStreetAllowed, ProfileUrbanFabric profile) throws Exception {
 		outFolder.mkdir();
 		SimpleFeatureCollection islet = CityGeneration.createUrbanIslet(parcels);
@@ -78,7 +78,7 @@ public class DensificationStudy {
 		SimpleFeatureCollection parcelsVacantLot = MarkParcelAttributeFromPosition.markParcelIntersectFrenchConstructibleZoningType(
 				MarkParcelAttributeFromPosition.markUnBuiltParcel(parcels, buildingFile), zoningFile);
 		// Collec.exportSFC(parcelsVacantLot, new File("/tmp/parcelsVacantLot"));
-		SimpleFeatureCollection parcelsVacantLotCreated = Densification.densificationOrNeighborhood(parcelsVacantLot, islet, tmpFolder, buildingFile,
+		SimpleFeatureCollection parcelsVacantLotCreated = Densification.densificationOrNeighborhood(parcelsVacantLot, islet, outFolder, buildingFile,
 				roadFile, profile, isParcelWithoutStreetAllowed, buffer, 5);
 		// Collec.exportSFC(parcelsVacantLotCreated, new File("/tmp/parcelsVacantLotCreated"));
 
@@ -87,7 +87,7 @@ public class DensificationStudy {
 				.markParcelIntersectFrenchConstructibleZoningType(MarkParcelAttributeFromPosition.markBuiltParcel(parcels, buildingFile), zoningFile);
 		// Collec.exportSFC(parcelsDensifZone, new File("/tmp/parcelsDensifZone"));
 
-		SimpleFeatureCollection parcelsDensifCreated = Densification.densification(parcelsDensifZone, islet, tmpFolder, buildingFile,
+		SimpleFeatureCollection parcelsDensifCreated = Densification.densification(parcelsDensifZone, islet, outFolder, buildingFile,
 				roadFile, profile, isParcelWithoutStreetAllowed, buffer);
 		// Collec.exportSFC(parcelsDensifCreated, new File("/tmp/parcelsDensifCreated"));
 

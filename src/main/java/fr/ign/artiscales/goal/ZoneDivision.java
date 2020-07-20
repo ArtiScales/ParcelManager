@@ -23,7 +23,6 @@ import org.opengis.feature.type.AttributeDescriptor;
 import org.opengis.referencing.FactoryException;
 import org.opengis.referencing.NoSuchAuthorityCodeException;
 
-import fr.ign.artiscales.analysis.SingleParcelStat;
 import fr.ign.artiscales.decomposition.OBBBlockDecomposition;
 import fr.ign.artiscales.parcelFunction.MarkParcelAttributeFromPosition;
 import fr.ign.artiscales.parcelFunction.ParcelAttribute;
@@ -63,24 +62,35 @@ public class ZoneDivision {
 	 */
 	public static boolean DEBUG = false;
 
-	public static void main(String[] args) throws Exception {
-		File evolvedParcel = new File(
-				"/home/thema/.openmole/thema-HP-ZBook-14/webui/projects/compare/donnee/evolvedParcel.gpkg");
-		File outFile = new File("/tmp/out");
-		outFile.mkdirs();
-		File simuledFile = zoneDivision(
-				new File("/home/thema/.openmole/thema-HP-ZBook-14/webui/projects/compare/donnee/zone.gpkg"),
-				new File("/home/thema/.openmole/thema-HP-ZBook-14/webui/projects/compare/donnee/parcel2003.gpkg"),
-				ProfileUrbanFabric.convertJSONtoProfile(new File(
-						"/home/thema/Documents/MC/workspace/ParcelManager/src/main/resources/ParcelComparison/profileUrbanFabric/smallHouse.json")),
-				new File("/tmp/"), outFile);
-		System.out.println(SingleParcelStat.diffNumberOfParcel(simuledFile, evolvedParcel));
-		System.out.println(SingleParcelStat.diffAreaAverage(simuledFile, evolvedParcel));
-		System.out.println(SingleParcelStat.hausdorfDistanceAverage(simuledFile, evolvedParcel));
-	}
+//	public static void main(String[] args) throws Exception {
+//		File evolvedParcel = new File(
+//				"/home/thema/.openmole/thema-HP-ZBook-14/webui/projects/compare/donnee/evolvedParcel.gpkg");
+//		File outFile = new File("/tmp/out");
+//		outFile.mkdirs();
+//		File simuledFile = zoneDivision(
+//				new File("/home/thema/.openmole/thema-HP-ZBook-14/webui/projects/compare/donnee/zone.gpkg"),
+//				new File("/home/thema/.openmole/thema-HP-ZBook-14/webui/projects/compare/donnee/parcel2003.gpkg"),
+//				ProfileUrbanFabric.convertJSONtoProfile(new File(
+//						"/home/thema/Documents/MC/workspace/ParcelManager/src/main/resources/ParcelComparison/profileUrbanFabric/smallHouse.json")), outFile);
+//		System.out.println(SingleParcelStat.diffNumberOfParcel(simuledFile, evolvedParcel));
+//		System.out.println(SingleParcelStat.diffAreaAverage(simuledFile, evolvedParcel));
+//		System.out.println(SingleParcelStat.hausdorfDistanceAverage(simuledFile, evolvedParcel));
+//	}
 	
-	public static File zoneDivision(File zoneFile, File parcelFile, ProfileUrbanFabric profile, File tmpFolder,
-			File outFolder) throws NoSuchAuthorityCodeException, FactoryException, IOException, SchemaException {
+	/**
+	 * Method to use from fresh Geopackages. Also used by OpenMole tasks. 
+	 * @param zoneFile Geopackage representing the zones to be cut
+	 * @param parcelFile Geopackage of the entire parcel plan of the area
+	 * @param profile Urban fabric profile of the wanted parcel plan
+	 * @param outFolder folder where everything is stored
+	 * @return Geopackage containing only the cuted parcel plan
+	 * @throws NoSuchAuthorityCodeException
+	 * @throws FactoryException
+	 * @throws IOException
+	 * @throws SchemaException
+	 */
+	public static File zoneDivision(File zoneFile, File parcelFile, ProfileUrbanFabric profile, File outFolder) 
+			throws NoSuchAuthorityCodeException, FactoryException, IOException, SchemaException {
 		DataStore sdsZone = Geopackages.getDataStore(zoneFile);
 		DataStore sdsParcel = Geopackages.getDataStore(parcelFile);
 		SimpleFeatureCollection zone = DataUtilities.collection(sdsZone.getFeatureSource(sdsZone.getTypeNames()[0]).getFeatures());
@@ -88,8 +98,8 @@ public class ZoneDivision {
 		sdsZone.dispose(); 
 		sdsParcel.dispose();
 		SAVEINTERMEDIATERESULT = true;
-		zoneDivision(zone, parcel, tmpFolder, outFolder, profile);
-//		return new File(tmpFolder, "freshSplitedParcels");
+		OVERWRITEGEOPACKAGE = true;
+		zoneDivision(zone, parcel, outFolder, profile);
 		return new File(outFolder, "parcelZoneDivisionOnly" + Collec.getDefaultGISFileType());
 	}
 
@@ -102,8 +112,6 @@ public class ZoneDivision {
 	 *            it to the OBB algorithm.
 	 * @param parcels
 	 *            {@link SimpleFeatureCollection} of the unmarked parcels.
-	 * @param tmpFolder
-	 *            Folder to stock temporary files
 	 * @param profile
 	 *            {@link ProfileUrbanFabric} contains the parameters of the wanted urban scene
 	 * @return The input parcel {@link SimpleFeatureCollection} with the marked parcels replaced by the simulated parcels. All parcels have the
@@ -113,9 +121,12 @@ public class ZoneDivision {
 	 * @throws IOException
 	 * @throws SchemaException
 	 */
-	public static SimpleFeatureCollection zoneDivision(SimpleFeatureCollection initialZone, SimpleFeatureCollection parcels, File tmpFolder,
+	public static SimpleFeatureCollection zoneDivision(SimpleFeatureCollection initialZone, SimpleFeatureCollection parcels,
 			File outFolder, ProfileUrbanFabric profile)
 			throws NoSuchAuthorityCodeException, FactoryException, IOException, SchemaException {
+		File tmpFolder = new File(outFolder, "tmp");
+		if (DEBUG) 
+			tmpFolder.mkdirs();
 		// parcel geometry name for all
 		String geomName = parcels.getSchema().getGeometryDescriptor().getLocalName();
 		final Geometry geomZone = Geom.unionSFC(initialZone);

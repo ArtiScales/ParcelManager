@@ -27,7 +27,7 @@ import fr.ign.cogit.parameter.ProfileUrbanFabric;
 
 /**
  * Simulation following that goal divides parcels to ensure that they could be densified. The
- * {@link FlagParcelDecomposition#generateFlagSplitedParcels(SimpleFeature, List, double, File, File, File, Double, Double, Double, boolean, Geometry)} method is applied on the
+ * {@link FlagParcelDecomposition#generateFlagSplitedParcels(SimpleFeature, List, double, File, File, Double, Double, Double, boolean, Geometry)} method is applied on the
  * selected parcels. If the creation of a flag parcel is impossible and the local rules allows parcel to be disconnected from the road network, the
  * {@link OBBBlockDecomposition#splitParcels(SimpleFeature, double, double, double, double, List, double, boolean, int)} is applied. Other behavior can be set relatively to the
  * parcel's sizes.
@@ -55,8 +55,8 @@ public class Densification {
 	 * @param isletCollection
 	 *            {@link SimpleFeatureCollection} containing the morphological islet. Can be generated with the
 	 *            {@link fr.ign.cogit.geometryGeneration.CityGeneration#createUrbanIslet(SimpleFeatureCollection)} method.
-	 * @param tmpFolder
-	 *            Folder to store temporary files
+	 * @param outFolder
+	 *            Folder to store result files
 	 * @param buildingFile
 	 *            Geopackage representing the buildings
 	 * @param roadFile
@@ -77,7 +77,7 @@ public class Densification {
 	 *         {@link fr.ign.artiscales.parcelFunction.ParcelSchema#getSFBMinParcel()} schema. * @throws Exception
 	 */
 	public static SimpleFeatureCollection densification(SimpleFeatureCollection parcelCollection, SimpleFeatureCollection isletCollection,
-			File tmpFolder, File buildingFile, File roadFile, double maximalAreaSplitParcel, double minimalAreaSplitParcel, double maximalWidthSplitParcel,
+			File outFolder, File buildingFile, File roadFile, double maximalAreaSplitParcel, double minimalAreaSplitParcel, double maximalWidthSplitParcel,
 			double lenDriveway, boolean allowIsolatedParcel, Geometry exclusionZone) throws Exception {
 		// if parcels doesn't contains the markParcelAttribute field or have no marked parcels 
 		if (!Collec.isCollecContainsAttribute(parcelCollection, MarkParcelAttributeFromPosition.getMarkFieldName())
@@ -103,7 +103,7 @@ public class Densification {
 					List<LineString> lines = Collec.fromPolygonSFCtoListRingLines(isletCollection.subCollection(
 							ff.bbox(ff.property(feat.getFeatureType().getGeometryDescriptor().getLocalName()), feat.getBounds())));
 					// we flag cut the parcel
-					SimpleFeatureCollection unsortedFlagParcel = FlagParcelDecomposition.generateFlagSplitedParcels(feat, lines, 0.0, tmpFolder, buildingFile,
+					SimpleFeatureCollection unsortedFlagParcel = FlagParcelDecomposition.generateFlagSplitedParcels(feat, lines, 0.0, buildingFile,
 							roadFile, maximalAreaSplitParcel, maximalWidthSplitParcel, lenDriveway, allowIsolatedParcel, exclusionZone);
 					// if the cut parcels are inferior to the minimal size, we cancel all and add the initial parcel
 					boolean add = true;
@@ -154,7 +154,7 @@ public class Densification {
 			e.printStackTrace();
 		}
 		if (SAVEINTERMEDIATERESULT) {
-			Collec.exportSFC(onlyCutedParcels, new File(tmpFolder, "parcelDensificationOnly"), OVERWRITEGEOPACKAGE) ;
+			Collec.exportSFC(onlyCutedParcels, new File(outFolder, "parcelDensificationOnly"), OVERWRITEGEOPACKAGE) ;
 			OVERWRITEGEOPACKAGE = false;
 		}
 		return resultParcels.collection();
@@ -171,8 +171,8 @@ public class Densification {
 	 * @param isletCollection
 	 *            SimpleFeatureCollection containing the morphological islet. Can be generated with the
 	 *            {@link fr.ign.cogit.geometryGeneration.CityGeneration#createUrbanIslet(SimpleFeatureCollection)} method.
-	 * @param tmpFolder
-	 *            folder to store temporary files
+	 * @param outFolder
+	 *            folder to store created files
 	 * @param buildingFile
 	 *            Geopackage representing the buildings
 	 * @param maximalAreaSplitParcel
@@ -189,9 +189,9 @@ public class Densification {
 	 *         {@link fr.ign.artiscales.parcelFunction.ParcelSchema#getSFBMinParcel()} schema. * @throws Exception
 	 */
 	public static SimpleFeatureCollection densification(SimpleFeatureCollection parcelCollection, SimpleFeatureCollection isletCollection,
-			File tmpFolder, File buildingFile, File roadFile, double maximalAreaSplitParcel, double minimalAreaSplitParcel, double maximalWidthSplitParcel,
+			File outFolder, File buildingFile, File roadFile, double maximalAreaSplitParcel, double minimalAreaSplitParcel, double maximalWidthSplitParcel,
 			double lenDriveway, boolean allowIsolatedParcel) throws Exception {
-		return densification(parcelCollection, isletCollection, tmpFolder, buildingFile, null, maximalAreaSplitParcel, minimalAreaSplitParcel,
+		return densification(parcelCollection, isletCollection, outFolder, buildingFile, null, maximalAreaSplitParcel, minimalAreaSplitParcel,
 				maximalWidthSplitParcel, lenDriveway, allowIsolatedParcel, null);
 	}
 	
@@ -206,8 +206,8 @@ public class Densification {
 	 * @param isletCollection
 	 *            SimpleFeatureCollection containing the morphological islet. Can be generated with the
 	 *            {@link fr.ign.cogit.geometryGeneration.CityGeneration#createUrbanIslet(SimpleFeatureCollection)} method.
-	 * @param tmpFolder
-	 *            folder to store temporary files
+	 * @param outFolder
+	 *            folder to store created files
 	 * @param buildingFile
 	 *            Geopackage representing the buildings
 	 * @param maximalAreaSplitParcel
@@ -224,9 +224,9 @@ public class Densification {
 	 *         {@link fr.ign.artiscales.parcelFunction.ParcelSchema#getSFBMinParcel()} schema. * @throws Exception
 	 */
 	public static SimpleFeatureCollection densification(SimpleFeatureCollection parcelCollection, SimpleFeatureCollection isletCollection,
-			File tmpFolder, File buildingFile, double maximalAreaSplitParcel, double minimalAreaSplitParcel, double maximalWidthSplitParcel,
+			File outFolder, File buildingFile, double maximalAreaSplitParcel, double minimalAreaSplitParcel, double maximalWidthSplitParcel,
 			double lenDriveway, boolean allowIsolatedParcel) throws Exception {
-		return densification(parcelCollection, isletCollection, tmpFolder, buildingFile, null, maximalAreaSplitParcel, minimalAreaSplitParcel,
+		return densification(parcelCollection, isletCollection, outFolder, buildingFile, null, maximalAreaSplitParcel, minimalAreaSplitParcel,
 				maximalWidthSplitParcel, lenDriveway, allowIsolatedParcel);
 	}
 	
@@ -240,8 +240,8 @@ public class Densification {
 	 * @param isletCollection
 	 *            SimpleFeatureCollection containing the morphological islet. Can be generated with the
 	 *            {@link fr.ign.cogit.geometryGeneration.CityGeneration#createUrbanIslet(SimpleFeatureCollection)} method.
-	 * @param tmpFolder
-	 *            folder to store temporary files.
+	 * @param outFolder
+	 *            folder to store result files.
 	 * @param buildingFile
 	 *            Geopackage representing the buildings.
 	 * @param roadFile
@@ -255,8 +255,8 @@ public class Densification {
 	 * @throws Exception
 	 */
 	public static SimpleFeatureCollection densification(SimpleFeatureCollection parcelCollection, SimpleFeatureCollection isletCollection,
-			File tmpFolder, File buildingFile, File roadFile, ProfileUrbanFabric profile, boolean allowIsolatedParcel) throws Exception {
-		return densification(parcelCollection, isletCollection, tmpFolder, buildingFile, roadFile, profile, allowIsolatedParcel, null);
+			File outFolder, File buildingFile, File roadFile, ProfileUrbanFabric profile, boolean allowIsolatedParcel) throws Exception {
+		return densification(parcelCollection, isletCollection, outFolder, buildingFile, roadFile, profile, allowIsolatedParcel, null);
 	}
 	
 	/**
@@ -269,8 +269,8 @@ public class Densification {
 	 * @param isletCollection
 	 *            SimpleFeatureCollection containing the morphological islet. Can be generated with the
 	 *            {@link fr.ign.cogit.geometryGeneration.CityGeneration#createUrbanIslet(SimpleFeatureCollection)} method.
-	 * @param tmpFolder
-	 *            folder to store temporary files.
+	 * @param outFolder
+	 *            folder to store result files.
 	 * @param buildingFile
 	 *            Geopackage representing the buildings.
 	 * @param roadFile
@@ -283,8 +283,8 @@ public class Densification {
 	 *         {@link fr.ign.artiscales.parcelFunction.ParcelSchema#getSFBMinParcel()} schema. * @throws Exception
 	 */
 	public static SimpleFeatureCollection densification(SimpleFeatureCollection parcelCollection, SimpleFeatureCollection isletCollection,
-			File tmpFolder, File buildingFile, File roadFile, ProfileUrbanFabric profile, boolean allowIsolatedParcel, Geometry exclusionZone) throws Exception {
-		return densification(parcelCollection, isletCollection, tmpFolder, buildingFile, roadFile,
+			File outFolder, File buildingFile, File roadFile, ProfileUrbanFabric profile, boolean allowIsolatedParcel, Geometry exclusionZone) throws Exception {
+		return densification(parcelCollection, isletCollection, outFolder, buildingFile, roadFile,
 				profile.getMaximalArea(), profile.getMinimalArea(), profile.getMinimalWidthContactRoad(), profile.getLenDriveway(),
 				allowIsolatedParcel, exclusionZone);
 	}
@@ -299,8 +299,8 @@ public class Densification {
 	 * @param isletCollection
 	 *            SimpleFeatureCollection containing the morphological islet. Can be generated with the
 	 *            {@link fr.ign.cogit.geometryGeneration.CityGeneration#createUrbanIslet(SimpleFeatureCollection)} method.
-	 * @param tmpFolder
-	 *            folder to store temporary files.
+	 * @param outFolder
+	 *            folder to store result files.
 	 * @param buildingFile
 	 *            Geopackage representing the buildings.
 	 * @param roadFile
@@ -319,13 +319,13 @@ public class Densification {
 	 * @throws Exception
 	 */
 	public static SimpleFeatureCollection densificationOrNeighborhood(SimpleFeatureCollection parcelCollection,
-			SimpleFeatureCollection isletCollection, File tmpFolder, File buildingFile, File roadFile, ProfileUrbanFabric profile,
+			SimpleFeatureCollection isletCollection, File outFolder, File buildingFile, File roadFile, ProfileUrbanFabric profile,
 			boolean allowIsolatedParcel, Geometry exclusionZone, int factorOflargeZoneCreation) throws Exception {
 		//TODO stupid hack but I can't figure out how those SimpleFeatuceCollection's attributes are changed if not wrote in hard
-		File tmpDens = Collec.exportSFC(parcelCollection, new File(tmpFolder, "tmpDens"));
+		File tmpDens = Collec.exportSFC(parcelCollection, new File(outFolder, "tmp/Dens"));
 		// We flagcut the parcels which size is inferior to 4x the max parcel size
 		SimpleFeatureCollection parcelDensified = densification(MarkParcelAttributeFromPosition.markParcelsInf(parcelCollection,
-				profile.getMaximalArea() * factorOflargeZoneCreation), isletCollection, tmpFolder, buildingFile, roadFile,
+				profile.getMaximalArea() * factorOflargeZoneCreation), isletCollection, outFolder, buildingFile, roadFile,
 				profile.getMaximalArea(), profile.getMinimalArea(), profile.getMinimalWidthContactRoad(), profile.getLenDriveway(),
 				allowIsolatedParcel, exclusionZone);
 		// if parcels are too big, we try to create neighborhoods inside them with the consolidation algorithm
@@ -336,7 +336,7 @@ public class Densification {
 				profile.getMaximalArea() * factorOflargeZoneCreation);
 		if (!MarkParcelAttributeFromPosition.isNoParcelMarked(supParcels)) {
 			profile.setLargeStreetWidth(profile.getStreetWidth());
-			parcelDensified = ConsolidationDivision.consolidationDivision(supParcels, roadFile, tmpFolder, profile);
+			parcelDensified = ConsolidationDivision.consolidationDivision(supParcels, roadFile, outFolder, profile);
 		}
 		ds.dispose();
 		return parcelDensified;

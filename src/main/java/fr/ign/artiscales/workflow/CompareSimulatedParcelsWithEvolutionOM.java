@@ -17,6 +17,7 @@ import fr.ign.artiscales.goal.ZoneDivision;
 import fr.ign.artiscales.parcelFunction.ParcelCollection;
 import fr.ign.artiscales.scenario.PMScenario;
 import fr.ign.artiscales.scenario.PMStep;
+import fr.ign.cogit.geoToolsFunctions.Csv;
 import fr.ign.cogit.geoToolsFunctions.vectors.Shp;
 import fr.ign.cogit.geometryGeneration.CityGeneration;
 import fr.ign.cogit.parameter.ProfileUrbanFabric;
@@ -31,7 +32,7 @@ import fr.ign.cogit.parameter.ProfileUrbanFabric;
 public class CompareSimulatedParcelsWithEvolutionOM {
 
 	public static void main(String[] args) throws Exception {
-		simulateUrbanFabricOfCSV(new File("/tmp/outOM/optimized.csv"));	
+		simulateUrbanFabricOfCSV(new File("/tmp/outOM/pop.csv"));	
 	}
 	public static void run() throws Exception{
 		// definition of the geopackages representing two set of parcel
@@ -79,15 +80,19 @@ public class CompareSimulatedParcelsWithEvolutionOM {
 		File zoneFile = new File(
 				"/home/thema/.openmole/thema-HP-ZBook-14/webui/projects/compare/donnee/parcel2003.gpkg");
 		File parcelFile = new File("/home/thema/.openmole/thema-HP-ZBook-14/webui/projects/compare/donnee/zone.gpkg");
-		File tmpFolder = new File("/tmp/");
 		File outFolder = new File("/tmp/outOM/");
+		outFolder.mkdir();
 		ZoneDivision.DEBUG = false;
 		String[] firstLine = r.readNext();
+		List<Integer> listId = new ArrayList<Integer>();
+		for (int i = 0 ; i < firstLine.length ; i++) 
+			if (firstLine[i].startsWith("Out-"))
+				listId.add(i);
+		int i = 0 ;
 		for (String[] line : r.readAll()) {
 			ProfileUrbanFabric profile = new ProfileUrbanFabric(firstLine, line);
-			File zd = ZoneDivision.zoneDivision(zoneFile, parcelFile, profile, tmpFolder, outFolder);
-			System.out.println("fait");
-			Files.copy(zd.toPath(), new File(outFolder, "result" + line[0]).toPath());
+			File zd = ZoneDivision.zoneDivision(zoneFile, parcelFile, profile, outFolder);
+			Files.copy(zd.toPath(), new File(outFolder, i++ + Csv.makeLine(listId, line)).toPath());
 		}
 		r.close();
 	}
