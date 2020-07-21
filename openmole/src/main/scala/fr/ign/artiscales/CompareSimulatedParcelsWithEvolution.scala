@@ -12,6 +12,14 @@ object compSimuParcel {
 "parcelProcess": "OBB",
 "urbanFabricType": "smallHouse"
 */
+
+  def SortUniqueZoning(
+    toSortFile: File,
+    zoningFile: File,
+    outFolder: File): (File) = {
+    ZoneDivision.sortUniqueZoning(toSortFile, zoningFile, outFolder)
+  }
+  
   def ZoneDivisionOM(zoneFile: File,
             parcelFile: File,
             parcelEvolved:File,

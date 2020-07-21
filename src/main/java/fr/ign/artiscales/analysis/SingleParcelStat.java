@@ -106,7 +106,7 @@ public class SingleParcelStat {
 					String CodeAppar = "";
 					if (parcelToCompare != null) {
 						HausdorffSimilarityMeasure hausDis = new HausdorffSimilarityMeasure();
-						SimpleFeature parcelCompare = Collec.getSimpleFeatureFromSFC(parcelGeom, parcelToCompare);
+						SimpleFeature parcelCompare = Collec.getIntersectingSimpleFeatureFromSFC(parcelGeom, parcelToCompare);
 						if (parcelCompare != null) {
 							Geometry parcelCompareGeom = (Geometry) parcelCompare.getDefaultGeometry();
 							DiscreteHausdorffDistance dhd = new DiscreteHausdorffDistance(parcelGeom, parcelCompareGeom);
@@ -185,7 +185,7 @@ public class SingleParcelStat {
 			while (parcelIt.hasNext()) {
 				SimpleFeature parcel = parcelIt.next();
 				Geometry parcelGeom = (Geometry) parcel.getDefaultGeometry();
-				SimpleFeature parcelCompare = Collec.getSimpleFeatureFromSFC(parcelGeom, parcelToCompare);
+				SimpleFeature parcelCompare = Collec.getIntersectingSimpleFeatureFromSFC(parcelGeom, parcelToCompare);
 				if (parcelCompare != null)
 					stat.addValue(hausDis.measure(parcelGeom, (Geometry) parcelCompare.getDefaultGeometry()));
 			}
@@ -218,7 +218,7 @@ public class SingleParcelStat {
 			while (parcelIt.hasNext()) {
 				SimpleFeature parcel = parcelIt.next();
 				Geometry parcelGeom = (Geometry) parcel.getDefaultGeometry();
-				SimpleFeature parcelCompare = Collec.getSimpleFeatureFromSFC(parcelGeom, parcelToCompare);
+				SimpleFeature parcelCompare = Collec.getIntersectingSimpleFeatureFromSFC(parcelGeom, parcelToCompare);
 				if (parcelCompare != null) {
 					Geometry parcelCompareGeom = (Geometry) parcelCompare.getDefaultGeometry();
 					DiscreteHausdorffDistance dhd = new DiscreteHausdorffDistance(parcelGeom, parcelCompareGeom);

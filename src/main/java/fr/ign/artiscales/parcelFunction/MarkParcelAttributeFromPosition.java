@@ -581,7 +581,7 @@ public class MarkParcelAttributeFromPosition {
 			Arrays.stream(parcels.toArray(new SimpleFeature[0])).forEach(feat -> {
 				try {
 					if (isAlreadyMarked(feat) != 0 && genericZoneUsualNames.contains(
-							Collec.getFieldFromSFC((Geometry) feat.getDefaultGeometry(), zoningSFC, GeneralFields.getZoneGenericNameField())))
+							Collec.getIntersectingFieldFromSFC((Geometry) feat.getDefaultGeometry(), zoningSFC, GeneralFields.getZoneGenericNameField())))
 						feat.setAttribute(markFieldName, 1);
 					else
 						feat.setAttribute(markFieldName, 0);
@@ -598,7 +598,7 @@ public class MarkParcelAttributeFromPosition {
 				SimpleFeature feat = it.next();
 				featureBuilder = ParcelSchema.setSFBMinParcelSplitWithFeat(feat, featureBuilder, featureSchema, 0);
 				if (isAlreadyMarked(feat) != 0 && genericZoneUsualNames
-						.contains(Collec.getFieldFromSFC((Geometry) feat.getDefaultGeometry(), zoningSFC, GeneralFields.getZoneGenericNameField())))
+						.contains(Collec.getIntersectingFieldFromSFC((Geometry) feat.getDefaultGeometry(), zoningSFC, GeneralFields.getZoneGenericNameField())))
 					featureBuilder.set(markFieldName, 1);
 				result.add(featureBuilder.buildFeature(Attribute.makeUniqueId()));
 			}
@@ -639,9 +639,9 @@ public class MarkParcelAttributeFromPosition {
 				featureBuilder = ParcelSchema.setSFBMinParcelSplitWithFeat(feat, featureBuilder, featureSchema, 0);
 				if (isAlreadyMarked(feat) != 0
 						&& genericZoneUsualNames.contains(
-								Collec.getFieldFromSFC((Geometry) feat.getDefaultGeometry(), zoningSFC, GeneralFields.getZoneGenericNameField()))
+								Collec.getIntersectingFieldFromSFC((Geometry) feat.getDefaultGeometry(), zoningSFC, GeneralFields.getZoneGenericNameField()))
 						&& !preciseZone.contains(
-								Collec.getFieldFromSFC((Geometry) feat.getDefaultGeometry(), zoningSFC, GeneralFields.getZonePreciseNameField())))
+								Collec.getIntersectingFieldFromSFC((Geometry) feat.getDefaultGeometry(), zoningSFC, GeneralFields.getZonePreciseNameField())))
 					featureBuilder.set(markFieldName, 1);
 				result.add(featureBuilder.buildFeature(Attribute.makeUniqueId()));
 			}
@@ -684,10 +684,10 @@ public class MarkParcelAttributeFromPosition {
 				try {
 					if (isAlreadyMarked(feat) != 0
 							&& (genericZone == null || genericZone.equals("")
-									|| genericZoneUsualNames.contains(Collec.getFieldFromSFC((Geometry) feat.getDefaultGeometry(), zoningSFC,
+									|| genericZoneUsualNames.contains(Collec.getIntersectingFieldFromSFC((Geometry) feat.getDefaultGeometry(), zoningSFC,
 											GeneralFields.getZoneGenericNameField())))
 							&& preciseZone.equals(
-									Collec.getFieldFromSFC((Geometry) feat.getDefaultGeometry(), zoningSFC, GeneralFields.getZonePreciseNameField())))
+									Collec.getIntersectingFieldFromSFC((Geometry) feat.getDefaultGeometry(), zoningSFC, GeneralFields.getZonePreciseNameField())))
 						feat.setAttribute(markFieldName, 1);
 					else
 						feat.setAttribute(markFieldName, 0);
@@ -705,10 +705,10 @@ public class MarkParcelAttributeFromPosition {
 				featureBuilder = ParcelSchema.setSFBMinParcelSplitWithFeat(feat, featureBuilder, featureSchema, 0);
 				if (isAlreadyMarked(feat) != 0
 						&& (genericZone == null || genericZone.equals("")
-								|| genericZoneUsualNames.contains(Collec.getFieldFromSFC((Geometry) feat.getDefaultGeometry(), zoningSFC,
+								|| genericZoneUsualNames.contains(Collec.getIntersectingFieldFromSFC((Geometry) feat.getDefaultGeometry(), zoningSFC,
 										GeneralFields.getZoneGenericNameField())))
 						&& preciseZone.toLowerCase()
-								.equals(Collec.getFieldFromSFC((Geometry) feat.getDefaultGeometry(), zoningSFC, GeneralFields.getZonePreciseNameField())
+								.equals(Collec.getIntersectingFieldFromSFC((Geometry) feat.getDefaultGeometry(), zoningSFC, GeneralFields.getZonePreciseNameField())
 										.toLowerCase()))
 					featureBuilder.set(markFieldName, 1);
 				result.add(featureBuilder.buildFeature(Attribute.makeUniqueId()));
@@ -743,7 +743,7 @@ public class MarkParcelAttributeFromPosition {
 		if (featureSchema.equals(parcels.getSchema())) {
 			Arrays.stream(parcels.toArray(new SimpleFeature[0])).forEach(parcel -> {
 				if (isAlreadyMarked(parcel) != 0 && FrenchZoningSchemas.isUrbanZoneUsuallyAdmitResidentialConstruction(
-						Collec.getSimpleFeatureFromSFC((Geometry) parcel.getDefaultGeometry(), zonings)))
+						Collec.getIntersectingSimpleFeatureFromSFC((Geometry) parcel.getDefaultGeometry(), zonings)))
 					parcel.setAttribute(markFieldName, 1);
 				else
 					parcel.setAttribute(markFieldName, 0);
@@ -760,7 +760,7 @@ public class MarkParcelAttributeFromPosition {
 				SimpleFeature feat = it.next();
 				featureBuilder = ParcelSchema.setSFBMinParcelSplitWithFeat(feat, featureBuilder, featureSchema, 0);
 				if (isAlreadyMarked(feat) != 0 && FrenchZoningSchemas.isUrbanZoneUsuallyAdmitResidentialConstruction(
-						Collec.getSimpleFeatureFromSFC((Geometry) feat.getDefaultGeometry(), zonings)))
+						Collec.getIntersectingSimpleFeatureFromSFC((Geometry) feat.getDefaultGeometry(), zonings)))
 					featureBuilder.set(markFieldName, 1);
 				result.add(featureBuilder.buildFeature(Attribute.makeUniqueId()));
 			}

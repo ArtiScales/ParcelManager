@@ -153,7 +153,7 @@ public class ConsolidationDivision {
 			sfBuilder.add(multiGeom.getGeometryN(i));
 			sfBuilder.set(ParcelSchema.getMinParcelSectionField(), Integer.toString(i));
 			sfBuilder.set(ParcelSchema.getMinParcelCommunityField(),
-					Collec.getFieldFromSFC(multiGeom.getGeometryN(i), parcels, ParcelSchema.getMinParcelCommunityField()));
+					Collec.getIntersectingFieldFromSFC(multiGeom.getGeometryN(i), parcels, ParcelSchema.getMinParcelCommunityField()));
 			mergedParcels.add(sfBuilder.buildFeature(Attribute.makeUniqueId()));
 		}
 		if (DEBUG) {

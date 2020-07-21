@@ -85,7 +85,7 @@ public class FrenchParcelFields {
 					insee = (String) iniParcel.getAttribute(ParcelSchema.getMinParcelCommunityField());
 				} 
 				else {
-					iniParcel = Collec.getSimpleFeatureFromSFC((Geometry) parcel.getDefaultGeometry(), initialParcels);
+					iniParcel = Collec.getIntersectingSimpleFeatureFromSFC((Geometry) parcel.getDefaultGeometry(), initialParcels);
 					try {
 						insee = makeDEPCOMCode(iniParcel);
 					} catch (Exception c) {

@@ -24,6 +24,7 @@ import org.opengis.referencing.FactoryException;
 import org.opengis.referencing.NoSuchAuthorityCodeException;
 
 import fr.ign.artiscales.decomposition.OBBBlockDecomposition;
+import fr.ign.artiscales.fields.GeneralFields;
 import fr.ign.artiscales.parcelFunction.MarkParcelAttributeFromPosition;
 import fr.ign.artiscales.parcelFunction.ParcelAttribute;
 import fr.ign.artiscales.parcelFunction.ParcelCollection;
@@ -62,7 +63,9 @@ public class ZoneDivision {
 	 */
 	public static boolean DEBUG = false;
 
-//	public static void main(String[] args) throws Exception {
+	public static void main(String[] args) throws Exception {
+		sortUniqueZoning(new File("/home/thema/.openmole/thema-HP-ZBook-14/webui/projects/compare/donnee/zone.gpkg"), new File("/home/thema/Documents/MC/workspace/ParcelManager/src/main/resources/ParcelComparison/zoning.gpkg"), new File("/tmp/out"));
+	}
 //		File evolvedParcel = new File(
 //				"/home/thema/.openmole/thema-HP-ZBook-14/webui/projects/compare/donnee/evolvedParcel.gpkg");
 //		File outFile = new File("/tmp/out");
@@ -101,6 +104,24 @@ public class ZoneDivision {
 		OVERWRITEGEOPACKAGE = true;
 		zoneDivision(zone, parcel, outFolder, profile);
 		return new File(outFolder, "parcelZoneDivisionOnly" + Collec.getDefaultGISFileType());
+	}
+	
+	public static File sortUniqueZoning(File toSortFile, File zoningFile, File outFolder) throws IOException {
+		DataStore dsToSort = Geopackages.getDataStore(toSortFile);
+		DataStore dsZoning = Geopackages.getDataStore(zoningFile);
+		SimpleFeatureCollection zoning = DataUtilities.collection(dsZoning.getFeatureSource(dsZoning.getTypeNames()[0]).getFeatures());
+		SimpleFeatureCollection toSort = DataUtilities.collection(dsToSort.getFeatureSource(dsToSort.getTypeNames()[0]).getFeatures());
+		String[] vals = {ParcelSchema.getMinParcelCommunityField(), GeneralFields.getZonePreciseNameField()}; 
+		List<String> uniquePreciseNames = Collec.getEachUniqueFieldFromSFC(zoning, vals);
+		for (String uniquePreciseName : uniquePreciseNames) {
+			SimpleFeatureCollection eachZoning = Collec.getSFCfromSFCIntersection(toSort, Collec.getSFCPart(zoning, vals, uniquePreciseName.split("-")));
+			if (eachZoning == null || eachZoning.isEmpty()) 
+				continue;
+			Collec.exportSFC(eachZoning, new File(outFolder, uniquePreciseName));
+		}
+		dsToSort.dispose();
+		dsZoning.dispose();
+		return outFolder;
 	}
 
 	/**

@@ -47,12 +47,12 @@ public class ParcelAttribute {
 		if (!Collec.isCollecContainsAttribute(sFCWithCommunityCode, ParcelSchema.getMinParcelCommunityField())) {
 			switch (GeneralFields.getParcelFieldType()) {
 			case ("french"):
-				return FrenchParcelFields.makeDEPCOMCode(Collec.getSimpleFeatureFromSFC((Geometry) feat.getDefaultGeometry(), sFCWithCommunityCode));
+				return FrenchParcelFields.makeDEPCOMCode(Collec.getIntersectingSimpleFeatureFromSFC((Geometry) feat.getDefaultGeometry(), sFCWithCommunityCode));
 			default:
 				return "";
 			}
 		} else {
-			return Collec.getFieldFromSFC((Geometry) feat.getDefaultGeometry(), sFCWithCommunityCode, ParcelSchema.getMinParcelCommunityField());
+			return Collec.getIntersectingFieldFromSFC((Geometry) feat.getDefaultGeometry(), sFCWithCommunityCode, ParcelSchema.getMinParcelCommunityField());
 		}
 	}
 	
@@ -66,7 +66,7 @@ public class ParcelAttribute {
 	 * @return the most represented city code from the SimpleFeatureCollection 
 	 */
 	public static String getSectionCodeFromSFC(SimpleFeatureCollection sFCWithCommunityCode, SimpleFeature feat) {
-		return Collec.getFieldFromSFC((Geometry) feat.getDefaultGeometry(), sFCWithCommunityCode, ParcelSchema.getMinParcelSectionField());
+		return Collec.getIntersectingFieldFromSFC((Geometry) feat.getDefaultGeometry(), sFCWithCommunityCode, ParcelSchema.getMinParcelSectionField());
 	}
 	
 	/**
@@ -79,7 +79,7 @@ public class ParcelAttribute {
 	 * @return the most represented city code from the SimpleFeatureCollection 
 	 */
 	public static String getNumberCodeFromSFC(SimpleFeatureCollection sFCWithCommunityCode, SimpleFeature feat) {
-		return Collec.getFieldFromSFC((Geometry) feat.getDefaultGeometry(), sFCWithCommunityCode, ParcelSchema.getMinParcelNumberField());
+		return Collec.getIntersectingFieldFromSFC((Geometry) feat.getDefaultGeometry(), sFCWithCommunityCode, ParcelSchema.getMinParcelNumberField());
 	}
 
 	/**
@@ -93,7 +93,7 @@ public class ParcelAttribute {
 	 * @return the type of community in which is the feature.
 	 */
 	public static String getCommunityTypeFromSFC(SimpleFeatureCollection sfc, SimpleFeature feat) {
-		return Collec.getFieldFromSFC((Geometry) feat.getDefaultGeometry(), sfc, communityTypeFieldName);
+		return Collec.getIntersectingFieldFromSFC((Geometry) feat.getDefaultGeometry(), sfc, communityTypeFieldName);
 	}
 
 	/**

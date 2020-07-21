@@ -62,7 +62,6 @@ public class DensificationStudy {
 	 * @param buildingFile
 	 * @param roadFile
 	 * @param zoningFile
-	 * @param tmpFolder
 	 * @param outFolder
 	 * @param isParcelWithoutStreetAllowed
 	 * @param profile
@@ -126,7 +125,7 @@ public class DensificationStudy {
 		SimpleFeatureCollection zoning = sds.getFeatureSource(sds.getTypeNames()[0]).getFeatures();
 		long nbParcelsInUrbanizableZones = Arrays.stream(parcels.toArray(new SimpleFeature[0]))
 				.filter(feat -> FrenchZoningSchemas
-						.isUrbanZoneUsuallyAdmitResidentialConstruction(Collec.getSimpleFeatureFromSFC((Geometry) feat.getDefaultGeometry(), zoning)))
+						.isUrbanZoneUsuallyAdmitResidentialConstruction(Collec.getIntersectingSimpleFeatureFromSFC((Geometry) feat.getDefaultGeometry(), zoning)))
 				.count();
 		sds.dispose();
 

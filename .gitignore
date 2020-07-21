@@ -37,7 +37,7 @@ src/main/resources/*/out/*
 # not necessary test
 src/main/resources/smallTest/*
 
-
+*.iml
 .idea
 **/target
 project/*~
