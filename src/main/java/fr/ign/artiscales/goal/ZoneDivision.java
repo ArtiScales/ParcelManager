@@ -24,7 +24,6 @@ import org.opengis.referencing.FactoryException;
 import org.opengis.referencing.NoSuchAuthorityCodeException;
 
 import fr.ign.artiscales.decomposition.OBBBlockDecomposition;
-import fr.ign.artiscales.fields.GeneralFields;
 import fr.ign.artiscales.parcelFunction.MarkParcelAttributeFromPosition;
 import fr.ign.artiscales.parcelFunction.ParcelAttribute;
 import fr.ign.artiscales.parcelFunction.ParcelCollection;
@@ -63,9 +62,7 @@ public class ZoneDivision {
 	 */
 	public static boolean DEBUG = false;
 
-	public static void main(String[] args) throws Exception {
-		sortUniqueZoning(new File("/home/thema/.openmole/thema-HP-ZBook-14/webui/projects/compare/donnee/zone.gpkg"), new File("/home/thema/Documents/MC/workspace/ParcelManager/src/main/resources/ParcelComparison/zoning.gpkg"), new File("/tmp/out"));
-	}
+//	public static void main(String[] args) throws Exception {
 //		File evolvedParcel = new File(
 //				"/home/thema/.openmole/thema-HP-ZBook-14/webui/projects/compare/donnee/evolvedParcel.gpkg");
 //		File outFile = new File("/tmp/out");
@@ -93,7 +90,7 @@ public class ZoneDivision {
 	 * @throws SchemaException
 	 */
 	public static File zoneDivision(File zoneFile, File parcelFile, ProfileUrbanFabric profile, File outFolder) 
-			throws NoSuchAuthorityCodeException, FactoryException, IOException, SchemaException {
+			throws IOException, NoSuchAuthorityCodeException, FactoryException, SchemaException {
 		DataStore sdsZone = Geopackages.getDataStore(zoneFile);
 		DataStore sdsParcel = Geopackages.getDataStore(parcelFile);
 		SimpleFeatureCollection zone = DataUtilities.collection(sdsZone.getFeatureSource(sdsZone.getTypeNames()[0]).getFeatures());
@@ -104,24 +101,6 @@ public class ZoneDivision {
 		OVERWRITEGEOPACKAGE = true;
 		zoneDivision(zone, parcel, outFolder, profile);
 		return new File(outFolder, "parcelZoneDivisionOnly" + Collec.getDefaultGISFileType());
-	}
-	
-	public static File sortUniqueZoning(File toSortFile, File zoningFile, File outFolder) throws IOException {
-		DataStore dsToSort = Geopackages.getDataStore(toSortFile);
-		DataStore dsZoning = Geopackages.getDataStore(zoningFile);
-		SimpleFeatureCollection zoning = DataUtilities.collection(dsZoning.getFeatureSource(dsZoning.getTypeNames()[0]).getFeatures());
-		SimpleFeatureCollection toSort = DataUtilities.collection(dsToSort.getFeatureSource(dsToSort.getTypeNames()[0]).getFeatures());
-		String[] vals = {ParcelSchema.getMinParcelCommunityField(), GeneralFields.getZonePreciseNameField()}; 
-		List<String> uniquePreciseNames = Collec.getEachUniqueFieldFromSFC(zoning, vals);
-		for (String uniquePreciseName : uniquePreciseNames) {
-			SimpleFeatureCollection eachZoning = Collec.getSFCfromSFCIntersection(toSort, Collec.getSFCPart(zoning, vals, uniquePreciseName.split("-")));
-			if (eachZoning == null || eachZoning.isEmpty()) 
-				continue;
-			Collec.exportSFC(eachZoning, new File(outFolder, uniquePreciseName));
-		}
-		dsToSort.dispose();
-		dsZoning.dispose();
-		return outFolder;
 	}
 
 	/**
@@ -143,8 +122,7 @@ public class ZoneDivision {
 	 * @throws SchemaException
 	 */
 	public static SimpleFeatureCollection zoneDivision(SimpleFeatureCollection initialZone, SimpleFeatureCollection parcels,
-			File outFolder, ProfileUrbanFabric profile)
-			throws NoSuchAuthorityCodeException, FactoryException, IOException, SchemaException {
+			File outFolder, ProfileUrbanFabric profile) throws IOException, NoSuchAuthorityCodeException, FactoryException, SchemaException{
 		File tmpFolder = new File(outFolder, "tmp");
 		if (DEBUG) 
 			tmpFolder.mkdirs();
@@ -377,9 +355,8 @@ public class ZoneDivision {
 		else
 			finalZone = MarkParcelAttributeFromPosition
 					.getOnlyMarkedParcels(MarkParcelAttributeFromPosition.markAllParcel(Collec.snapDatas(inputSFC, Geom.unionSFC(boundingSFC))));
-		if (finalZone.isEmpty()) {
+		if (finalZone.isEmpty())
 			System.out.println("createZoneToCut(): zone is empty");
-		}
 		return finalZone;
 	}
 

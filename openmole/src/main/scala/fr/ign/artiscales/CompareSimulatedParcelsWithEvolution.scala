@@ -17,7 +17,7 @@ object compSimuParcel {
     toSortFile: File,
     zoningFile: File,
     outFolder: File): (File) = {
-    ZoneDivision.sortUniqueZoning(toSortFile, zoningFile, outFolder)
+    CompareSimulatedParcelsWithEvolutionOM.sortUniqueZoning(toSortFile, zoningFile, outFolder)
   }
   
   def ZoneDivisionOM(zoneFile: File,
