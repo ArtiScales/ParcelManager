@@ -79,8 +79,14 @@ public class PMStep {
 
 	private String goal, parcelProcess, communityNumber, communityType , urbanFabricType , genericZone, preciseZone;
 	List<String> communityNumbers = new ArrayList<String>(); 
-	private File lastOutput;
 	
+	/**
+	 * The last generated parcel plan file. Could be useful for programs to get it directly 
+	 */
+	private File lastOutput;
+	/**
+	 * Geographic files
+	 */
 	private static File PARCELFILE, ZONINGFILE, BUILDINGFILE, ROADFILE, PREDICATEFILE, 
 	POLYGONINTERSECTION, ZONE, OUTFOLDER, PROFILEFOLDER;
 	public static List<String> cachePlacesSimulates = new ArrayList<String>();
@@ -389,42 +395,92 @@ public class PMStep {
 		return zoneIn;
 	}
 
+	/**
+	 * Put a parcel plan different from the on originally set
+	 * 
+	 * @param parcelFile
+	 */
 	public static void setParcel(File parcelFile) {
 		PARCELFILE = parcelFile;
 	}
 
+	/**
+	 * Get a string describing the studied zone
+	 * 
+	 * @return the description
+	 */
 	public String getZoneStudied() {
 		return goal + "With" + parcelProcess + "On" + genericZone + "_" + preciseZone + "Of" + communityNumber;
 	}
 
+	/**
+	 * If true, save a geopackage containing only the simulated parcels in the temporary folder for every goal simulated.
+	 * 
+	 * @return SAVEINTERMEDIATERESULT
+	 */
 	public static boolean isSaveIntermediateResult() {
 		return SAVEINTERMEDIATERESULT;
 	}
 
+	/**
+	 * If true, save a geopackage containing only the simulated parcels in the temporary folder for every goal simulated.
+	 * 
+	 * @param sAVEINTERMEDIATERESULT
+	 */
 	public static void setSaveIntermediateResult(boolean sAVEINTERMEDIATERESULT) {
 		SAVEINTERMEDIATERESULT = sAVEINTERMEDIATERESULT;
 	}
 
+	/**
+	 * Get the intersection polygon geographic file.
+	 * 
+	 * @return POLYGONINTERSECTION
+	 */
 	public static File getPOLYGONINTERSECTION() {
 		return POLYGONINTERSECTION;
 	}
 
+	/**
+	 * Set the intersection polygon geographic file.
+	 * 
+	 * @param pOLYGONINTERSECTION
+	 */
 	public static void setPOLYGONINTERSECTION(File pOLYGONINTERSECTION) {
 		POLYGONINTERSECTION = pOLYGONINTERSECTION;
 	}
 
+	/**
+	 * If true, run method to re-assign fields value.
+	 * 
+	 * @return GENERATEATTRIBUTES
+	 */
 	public static boolean isGENERATEATTRIBUTES() {
 		return GENERATEATTRIBUTES;
 	}
 
+	/**
+	 * If true, run method to re-assign fields value.
+	 * 
+	 * @param gENERATEATTRIBUTES
+	 */
 	public static void setGENERATEATTRIBUTES(boolean gENERATEATTRIBUTES) {
 		GENERATEATTRIBUTES = gENERATEATTRIBUTES;
 	}
 
+	/**
+	 * If true, will save all the intermediate results in the temporary folder
+	 * 
+	 * @return DEBUG
+	 */
 	public static boolean isDEBUG() {
 		return DEBUG;
 	}
 
+	/**
+	 * If true, will save all the intermediate results in the temporary folder
+	 * 
+	 * @param dEBUG
+	 */
 	public static void setDEBUG(boolean dEBUG) {
 		DEBUG = dEBUG;
 	}
@@ -435,11 +491,12 @@ public class PMStep {
 				+ communityType + ", urbanFabricType=" + urbanFabricType + ", genericZone=" + genericZone + ", preciseZone=" + preciseZone + "]";
 	}
 
+	/**
+	 * The last generated parcel plan file. Could be useful for programs to get it directly
+	 * 
+	 * @return lastOutput
+	 */
 	public File getLastOutput() {
 		return lastOutput;
-	}
-
-	public void setLastOutput(File lastOutput) {
-		this.lastOutput = lastOutput;
 	}
 }

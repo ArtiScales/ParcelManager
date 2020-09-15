@@ -42,28 +42,27 @@ import fr.ign.cogit.geometryGeneration.CityGeneration;
  */
 public class SingleParcelStat {
 
-	// public static void main(String[] args) throws Exception {
-	// long strat = System.currentTimeMillis();
-	// // ShapefileDataStore sdsParcel = new ShapefileDataStore(
-	// // new File("/home/ubuntu/workspace/ParcelManager/src/main/resources/GeneralTest/parcel.gpkg").toURI().toURL());
-	// ShapefileDataStore sdsParcelEv = new ShapefileDataStore(
-	// new File("/home/thema/Documents/ParcelManager/ParcelComparison/out/evolvedParcelsSort.gpkg").toURI().toURL());
-	// ShapefileDataStore sdsSimu = new ShapefileDataStore(
-	// new File("/home/thema/Documents/ParcelManager/ParcelComparison/out/simulatedParcels.gpkg").toURI().toURL());
-	// SimpleFeatureCollection parcelEv = MarkParcelAttributeFromPosition.markAllParcel(sdsParcelEv.getFeatureSource().getFeatures());
-	// SimpleFeatureCollection parcelSimu = MarkParcelAttributeFromPosition.markAllParcel(sdsSimu.getFeatureSource().getFeatures());
-	// ShapefileDataStore sdsRoad = new ShapefileDataStore(
-	// new File("/home/thema/Documents/MC/workspace/ParcelManager/src/main/resources/ParcelComparison/road.gpkg").toURI().toURL());
-	// SimpleFeatureCollection road = sdsRoad.getFeatureSource().getFeatures();
-	//
-	// writeStatSingleParcel(parcelEv, road, new File("/home/thema/Documents/ParcelManager/ParcelComparison/out/statEvol"));
-	// writeStatSingleParcel(parcelSimu, road, parcelEv, new File("/home/thema/Documents/ParcelManager/ParcelComparison/out/statSumuled"));
-	//
-	//// Collec.exportSFC(makeHausdorfDistanceMaps(parcelEv, parcelSimu), new File("/tmp/haus"));
-	// sdsParcelEv.dispose();
-	// sdsSimu.dispose();
-	// System.out.println("time : " + (System.currentTimeMillis() - strat));
-	// }
+//	 public static void main(String[] args) throws Exception {
+//	 long strat = System.currentTimeMillis();
+//	 File root = new File("/home/mcolomb/PMtest/ParcelComparison/");
+//	 DataStore dsParcelEv = Geopackages.getDataStore(new File(root,"/out/consolidationDivisionWithOBBOnNC_Of/EvolvedParcel.gpkg"));
+//		DataStore dsParcelSimu = Geopackages.getDataStore(new File(root, "/out/consolidationDivisionWithOBBOnNC_Of/SimulatedParcel.gpkg"));
+//		SimpleFeatureCollection parcelEv = FrenchParcelFields.addCommunityCode(
+//				MarkParcelAttributeFromPosition.markAllParcel(dsParcelEv.getFeatureSource(dsParcelEv.getTypeNames()[0]).getFeatures()));
+//		SimpleFeatureCollection parcelSimu = MarkParcelAttributeFromPosition
+//				.markAllParcel(dsParcelSimu.getFeatureSource(dsParcelSimu.getTypeNames()[0]).getFeatures());
+//		DataStore dsRoad = Geopackages.getDataStore(new File(root, "/road.gpkg"));
+//		SimpleFeatureCollection road = dsRoad.getFeatureSource(dsRoad.getTypeNames()[0]).getFeatures();
+//	
+//	 writeStatSingleParcel(parcelEv, road, new File(root,"out2/ev.csv"));
+//	 writeStatSingleParcel(parcelSimu, road, parcelEv, new File(root,"out2/sim.csv"));
+//	
+//	// Collec.exportSFC(makeHausdorfDistanceMaps(parcelEv, parcelSimu), new File("/tmp/haus"));
+//	 dsParcelEv.dispose();
+//	 dsParcelSimu.dispose();
+//	 dsRoad.dispose();
+//	 System.out.println("time : " + (System.currentTimeMillis() - strat));
+//	 }
 
 	public static void writeStatSingleParcel(SimpleFeatureCollection parcels, File roadFile, File parcelStatCsv)
 			throws NoSuchAuthorityCodeException, IOException, FactoryException {
