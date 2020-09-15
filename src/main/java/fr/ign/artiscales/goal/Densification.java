@@ -322,7 +322,9 @@ public class Densification {
 			SimpleFeatureCollection isletCollection, File outFolder, File buildingFile, File roadFile, ProfileUrbanFabric profile,
 			boolean allowIsolatedParcel, Geometry exclusionZone, int factorOflargeZoneCreation) throws Exception {
 		//TODO stupid hack but I can't figure out how those SimpleFeatuceCollection's attributes are changed if not wrote in hard
-		File tmpDens = Collec.exportSFC(parcelCollection, new File(outFolder, "tmp/Dens"));
+		File tmp = new File(outFolder, "tmp");
+		tmp.mkdirs();
+		File tmpDens = Collec.exportSFC(parcelCollection, new File(tmp, "Dens"));
 		// We flagcut the parcels which size is inferior to 4x the max parcel size
 		SimpleFeatureCollection parcelDensified = densification(MarkParcelAttributeFromPosition.markParcelsInf(parcelCollection,
 				profile.getMaximalArea() * factorOflargeZoneCreation), isletCollection, outFolder, buildingFile, roadFile,
