@@ -60,7 +60,8 @@ public class OBBBlockDecomposition {
 	 * @param decompositionLevelWithoutStreet
 	 *            Number of last iteration row for which no street network is generated
 	 * @param forceStreetAccess
-	 *            Force the access to the road for each parcel. Not working good yet.
+	 *            Is the polygon should be turned in order to assure the connection with the road ? Also regarding the <i>harmony coeff</i>. Most of cases, it's yes
+	 * 
 	 * @return a collection of subdivised parcels
 	 * @throws Exception
 	 */
@@ -83,15 +84,17 @@ public class OBBBlockDecomposition {
 	        } else {
 	          Polygon polygon = (Polygon) Geom.getPolygon((Geometry) featToSplit.getDefaultGeometry());
 	          DescriptiveStatistics dS = new DescriptiveStatistics();
-			  OBBBlockDecomposition.decompose(polygon, extBlock, (roads != null && !roads.isEmpty()) ?  Collec.snapDatas(roads, (Geometry) featToSplit.getDefaultGeometry()) : null, maximalArea, maximalWidth, noise, harmonyCoeff, smallStreetWidth, largeStreetLevel,
-										largeStreetWidth, forceStreetAccess, 0, decompositionLevelWithoutStreet)
-								.stream().forEach(c -> dS.addValue(c.getValue()));
-			  int decompositionLevelWithRoad = (int) dS.getPercentile(50) - decompositionLevelWithoutStreet;
-			  int decompositionLevelWithLargeRoad = (int) dS.getPercentile(50) - largeStreetLevel ;
-			  OBBBlockDecomposition.decompose(polygon, extBlock, (roads != null && !roads.isEmpty()) ?  Collec.snapDatas(roads, (Geometry) featToSplit.getDefaultGeometry()) : null, maximalArea, maximalWidth, noise, harmonyCoeff, smallStreetWidth, decompositionLevelWithLargeRoad ,
-										largeStreetWidth, forceStreetAccess, decompositionLevelWithRoad, decompositionLevelWithoutStreet)
-			  	.childrenStream().forEach(p-> {
-	            SimpleFeature newFeature = builder.buildFeature(Attribute.makeUniqueId());
+				OBBBlockDecomposition.decompose(polygon, extBlock,
+						(roads != null && !roads.isEmpty()) ? Collec.snapDatas(roads, (Geometry) featToSplit.getDefaultGeometry()) : null,
+						maximalArea, maximalWidth, noise, harmonyCoeff, smallStreetWidth, largeStreetLevel, largeStreetWidth, forceStreetAccess, 0,
+						decompositionLevelWithoutStreet).stream().forEach(c -> dS.addValue(c.getValue()));
+				int decompositionLevelWithRoad = (int) dS.getPercentile(50) - decompositionLevelWithoutStreet;
+				int decompositionLevelWithLargeRoad = (int) dS.getPercentile(50) - largeStreetLevel;
+				OBBBlockDecomposition.decompose(polygon, extBlock,
+						(roads != null && !roads.isEmpty()) ? Collec.snapDatas(roads, (Geometry) featToSplit.getDefaultGeometry()) : null,
+						maximalArea, maximalWidth, noise, harmonyCoeff, smallStreetWidth, decompositionLevelWithLargeRoad, largeStreetWidth,
+						forceStreetAccess, decompositionLevelWithRoad, decompositionLevelWithoutStreet).childrenStream().forEach(p -> {
+							SimpleFeature newFeature = builder.buildFeature(Attribute.makeUniqueId());
 	            newFeature.setDefaultGeometry(p.getKey());
 	            result.add(newFeature);
 			  	});
@@ -106,7 +109,7 @@ public class OBBBlockDecomposition {
 	 * @param toSplit
 	 *            {@link SimpleFeatureCollection} of parcels
 	 * @param roads
-	 *            Road Geopackage (can be null)
+	 *            Road layer (can be null)
 	 * @param maximalArea
 	 *            Area of the parcel under which the parcel won't be anymore cut
 	 * @param maximalWidth
@@ -118,10 +121,13 @@ public class OBBBlockDecomposition {
 	 * @param extBlock
 	 *            outside of the parcels (representing road or public space)
 	 * @param smallStreetWidth
+	 *            Width of the small streets
 	 * @param largeStreetLevel
+	 *            Level of decomposition in which large streets are generated
 	 * @param largeStreetWidth
+	 *            Width of the large streets
 	 * @param forceStreetAccess
-	 *            Force the access to the road for each parcel. Not working good yet.
+	 *            Is the polygon should be turned in order to assure the connection with the road ? Also regarding the <i>harmony coeff</i>. Most of cases, it's yes
 	 * @param decompositionLevelWithoutStreet
 	 *            Number of last iteration row for which no street network is generated
 	 * @return a collection of subdivised parcels
@@ -142,32 +148,44 @@ public class OBBBlockDecomposition {
 		return result.collection();
 	}
 
-/**
- * End condition : either the area is below a threshold or width to road (which is ultimately allowed to be 0)
- * 
- * @param area
- *            Area of the current parcel
- * @param frontSideWidth
- *            width of contact between road and parcel
- * @param maximalArea
- *            Area threshold
- * @param maximalWidth
- *            threshold of width of contact between road and parcel
- * @return true if the algorithm must stop
- */
+	/**
+	 * End condition : either the area is below a threshold or width to road (which is ultimately allowed to be 0)
+	 * 
+	 * @param area
+	 *            Area of the current parcel
+	 * @param frontSideWidth
+	 *            width of contact between road and parcel
+	 * @param maximalArea
+	 *            Area threshold
+	 * @param maximalWidth
+	 *            threshold of width of contact between road and parcel
+	 * @return true if the algorithm must stop
+	 */
   static boolean endCondition(double area, double frontSideWidth, double maximalArea, double maximalWidth) {
     return (area <= maximalArea) || ((frontSideWidth <= maximalWidth) && (frontSideWidth != 0.0));
   }
   
-  /**
-   * Computed the splitting polygons composed by two boxes determined from the oriented bounding boxes split from a line at its middle.
-   * 
-   * @param pol
-   *          The input polygon
-   * @param shortDirectionSplit
-   *          It is split by the short edges or by the long edge.
-   * @return A list of split polygons
-   */
+	/**
+	 * Computed the splitting polygons composed by two boxes determined from the oriented bounding boxes split from a line at its middle.
+	 * 
+	 * @param pol
+	 *            The input polygon
+	 * @param ext
+	 *            outside of the parcels (representing road or public space)
+	 * @param shortDirectionSplit
+	 *            It is split by the short edges or by the long edge. * @param epsilon
+	 * @param noise
+	 *            Irregularity into parcel shape
+	 * @param smallStreetWidth
+	 *            Width of the small streets
+	 * @param largeStreetLevel
+	 *            Level of decomposition in which large streets are generated
+	 * @param largeStreetWidth
+	 *            Width of the large streets
+	 * @param decompositionLevelWithRoad
+	 * @param decompositionLevel
+	 * @return A list of split polygons
+	 */
   public static List<Polygon> computeSplittingPolygon(Polygon pol, List<LineString> ext, boolean shortDirectionSplit, double epsilon, double noise, double smallRoadWidth, int largeRoadLevel, double largeRoadWidth,
       int decompositionLevelWithRoad, int decompositionLevel) {
 //	  public static List<Polygon> computeSplittingPolygon(Polygon pol, List<LineString> ext, boolean shortDirectionSplit, double noise, double smallRoadWidth, int largeRoadLevel, double largeRoadWidth,
@@ -258,19 +276,45 @@ public class OBBBlockDecomposition {
 		return decompose(polygon, ext, null, maximalArea, maximalWidth, noise, epsilon, streetWidth, 999, streetWidth, forceStreetAccess,
 				decompositionLevelWithStreet, decompositionLevel);
 	}
+
 	/**
-	 * Main decompose method.
+	 * Main method for OBB decomposition
+	 *
+	 * @param polygon
+	 *            {@link Polygon} of the parcel to be cut
+	 * @param extBlock
+	 *            outside of the parcels (representing road or public space)
+	 * @param roads
+	 *            Road layer (can be null)
+	 * @param maximalArea
+	 *            Area of the parcel under which the parcel won't be anymore cut
+	 * @param maximalWidth
+	 *            Width of the parcel under which the parcel won't be anymore cut
+	 * @param noise
+	 *            irregularity into parcel shape
+	 * @param harmonyCoeff
+	 *            intensity of the forcing of a parcel to be connected with a road
+	 * @param smallStreetWidth
+	 *            Width of the small streets
+	 * @param largeStreetLevel
+	 *            Level of decomposition in which large streets are generated
+	 * @param largeStreetWidth
+	 *            Width of the large streets
+	 * @param forceStreetAccess
+	 *            Is the polygon should be turned in order to assure the connection with the road ? Also regarding the <i>harmony coeff</i>. Most of cases, it's yes
+	 * @param decompositionLevelWithStreet
+	 * @param decompositionLevel
+	 * @return A tree with the polygon decomposition
 	 */
 	public static Tree<Pair<Polygon, Integer>> decompose(Polygon polygon, List<LineString> ext, SimpleFeatureCollection roads, double maximalArea, double maximalWidth, double noise,
-			double epsilon, double smallStreetWidth, int largeStreetLevel, double largeStreetWidth, boolean forceStreetAccess, int decompositionLevelWithStreet,
+			double harmonyCoeff, double smallStreetWidth, int largeStreetLevel, double largeStreetWidth, boolean forceStreetAccess, int decompositionLevelWithStreet,
 			int decompositionLevel) {
     double area = polygon.getArea();
     double frontSideWidth = ParcelState.getParcelFrontSideWidth(polygon, roads, ext);
     if (endCondition(area, frontSideWidth, maximalArea, maximalWidth))
       return new Tree<>(new ImmutablePair<>(polygon, decompositionLevel));
-    
     // Determination of splitting polygon (it is a splitting line in the article)
-    List<Polygon> splittingPolygon = computeSplittingPolygon(polygon, ext, true, epsilon, noise, smallStreetWidth, largeStreetLevel, largeStreetWidth, decompositionLevelWithStreet, decompositionLevel);
+    List<Polygon> splittingPolygon = computeSplittingPolygon(polygon, ext, true, harmonyCoeff, noise, smallStreetWidth, largeStreetLevel, largeStreetWidth, decompositionLevelWithStreet, decompositionLevel);
     // Split into polygon
     List<Polygon> splitPolygons = split(polygon, splittingPolygon);
     // If a parcel has no road access, there is a probability to make a perpendicular split
@@ -278,11 +322,11 @@ public class OBBBlockDecomposition {
     if ((forceStreetAccess && ((!ParcelState.isParcelHasRoadAccess(splitPolygons.get(0), null, Geom.getListAsGeom(ext, new GeometryFactory())) 
     		|| !ParcelState.isParcelHasRoadAccess(splitPolygons.get(1), null, Geom.getListAsGeom(ext, new GeometryFactory())))))) {
     	// Same steps but with different splitting geometries
-      splittingPolygon = computeSplittingPolygon(polygon, ext, false, epsilon, noise, smallStreetWidth, largeStreetLevel, largeStreetWidth, decompositionLevelWithStreet, decompositionLevel);
+      splittingPolygon = computeSplittingPolygon(polygon, ext, false, harmonyCoeff, noise, smallStreetWidth, largeStreetLevel, largeStreetWidth, decompositionLevelWithStreet, decompositionLevel);
       splitPolygons = split(polygon, splittingPolygon);
     }
     // All split polygons are split and results added to the output
-    return new Tree<>(new ImmutablePair<>(polygon, decompositionLevel), splitPolygons.stream().map(pol -> decompose(pol, ext, roads, maximalArea, maximalWidth, noise, epsilon, smallStreetWidth, largeStreetLevel, largeStreetWidth, forceStreetAccess, decompositionLevelWithStreet, decompositionLevel + 1)).collect(Collectors.toList()));
+    return new Tree<>(new ImmutablePair<>(polygon, decompositionLevel), splitPolygons.stream().map(pol -> decompose(pol, ext, roads, maximalArea, maximalWidth, noise, harmonyCoeff, smallStreetWidth, largeStreetLevel, largeStreetWidth, forceStreetAccess, decompositionLevelWithStreet, decompositionLevel + 1)).collect(Collectors.toList()));
   }
   
          	   //  public static void main(String[] args) throws Exception {

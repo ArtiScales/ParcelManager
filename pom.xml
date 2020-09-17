@@ -14,7 +14,7 @@
 		<artiscales.tools.version>0.3-SNAPSHOT</artiscales.tools.version>
 	</properties>
 
-	<description><url>https://github.com/ArtiScales/ArtiScales</url></description>
+<!--	<description><url>https://github.com/ArtiScales/ArtiScales</url></description>-->
 	<build>
 		<finalName>ParcelManager${project.version}</finalName>
 		<sourceDirectory>src/main/java</sourceDirectory>

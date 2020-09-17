@@ -137,6 +137,10 @@ public class PMStep {
 		for (String communityNumber : communityNumbers) {
 			System.out.println("for community "+communityNumber);
 			SimpleFeatureCollection parcelMarkedComm = ParcelGetter.getParcelByCommunityCode(parcelMarked, communityNumber);
+			if (parcelMarkedComm.size()==0) {
+				System.out.println("No parcels for community "+ communityNumber);
+				continue;
+			}
 			// we choose one of the different goals
 			switch (goal) {
 			case "zoneDivision":

@@ -42,21 +42,24 @@ public class CompareSimulatedParcelsWithEvolution {
 		File rootFolder = new File("src/main/resources/ParcelComparison/");
 		File outFolder = new File(rootFolder, "out");
 		outFolder.mkdirs();
-		File fileParcelPast = new File(rootFolder, "parcel2003.gpkg");
-		File fileParcelNow = new File(rootFolder, "parcel2018.gpkg");
+		File parcelRefFile = new File(rootFolder, "parcel2003.gpkg");
+		File parcelCompFile = new File(rootFolder, "parcel2018.gpkg");
 		File roadFile = new File(rootFolder, "road.gpkg");
 
 		// definition of a parameter file
 		File scenarioFile = new File(rootFolder, "scenario.json");
-//	}
-//	
-//	public static void  compareSimulatedParcelsWithEvolution() { 
-		// Mark and export the parcels that have changed between the two set of time
-		ParcelCollection.sortDifferentParcel(fileParcelPast, fileParcelNow, outFolder);
+		compareSimulatedParcelsWithEvolutionWorkflow(rootFolder, parcelRefFile, parcelCompFile, roadFile, scenarioFile, outFolder);
+		System.out.println(Duration.between(start, Instant.now()));
 
+	}
+
+	public static void compareSimulatedParcelsWithEvolutionWorkflow(File rootFolder, File parcelRefFile, File parcelCompFile, File roadFile,
+			File scenarioFile, File outFolder) throws Exception {
+		// Mark and export the parcels that have changed between the two set of time
+		ParcelCollection.sortDifferentParcel(parcelRefFile, parcelCompFile, outFolder);
 		// create ilots for parcel densification in case they haven't been generated before
-		CityGeneration.createUrbanIslet(fileParcelPast, rootFolder);
-		
+		CityGeneration.createUrbanIslet(parcelRefFile, rootFolder);
+
 		PMScenario.setSaveIntermediateResult(true);
 //		PMStep.setDEBUG(true);
 		PMStep.setGENERATEATTRIBUTES(false);
@@ -74,7 +77,7 @@ public class CompareSimulatedParcelsWithEvolution {
 		File simulatedFile = new File(outFolder, "simulatedParcels.gpkg");
 		Geopackages.mergeGpkgFiles(lF, simulatedFile);
 	
-		PMStep.setParcel(fileParcelPast);
+		PMStep.setParcel(parcelRefFile);
 		PMStep.setPOLYGONINTERSECTION(null);
 		System.out.println("++++++++++ Analysis by zones ++++++++++");
 		System.out.println("steps"+ pm.getStepList());
@@ -112,7 +115,7 @@ public class CompareSimulatedParcelsWithEvolution {
 
 			//evolved parcel crop
 			System.out.println("evolved parcels");
-			DataStore sdsEvolvedAndAllParcels = Geopackages.getDataStore(fileParcelNow);
+			DataStore sdsEvolvedAndAllParcels = Geopackages.getDataStore(parcelCompFile);
 			SingleParcelStat.writeStatSingleParcel(
 					MarkParcelAttributeFromPosition.markParcelIntersectPolygonIntersection(sdsEvolvedAndAllParcels.getFeatureSource(sdsEvolvedAndAllParcels.getTypeNames()[0]).getFeatures(),
 							Arrays.stream(sfcEvolvedParcel.toArray(new SimpleFeature[0])).map(g -> ((Geometry) g.getDefaultGeometry()).buffer(-1)).collect(Collectors.toList())),
@@ -120,7 +123,5 @@ public class CompareSimulatedParcelsWithEvolution {
 			sdsEvolvedParcel.dispose();
 		}
 		dsRoad.dispose();
-		Instant end = Instant.now();
-		System.out.println(Duration.between(start, end));
 		}
 }

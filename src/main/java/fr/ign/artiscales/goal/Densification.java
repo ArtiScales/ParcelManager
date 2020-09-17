@@ -80,9 +80,9 @@ public class Densification {
 			File outFolder, File buildingFile, File roadFile, double maximalAreaSplitParcel, double minimalAreaSplitParcel, double maximalWidthSplitParcel,
 			double lenDriveway, boolean allowIsolatedParcel, Geometry exclusionZone) throws Exception {
 		// if parcels doesn't contains the markParcelAttribute field or have no marked parcels 
-		if (!Collec.isCollecContainsAttribute(parcelCollection, MarkParcelAttributeFromPosition.getMarkFieldName())
-				|| Arrays.stream(parcelCollection.toArray(new SimpleFeature[0]))
-						.filter(feat -> feat.getAttribute(MarkParcelAttributeFromPosition.getMarkFieldName()).equals(1)).count() == 0) {
+		if (Arrays.stream(parcelCollection.toArray(new SimpleFeature[0]))
+				.filter(feat -> feat.getAttribute(MarkParcelAttributeFromPosition.getMarkFieldName()).equals(1)).count() == 0
+				|| !Collec.isCollecContainsAttribute(parcelCollection, MarkParcelAttributeFromPosition.getMarkFieldName())) {
 			System.out.println("Densification : unmarked parcels");
 			return GeneralFields.transformSFCToMinParcel(parcelCollection);
 		}
@@ -341,6 +341,7 @@ public class Densification {
 			parcelDensified = ConsolidationDivision.consolidationDivision(supParcels, roadFile, outFolder, profile);
 		}
 		ds.dispose();
+		tmp.delete();
 		return parcelDensified;
 	}
 
