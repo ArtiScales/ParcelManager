@@ -2,7 +2,7 @@
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
-	<groupId>fr.ign.cogit</groupId>
+	<groupId>fr.ign.artiscales</groupId>
 	<artifactId>ParcelManager</artifactId>
 	<version>0.2-SNAPSHOT</version>
 	<name>ParcelManager</name>
@@ -14,8 +14,7 @@
 		<artiscales.tools.version>0.3-SNAPSHOT</artiscales.tools.version>
 	</properties>
 
-	<description></description>
-	<!-- <url>https://github.com/ArtiScales/ArtiScales</url> -->
+	<description><url>https://github.com/ArtiScales/ArtiScales</url></description>
 	<build>
 		<finalName>ParcelManager${project.version}</finalName>
 		<sourceDirectory>src/main/java</sourceDirectory>
@@ -116,11 +115,6 @@
 	</build>
 
 	<dependencies>
-		<dependency>
-		  <groupId>org.openjfx</groupId>
-		  <artifactId>javafx-controls</artifactId>
-		  <version>11.0.2</version>
-		</dependency>
 		<dependency>
 			<groupId>org.knowm.xchart</groupId>
 			<artifactId>xchart</artifactId>
