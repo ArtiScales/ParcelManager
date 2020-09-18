@@ -74,15 +74,22 @@ public class CompareSimulatedParcelsWithEvolution {
 		for (File f : outFolder.listFiles())
 			if ((f.getName().contains(("Only")) && f.getName().contains(".gpkg")))
 				lF.add(f);
-		File simulatedFile = new File(outFolder, "simulatedParcels.gpkg");
+		File simulatedFile = new File(outFolder, "simulatedParcel.gpkg");
 		Geopackages.mergeGpkgFiles(lF, simulatedFile);
-	
-		PMStep.setParcel(parcelRefFile);
-		PMStep.setPOLYGONINTERSECTION(null);
+
+		// stat for the evolved parcels
+		File evolvedParcelFile = new File(outFolder, "evolvedParcel.gpkg");
+		SingleParcelStat.writeStatSingleParcel(evolvedParcelFile, roadFile, new File(outFolder, "EvolvedParcelStats.csv"), true);
+		// stat for the simulated parcels
+		SingleParcelStat.writeStatSingleParcel(simulatedFile,evolvedParcelFile, roadFile, new File(outFolder, "SimulatedParcelStats.csv"), true);
+		// for every goals
 		System.out.println("++++++++++ Analysis by zones ++++++++++");
 		System.out.println("steps"+ pm.getStepList());
-		//we proceed with an analysis made for each steps
-		PMStep.cachePlacesSimulates.clear(); 
+		
+		PMStep.setParcel(parcelRefFile);
+		PMStep.setPOLYGONINTERSECTION(null);
+		// we proceed with an analysis made for each steps
+		PMStep.cachePlacesSimulates.clear();
 		MarkParcelAttributeFromPosition.setPostMark(true);
 		FilterFactory2 ff = CommonFactoryFinder.getFilterFactory2(GeoTools.getDefaultHints());
 		DataStore dsRoad = Geopackages.getDataStore(roadFile);
@@ -91,27 +98,27 @@ public class CompareSimulatedParcelsWithEvolution {
 			File zoneOutFolder = new File(outFolder, step.getZoneStudied());
 			zoneOutFolder.mkdirs();
 			List<Geometry> geoms = step.getBoundsOfZone();
-			Geometry geomUnion = Geom.unionPrecisionReduce(geoms, 100).buffer(1);
-
+			Geometry geomUnion = Geom.unionPrecisionReduce(geoms, 100).buffer(-1);
 			// simulated parcels crop
 			DataStore sdsSimulatedParcel = Geopackages.getDataStore(simulatedFile);
-			SimpleFeatureCollection sfcSimulatedParcel = sdsSimulatedParcel.getFeatureSource(sdsSimulatedParcel.getTypeNames()[0]).getFeatures().subCollection(
-					ff.within(ff.property(sdsSimulatedParcel.getFeatureSource(sdsSimulatedParcel.getTypeNames()[0]).getFeatures().getSchema().getGeometryDescriptor().getLocalName()), ff.literal(geomUnion)));
+			SimpleFeatureCollection sfcSimulatedParcel = sdsSimulatedParcel.getFeatureSource(sdsSimulatedParcel.getTypeNames()[0]).getFeatures()
+					.subCollection(ff.intersects(ff.property(sdsSimulatedParcel.getFeatureSource(sdsSimulatedParcel.getTypeNames()[0]).getFeatures()
+							.getSchema().getGeometryDescriptor().getLocalName()), ff.literal(geomUnion)));
 			Collec.exportSFC(sfcSimulatedParcel, new File(zoneOutFolder, "SimulatedParcel.gpkg"));
 			
-			DataStore sdsEvolvedParcel = Geopackages.getDataStore(new File(outFolder, "evolvedParcel.gpkg"));
+			// evolved parcel crop
+			DataStore sdsEvolvedParcel = Geopackages.getDataStore(evolvedParcelFile);
 			SimpleFeatureCollection sfcEvolvedParcel = Collec.snapDatas(sdsEvolvedParcel.getFeatureSource(sdsEvolvedParcel.getTypeNames()[0]).getFeatures(), geomUnion);
 			Collec.exportSFC(sfcEvolvedParcel, new File(zoneOutFolder, "EvolvedParcel.gpkg"));
 			
-//			DataStore sdsFinalParcel = Geopackages.getDataStore(new File("src/main/resources/ParcelComparison/out/parcelCuted-consolidationDivision-smallHouse-NC_.gpkg"));
-			DataStore sdsFinalParcel = Geopackages.getDataStore(step.getLastOutput());
+			DataStore sdsGoalParcel = Geopackages.getDataStore(step.getLastOutput() != null ? step.getLastOutput() : step.makeFileName());
 			SingleParcelStat.writeStatSingleParcel(
 					MarkParcelAttributeFromPosition.markSimulatedParcel(MarkParcelAttributeFromPosition.markParcelIntersectPolygonIntersection(
-							sdsFinalParcel.getFeatureSource(sdsFinalParcel.getTypeNames()[0]).getFeatures(), geoms.stream().map(g -> g.buffer(-2)).collect(Collectors.toList()))),
+							sdsGoalParcel.getFeatureSource(sdsGoalParcel.getTypeNames()[0]).getFeatures(), geoms.stream().map(g -> g.buffer(-2)).collect(Collectors.toList()))),
 					sfcEvolvedParcel, Collec.snapDatas(dsRoad.getFeatureSource(dsRoad.getTypeNames()[0]).getFeatures(), geomUnion),
 					new File(zoneOutFolder, "SimulatedParcelStats.csv"));
 			sdsSimulatedParcel.dispose();
-			sdsFinalParcel.dispose();
+			sdsGoalParcel.dispose();
 
 			//evolved parcel crop
 			System.out.println("evolved parcels");

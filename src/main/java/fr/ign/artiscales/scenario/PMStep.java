@@ -112,7 +112,9 @@ public class PMStep {
 		OUTFOLDER.mkdirs();
 		//convert the parcel to a common type
 		DataStore dSParcel = Geopackages.getDataStore(PARCELFILE);
-		SimpleFeatureCollection parcel = new SpatialIndexFeatureCollection(dSParcel.getFeatureSource(dSParcel.getTypeNames()[0]).getFeatures());
+		SimpleFeatureCollection parcel = DataUtilities.collection(dSParcel.getFeatureSource(dSParcel.getTypeNames()[0]).getFeatures());
+		dSParcel.dispose();
+
 		switch (GeneralFields.getParcelFieldType()) {
 		case "french":
 			parcel = FrenchParcelFields.frenchParcelToMinParcel(parcel);
@@ -180,7 +182,7 @@ public class PMStep {
 			((DefaultFeatureCollection) parcelCut)
 					.addAll(GeneralFields.transformSFCToMinParcel(ParcelGetter.getParcelByCommunityCode(parcel, communityCode)));
 		}
-		lastOutput = new File(OUTFOLDER, "parcelCuted-" + goal + "-"+ urbanFabricType + "-" + genericZone +"_" + preciseZone + Collec.getDefaultGISFileType());
+		lastOutput = makeFileName();
 		//Attribute generation (optional)
 		if (GENERATEATTRIBUTES) {
 			switch (GeneralFields.getParcelFieldType()) {
@@ -191,7 +193,6 @@ public class PMStep {
 			}
 		}
 		Collec.exportSFC(parcelCut, lastOutput);
-		dSParcel.dispose();
 		//if the step produces no output, we return the input parcels
 		if(!lastOutput.exists()) {
 			System.out.println("PMstep "+this.toString() +" returns nothing");
@@ -502,5 +503,9 @@ public class PMStep {
 	 */
 	public File getLastOutput() {
 		return lastOutput;
+	}
+	
+	public File makeFileName() {
+		return new File(OUTFOLDER, "parcelCuted-" + goal + "-"+ urbanFabricType + "-" + genericZone +"_" + preciseZone + Collec.getDefaultGISFileType());
 	}
 }

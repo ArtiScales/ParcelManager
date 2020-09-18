@@ -64,6 +64,32 @@ public class SingleParcelStat {
 //	 System.out.println("time : " + (System.currentTimeMillis() - strat));
 //	 }
 
+	public static void writeStatSingleParcel(File parcelFile, File roadFile, File parcelStatCsv, boolean markAll)
+			throws NoSuchAuthorityCodeException, IOException, FactoryException {
+		writeStatSingleParcel(parcelFile, null, roadFile, parcelStatCsv, markAll);
+	}
+
+	public static void writeStatSingleParcel(File parcelFile, File parcelToCompare, File roadFile, File parcelStatCsv, boolean markAll)
+			throws NoSuchAuthorityCodeException, IOException, FactoryException {
+		DataStore dsRoad = Geopackages.getDataStore(roadFile);
+		DataStore dsParcel = Geopackages.getDataStore(parcelFile);
+		SimpleFeatureCollection parcels;
+		if (markAll)
+			parcels = MarkParcelAttributeFromPosition.markAllParcel(dsParcel.getFeatureSource(dsParcel.getTypeNames()[0]).getFeatures());
+		else
+			parcels = dsParcel.getFeatureSource(dsParcel.getTypeNames()[0]).getFeatures();
+		if (parcelToCompare == null)
+			writeStatSingleParcel(parcels, dsRoad.getFeatureSource(dsRoad.getTypeNames()[0]).getFeatures(), parcelStatCsv);
+		else {
+			DataStore dsParcel2 = Geopackages.getDataStore(parcelToCompare);
+			writeStatSingleParcel(parcels, dsParcel2.getFeatureSource(dsParcel2.getTypeNames()[0]).getFeatures(),
+					dsRoad.getFeatureSource(dsRoad.getTypeNames()[0]).getFeatures(), parcelStatCsv);
+			dsParcel2.dispose();
+		}
+		dsRoad.dispose();
+		dsParcel.dispose();
+	}
+	
 	public static void writeStatSingleParcel(SimpleFeatureCollection parcels, File roadFile, File parcelStatCsv)
 			throws NoSuchAuthorityCodeException, IOException, FactoryException {
 		DataStore sds = Geopackages.getDataStore(roadFile);

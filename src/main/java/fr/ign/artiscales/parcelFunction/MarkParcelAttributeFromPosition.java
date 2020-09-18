@@ -632,7 +632,8 @@ public class MarkParcelAttributeFromPosition {
 		SimpleFeatureBuilder featureBuilder = ParcelSchema.getSFBMinParcelSplit();
 		List<String> genericZoneUsualNames = GeneralFields.getGenericZoneUsualNames(genericZone);
 		DataStore dsZone = Geopackages.getDataStore(zoningFile);
-		SimpleFeatureCollection zoningSFC = Collec.snapDatas(new SpatialIndexFeatureCollection(dsZone.getFeatureSource(dsZone.getTypeNames()[0]).getFeatures()),parcels);
+		SimpleFeatureCollection zoningSFC = Collec
+				.snapDatas(new SpatialIndexFeatureCollection(dsZone.getFeatureSource(dsZone.getTypeNames()[0]).getFeatures()), parcels);
 		try (SimpleFeatureIterator it = parcels.features()) {
 			while (it.hasNext()) {
 				SimpleFeature feat = it.next();
@@ -977,11 +978,20 @@ public class MarkParcelAttributeFromPosition {
 		});
 		return result;
 	}
-
+	/**
+	 * Marking parcels is made before (false) or after (true) the simulation process. It won't allow or will the marking of the already simulated parcels
+	 * 
+	 * @param postMark
+	 */
 	public static boolean isPostMark() {
 		return postMark;
 	}
 
+	/**
+	 * Specify that the marking is made before (false) or after (true) the simulation process. It won't allow or will the marking of the already simulated parcels
+	 * 
+	 * @param postMark
+	 */
 	public static void setPostMark(boolean postMark) {
 		MarkParcelAttributeFromPosition.postMark = postMark;
 	}
