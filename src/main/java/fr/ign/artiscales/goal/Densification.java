@@ -35,18 +35,11 @@ import fr.ign.cogit.parameter.ProfileUrbanFabric;
  * @author Maxime Colomb
  *
  */
-public class Densification {
+public class Densification extends Goal {
+
+	public Densification() {
+	};
 	
-	/**
-	 * If true, will save a Geopackage containing only the simulated parcels in the temporary folder.
-	 */
-	public static boolean SAVEINTERMEDIATERESULT = false;
-	/**
-	 * If true, overwrite the output saved Geopackages. If false, happend the simulated parcels to a potential already existing Geopackage.
-	 */
-	public static boolean OVERWRITEGEOPACKAGE = true;
-
-
 	/**
 	 * Apply the densification goal on a set of marked parcels.
 	 *
@@ -76,7 +69,7 @@ public class Densification {
 	 * @return The input parcel {@link SimpleFeatureCollection} with the marked parcels replaced by the simulated parcels. All parcels have the
 	 *         {@link fr.ign.artiscales.parcelFunction.ParcelSchema#getSFBMinParcel()} schema. * @throws Exception
 	 */
-	public static SimpleFeatureCollection densification(SimpleFeatureCollection parcelCollection, SimpleFeatureCollection isletCollection,
+	public SimpleFeatureCollection densification(SimpleFeatureCollection parcelCollection, SimpleFeatureCollection isletCollection,
 			File outFolder, File buildingFile, File roadFile, double maximalAreaSplitParcel, double minimalAreaSplitParcel, double maximalWidthSplitParcel,
 			double lenDriveway, boolean allowIsolatedParcel, Geometry exclusionZone) throws Exception {
 		// if parcels doesn't contains the markParcelAttribute field or have no marked parcels 
@@ -188,7 +181,7 @@ public class Densification {
 	 * @return The input parcel {@link SimpleFeatureCollection} with the marked parcels replaced by the simulated parcels. All parcels have the
 	 *         {@link fr.ign.artiscales.parcelFunction.ParcelSchema#getSFBMinParcel()} schema. * @throws Exception
 	 */
-	public static SimpleFeatureCollection densification(SimpleFeatureCollection parcelCollection, SimpleFeatureCollection isletCollection,
+	public SimpleFeatureCollection densification(SimpleFeatureCollection parcelCollection, SimpleFeatureCollection isletCollection,
 			File outFolder, File buildingFile, File roadFile, double maximalAreaSplitParcel, double minimalAreaSplitParcel, double maximalWidthSplitParcel,
 			double lenDriveway, boolean allowIsolatedParcel) throws Exception {
 		return densification(parcelCollection, isletCollection, outFolder, buildingFile, null, maximalAreaSplitParcel, minimalAreaSplitParcel,
@@ -223,7 +216,7 @@ public class Densification {
 	 * @return The input parcel {@link SimpleFeatureCollection} with the marked parcels replaced by the simulated parcels. All parcels have the
 	 *         {@link fr.ign.artiscales.parcelFunction.ParcelSchema#getSFBMinParcel()} schema. * @throws Exception
 	 */
-	public static SimpleFeatureCollection densification(SimpleFeatureCollection parcelCollection, SimpleFeatureCollection isletCollection,
+	public SimpleFeatureCollection densification(SimpleFeatureCollection parcelCollection, SimpleFeatureCollection isletCollection,
 			File outFolder, File buildingFile, double maximalAreaSplitParcel, double minimalAreaSplitParcel, double maximalWidthSplitParcel,
 			double lenDriveway, boolean allowIsolatedParcel) throws Exception {
 		return densification(parcelCollection, isletCollection, outFolder, buildingFile, null, maximalAreaSplitParcel, minimalAreaSplitParcel,
@@ -254,7 +247,7 @@ public class Densification {
 	 *         {@link fr.ign.artiscales.parcelFunction.ParcelSchema#getSFBMinParcel()} schema.
 	 * @throws Exception
 	 */
-	public static SimpleFeatureCollection densification(SimpleFeatureCollection parcelCollection, SimpleFeatureCollection isletCollection,
+	public SimpleFeatureCollection densification(SimpleFeatureCollection parcelCollection, SimpleFeatureCollection isletCollection,
 			File outFolder, File buildingFile, File roadFile, ProfileUrbanFabric profile, boolean allowIsolatedParcel) throws Exception {
 		return densification(parcelCollection, isletCollection, outFolder, buildingFile, roadFile, profile, allowIsolatedParcel, null);
 	}
@@ -282,7 +275,7 @@ public class Densification {
 	 * @return The input parcel {@link SimpleFeatureCollection} with the marked parcels replaced by the simulated parcels. All parcels have the
 	 *         {@link fr.ign.artiscales.parcelFunction.ParcelSchema#getSFBMinParcel()} schema. * @throws Exception
 	 */
-	public static SimpleFeatureCollection densification(SimpleFeatureCollection parcelCollection, SimpleFeatureCollection isletCollection,
+	public SimpleFeatureCollection densification(SimpleFeatureCollection parcelCollection, SimpleFeatureCollection isletCollection,
 			File outFolder, File buildingFile, File roadFile, ProfileUrbanFabric profile, boolean allowIsolatedParcel, Geometry exclusionZone) throws Exception {
 		return densification(parcelCollection, isletCollection, outFolder, buildingFile, roadFile,
 				profile.getMaximalArea(), profile.getMinimalArea(), profile.getMinimalWidthContactRoad(), profile.getLenDriveway(),
@@ -318,7 +311,7 @@ public class Densification {
 	 *         {@link fr.ign.artiscales.parcelFunction.ParcelSchema#getSFBMinParcel()} schema.
 	 * @throws Exception
 	 */
-	public static SimpleFeatureCollection densificationOrNeighborhood(SimpleFeatureCollection parcelCollection,
+	public SimpleFeatureCollection densificationOrNeighborhood(SimpleFeatureCollection parcelCollection,
 			SimpleFeatureCollection isletCollection, File outFolder, File buildingFile, File roadFile, ProfileUrbanFabric profile,
 			boolean allowIsolatedParcel, Geometry exclusionZone, int factorOflargeZoneCreation) throws Exception {
 		//TODO stupid hack but I can't figure out how those SimpleFeatuceCollection's attributes are changed if not wrote in hard
@@ -338,7 +331,7 @@ public class Densification {
 				profile.getMaximalArea() * factorOflargeZoneCreation);
 		if (!MarkParcelAttributeFromPosition.isNoParcelMarked(supParcels)) {
 			profile.setLargeStreetWidth(profile.getStreetWidth());
-			parcelDensified = ConsolidationDivision.consolidationDivision(supParcels, roadFile, outFolder, profile);
+			parcelDensified = (new ConsolidationDivision()).consolidationDivision(supParcels, roadFile, outFolder, profile);
 		}
 		ds.dispose();
 		tmp.delete();
@@ -352,7 +345,7 @@ public class Densification {
 	 *            name of the former section
 	 * @return the new section's name
 	 */
-	public static String makeNewSection(String section) {
+	public String makeNewSection(String section) {
 		return section + "-Densifyed";
 	}
 
@@ -363,7 +356,7 @@ public class Densification {
 	 *            {@link SimpleFeature} to test.
 	 * @return true if the section field is marked with the {@link #makeNewSection(String)} method.
 	 */
-	public static boolean isNewSection(SimpleFeature feat) {
+	public boolean isNewSection(SimpleFeature feat) {
 		return ((String) feat.getAttribute(ParcelSchema.getMinParcelSectionField())).endsWith("-Densifyed");
 	}
 }

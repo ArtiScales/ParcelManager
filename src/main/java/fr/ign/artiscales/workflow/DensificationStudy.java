@@ -77,7 +77,7 @@ public class DensificationStudy {
 		SimpleFeatureCollection parcelsVacantLot = MarkParcelAttributeFromPosition.markParcelIntersectFrenchConstructibleZoningType(
 				MarkParcelAttributeFromPosition.markUnBuiltParcel(parcels, buildingFile), zoningFile);
 		// Collec.exportSFC(parcelsVacantLot, new File("/tmp/parcelsVacantLot"));
-		SimpleFeatureCollection parcelsVacantLotCreated = Densification.densificationOrNeighborhood(parcelsVacantLot, islet, outFolder, buildingFile,
+		SimpleFeatureCollection parcelsVacantLotCreated = (new Densification()).densificationOrNeighborhood(parcelsVacantLot, islet, outFolder, buildingFile,
 				roadFile, profile, isParcelWithoutStreetAllowed, buffer, 5);
 		// Collec.exportSFC(parcelsVacantLotCreated, new File("/tmp/parcelsVacantLotCreated"));
 
@@ -86,7 +86,7 @@ public class DensificationStudy {
 				.markParcelIntersectFrenchConstructibleZoningType(MarkParcelAttributeFromPosition.markBuiltParcel(parcels, buildingFile), zoningFile);
 		// Collec.exportSFC(parcelsDensifZone, new File("/tmp/parcelsDensifZone"));
 
-		SimpleFeatureCollection parcelsDensifCreated = Densification.densification(parcelsDensifZone, islet, outFolder, buildingFile,
+		SimpleFeatureCollection parcelsDensifCreated = (new Densification()).densification(parcelsDensifZone, islet, outFolder, buildingFile,
 				roadFile, profile, isParcelWithoutStreetAllowed, buffer);
 		// Collec.exportSFC(parcelsDensifCreated, new File("/tmp/parcelsDensifCreated"));
 

@@ -44,24 +44,12 @@ import fr.ign.cogit.parameter.ProfileUrbanFabric;
  * @author Maxime Colomb
  *
  */
-public class ZoneDivision {
-	/**
-	 * The process used to divide the parcels
-	 */
-	public static String PROCESS = "OBB";
-	/**
-	 * If true, will save a Geopackage containing only the simulated parcels in the temporary folder.
-	 */
-	public static boolean SAVEINTERMEDIATERESULT = false;
-	/**
-	 * If true, overwrite the output saved Geopackages. If false, happend the simulated parcels to a potential already existing Geopackage.
-	 */
-	public static boolean OVERWRITEGEOPACKAGE = true;
-	/**
-	 * If true, will save all the intermediate results in the temporary folder
-	 */
-	public static boolean DEBUG = false;
+public class ZoneDivision extends Goal{
 
+	public ZoneDivision() {
+
+	}
+	
 //	public static void main(String[] args) throws Exception {
 //		File evolvedParcel = new File(
 //				"/home/thema/.openmole/thema-HP-ZBook-14/webui/projects/compare/donnee/evolvedParcel.gpkg");
@@ -89,7 +77,7 @@ public class ZoneDivision {
 	 * @throws IOException
 	 * @throws SchemaException
 	 */
-	public static File zoneDivision(File zoneFile, File parcelFile, ProfileUrbanFabric profile, File outFolder) 
+	public File zoneDivision(File zoneFile, File parcelFile, ProfileUrbanFabric profile, File outFolder) 
 			throws IOException, NoSuchAuthorityCodeException, FactoryException, SchemaException {
 		DataStore sdsZone = Geopackages.getDataStore(zoneFile);
 		DataStore sdsParcel = Geopackages.getDataStore(parcelFile);
@@ -121,7 +109,7 @@ public class ZoneDivision {
 	 * @throws IOException
 	 * @throws SchemaException
 	 */
-	public static SimpleFeatureCollection zoneDivision(SimpleFeatureCollection initialZone, SimpleFeatureCollection parcels,
+	public SimpleFeatureCollection zoneDivision(SimpleFeatureCollection initialZone, SimpleFeatureCollection parcels,
 			File outFolder, ProfileUrbanFabric profile) throws IOException, NoSuchAuthorityCodeException, FactoryException, SchemaException{
 		File tmpFolder = new File(outFolder, "tmp");
 		if (DEBUG) 
@@ -167,7 +155,7 @@ public class ZoneDivision {
 						// avoid silvers (plants the code)
 						if (geom.getArea() > 10) {
 							sfBuilder.set(geomName, geom);
-							sfBuilder.set(ParcelSchema.getMinParcelSectionField(), makeNewSection(numZone));
+							sfBuilder.set(ParcelSchema.getMinParcelSectionField(), makeNewSection(String.valueOf(numZone)));
 							sfBuilder.set(MarkParcelAttributeFromPosition.getMarkFieldName(), 1);
 							goOdZone.add(sfBuilder.buildFeature(Attribute.makeUniqueId()));
 						}
@@ -367,7 +355,7 @@ public class ZoneDivision {
 	 *            number of the nex zone
 	 * @return the section's name
 	 */
-	public static String makeNewSection(int numZone) {
+	public String makeNewSection(String numZone) {
 		return "New" + numZone + "Section";
 	}
 
@@ -378,7 +366,7 @@ public class ZoneDivision {
 	 *            {@link SimpleFeature} to test.
 	 * @return true if the section field is marked with the {@link #makeNewSection(int)} method.
 	 */
-	public static boolean isNewSection(SimpleFeature feat) {
+	public boolean isNewSection(SimpleFeature feat) {
 		String section = (String) feat.getAttribute(ParcelSchema.getMinParcelSectionField());
 		return section.startsWith("New") && section.endsWith("Section");
 	}

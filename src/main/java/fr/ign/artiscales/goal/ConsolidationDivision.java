@@ -36,24 +36,11 @@ import fr.ign.cogit.parameter.ProfileUrbanFabric;
  * @author Maxime Colomb
  *
  */
-public class ConsolidationDivision {
-	/**
-	 * If true, will save all the intermediate results in the temporary folder
-	 */
-	public static boolean DEBUG = false;
-	/**
-	 * The process used to divide the parcels
-	 */
-	public static String PROCESS = "OBB";
-	/**
-	 * If true, will save a Geopackages containing only the simulated parcels in the temporary folder.
-	 */
-	public static boolean SAVEINTERMEDIATERESULT = false;
-	/**
-	 * If true, overwrite the output saved Geopackagess. If false, happend the simulated parcels to a potential already existing Geopackages.
-	 */
-	public static boolean OVERWRITEGEOPACKAGES = true;
+public class ConsolidationDivision extends Goal{
 
+	public ConsolidationDivision() {
+	}
+	
 	/**
 	 * Method that merges the contiguous marked parcels into zones and then split those zones with a given parcel division algorithm (by default, the Oriented Bounding Box)
 	 * overload of {@link #consolidationDivision(SimpleFeatureCollection, File, File, ProfileUrbanFabric)} for no predefined
@@ -70,7 +57,7 @@ public class ConsolidationDivision {
 	 * @return the set of parcel with decomposition
 	 * @throws Exception
 	 */
-	public static SimpleFeatureCollection consolidationDivision(SimpleFeatureCollection parcels, File roadFile, File outFolder,
+	public SimpleFeatureCollection consolidationDivision(SimpleFeatureCollection parcels, File roadFile, File outFolder,
 			ProfileUrbanFabric profile) throws Exception {
 		return consolidationDivision(parcels, roadFile, outFolder, profile, profile.getHarmonyCoeff(), profile.getNoise());
 	}
@@ -92,7 +79,7 @@ public class ConsolidationDivision {
 	 * @return the set of parcel with decomposition
 	 * @throws Exception
 	 */
-	public static SimpleFeatureCollection consolidationDivision(SimpleFeatureCollection parcels, File roadFile, File outFolder,
+	public SimpleFeatureCollection consolidationDivision(SimpleFeatureCollection parcels, File roadFile, File outFolder,
 			ProfileUrbanFabric profile, double harmonyCoeff, double noise) throws Exception {
 		return consolidationDivision(parcels, roadFile, outFolder, profile, null, harmonyCoeff, noise);
 	}
@@ -117,7 +104,7 @@ public class ConsolidationDivision {
 	 * @return the set of parcel with decomposition
 	 * @throws Exception
 	 */
-	public static SimpleFeatureCollection consolidationDivision(SimpleFeatureCollection parcels, File roadFile, File outFolder,
+	public SimpleFeatureCollection consolidationDivision(SimpleFeatureCollection parcels, File roadFile, File outFolder,
 			ProfileUrbanFabric profile, File polygonIntersection, double harmonyCoeff, double noise) throws Exception {
 		File tmpFolder = new File(outFolder, "tmp");
 		if (DEBUG)
@@ -245,8 +232,8 @@ public class ConsolidationDivision {
 			result.add(SFBParcel.buildFeature(Attribute.makeUniqueId()));
 		});
 		if (SAVEINTERMEDIATERESULT) {
-			Collec.exportSFC(result, new File(outFolder, "parcelConsolidationOnly"), OVERWRITEGEOPACKAGES);
-			OVERWRITEGEOPACKAGES = false;
+			Collec.exportSFC(result, new File(outFolder, "parcelConsolidationOnly"), OVERWRITEGEOPACKAGE);
+			OVERWRITEGEOPACKAGE = false;
 		}
 		// add initial non cut parcel to final parcels
 		Arrays.stream(parcelSaved.toArray(new SimpleFeature[0])).forEach(feat -> {
@@ -274,7 +261,7 @@ public class ConsolidationDivision {
 	 *            former name of the next zone
 	 * @return the section's name
 	 */
-	public static String makeNewSection(String section) {
+	public String makeNewSection(String section) {
 		return "newSection" + section + "ConsolidationDivision";
 	}
 
@@ -285,7 +272,7 @@ public class ConsolidationDivision {
 	 *            {@link SimpleFeature} to test.
 	 * @return true if the section field is marked with the {@link #makeNewSection(String)} method.
 	 */
-	public static boolean isNewSection(SimpleFeature feat) {
+	public boolean isNewSection(SimpleFeature feat) {
 		String section = (String) feat.getAttribute(ParcelSchema.getMinParcelSectionField());
 		return section.startsWith("newSection") && section.endsWith("ConsolidationDivision");
 	}

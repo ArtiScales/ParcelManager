@@ -76,13 +76,13 @@ public class GeneralTest {
 			System.exit(1);
 		}
 		ZoneDivision.SAVEINTERMEDIATERESULT = true;
-		SimpleFeatureCollection parcelCuted = ZoneDivision.zoneDivision(zone, parcel, outFolder, profileLargeCollective);
+		SimpleFeatureCollection parcelCuted = (new ZoneDivision()).zoneDivision(zone, parcel, outFolder, profileLargeCollective);
 		SimpleFeatureCollection finaux = FrenchParcelFields.setOriginalFrenchParcelAttributes(parcelCuted, parcel);
 		Collec.exportSFC(finaux, new File(outFolder, "parcelTotZone.gpkg"));
 		Collec.exportSFC(zone, new File(outFolder, "zone.gpkg"));
 		StreetRatioParcels.streetRatioZone(zone, finaux, profileLargeCollective.getNameBuildingType(), statFolder, roadFile);
 		MakeStatisticGraphs.makeAreaGraph(
-				Arrays.stream(finaux.toArray(new SimpleFeature[0])).filter(sf -> ZoneDivision.isNewSection(sf)).collect(Collectors.toList()),
+				Arrays.stream(finaux.toArray(new SimpleFeature[0])).filter(sf -> (new ZoneDivision()).isNewSection(sf)).collect(Collectors.toList()),
 				statFolder, "Zone division - large collective building simulation");
 
 		/////////////////////////
@@ -97,12 +97,12 @@ public class GeneralTest {
 		SimpleFeatureCollection markedZone = MarkParcelAttributeFromPosition.markParcelIntersectGenericZoningType(
 				MarkParcelAttributeFromPosition.markParcelIntersectPolygonIntersection(parcel, polygonIntersection), "NC", zoningFile);
 		System.out.println(profileDetached);
-		SimpleFeatureCollection cutedNormalZone = ConsolidationDivision.consolidationDivision(markedZone, roadFile, outFolder, profileDetached);
+		SimpleFeatureCollection cutedNormalZone = (new ConsolidationDivision()).consolidationDivision(markedZone, roadFile, outFolder, profileDetached);
 		SimpleFeatureCollection finalNormalZone = FrenchParcelFields.setOriginalFrenchParcelAttributes(cutedNormalZone, parcel);
 		Collec.exportSFC(finalNormalZone, new File(outFolder, "ParcelConsolidRecomp.gpkg"));
 		StreetRatioParcels.streetRatioParcels(markedZone, finalNormalZone, profileDetached.getNameBuildingType(), statFolder, roadFile);
 		MakeStatisticGraphs.makeAreaGraph(Arrays.stream(finalNormalZone.toArray(new SimpleFeature[0]))
-				.filter(sf -> ConsolidationDivision.isNewSection(sf)).collect(Collectors.toList()), statFolder,
+				.filter(sf -> (new ConsolidationDivision()).isNewSection(sf)).collect(Collectors.toList()), statFolder,
 				"Consolidation-division - detached houses simulation");
 
 		/////////////////////////
@@ -111,14 +111,14 @@ public class GeneralTest {
 		System.out.println("/////////////////////////");
 		System.out.println("parcelDensification");
 		System.out.println("/////////////////////////");
-		SimpleFeatureCollection parcelDensified = Densification.densification(
+		SimpleFeatureCollection parcelDensified = (new Densification()).densification(
 				MarkParcelAttributeFromPosition.markParcelIntersectFrenchConstructibleZoningType(
 						MarkParcelAttributeFromPosition.markParcelIntersectPolygonIntersection(finalNormalZone, polygonIntersection), zoningFile),
 				CityGeneration.createUrbanIslet(finalNormalZone), outFolder, buildingFile, roadFile, profileSmallHouse.getMaximalArea(),
 				profileSmallHouse.getMinimalArea(), profileSmallHouse.getMinimalWidthContactRoad(), profileSmallHouse.getLenDriveway(), allowIsolatedParcel);
 		SimpleFeatureCollection finaux3 = FrenchParcelFields.setOriginalFrenchParcelAttributes(parcelDensified, parcel);
 		Collec.exportSFC(finaux3, new File(outFolder, "parcelDensification.gpkg"));
-		MakeStatisticGraphs.makeAreaGraph(Arrays.stream(parcelDensified.toArray(new SimpleFeature[0])).filter(sf -> Densification.isNewSection(sf))
+		MakeStatisticGraphs.makeAreaGraph(Arrays.stream(parcelDensified.toArray(new SimpleFeature[0])).filter(sf -> (new Densification()).isNewSection(sf))
 				.collect(Collectors.toList()), statFolder, "Densification - small houses simulation");
 		SingleParcelStat.writeStatSingleParcel(MarkParcelAttributeFromPosition.markSimulatedParcel(finaux3), roadFile,
 				new File(outFolder, "stat/statParcel.csv"));

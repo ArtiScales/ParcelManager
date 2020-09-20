@@ -147,24 +147,24 @@ public class PMStep {
 			switch (goal) {
 			case "zoneDivision":
 				ZoneDivision.PROCESS = parcelProcess;
-				((DefaultFeatureCollection) parcelCut).addAll(ZoneDivision.zoneDivision(parcelMarkedComm, ParcelGetter.getParcelByCommunityCode(parcel, communityNumber),
+				((DefaultFeatureCollection) parcelCut).addAll((new ZoneDivision()).zoneDivision(parcelMarkedComm, ParcelGetter.getParcelByCommunityCode(parcel, communityNumber),
 						OUTFOLDER, profile));
 				break;
 			case "densification":
-				((DefaultFeatureCollection) parcelCut).addAll(Densification.densification(parcelMarkedComm,
+				((DefaultFeatureCollection) parcelCut).addAll((new Densification()).densification(parcelMarkedComm,
 						CityGeneration.createUrbanIslet(parcelMarkedComm), OUTFOLDER, BUILDINGFILE, ROADFILE, profile.getMaximalArea(),
 						profile.getMinimalArea(), profile.getMinimalWidthContactRoad(), profile.getLenDriveway(),
 						ParcelState.isArt3AllowsIsolatedParcel(parcel.features().next(), PREDICATEFILE), Geom.createBufferBorder(parcelMarkedComm)));
 				break;
 			case "densificationOrNeighborhood":
 				((DefaultFeatureCollection) parcelCut).addAll(
-						Densification.densificationOrNeighborhood(parcelMarkedComm, CityGeneration.createUrbanIslet(parcelMarkedComm), OUTFOLDER,
+						(new Densification()).densificationOrNeighborhood(parcelMarkedComm, CityGeneration.createUrbanIslet(parcelMarkedComm), OUTFOLDER,
 								BUILDINGFILE, ROADFILE, profile, ParcelState.isArt3AllowsIsolatedParcel(parcel.features().next(), PREDICATEFILE),
 								Geom.createBufferBorder(parcelMarkedComm), 5));
 				break;
 			case "consolidationDivision":
 				ConsolidationDivision.PROCESS = parcelProcess;
-				((DefaultFeatureCollection) parcelCut).addAll(ConsolidationDivision.consolidationDivision(parcelMarkedComm, ROADFILE, OUTFOLDER,
+				((DefaultFeatureCollection) parcelCut).addAll((new ConsolidationDivision()).consolidationDivision(parcelMarkedComm, ROADFILE, OUTFOLDER,
 						profile, profile.getHarmonyCoeff(), profile.getNoise()));
 				break;
 			case "densificationStudy":
