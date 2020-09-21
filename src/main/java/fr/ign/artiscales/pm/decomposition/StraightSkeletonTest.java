@@ -48,13 +48,13 @@ public class StraightSkeletonTest {
     }
     //
     System.out.println(CampSkeleton.shrink(polygon, 2));
-    String inputRoadGPKG = "/home/julien/data/PLU_PARIS/voie/voie_l93.gpkg";
-    DataStore roadDS = Geopackages.getDataStore(new File(inputRoadGPKG));
-    SimpleFeatureCollection roads = roadDS.getFeatureSource(roadDS.getTypeNames()[0]).getFeatures();
-    LineString line = (LineString) reader.read("LineString (653608.67376999428961426 6859509.79754020832479, 653622.56625000014901161 6859524.18500000052154064)");
-    SimpleFeatureCollection selection = Util.select(roads, line);
-    System.out.println("selection = " + selection.size());
-    roadDS.dispose();
+//    String inputRoadGPKG = "/home/julien/data/PLU_PARIS/voie/voie_l93.gpkg";
+//    DataStore roadDS = Geopackages.getDataStore(new File(inputRoadGPKG));
+//    SimpleFeatureCollection roads = roadDS.getFeatureSource(roadDS.getTypeNames()[0]).getFeatures();
+//    LineString line = (LineString) reader.read("LineString (653608.67376999428961426 6859509.79754020832479, 653622.56625000014901161 6859524.18500000052154064)");
+//    SimpleFeatureCollection selection = Util.select(roads, line);
+//    System.out.println("selection = " + selection.size());
+//    roadDS.dispose();
     Coordinate o = new Coordinate(652810.3017603179, 6857966.40922954);
     Coordinate d = new Coordinate(0.6571914520563683,-0.7537236863360752);
     LineString lineString = (LineString) reader.read("LINESTRING (652792.1862488963 6857976.0127653275, 652803.37 6857975.05)");
