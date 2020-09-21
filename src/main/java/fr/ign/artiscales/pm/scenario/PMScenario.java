@@ -1,0 +1,231 @@
+package fr.ign.artiscales.pm.scenario;
+
+import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
+
+import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonToken;
+/**
+ * Object representing a Parcel Manager scenario. Will set files and launch a list of predefined {@link fr.ign.artiscales.pm.scenario.PMStep}.
+ * 
+ * @see <a href="https://github.com/ArtiScales/ParcelManager/blob/master/src/main/resources/doc/scenarioCreation.md">scenarioCreation.md</a>
+ * 
+ * @author Maxime Colomb
+ *
+ */
+public class PMScenario {
+
+	private File zoningFile, buildingFile, roadFile, polygonIntersection, zone, predicateFile, parcelFile, profileFolder, outFolder;
+
+	private List<PMStep> stepList = new ArrayList<PMStep>();
+	private boolean fileSet = false;
+	/**
+	 * If true, the parcels simulated for each steps will be the input of the next step. If false, the simulation will operate on the input parcel for each steps
+	 */
+	private static boolean REUSESIMULATEDPARCELS = true;
+	/**
+	 * If true, save a geopackage containing only the simulated parcels in the temporary folder for every goal simulated.
+	 */
+	private static boolean SAVEINTERMEDIATERESULT = false; 
+
+//	public static void main(String[] args) throws Exception {
+//		PMScenario pm = new PMScenario(
+//				new File("/home/thema/Documents/MC/workspace/ParcelManager/src/main/resources/testData/jsonEx.json"),
+//				new File("/tmp/"));
+//		pm.executeStep();
+//	}
+
+	public PMScenario(File jSON, File tmpfolder) throws Exception {
+		PMStep.setSaveIntermediateResult(SAVEINTERMEDIATERESULT);
+		JsonFactory factory = new JsonFactory();
+		JsonParser parser = factory.createParser(jSON);
+		JsonToken token = parser.nextToken();
+		
+		while (!parser.isClosed()) {
+			token = parser.nextToken();
+//			shortcut if every data is in the same folder
+			if (token == JsonToken.FIELD_NAME && "rootfile".equals(parser.getCurrentName()) && !fileSet) {
+				fileSet = true;
+				token = parser.nextToken();
+				if (token == JsonToken.VALUE_STRING) {
+					String rootFolder = parser.getText();
+					zoningFile = new File(rootFolder, "zoning.gpkg");
+					buildingFile = new File(rootFolder, "building.gpkg");
+					roadFile = new File(rootFolder, "road.gpkg");
+					polygonIntersection = new File(rootFolder, "polygonIntersection.gpkg");
+					zone = new File(rootFolder,"zone.gpkg");
+					predicateFile = new File(rootFolder, "predicate.csv");
+					parcelFile = new File(rootFolder, "parcel.gpkg");
+					profileFolder = new File(rootFolder, "profileUrbanFabric");
+				}
+			}
+			//if the line is an array, it describes a PMSetp
+			if (token == JsonToken.FIELD_NAME && "steps".equals(parser.getCurrentName())) {
+				token = parser.nextToken();
+				String goal = "";
+				String parcelProcess = "";
+				String genericZone = "";
+				String preciseZone = "";
+				String communityNumber = "";
+				String communityType = "";
+				String urbanFabric = "";
+				while (token != JsonToken.END_ARRAY) {
+					token = parser.nextToken();
+					if (token == JsonToken.FIELD_NAME && parser.getCurrentName().equals("goal")) {
+						token = parser.nextToken();
+						if (token == JsonToken.VALUE_STRING)
+							goal = parser.getText();
+					}
+					if (token == JsonToken.FIELD_NAME && parser.getCurrentName().equals("parcelProcess")) {
+						token = parser.nextToken();
+						if (token == JsonToken.VALUE_STRING)
+							parcelProcess = parser.getText();
+					}
+					if (token == JsonToken.FIELD_NAME && parser.getCurrentName().equals("genericZone")) {
+						token = parser.nextToken();
+						if (token == JsonToken.VALUE_STRING)
+							genericZone = parser.getText();
+					}
+					if (token == JsonToken.FIELD_NAME && parser.getCurrentName().equals("preciseZone")) {
+						token = parser.nextToken();
+						if (token == JsonToken.VALUE_STRING)
+							preciseZone = parser.getText();
+					}
+					if (token == JsonToken.FIELD_NAME && parser.getCurrentName().equals("communityNumber")) {
+						token = parser.nextToken();
+						if (token == JsonToken.VALUE_STRING) 
+							communityNumber = parser.getText();
+					}
+					if (token == JsonToken.FIELD_NAME && parser.getCurrentName().equals("communityType")) {
+						token = parser.nextToken();
+						if (token == JsonToken.VALUE_STRING)
+							communityType = parser.getText();
+					}
+					if (token == JsonToken.FIELD_NAME && parser.getCurrentName().equals("urbanFabricType")) {
+						token = parser.nextToken();
+						if (token == JsonToken.VALUE_STRING) 
+							urbanFabric = parser.getText();
+					}
+					if (token == JsonToken.END_OBJECT) {
+						List<PMStep> list = getStepList();
+						PMStep step = new PMStep(goal, parcelProcess, genericZone, preciseZone, communityNumber, communityType, urbanFabric);
+						list.add(step);
+						setStepList(list);
+						goal = parcelProcess = genericZone = preciseZone = communityNumber = communityType = urbanFabric = "";
+					}
+				}
+			}
+
+			if (token == JsonToken.FIELD_NAME && "zoningFile".equals(parser.getCurrentName())) {
+				token = parser.nextToken();
+				if (token == JsonToken.VALUE_STRING) {
+					zoningFile = new File(parser.getText());
+					fileSet = true;
+				}
+			}
+			if (token == JsonToken.FIELD_NAME && "roadFile".equals(parser.getCurrentName())) {
+				token = parser.nextToken();
+				if (token == JsonToken.VALUE_STRING) {
+					roadFile = new File(parser.getText());
+					fileSet = true;
+				}
+			}
+			if (token == JsonToken.FIELD_NAME && "buildingFile".equals(parser.getCurrentName())) {
+				token = parser.nextToken();
+				if (token == JsonToken.VALUE_STRING) {
+					buildingFile = new File(parser.getText());
+					fileSet = true;
+				}
+			}
+			if (token == JsonToken.FIELD_NAME && "polygonIntersectionFile".equals(parser.getCurrentName())) {
+				token = parser.nextToken();
+				if (token == JsonToken.VALUE_STRING) {
+					polygonIntersection = new File(parser.getText());
+					fileSet = true;
+				}
+			}
+			if (token == JsonToken.FIELD_NAME && "zoneFile".equals(parser.getCurrentName())) {
+				token = parser.nextToken();
+				if (token == JsonToken.VALUE_STRING) {
+					zone = new File(parser.getText());
+					fileSet = true;
+				}
+			}
+			if (token == JsonToken.FIELD_NAME && "predicateFile".equals(parser.getCurrentName())) {
+				token = parser.nextToken();
+				if (token == JsonToken.VALUE_STRING) {
+					predicateFile = new File(parser.getText());
+					fileSet = true;
+				}
+			}
+			if (token == JsonToken.FIELD_NAME && "parcelFile".equals(parser.getCurrentName())) {
+				token = parser.nextToken();
+				if (token == JsonToken.VALUE_STRING) {
+					parcelFile = new File(parser.getText());
+					fileSet = true;
+				}
+			}
+			if (token == JsonToken.FIELD_NAME && "profileFolder".equals(parser.getCurrentName())) {
+				token = parser.nextToken();
+				if (token == JsonToken.VALUE_STRING) {
+					profileFolder = new File(parser.getText());
+					fileSet = true;
+				}
+			}
+			if (token == JsonToken.FIELD_NAME && "outFolder".equals(parser.getCurrentName())) {
+				token = parser.nextToken();
+				if (token == JsonToken.VALUE_STRING) {
+					outFolder = new File(parser.getText());
+					fileSet = true;
+				}
+			}
+		}
+		parser.close();
+		PMStep.setFiles(parcelFile, zoningFile, buildingFile, roadFile, predicateFile, polygonIntersection, zone, outFolder,
+				profileFolder);
+	}
+
+	public void executeStep() throws Exception {
+		for (PMStep pmstep : getStepList()) {
+			System.out.println("try " + pmstep);
+			if (REUSESIMULATEDPARCELS)
+				PMStep.setParcel(pmstep.execute());
+			else
+				pmstep.execute();
+		}
+	}
+
+	public List<PMStep> getStepList() {
+		return stepList;
+	}
+
+	public void setStepList(List<PMStep> stepList) {
+		this.stepList = stepList;
+	}
+
+	@Override
+	public String toString() {
+		return "PMScenario [zoningFile=" + zoningFile + ", buildingFile=" + buildingFile + ", roadFile=" + roadFile + ", polygonIntersection="
+				+ polygonIntersection + ", zone=" + zone + ", predicateFile=" + predicateFile + ", parcelFile=" + parcelFile + ", outFolder=" + outFolder + ", stepList=" + stepList + ", fileSet=" + fileSet + ", profileFolder=" + profileFolder
+				+ "]";
+	}
+
+	public static boolean isSaveIntermediateResult() {
+		return SAVEINTERMEDIATERESULT;
+	}
+
+	public static void setSaveIntermediateResult(boolean saveIntermediateResult) {
+		SAVEINTERMEDIATERESULT = saveIntermediateResult;
+	}
+
+	public static boolean isReuseSimulatedParcels() {
+		return REUSESIMULATEDPARCELS;
+	}
+
+	public static void setReuseSimulatedParcels(boolean reuseSimulatedParcel) {
+		REUSESIMULATEDPARCELS = reuseSimulatedParcel;
+	}
+
+}
