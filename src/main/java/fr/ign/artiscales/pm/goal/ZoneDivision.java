@@ -6,6 +6,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.apache.commons.math3.random.MersenneTwister;
 import org.geotools.data.DataStore;
 import org.geotools.data.DataUtilities;
 import org.geotools.data.simple.SimpleFeatureCollection;
@@ -24,6 +25,7 @@ import org.opengis.referencing.FactoryException;
 import org.opengis.referencing.NoSuchAuthorityCodeException;
 
 import fr.ign.artiscales.pm.decomposition.OBBBlockDecomposition;
+import fr.ign.artiscales.pm.decomposition.StraightSkeletonParcelDecomposition;
 import fr.ign.artiscales.pm.parcelFunction.MarkParcelAttributeFromPosition;
 import fr.ign.artiscales.pm.parcelFunction.ParcelAttribute;
 import fr.ign.artiscales.pm.parcelFunction.ParcelCollection;
@@ -47,7 +49,6 @@ import fr.ign.artiscales.tools.parameter.ProfileUrbanFabric;
 public class ZoneDivision extends Goal{
 
 	public ZoneDivision() {
-
 	}
 	
 //	public static void main(String[] args) throws Exception {
@@ -90,7 +91,10 @@ public class ZoneDivision extends Goal{
 		zoneDivision(zone, parcel, outFolder, profile);
 		return new File(outFolder, "parcelZoneDivisionOnly" + Collec.getDefaultGISFileType());
 	}
-
+	public SimpleFeatureCollection zoneDivision(SimpleFeatureCollection initialZone, SimpleFeatureCollection parcels,
+			File outFolder, ProfileUrbanFabric profile) throws IOException, NoSuchAuthorityCodeException, FactoryException, SchemaException {
+		return 	zoneDivision( initialZone, parcels, null, outFolder,  profile) ;
+	}
 	/**
 	 * Merge and recut a specific zone. Cut first the surrounding parcels to keep them unsplit, then split the zone parcel and remerge them all into the original parcel file A bit
 	 * complicated algorithm to deal with non-existing pieces of parcels (as road).
@@ -109,8 +113,8 @@ public class ZoneDivision extends Goal{
 	 * @throws IOException
 	 * @throws SchemaException
 	 */
-	public SimpleFeatureCollection zoneDivision(SimpleFeatureCollection initialZone, SimpleFeatureCollection parcels,
-			File outFolder, ProfileUrbanFabric profile) throws IOException, NoSuchAuthorityCodeException, FactoryException, SchemaException{
+	public SimpleFeatureCollection zoneDivision(SimpleFeatureCollection initialZone, SimpleFeatureCollection parcels, SimpleFeatureCollection roads,
+			File outFolder, ProfileUrbanFabric profile) throws IOException, NoSuchAuthorityCodeException, FactoryException, SchemaException {
 		File tmpFolder = new File(outFolder, "tmp");
 		if (DEBUG) 
 			tmpFolder.mkdirs();
@@ -222,7 +226,9 @@ public class ZoneDivision extends Goal{
 							profile.getDecompositionLevelWithoutStreet()));
 					break;
 				case "SS":
-					System.out.println("not implemented yet");
+					((DefaultFeatureCollection) splitedParcels).addAll(StraightSkeletonParcelDecomposition.decompose(tmpZoneToCut, roads, outFolder,
+							profile.getMaxDepth(), profile.getMaxDistanceForNearestRoad(), profile.getMinimalArea(), profile.getMinWidth(),
+							profile.getMaxWidth(), profile.getNoise(), new MersenneTwister(42)));					
 					break;
 				case "MS":
 					System.out.println("not implemented yet");

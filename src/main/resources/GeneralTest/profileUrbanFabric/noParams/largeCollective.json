@@ -7,9 +7,5 @@
 	"minimalArea":"800",
 	"minimalWidthContactRoad": "15",
 	"nameBuildingType":"midBlockFlat",
-	"lenDriveway":"12",
-	"maxDepth":"60",
-	"maxDistanceForNearestRoad":"300",
-	"minWidth":"15",
-	"maxWidth":"60"
+	"lenDriveway":"12"
 }

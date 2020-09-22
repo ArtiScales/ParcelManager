@@ -48,7 +48,9 @@ import org.opengis.feature.simple.SimpleFeatureType;
 import org.opengis.referencing.FactoryException;
 import org.opengis.referencing.NoSuchAuthorityCodeException;
 
+import fr.ign.artiscales.pm.parcelFunction.ParcelSchema;
 import fr.ign.artiscales.tools.FeaturePolygonizer;
+import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Collec;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Geom;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Geopackages;
 import fr.ign.artiscales.tools.graph.Edge;
@@ -100,23 +102,23 @@ public class StraightSkeletonParcelDecomposition {
    * Main algorithm to process the algorithm
    *  
    * @param pol
-   *          : polygon block that will be decomposed
+   *          Polygon block that will be decomposed
    * @param roads
-   *          : roads around the block polygon, may be empty or null. It determines some priority according to road importance.
+   *          Roads around the block polygon, may be empty or null. It determines some priority according to road importance.
    * @param maxDepth
-   *          : maximal depth of a parcel
+   *          Maximal depth of a parcel
    * @param maxDistanceForNearestRoad
-   *          : parameters that determine how far a road is considered from block exterior
+   *          parameters that determine how far a road is considered from block exterior
    * @param minimalArea
-   *          : minimal area of a parcel
+   *          minimal area of a parcel
    * @param minWidth
-   *          : minimum width of a parcel
+   *          minimum width of a parcel
    * @param maxWidth
-   *          : maximal width of a parcel
+   *          maximal width of a parcel
    * @param noiseParameter
-   *          : standard deviation of width distribution beteween minWidth and mawWidthdetermineInteriorLineString
+   *          standard deviation of width distribution beteween minWidth and mawWidthdetermineInteriorLineString
    * @param rng
-   *          : Random generator
+   *          Random generator
    * @throws SchemaException
    */
   public static SimpleFeatureCollection runStraightSkeleton2(Polygon pol, SimpleFeatureCollection roads, double maxDepth, double maxDistanceForNearestRoad, double minimalArea,
@@ -1368,8 +1370,9 @@ public class StraightSkeletonParcelDecomposition {
       double minWidth, double maxWidth, double noiseParameter, RandomGenerator rng) throws SchemaException, NoSuchAuthorityCodeException, IOException, FactoryException {
     // Partial skeleton
 	 List<Polygon> lp = Util.getPolygons((Geometry) sf.getDefaultGeometry());
+	 DefaultFeatureCollection result = new DefaultFeatureCollection();
 	  for (Polygon pol : lp) {
-    CampSkeleton cs = new CampSkeleton(pol, offsetDistance);
+    CampSkeleton cs = new CampSkeleton((Polygon) sf.getDefaultGeometry(), offsetDistance);
 //    cs.getGraph().getFaces().forEach(f->System.out.println(f.getGeometry()));
     List<Edge> edges = cs.getExteriorEdges();
     if (DEBUG) {
@@ -1514,9 +1517,12 @@ public class StraightSkeletonParcelDecomposition {
 	  
     System.out.println("betaStripPolygonMap=");
     betaStripPolygonMap.values().forEach(p->System.out.println(p)); 
-    addSimpleGeometry(SimpleFeatureBuilder sfBuilder, DefaultFeatureCollection result,
-			String geometryOutputName, Geometry geom, String id);
-	  Geom.exportGeom(cs.getGraph().getFaces().stream().map(f->f.getGeometry()).collect(Collectors.toList()),new File(tmpResult, "cs"+pol.getArea()));
+    
+    SimpleFeatureBuilder sfBuilder = ParcelSchema.getSFBMinParcel();
+    
+    Geom.addSimplePolygonialGeometries(sfBuilder, result,
+			Collec.getDefaultGeomName(), cs.getGraph().getFaces().stream().map(f->f.getGeometry()).collect(Collectors.toList()));
+//	  Geom.exportGeom(,new File(tmpResult, "cs"+pol.getArea()));
 //     System.out.println("FACES");
 //     for (Face f : cs.getGraph().getFaces()) {
 //     System.out.println(f.getGeometry());
@@ -1530,7 +1536,7 @@ public class StraightSkeletonParcelDecomposition {
 //     System.out.println(n.getGeometry());
 //     }
 	  }
-    return null;
+    return result;
   }
 
   // private static Pair<Polygon, Polygon> splitPolygon(Polygon toRemove, LineString createLineString) {

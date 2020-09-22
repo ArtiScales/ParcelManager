@@ -16,6 +16,7 @@ import fr.ign.artiscales.pm.analysis.StreetRatioParcels;
 import fr.ign.artiscales.pm.fields.french.FrenchParcelFields;
 import fr.ign.artiscales.pm.goal.ConsolidationDivision;
 import fr.ign.artiscales.pm.goal.Densification;
+import fr.ign.artiscales.pm.goal.Goal;
 import fr.ign.artiscales.pm.goal.ZoneDivision;
 import fr.ign.artiscales.pm.parcelFunction.MarkParcelAttributeFromPosition;
 import fr.ign.artiscales.pm.parcelFunction.ParcelGetter;
@@ -58,14 +59,17 @@ public class GeneralTest {
 		ProfileUrbanFabric profileDetached = ProfileUrbanFabric.convertJSONtoProfile(new File(profileFolder, "detachedHouse.json"));
 		ProfileUrbanFabric profileSmallHouse = ProfileUrbanFabric.convertJSONtoProfile(new File(profileFolder, "smallHouse.json"));
 		ProfileUrbanFabric profileLargeCollective = ProfileUrbanFabric.convertJSONtoProfile(new File(profileFolder, "largeCollective.json"));
-
+		Goal.DEBUG = true;
+		Goal.PROCESS = "SS";
+		Goal.SAVEINTERMEDIATERESULT = true;
+		
+		
 		/////////////////////////
 		// zoneTotRecomp
 		/////////////////////////
 		System.out.println("/////////////////////////");
 		System.out.println("zoneTotRecomp");
 		System.out.println("/////////////////////////");
-//		ZoneDivision.DEBUG = true;
 		DataStore gpkgDSZoning = Geopackages.getDataStore(zoningFile);
 		SimpleFeatureCollection zoning = new SpatialIndexFeatureCollection(DataUtilities.collection((gpkgDSZoning.getFeatureSource(gpkgDSZoning.getTypeNames()[0]).getFeatures())));
 		gpkgDSZoning.dispose();
@@ -75,8 +79,10 @@ public class GeneralTest {
 			System.out.println("parcelGenZone : no zones to be cut");
 			System.exit(1);
 		}
-		ZoneDivision.SAVEINTERMEDIATERESULT = true;
-		SimpleFeatureCollection parcelCuted = (new ZoneDivision()).zoneDivision(zone, parcel, outFolder, profileLargeCollective);
+		DataStore rDS = Geopackages.getDataStore(roadFile);
+		SimpleFeatureCollection parcelCuted = (new ZoneDivision()).zoneDivision(zone, parcel,
+				rDS.getFeatureSource(rDS.getTypeNames()[0]).getFeatures(), outFolder, profileLargeCollective);
+		rDS.dispose();
 		SimpleFeatureCollection finaux = FrenchParcelFields.setOriginalFrenchParcelAttributes(parcelCuted, parcel);
 		Collec.exportSFC(finaux, new File(outFolder, "parcelTotZone.gpkg"));
 		Collec.exportSFC(zone, new File(outFolder, "zone.gpkg"));
@@ -91,12 +97,8 @@ public class GeneralTest {
 		System.out.println("/////////////////////////");
 		System.out.println("consolidRecomp");
 		System.out.println("/////////////////////////");
-		ConsolidationDivision.DEBUG = true;
-		ConsolidationDivision.SAVEINTERMEDIATERESULT = true;
-		ConsolidationDivision.PROCESS = "OBB";
 		SimpleFeatureCollection markedZone = MarkParcelAttributeFromPosition.markParcelIntersectGenericZoningType(
 				MarkParcelAttributeFromPosition.markParcelIntersectPolygonIntersection(parcel, polygonIntersection), "NC", zoningFile);
-		System.out.println(profileDetached);
 		SimpleFeatureCollection cutedNormalZone = (new ConsolidationDivision()).consolidationDivision(markedZone, roadFile, outFolder, profileDetached);
 		SimpleFeatureCollection finalNormalZone = FrenchParcelFields.setOriginalFrenchParcelAttributes(cutedNormalZone, parcel);
 		Collec.exportSFC(finalNormalZone, new File(outFolder, "ParcelConsolidRecomp.gpkg"));

@@ -7,9 +7,5 @@
 	"minimalArea": "300",
 	"minimalWidthContactRoad": "7",
 	"nameBuildingType": "detachedHouse",
-	"lenDriveway": "3",
-	"maxDepth":"35",
-	"maxDistanceForNearestRoad":"100",
-	"minWidth":"5",
-	"maxWidth":"40"
+	"lenDriveway": "3"
 }

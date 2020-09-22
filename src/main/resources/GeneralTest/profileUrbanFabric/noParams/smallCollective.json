@@ -7,9 +7,5 @@
 	"minimalArea": "400",
 	"minimalWidthContactRoad": "12",
 	"nameBuildingType": "multiFamilyHouse",
-	"lenDriveway": "7",
-	"maxDepth":"50",
-	"maxDistanceForNearestRoad":"200",
-	"minWidth":"10",
-	"maxWidth":"50"
+	"lenDriveway": "7"
 } 
