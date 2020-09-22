@@ -18,7 +18,9 @@ import java.util.stream.Collectors;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.math3.random.GaussianRandomGenerator;
+import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
+import org.geotools.data.DataStore;
 import org.geotools.data.DataUtilities;
 import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.data.simple.SimpleFeatureIterator;
@@ -46,15 +48,16 @@ import org.opengis.feature.simple.SimpleFeatureType;
 import org.opengis.referencing.FactoryException;
 import org.opengis.referencing.NoSuchAuthorityCodeException;
 
+import fr.ign.artiscales.tools.FeaturePolygonizer;
+import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Geom;
+import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Geopackages;
 import fr.ign.artiscales.tools.graph.Edge;
 import fr.ign.artiscales.tools.graph.Face;
 import fr.ign.artiscales.tools.graph.Node;
 import fr.ign.artiscales.tools.graph.Strip;
 import fr.ign.artiscales.tools.graph.analysis.FindObjectInDirection;
 import fr.ign.artiscales.tools.graph.analysis.Util;
-import fr.ign.artiscales.tools.graph.recursiveGraph.TopologicalGraph;
-import fr.ign.artiscales.tools.FeaturePolygonizer;
-import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Geom;
+import fr.ign.artiscales.tools.graph.TopologicalGraph;
 
 /**
  * Re-implementation of block decomposition into parcels from :
@@ -73,7 +76,7 @@ public class StraightSkeletonParcelDecomposition {
   // Must be a double attribute
   public final static String NAME_ATT_IMPORTANCE = "IMPORTANCE";
   // public final static String NAME_ATT_ROAD = "NOM_VOIE_G";
-  public final static String NAME_ATT_ROAD = "NOM_RUE_G";
+  public final static String NAME_ATT_ROAD = "NOM_VOIE_G";
  
   //////////////////////////////////////////////////////
 
@@ -302,8 +305,12 @@ public class StraightSkeletonParcelDecomposition {
 //    Geometry reducedB = GeometryPrecisionReducer.reduce(a, new PrecisionModel(100));
     Geometry difference = FeaturePolygonizer.getDifference(a, b);
     List<Polygon> p = Util.getPolygons(difference);
+    if(p.size() == 0) {
+    	System.out.println("polygonDifference: null result for "+ a + " and "+ b);
+    	return null;
+    }
     if (p.size() != 1) {
-      System.out.println(p.size() + " polygons");
+      System.out.println("polygonDifference: "+p.size() + " polygons");
       p.forEach(pp->System.out.println(pp));
     }
     return p.get(0);
@@ -1338,20 +1345,18 @@ public class StraightSkeletonParcelDecomposition {
   }
 
   private static Pair<String, Double> attributes(SimpleFeature s) {
-    String name = s.getAttribute(NAME_ATT_ROAD).toString();
-    String impo = s.getAttribute(NAME_ATT_IMPORTANCE).toString();
+    String name = (String) s.getAttribute(NAME_ATT_ROAD);
+    String impo = (String) s.getAttribute(NAME_ATT_IMPORTANCE);
     return new ImmutablePair<>(name, Double.parseDouble(impo.replaceAll(",", ".")));
   }
 
-	public static SimpleFeatureCollection decompose(SimpleFeatureCollection sfc, SimpleFeatureCollection roads, double offsetDistance,
+	public static SimpleFeatureCollection decompose(SimpleFeatureCollection sfc, SimpleFeatureCollection roads,File folderOut, double offsetDistance,
 			double maxDistanceForNearestRoad, double minimalArea, double minWidth, double maxWidth, double noiseParameter, RandomGenerator rng)
 			throws SchemaException {
 		DefaultFeatureCollection result = new DefaultFeatureCollection();
 		try (SimpleFeatureIterator it = sfc.features()) {
 			while (it.hasNext()) {
-				Polygon pol = (Polygon) it.next().getDefaultGeometry();
-				result.addAll(decompose(pol, roads, offsetDistance, maxDistanceForNearestRoad, minimalArea, minWidth, maxWidth, noiseParameter, rng));
-
+				result.addAll(decompose(it.next(), roads, folderOut, offsetDistance, maxDistanceForNearestRoad, minimalArea, minWidth, maxWidth, noiseParameter, rng));
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -1359,9 +1364,11 @@ public class StraightSkeletonParcelDecomposition {
 		return result;
 	}
 
-  public static SimpleFeatureCollection decompose(Polygon pol, SimpleFeatureCollection roads, double offsetDistance, double maxDistanceForNearestRoad, double minimalArea,
+  public static SimpleFeatureCollection decompose(SimpleFeature sf, SimpleFeatureCollection roads, File folderOut, double offsetDistance, double maxDistanceForNearestRoad, double minimalArea,
       double minWidth, double maxWidth, double noiseParameter, RandomGenerator rng) throws SchemaException, NoSuchAuthorityCodeException, IOException, FactoryException {
     // Partial skeleton
+	 List<Polygon> lp = Util.getPolygons((Geometry) sf.getDefaultGeometry());
+	  for (Polygon pol : lp) {
     CampSkeleton cs = new CampSkeleton(pol, offsetDistance);
 //    cs.getGraph().getFaces().forEach(f->System.out.println(f.getGeometry()));
     List<Edge> edges = cs.getExteriorEdges();
@@ -1481,6 +1488,8 @@ public class StraightSkeletonParcelDecomposition {
 //        System.out.println(facesToRemove.get(facesToRemove.size() - 1).getGeometry());
         Polygon toRemove = facesToRemove.get(facesToRemove.size() - 1).getGeometry();
         Pair<Polygon, Polygon> split = splitPolygon(toRemove, toRemove.getFactory().createLineString(new Coordinate[] { currNode.getCoordinate(), projection }));
+        if (split == null)
+        	continue;
 //        System.out.println(split.getLeft());
 //        System.out.println(split.getRight());
         Integer absorbingBetaSplitId = (supportingVertexClass == PREVIOUS) ? prevFaceId : nextFaceId;
@@ -1502,21 +1511,25 @@ public class StraightSkeletonParcelDecomposition {
       }
       System.out.println("DONE");
     }
+	  
     System.out.println("betaStripPolygonMap=");
     betaStripPolygonMap.values().forEach(p->System.out.println(p)); 
-
-    // System.out.println("FACES");
-    // for (Face f : cs.getGraph().getFaces()) {
-    // System.out.println(f.getGeometry());
-    // }
-    // System.out.println("EDGES");
-    // for (Edge e : cs.getGraph().getEdges()) {
-    // System.out.println(e.getGeometry());
-    // }
-    // System.out.println("NODES");
-    // for (Node n : cs.getGraph().getNodes()) {
-    // System.out.println(n.getGeometry());
-    // }
+    addSimpleGeometry(SimpleFeatureBuilder sfBuilder, DefaultFeatureCollection result,
+			String geometryOutputName, Geometry geom, String id);
+	  Geom.exportGeom(cs.getGraph().getFaces().stream().map(f->f.getGeometry()).collect(Collectors.toList()),new File(tmpResult, "cs"+pol.getArea()));
+//     System.out.println("FACES");
+//     for (Face f : cs.getGraph().getFaces()) {
+//     System.out.println(f.getGeometry());
+//     }
+//     System.out.println("EDGES");
+//     for (Edge e : cs.getGraph().getEdges()) {
+//     System.out.println(e.getGeometry());
+//     }
+//     System.out.println("NODES");
+//     for (Node n : cs.getGraph().getNodes()) {
+//     System.out.println(n.getGeometry());
+//     }
+	  }
     return null;
   }
 
@@ -1541,13 +1554,14 @@ public class StraightSkeletonParcelDecomposition {
     // Only keep polygons which are inside the input
     List<Polygon> output = polys.stream().map(g -> (Polygon) g).filter(g -> poly.contains(g.getInteriorPoint())).collect(Collectors.toList());
     if (output.size() != 2) {
-      System.out.println("OUTPUT WITH " + output.size());
+      System.out.println("splitPolygon: OUTPUT WITH " + output.size());
       System.out.println("SPLIT WITH");
       System.out.println(line);
       System.out.println("NODED");
       System.out.println(nodedLinework);
       System.out.println("POLYGONIZED");
       System.out.println(polys);
+      return null;
     }
     return new ImmutablePair<>(output.get(0), output.get(1));
   }
@@ -1570,64 +1584,68 @@ public class StraightSkeletonParcelDecomposition {
   // featCollOut.addAll(feats);
   // ShapefileWriter.write(featCollOut, FOLDER_OUT_DEBUG + name);
   // }
-//  public static void main(String[] args) throws IOException, SchemaException, NoSuchAuthorityCodeException, FactoryException {
-//    // Input 1/ the input parcelles to split
-//    // String inputShapeFile = "src/main/resources/testData/parcelle.gpkg";
-//    // Input 3 (facultative) : the exterior of the urban block (it serves to determiner the multicurve)
-//    // String inputUrbanBlock = "src/main/resources/testData/ilot.gpkg";
-//    // IFeatureCollection<IFeature> featC = ShapefileReader.read(inputUrbanBlock);
-//    // ShapefileDataStore blockDS = new ShapefileDataStore(new File(inputUrbanBlock).toURI().toURL());
-//    // SimpleFeatureCollection blocks = blockDS.getFeatureSource().getFeatures();
-//    // String inputParcelShapeFile = "/home/julien/data/PLU_PARIS/PARCELLE_CADASTRALE/PARCELLE_13.gpkg";
-//    String inputParcelGpkg = "/tmp/ex.gpkg";
-//    String inputRoadGpkg = "/home/thema/Documents/MC/workspace/ParcelManager/src/main/resources/ParcelComparison/road.gpkg";
-//    String folderOut = "/tmp/";
-//    // The output file that will contain all the decompositions
-//    String gpkgOut = folderOut + "outflag.gpkg";
-//    (new File(folderOut)).mkdirs();
-//    // Reading collection
-//    DataStore parcelDS = Geopackages.getDataStore(new File(inputParcelGpkg));
-//    SimpleFeatureCollection parcels = parcelDS.getFeatureSource().getFeatures();
-//    ShapefileDataStore roadDS = new ShapefileDataStore(new File(inputRoadShapeFile).toURI().toURL());
-//    SimpleFeatureCollection roads = roadDS.getFeatureSource().getFeatures();
-//    // SimpleFeatureIterator iterator = Util.select(blocks, JTS.toGeometry(parcels.getBounds())).features();
-//    // DefaultFeatureCollection roads = new DefaultFeatureCollection();
-//    // SimpleFeatureType ROADTYPE = DataUtilities.createType("road", "geom:LineString");
-//    // while (iterator.hasNext()) {
-//    // SimpleFeature f = iterator.next();
-//    // Util.getPolygons((Geometry) f.getDefaultGeometry()).stream().forEach(p -> roads.add(SimpleFeatureBuilder.build(ROADTYPE, new Object[] { p.getExteriorRing() }, null)));
-//    // }
-//    // iterator.close();
-//    SimpleFeatureIterator iterator = parcels.features();
-//    SimpleFeature feature = iterator.next();
-//    List<Polygon> polygons = Util.getPolygons((Geometry) feature.getDefaultGeometry());
-//    double maxDepth = 50, maxDistanceForNearestRoad = 100, minimalArea = 20, minWidth = 5, maxWidth = 40, noiseParameter = 0.1;
-//    // SimpleFeatureCollection result = runStraightSkeleton2(polygons.get(0), roads, maxDepth, maxDistanceForNearestRoad, minimalArea, minWidth, maxWidth, noiseParameter,
-//    // new MersenneTwister(42));
-//    //
-//    // ShapefileDataStoreFactory factory = new ShapefileDataStoreFactory();
-//    // FileDataStore dataStore = factory.createDataStore(new File(shapeFileOut).toURI().toURL());
-//    // dataStore.createSchema(result.getSchema());
-//    // String typeName = dataStore.getTypeNames()[0];
-//    // SimpleFeatureSource featureSource = dataStore.getFeatureSource(typeName);
-//    // Transaction transaction = new DefaultTransaction("create");
-//    // SimpleFeatureStore featureStore = (SimpleFeatureStore) featureSource;
-//    // featureStore.setTransaction(transaction);
-//    // try {
-//    // featureStore.addFeatures(result);
-//    // transaction.commit();
-//    // } catch (Exception problem) {
-//    // problem.printStackTrace();
-//    // transaction.rollback();
-//    // } finally {
-//    // transaction.close();
-//    // }
-//    // dataStore.dispose();
-//    iterator.close();
-//    DEBUG = true;
-//    decompose(polygons.get(0), roads, maxDepth, maxDistanceForNearestRoad, minimalArea, minWidth, maxWidth, noiseParameter, new MersenneTwister(42));
-//    roadDS.dispose();
-//    parcelDS.dispose();
-//    // blockDS.dispose();
-//  }
+  public static void main(String[] args) throws IOException, SchemaException, NoSuchAuthorityCodeException, FactoryException {
+    // Input 1/ the input parcelles to split
+    // String inputShapeFile = "src/main/resources/testData/parcelle.gpkg";
+    // Input 3 (facultative) : the exterior of the urban block (it serves to determiner the multicurve)
+    // String inputUrbanBlock = "src/main/resources/testData/ilot.gpkg";
+    // IFeatureCollection<IFeature> featC = ShapefileReader.read(inputUrbanBlock);
+    // ShapefileDataStore blockDS = new ShapefileDataStore(new File(inputUrbanBlock).toURI().toURL());
+    // SimpleFeatureCollection blocks = blockDS.getFeatureSource().getFeatures();
+    // String inputParcelShapeFile = "/home/julien/data/PLU_PARIS/PARCELLE_CADASTRALE/PARCELLE_13.gpkg";
+File  inputParcelGpkg = new File("/home/mcolomb/workspace/ParcelManager/src/main/resources/GeneralTest/parcel.gpkg");
+    File inputRoadGpkg = new File("/home/mcolomb/workspace/ParcelManager/src/main/resources/GeneralTest/road.gpkg");
+    File folderOut = new File("/tmp/");
+    folderOut.mkdirs();
+    // The output file that will contain all the decompositions
+    // Reading collection
+    DataStore parcelDS = Geopackages.getDataStore(inputParcelGpkg);
+    SimpleFeatureCollection parcels = parcelDS.getFeatureSource(parcelDS.getTypeNames()[0]).getFeatures();
+    DataStore roadDS = Geopackages.getDataStore(inputRoadGpkg);
+    SimpleFeatureCollection roads = roadDS.getFeatureSource(roadDS.getTypeNames()[0]).getFeatures();
+    // SimpleFeatureIterator iterator = Util.select(blocks, JTS.toGeometry(parcels.getBounds())).features();
+    // DefaultFeatureCollection roads = new DefaultFeatureCollection();
+    // SimpleFeatureType ROADTYPE = DataUtilities.createType("road", "geom:LineString");
+    // while (iterator.hasNext()) {
+    // SimpleFeature f = iterator.next();
+    // Util.getPolygons((Geometry) f.getDefaultGeometry()).stream().forEach(p -> roads.add(SimpleFeatureBuilder.build(ROADTYPE, new Object[] { p.getExteriorRing() }, null)));
+    // }
+    // iterator.close();
+		try (SimpleFeatureIterator it = parcels.features()) {
+			while (it.hasNext()) {
+				double maxDepth = 50, maxDistanceForNearestRoad = 100, minimalArea = 20, minWidth = 5, maxWidth = 40, noiseParameter = 0.1;
+				DEBUG = true;
+				decompose(it.next(), roads, folderOut, maxDepth, maxDistanceForNearestRoad, minimalArea, minWidth, maxWidth, noiseParameter,
+						new MersenneTwister(42));
+			}
+		} catch (Exception problem) {
+			problem.printStackTrace();
+		}
+
+    // SimpleFeatureCollection result = runStraightSkeleton2(polygons.get(0), roads, maxDepth, maxDistanceForNearestRoad, minimalArea, minWidth, maxWidth, noiseParameter,
+    // new MersenneTwister(42));
+    //
+    // ShapefileDataStoreFactory factory = new ShapefileDataStoreFactory();
+    // FileDataStore dataStore = factory.createDataStore(new File(shapeFileOut).toURI().toURL());
+    // dataStore.createSchema(result.getSchema());
+    // String typeName = dataStore.getTypeNames()[0];
+    // SimpleFeatureSource featureSource = dataStore.getFeatureSource(typeName);
+    // Transaction transaction = new DefaultTransaction("create");
+    // SimpleFeatureStore featureStore = (SimpleFeatureStore) featureSource;
+    // featureStore.setTransaction(transaction);
+    // try {
+    // featureStore.addFeatures(result);
+    // transaction.commit();
+    // } catch (Exception problem) {
+    // problem.printStackTrace();
+    // transaction.rollback();
+    // } finally {
+    // transaction.close();
+    // }
+    // dataStore.dispose();
+
+    roadDS.dispose();
+    parcelDS.dispose();
+    // blockDS.dispose();
+  }
 }

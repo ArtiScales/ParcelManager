@@ -19,6 +19,7 @@ import org.opengis.filter.FilterFactory2;
 
 import fr.ign.artiscales.pm.decomposition.OBBBlockDecomposition;
 import fr.ign.artiscales.pm.decomposition.StraightSkeletonParcelDecomposition;
+import fr.ign.artiscales.pm.decomposition.TopologicalStraightSkeletonParcelDecomposition;
 import fr.ign.artiscales.pm.parcelFunction.MarkParcelAttributeFromPosition;
 import fr.ign.artiscales.pm.parcelFunction.ParcelCollection;
 import fr.ign.artiscales.pm.parcelFunction.ParcelSchema;
@@ -178,7 +179,7 @@ public class ConsolidationDivision extends Goal{
 								profile.getDecompositionLevelWithoutStreet());
 						break;
 					case "SS":
-						freshCutParcel = StraightSkeletonParcelDecomposition.decompose((Polygon) feat.getDefaultGeometry(), roads,
+						freshCutParcel = StraightSkeletonParcelDecomposition.decompose(feat, roads, outFolder,
 								profile.getMaxDepth(), profile.getMaxDistanceForNearestRoad(), profile.getMinimalArea(), profile.getMinWidth(),
 								profile.getMaxWidth(), noise, new MersenneTwister(42));
 						break;

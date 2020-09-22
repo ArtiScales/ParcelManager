@@ -1,17 +1,13 @@
 package fr.ign.artiscales.pm.decomposition;
 
-import java.io.File;
 import java.io.IOException;
 
-import org.geotools.data.DataStore;
-import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.geometry.jts.WKTReader2;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.LineString;
 import org.locationtech.jts.geom.Polygon;
 import org.locationtech.jts.io.ParseException;
 
-import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Geopackages;
 import fr.ign.artiscales.tools.graph.Edge;
 import fr.ign.artiscales.tools.graph.Face;
 import fr.ign.artiscales.tools.graph.Node;
