@@ -2,13 +2,13 @@ package fr.ign.artiscales
 
 import java.io.File
 
-import fr.ign.artiscales.analysis.SingleParcelStat
-import fr.ign.artiscales.goal.ZoneDivision
+import fr.ign.artiscales.pm.analysis.SingleParcelStat
+import fr.ign.artiscales.pm.workflow.ZoneDivision
 import fr.ign.cogit.parameter.ProfileUrbanFabric
 
 object compSimuParcel {
   /*
-"goal": "zoneDivision",
+"workflow": "zoneDivision",
 "parcelProcess": "OBB",
 "urbanFabricType": "smallHouse"
 */
@@ -46,7 +46,7 @@ object compSimuParcel {
 
 
 /*
-	"goal": "densificationOrNeighborhood",
+	"Workflow": "densificationOrNeighborhood",
 	"parcelProcess": "OBB",
 	"genericZone": "U",
 	"preciseZone":"UD",
@@ -56,13 +56,13 @@ object compSimuParcel {
 
 
 /*
-	"goal": "densificationOrNeighborhood",
+	"workflow": "densificationOrNeighborhood",
 	"genericZone": "U",
 	"urbanFabricType": "smallHouse"
 */
 
 /*
-	"goal": "consolidationDivision",
+	"workflow": "consolidationDivision",
 	"parcelProcess": "OBB",
 	"genericZone": "AU",
 	"urbanFabricType": "smallHouse"
@@ -70,7 +70,7 @@ object compSimuParcel {
 
 
 /*
-	"goal": "consolidationDivision",
+	"workflow": "consolidationDivision",
 	"parcelProcess": "OBB",
 	"genericZone": "NC",
 	"urbanFabricType": "smallHouse"

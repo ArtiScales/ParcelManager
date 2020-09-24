@@ -32,7 +32,7 @@ The parameter ***step*** must contain a .json table with the following arguments
 * ***communityType***
 * ***genericZone***
 * ***preciseZone***
-* ***goal***
+* ***workflow***
 * ***parcelProcess***
 * ***urbanFabric***
 
@@ -64,11 +64,11 @@ Though, make sure that the <b><i>preciseZone</i></b> step is declared before the
 
 It is possible to hack this method by using another kind of Geopackage and put in on the <b><i>zoningFile</i></b>, change the default value of the <b><i>genericZone</i></b> field name with the <i>fields.GeneralFields.setZoneGenericNameField(String)</i> method and set a <b><i>genericZone</i></b> value. 
 
-Once a parcel has been simulated, it attribute filed <i>SECTION</i> (see attribute policy) is marked with a long value, depending on the <b><i>goal</i></b> used. We check that field to know if a parcel has been simulated. By default, parcels cannot be marked again if they have been already simulated. It is possible to change that behaviour, for post treatments means by exemple, in setting the static boolean <b>MarkParcelAttributeFromPosition.postMark</b> to <b>true</b>.
+Once a parcel has been simulated, it attribute filed <i>SECTION</i> (see attribute policy) is marked with a long value, depending on the <b><i>workflow</i></b> used. We check that field to know if a parcel has been simulated. By default, parcels cannot be marked again if they have been already simulated. It is possible to change that behaviour, for post treatments means by exemple, in setting the static boolean <b>MarkParcelAttributeFromPosition.postMark</b> to <b>true</b>.
 
 <h3>Parcel Manager Goals</h3>
 Different algorithm are available in Parcel Manager.
-The parameter <b><i>goal</i></b> can be set with one of those three values:
+The parameter <b><i>workflow</i></b> can be set with one of those three values:
 
 * ***zoneDivision***: They take a total zone as an input and decompose it as a big zone
 * ***consolidationDivision***: Takes a set of marked parcels as an input and decompose them as contiguious zones

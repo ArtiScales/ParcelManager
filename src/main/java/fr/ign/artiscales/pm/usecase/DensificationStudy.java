@@ -1,4 +1,4 @@
-package fr.ign.artiscales.pm.workflow;
+package fr.ign.artiscales.pm.usecase;
 
 import java.io.File;
 import java.util.Arrays;
@@ -13,11 +13,11 @@ import org.opengis.feature.simple.SimpleFeature;
 
 import fr.ign.artiscales.pm.fields.GeneralFields;
 import fr.ign.artiscales.pm.fields.french.FrenchZoningSchemas;
-import fr.ign.artiscales.pm.goal.Densification;
 import fr.ign.artiscales.pm.parcelFunction.MarkParcelAttributeFromPosition;
 import fr.ign.artiscales.pm.parcelFunction.ParcelAttribute;
 import fr.ign.artiscales.pm.scenario.PMScenario;
 import fr.ign.artiscales.pm.scenario.PMStep;
+import fr.ign.artiscales.pm.workflow.Densification;
 import fr.ign.artiscales.tools.carto.JoinCSVToGeoFile;
 import fr.ign.artiscales.tools.carto.MergeByAttribute;
 import fr.ign.artiscales.tools.geoToolsFunctions.Csv;
@@ -56,7 +56,7 @@ public class DensificationStudy {
 	}
 
 	/**
-	 * Densification study. Can be used as a goal in scenarios.
+	 * Densification study. Can be used as a workflows in scenarios.
 	 * 
 	 * @param parcels
 	 * @param buildingFile

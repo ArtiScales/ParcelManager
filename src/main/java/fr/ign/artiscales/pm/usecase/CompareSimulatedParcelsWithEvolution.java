@@ -1,4 +1,4 @@
-package fr.ign.artiscales.pm.workflow;
+package fr.ign.artiscales.pm.usecase;
 
 import java.io.File;
 import java.time.Duration;
@@ -82,7 +82,7 @@ public class CompareSimulatedParcelsWithEvolution {
 		SingleParcelStat.writeStatSingleParcel(evolvedParcelFile, roadFile, new File(outFolder, "EvolvedParcelStats.csv"), true);
 		// stat for the simulated parcels
 		SingleParcelStat.writeStatSingleParcel(simulatedFile,evolvedParcelFile, roadFile, new File(outFolder, "SimulatedParcelStats.csv"), true);
-		// for every goals
+		// for every workflows
 		System.out.println("++++++++++ Analysis by zones ++++++++++");
 		System.out.println("steps"+ pm.getStepList());
 		

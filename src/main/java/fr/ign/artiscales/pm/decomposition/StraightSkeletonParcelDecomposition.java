@@ -57,9 +57,9 @@ import fr.ign.artiscales.tools.graph.Edge;
 import fr.ign.artiscales.tools.graph.Face;
 import fr.ign.artiscales.tools.graph.Node;
 import fr.ign.artiscales.tools.graph.Strip;
+import fr.ign.artiscales.tools.graph.TopologicalGraph;
 import fr.ign.artiscales.tools.graph.analysis.FindObjectInDirection;
 import fr.ign.artiscales.tools.graph.analysis.Util;
-import fr.ign.artiscales.tools.graph.TopologicalGraph;
 
 /**
  * Re-implementation of block decomposition into parcels from :
@@ -116,7 +116,7 @@ public class StraightSkeletonParcelDecomposition {
    * @param maxWidth
    *          maximal width of a parcel
    * @param noiseParameter
-   *          standard deviation of width distribution beteween minWidth and mawWidthdetermineInteriorLineString
+   *          standard deviation of width distribution between minWidth and mawWidthdetermineInteriorLineString
    * @param rng
    *          Random generator
    * @throws SchemaException
@@ -722,8 +722,7 @@ public class StraightSkeletonParcelDecomposition {
       }
       Optional<SimpleFeature> feat = FindObjectInDirection.find(a.getGeometry(), pol, roads, thresholdRoad); // NearestRoadFinder.findNearest(roads,
       System.out.println("FindObjectInDirection (detectNeighbourdRoad) = " + feat);
-      // a.getGeom(),
-      // thresholdRoad);
+      // a.getGeom(), thresholdRoad);
       if (!feat.isPresent()) {
         // AttributeManager.addAttribute(a, ATT_IMPORTANCE, 0.0, "Double");
         a.setAttribute(ATT_IMPORTANCE, 0.0);
@@ -1599,8 +1598,8 @@ public class StraightSkeletonParcelDecomposition {
     // ShapefileDataStore blockDS = new ShapefileDataStore(new File(inputUrbanBlock).toURI().toURL());
     // SimpleFeatureCollection blocks = blockDS.getFeatureSource().getFeatures();
     // String inputParcelShapeFile = "/home/julien/data/PLU_PARIS/PARCELLE_CADASTRALE/PARCELLE_13.gpkg";
-File  inputParcelGpkg = new File("/home/mcolomb/workspace/ParcelManager/src/main/resources/GeneralTest/parcel.gpkg");
-    File inputRoadGpkg = new File("/home/mcolomb/workspace/ParcelManager/src/main/resources/GeneralTest/road.gpkg");
+File  inputParcelGpkg = new File("/home/thema/Documents/MC/workspace/ParcelManager/src/main/resources/GeneralTest/parcel.gpkg");
+    File inputRoadGpkg = new File("/home/thema/Documents/MC/workspace/ParcelManager/src/main/resources/GeneralTest/road.gpkg");
     File folderOut = new File("/tmp/");
     folderOut.mkdirs();
     // The output file that will contain all the decompositions
@@ -1621,8 +1620,10 @@ File  inputParcelGpkg = new File("/home/mcolomb/workspace/ParcelManager/src/main
 			while (it.hasNext()) {
 				double maxDepth = 50, maxDistanceForNearestRoad = 100, minimalArea = 20, minWidth = 5, maxWidth = 40, noiseParameter = 0.1;
 				DEBUG = true;
-				decompose(it.next(), roads, folderOut, maxDepth, maxDistanceForNearestRoad, minimalArea, minWidth, maxWidth, noiseParameter,
-						new MersenneTwister(42));
+				List<Polygon> lp = Util.getPolygons((Geometry) it.next().getDefaultGeometry());
+				for (Polygon p : lp)
+					runStraightSkeleton2(p, roads, maxDepth, maxDistanceForNearestRoad, minimalArea, minWidth, maxWidth,
+							noiseParameter, new MersenneTwister(42));
 			}
 		} catch (Exception problem) {
 			problem.printStackTrace();

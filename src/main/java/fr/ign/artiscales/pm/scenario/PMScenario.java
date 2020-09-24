@@ -26,7 +26,7 @@ public class PMScenario {
 	 */
 	private static boolean REUSESIMULATEDPARCELS = true;
 	/**
-	 * If true, save a geopackage containing only the simulated parcels in the temporary folder for every goal simulated.
+	 * If true, save a geopackage containing only the simulated parcels in the temporary folder for every workflow simulated.
 	 */
 	private static boolean SAVEINTERMEDIATERESULT = false; 
 
@@ -64,7 +64,7 @@ public class PMScenario {
 			//if the line is an array, it describes a PMSetp
 			if (token == JsonToken.FIELD_NAME && "steps".equals(parser.getCurrentName())) {
 				token = parser.nextToken();
-				String goal = "";
+				String workflow = "";
 				String parcelProcess = "";
 				String genericZone = "";
 				String preciseZone = "";
@@ -73,10 +73,10 @@ public class PMScenario {
 				String urbanFabric = "";
 				while (token != JsonToken.END_ARRAY) {
 					token = parser.nextToken();
-					if (token == JsonToken.FIELD_NAME && parser.getCurrentName().equals("goal")) {
+					if (token == JsonToken.FIELD_NAME && parser.getCurrentName().equals("workflow")) {
 						token = parser.nextToken();
 						if (token == JsonToken.VALUE_STRING)
-							goal = parser.getText();
+							workflow = parser.getText();
 					}
 					if (token == JsonToken.FIELD_NAME && parser.getCurrentName().equals("parcelProcess")) {
 						token = parser.nextToken();
@@ -110,10 +110,10 @@ public class PMScenario {
 					}
 					if (token == JsonToken.END_OBJECT) {
 						List<PMStep> list = getStepList();
-						PMStep step = new PMStep(goal, parcelProcess, genericZone, preciseZone, communityNumber, communityType, urbanFabric);
+						PMStep step = new PMStep(workflow, parcelProcess, genericZone, preciseZone, communityNumber, communityType, urbanFabric);
 						list.add(step);
 						setStepList(list);
-						goal = parcelProcess = genericZone = preciseZone = communityNumber = communityType = urbanFabric = "";
+						workflow = parcelProcess = genericZone = preciseZone = communityNumber = communityType = urbanFabric = "";
 					}
 				}
 			}

@@ -1,4 +1,4 @@
-package fr.ign.artiscales.pm.goal;
+package fr.ign.artiscales.pm.workflow;
 
 import java.io.File;
 import java.io.IOException;
@@ -39,14 +39,14 @@ import fr.ign.artiscales.tools.geometryGeneration.CityGeneration;
 import fr.ign.artiscales.tools.parameter.ProfileUrbanFabric;
 
 /**
- * Simulation following this goal operates on a zone rather than on parcels. Zones can either be taken from a zoning plan or from a ready-to-use zone parcel collection. Their
+ * Simulation following this workflow operates on a zone rather than on parcels. Zones can either be taken from a zoning plan or from a ready-to-use zone parcel collection. Their
  * integration is anyhow made with the {@link #createZoneToCut(String, SimpleFeatureCollection, File, SimpleFeatureCollection)} method. The parcel which are across the zone are cut
  * and the parts that aren't contained into * the zone are kept with their attributes. The chosen parcel division process (OBB by default) is then applied on the zone.
  * 
  * @author Maxime Colomb
  *
  */
-public class ZoneDivision extends Goal{
+public class ZoneDivision extends Workflow{
 
 	public ZoneDivision() {
 	}
@@ -366,7 +366,7 @@ public class ZoneDivision extends Goal{
 	}
 
 	/**
-	 * Check if the input {@link SimpleFeature} has a section field that has been simulated with this present goal.
+	 * Check if the input {@link SimpleFeature} has a section field that has been simulated with this present workflow.
 	 * 
 	 * @param feat
 	 *            {@link SimpleFeature} to test.

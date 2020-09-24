@@ -4,7 +4,7 @@
 	"outFolder": "/tmp/",
 	"steps": [
 		{
-			"goal": "zoneDivision",
+			"workflow": "zoneDivision",
 			"parcelProcess": "OBB",
 			"genericZone": "AU",
 			"communityNumber": "25267",
@@ -12,7 +12,7 @@
 			"urbanFabricType": "smallHouse"
 		},
 		{
-			"goal": "consolidationDivision",
+			"workflow": "consolidationDivision",
 			"parcelProcess": "OBB",
 			"genericZone": "NC",
 			"communityNumber": "25267",
@@ -20,7 +20,7 @@
 			"urbanFabricType": "smallHouse"
 		},
 		{
-			"goal": "densification",
+			"workflow": "densification",
 			"genericZone": "U",
 			"communityNumber": "25267",
 			"communityType": "periUrbain",

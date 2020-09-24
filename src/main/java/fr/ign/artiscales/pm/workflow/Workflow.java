@@ -1,8 +1,8 @@
-package fr.ign.artiscales.pm.goal;
+package fr.ign.artiscales.pm.workflow;
 
 import org.opengis.feature.simple.SimpleFeature;
 
-public abstract class Goal {
+public abstract class Workflow {
 	/**
 	 * The process used to divide the parcels
 	 */

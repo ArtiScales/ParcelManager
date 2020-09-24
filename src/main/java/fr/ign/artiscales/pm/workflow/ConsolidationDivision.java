@@ -1,4 +1,4 @@
-package fr.ign.artiscales.pm.goal;
+package fr.ign.artiscales.pm.workflow;
 
 import java.io.File;
 import java.util.Arrays;
@@ -31,13 +31,13 @@ import fr.ign.artiscales.tools.geometryGeneration.CityGeneration;
 import fr.ign.artiscales.tools.parameter.ProfileUrbanFabric;
 
 /**
- * Simulation following this goal merge together the contiguous marked parcels to create zones. The chosen parcel division process (OBB by default) is then applied on each created
+ * Simulation following this workflow merge together the contiguous marked parcels to create zones. The chosen parcel division process (OBB by default) is then applied on each created
  * zone.
  * 
  * @author Maxime Colomb
  *
  */
-public class ConsolidationDivision extends Goal{
+public class ConsolidationDivision extends Workflow{
 
 	public ConsolidationDivision() {
 	}
@@ -267,7 +267,7 @@ public class ConsolidationDivision extends Goal{
 	}
 
 	/**
-	 * Check if the input {@link SimpleFeature} has a section field that has been simulated with this present goal.
+	 * Check if the input {@link SimpleFeature} has a section field that has been simulated with this present workflow.
 	 * 
 	 * @param feat
 	 *            {@link SimpleFeature} to test.

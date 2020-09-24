@@ -1,4 +1,4 @@
-package fr.ign.artiscales.pm.workflow;
+package fr.ign.artiscales.pm.usecase;
 
 import java.io.File;
 

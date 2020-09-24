@@ -1,4 +1,4 @@
-package fr.ign.artiscales.pm.goal;
+package fr.ign.artiscales.pm.workflow;
 
 import java.io.File;
 import java.util.Arrays;
@@ -26,7 +26,7 @@ import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Geopackages;
 import fr.ign.artiscales.tools.parameter.ProfileUrbanFabric;
 
 /**
- * Simulation following that goal divides parcels to ensure that they could be densified. The
+ * Simulation following that workflow divides parcels to ensure that they could be densified. The
  * {@link FlagParcelDecomposition#generateFlagSplitedParcels(SimpleFeature, List, double, File, File, Double, Double, Double, boolean, Geometry)} method is applied on the
  * selected parcels. If the creation of a flag parcel is impossible and the local rules allows parcel to be disconnected from the road network, the
  * {@link OBBBlockDecomposition#splitParcels(SimpleFeature, double, double, double, double, List, double, boolean, int)} is applied. Other behavior can be set relatively to the
@@ -35,13 +35,13 @@ import fr.ign.artiscales.tools.parameter.ProfileUrbanFabric;
  * @author Maxime Colomb
  *
  */
-public class Densification extends Goal {
+public class Densification extends Workflow {
 
 	public Densification() {
 	};
 	
 	/**
-	 * Apply the densification goal on a set of marked parcels.
+	 * Apply the densification workflow on a set of marked parcels.
 	 *
 	 * @param parcelCollection
 	 *            {@link SimpleFeatureCollection} of marked parcels.
@@ -57,7 +57,7 @@ public class Densification extends Goal {
 	 * @param maximalAreaSplitParcel
 	 *            threshold of parcel area above which the OBB algorithm stops to decompose parcels
 	 * @param minimalAreaSplitParcel
-	 *            threshold under which the parcels is not kept. If parcel simulated is under this goal will keep the unsimulated parcel.
+	 *            threshold under which the parcels is not kept. If parcel simulated is under this workflow will keep the unsimulated parcel.
 	 * @param maximalWidthSplitParcel
 	 *            threshold of parcel connection to road under which the OBB algorithm stops to decompose parcels
 	 * @param lenDriveway
@@ -154,7 +154,7 @@ public class Densification extends Goal {
 	}
 	
 	/**
-	 * Apply the densification goal on a set of marked parcels.
+	 * Apply the densification workflow on a set of marked parcels.
 	 *
 	 * overload of the {@link #densification(SimpleFeatureCollection, SimpleFeatureCollection, File, File, File, double, double, double, double, boolean)} method if we choose to
 	 * not use a road Geopackage and no geometry of exclusion
@@ -171,7 +171,7 @@ public class Densification extends Goal {
 	 * @param maximalAreaSplitParcel
 	 *            threshold of parcel area above which the OBB algorithm stops to decompose parcels
 	 * @param minimalAreaSplitParcel
-	 *            threshold under which the parcels is not kept. If parcel simulated is under this goal will keep the unsimulated parcel.
+	 *            threshold under which the parcels is not kept. If parcel simulated is under this workflow will keep the unsimulated parcel.
 	 * @param maximalWidthSplitParcel
 	 *            threshold of parcel connection to road under which the OBB algorithm stops to decompose parcels
 	 * @param lenDriveway
@@ -189,7 +189,7 @@ public class Densification extends Goal {
 	}
 	
 	/**
-	 * Apply the densification goal on a set of marked parcels.
+	 * Apply the densification workflow on a set of marked parcels.
 	 *
 	 * overload of the {@link #densification(SimpleFeatureCollection, SimpleFeatureCollection, File, File, File, double, double, double, double, boolean)} method if we choose to
 	 * not use a road Geopackage
@@ -206,7 +206,7 @@ public class Densification extends Goal {
 	 * @param maximalAreaSplitParcel
 	 *            threshold of parcel area above which the OBB algorithm stops to decompose parcels
 	 * @param minimalAreaSplitParcel
-	 *            threshold under which the parcels is not kept. If parcel simulated is under this goal will keep the unsimulated parcel.
+	 *            threshold under which the parcels is not kept. If parcel simulated is under this workflow will keep the unsimulated parcel.
 	 * @param maximalWidthSplitParcel
 	 *            threshold of parcel connection to road under which the OBB algorithm stops to decompose parcels
 	 * @param lenDriveway
@@ -224,7 +224,7 @@ public class Densification extends Goal {
 	}
 	
 	/**
-	 * Apply the densification goal on a set of marked parcels. Overload
+	 * Apply the densification workflow on a set of marked parcels. Overload
 	 * {@link #densification(SimpleFeatureCollection, SimpleFeatureCollection, File, File, File, double, double, double, double, boolean)} method with a profile building type input
 	 * (which automatically report its parameters to the fields)
 	 * 
@@ -253,7 +253,7 @@ public class Densification extends Goal {
 	}
 	
 	/**
-	 * Apply the densification goal on a set of marked parcels. Overload
+	 * Apply the densification workflow on a set of marked parcels. Overload
 	 * {@link #densification(SimpleFeatureCollection, SimpleFeatureCollection, File, File, File, double, double, double, double, boolean)} method with a profile building type input
 	 * (which automatically report its parameters to the fields)
 	 * 
@@ -284,8 +284,8 @@ public class Densification extends Goal {
 	
 	/**
 	 * Apply a hybrid densification process on the coming parcel collection. The parcels that size are inferior to 4x the maximal area of parcel type to create are runned with the
-	 * densication goal. The parcels that size are superior to 4x the maximal area are considered as able to build neighborhood. They are divided with the
-	 * {@link fr.ign.artiscales.pm.goal.ConsolidationDivision#consolidationDivision(SimpleFeatureCollection, File, File, ProfileUrbanFabric)} method.
+	 * densication workflow. The parcels that size are superior to 4x the maximal area are considered as able to build neighborhood. They are divided with the
+	 * {@link fr.ign.artiscales.pm.workflow.ConsolidationDivision#consolidationDivision(SimpleFeatureCollection, File, File, ProfileUrbanFabric)} method.
 	 *
 	 * @param parcelCollection
 	 *            SimpleFeatureCollection of marked parcels.
@@ -306,7 +306,7 @@ public class Densification extends Goal {
 	 *            Exclude a zone that won't be considered as a potential road connection. Useful to represent border of the parcel plan. Can be null.
 	 * @param factorOflargeZoneCreation
 	 *            If the area of the parcel to be simulated is superior to the maximal size of parcels multiplied by this factor, the simulation will be done with the
-	 *            {@link fr.ign.artiscales.pm.goal.ConsolidationDivision#consolidationDivision(SimpleFeatureCollection, File, File, ProfileUrbanFabric)} method.
+	 *            {@link fr.ign.artiscales.pm.workflow.ConsolidationDivision#consolidationDivision(SimpleFeatureCollection, File, File, ProfileUrbanFabric)} method.
 	 * @return The input parcel {@link SimpleFeatureCollection} with the marked parcels replaced by the simulated parcels. All parcels have the
 	 *         {@link fr.ign.artiscales.pm.parcelFunction.ParcelSchema#getSFBMinParcel()} schema.
 	 * @throws Exception
@@ -350,7 +350,7 @@ public class Densification extends Goal {
 	}
 
 	/**
-	 * Check if the input {@link SimpleFeature} has a section field that has been simulated with this present goal.
+	 * Check if the input {@link SimpleFeature} has a section field that has been simulated with this present workflow.
 	 * 
 	 * @param feat
 	 *            {@link SimpleFeature} to test.

@@ -1,16 +1,16 @@
-package fr.ign.artiscales.pm.workflow;
+package fr.ign.artiscales.pm.usecase;
 
 import java.io.File;
 
 import fr.ign.artiscales.pm.scenario.PMScenario;
 import fr.ign.artiscales.pm.scenario.PMStep;
 
-public class FigureIterationStep {
+public class SmallTest {
 	public static void main(String[] args) throws Exception {
 		long start = System.currentTimeMillis();
-		PMStep.setGENERATEATTRIBUTES(false);
-		PMScenario.setReuseSimulatedParcels(false);
-		PMScenario pm = new PMScenario(new File("src/main/resources/FigureIterationStep/scenario.json"), new File("/tmp/"));
+		PMScenario.setSaveIntermediateResult(true);
+		PMStep.setDEBUG(true);
+		PMScenario pm = new PMScenario(new File("src/main/resources/smallTest/scenario.json"), new File("/tmp/"));
 		pm.executeStep();
 		System.out.println(System.currentTimeMillis() - start);
 	}

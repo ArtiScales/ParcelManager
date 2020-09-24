@@ -1,4 +1,4 @@
-package fr.ign.artiscales.pm.workflow;
+package fr.ign.artiscales.pm.usecase;
 
 import java.io.File;
 import java.io.FileReader;
@@ -17,11 +17,11 @@ import org.opengis.referencing.NoSuchAuthorityCodeException;
 import com.opencsv.CSVReader;
 
 import fr.ign.artiscales.pm.fields.GeneralFields;
-import fr.ign.artiscales.pm.goal.ZoneDivision;
 import fr.ign.artiscales.pm.parcelFunction.ParcelCollection;
 import fr.ign.artiscales.pm.parcelFunction.ParcelSchema;
 import fr.ign.artiscales.pm.scenario.PMScenario;
 import fr.ign.artiscales.pm.scenario.PMStep;
+import fr.ign.artiscales.pm.workflow.ZoneDivision;
 import fr.ign.artiscales.tools.geoToolsFunctions.Csv;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Collec;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Geopackages;
@@ -84,7 +84,7 @@ public class CompareSimulatedParcelsWithEvolutionOM {
 		PMStep.setPOLYGONINTERSECTION(null);
 		}
 	/**
-	 * Simulate the Zone Division goal from parameters contained in a CSV file (which could be an output of OpenMole)
+	 * Simulate the Zone Division workflow from parameters contained in a CSV file (which could be an output of OpenMole)
 	 * @param csvIn
 	 * @throws IOException
 	 * @throws NoSuchAuthorityCodeException

@@ -6,7 +6,7 @@
 	"outFolder": "src/main/resources/ParcelComparisonOM/out/",
 	"steps": [
 		{
-			"goal": "zoneDivision",
+			"workflow": "zoneDivision",
 			"parcelProcess": "null",
 			"urbanFabricType": "smallHouse"
 		}]

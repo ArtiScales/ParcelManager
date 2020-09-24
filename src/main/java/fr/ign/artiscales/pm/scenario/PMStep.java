@@ -19,15 +19,15 @@ import org.opengis.referencing.NoSuchAuthorityCodeException;
 import fr.ign.artiscales.pm.fields.GeneralFields;
 import fr.ign.artiscales.pm.fields.french.FrenchParcelFields;
 import fr.ign.artiscales.pm.fields.french.FrenchZoningSchemas;
-import fr.ign.artiscales.pm.goal.ConsolidationDivision;
-import fr.ign.artiscales.pm.goal.Densification;
-import fr.ign.artiscales.pm.goal.ZoneDivision;
 import fr.ign.artiscales.pm.parcelFunction.MarkParcelAttributeFromPosition;
 import fr.ign.artiscales.pm.parcelFunction.ParcelAttribute;
 import fr.ign.artiscales.pm.parcelFunction.ParcelGetter;
 import fr.ign.artiscales.pm.parcelFunction.ParcelSchema;
 import fr.ign.artiscales.pm.parcelFunction.ParcelState;
-import fr.ign.artiscales.pm.workflow.DensificationStudy;
+import fr.ign.artiscales.pm.usecase.DensificationStudy;
+import fr.ign.artiscales.pm.workflow.ConsolidationDivision;
+import fr.ign.artiscales.pm.workflow.Densification;
+import fr.ign.artiscales.pm.workflow.ZoneDivision;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Collec;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Geom;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Geopackages;
@@ -44,8 +44,8 @@ import fr.ign.artiscales.tools.parameter.ProfileUrbanFabric;
  */
 public class PMStep {
 
-	public PMStep(String goal, String parcelProcess, String genericZone, String preciseZone, String communityNumber, String communityType, String urbanFabricType) {
-		this.goal = goal;
+	public PMStep(String workflow, String parcelProcess, String genericZone, String preciseZone, String communityNumber, String communityType, String urbanFabricType) {
+		this.workflow = workflow;
 		this.parcelProcess = parcelProcess;
 		this.genericZone = genericZone;
 		this.preciseZone = preciseZone;
@@ -77,7 +77,7 @@ public class PMStep {
 		PROFILEFOLDER = profileFolder;
 	}
 
-	private String goal, parcelProcess, communityNumber, communityType , urbanFabricType , genericZone, preciseZone;
+	private String workflow, parcelProcess, communityNumber, communityType , urbanFabricType , genericZone, preciseZone;
 	List<String> communityNumbers = new ArrayList<String>(); 
 	
 	/**
@@ -96,7 +96,7 @@ public class PMStep {
 	 */
 	private static boolean GENERATEATTRIBUTES = true;
 	/**
-	 * If true, save a geopackage containing only the simulated parcels in the temporary folder for every goal simulated.
+	 * If true, save a geopackage containing only the simulated parcels in the temporary folder for every workflow simulated.
 	 */
 	private static boolean SAVEINTERMEDIATERESULT = false; 
 	/**
@@ -123,14 +123,14 @@ public class PMStep {
 		// mark (select) the parcels
 		SimpleFeatureCollection parcelMarked;
 		//if we work with zones, we put them as parcel input
-		if (goal.equals("zoneDivision")) {
+		if (workflow.equals("zoneDivision")) {
 			parcelMarked = getSimulationParcels(getZone(parcel));
 		} else
 			parcelMarked = getSimulationParcels(parcel);
 		if (DEBUG) {
 			File tmpFolder = new File(OUTFOLDER, "tmp");
 			tmpFolder.mkdirs(); 
-			Collec.exportSFC(parcelMarked, new File(tmpFolder, "parcelMarked" + this.goal + "-" + this.parcelProcess + this.preciseZone), false);
+			Collec.exportSFC(parcelMarked, new File(tmpFolder, "parcelMarked" + this.workflow + "-" + this.parcelProcess + this.preciseZone), false);
 		}
 		SimpleFeatureCollection parcelCut = new DefaultFeatureCollection(null, ParcelSchema.getSFBMinParcel().getFeatureType());
 		// get the wanted building profile
@@ -143,8 +143,8 @@ public class PMStep {
 				System.out.println("No parcels for community "+ communityNumber);
 				continue;
 			}
-			// we choose one of the different goals
-			switch (goal) {
+			// we choose one of the different workflows
+			switch (workflow) {
 			case "zoneDivision":
 				ZoneDivision.PROCESS = parcelProcess;
 				((DefaultFeatureCollection) parcelCut).addAll((new ZoneDivision()).zoneDivision(parcelMarkedComm, ParcelGetter.getParcelByCommunityCode(parcel, communityNumber),
@@ -172,7 +172,7 @@ public class PMStep {
 						ParcelState.isArt3AllowsIsolatedParcel(parcel.features().next(), PREDICATEFILE), profile);
 				break;
 			default:
-				System.out.println(goal + ": unrekognized goal");
+				System.out.println(workflow + ": unrekognized workflow");
 			}
 		}
 		// we add the parcels from the communities that haven't been simulated 
@@ -220,7 +220,7 @@ public class PMStep {
 	public SimpleFeatureCollection getSimulationParcels(SimpleFeatureCollection parcelIn) throws IOException, NoSuchAuthorityCodeException, FactoryException  {
 
 		// special case where zoneDivision will return other than parcel
-		if (goal.equals("zoneDivision")) {
+		if (workflow.equals("zoneDivision")) {
 			ParcelSchema.setMinParcelCommunityField(GeneralFields.getZoneCommunityCode());
 		}
 		
@@ -264,7 +264,7 @@ public class PMStep {
 			Collec.exportSFC(parcel, new File(OUTFOLDER, "selectedParcels"));		
 		
 		// parcel marking with input polygons (disabled if we use a specific zone)
-		if (POLYGONINTERSECTION != null && POLYGONINTERSECTION.exists() && !goal.equals("zoneDivision")) 
+		if (POLYGONINTERSECTION != null && POLYGONINTERSECTION.exists() && !workflow.equals("zoneDivision")) 
 			parcel = MarkParcelAttributeFromPosition.markParcelIntersectPolygonIntersection(parcel, POLYGONINTERSECTION);
 
 		SimpleFeatureCollection result = new DefaultFeatureCollection(); 
@@ -339,7 +339,7 @@ public class PMStep {
 		} else 
 			result = parcel;
 		// if the result is only zones, we return only the marked ones
-		if (goal.equals("zoneDivision")) {
+		if (workflow.equals("zoneDivision")) {
 			if (MarkParcelAttributeFromPosition.isNoParcelMarked(parcel))
 				result = parcel;
 			else 
@@ -359,7 +359,7 @@ public class PMStep {
 	public List<Geometry> getBoundsOfZone() throws IOException, NoSuchAuthorityCodeException, FactoryException {
 		DataStore ds = Geopackages.getDataStore(PARCELFILE);
 		List<Geometry> lG = new ArrayList<Geometry>();
-		if (goal.equals("zoneDivision")) {
+		if (workflow.equals("zoneDivision")) {
 			Arrays.stream(getZone(ds.getFeatureSource(ds.getTypeNames()[0]).getFeatures()).toArray(new SimpleFeature[0])).forEach(parcel -> {
 				lG.add((Geometry) parcel.getDefaultGeometry());
 			});
@@ -375,7 +375,7 @@ public class PMStep {
 	}
 	
 	/**
-	 * Get the zones to simulate for the <i>Zone Division</i> goal. If a specific zone input is set at the {@link #ZONE} location, it will automatically get and return it. 
+	 * Get the zones to simulate for the <i>Zone Division</i> workflow. If a specific zone input is set at the {@link #ZONE} location, it will automatically get and return it. 
 	 * @param parcel
 	 * @return
 	 * @throws NoSuchAuthorityCodeException
@@ -415,11 +415,11 @@ public class PMStep {
 	 * @return the description
 	 */
 	public String getZoneStudied() {
-		return goal + "With" + parcelProcess + "On" + genericZone + "_" + preciseZone + "Of" + communityNumber;
+		return workflow + "With" + parcelProcess + "On" + genericZone + "_" + preciseZone + "Of" + communityNumber;
 	}
 
 	/**
-	 * If true, save a geopackage containing only the simulated parcels in the temporary folder for every goal simulated.
+	 * If true, save a geopackage containing only the simulated parcels in the temporary folder for every workflow simulated.
 	 * 
 	 * @return SAVEINTERMEDIATERESULT
 	 */
@@ -428,7 +428,7 @@ public class PMStep {
 	}
 
 	/**
-	 * If true, save a geopackage containing only the simulated parcels in the temporary folder for every goal simulated.
+	 * If true, save a geopackage containing only the simulated parcels in the temporary folder for every workflow simulated.
 	 * 
 	 * @param sAVEINTERMEDIATERESULT
 	 */
@@ -492,7 +492,7 @@ public class PMStep {
 
 	@Override
 	public String toString() {
-		return "PMStep [goal=" + goal + ", parcelProcess=" + parcelProcess + ", communityNumber=" + communityNumber + ", communityType="
+		return "PMStep [workflow=" + workflow + ", parcelProcess=" + parcelProcess + ", communityNumber=" + communityNumber + ", communityType="
 				+ communityType + ", urbanFabricType=" + urbanFabricType + ", genericZone=" + genericZone + ", preciseZone=" + preciseZone + "]";
 	}
 
@@ -506,6 +506,6 @@ public class PMStep {
 	}
 	
 	public File makeFileName() {
-		return new File(OUTFOLDER, "parcelCuted-" + goal + "-"+ urbanFabricType + "-" + genericZone +"_" + preciseZone + Collec.getDefaultGISFileType());
+		return new File(OUTFOLDER, "parcelCuted-" + workflow + "-"+ urbanFabricType + "-" + genericZone +"_" + preciseZone + Collec.getDefaultGISFileType());
 	}
 }
