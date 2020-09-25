@@ -39,6 +39,7 @@ import org.locationtech.jts.geom.PrecisionModel;
 import org.locationtech.jts.geom.util.LineStringExtracter;
 import org.locationtech.jts.linearref.LengthIndexedLine;
 import org.locationtech.jts.operation.linemerge.LineMerger;
+import org.locationtech.jts.operation.linemerge.LineSequencer;
 import org.locationtech.jts.operation.overlay.snap.GeometrySnapper;
 import org.locationtech.jts.operation.polygonize.Polygonizer;
 import org.locationtech.jts.operation.union.CascadedPolygonUnion;
@@ -155,7 +156,7 @@ public class StraightSkeletonParcelDecomposition {
       TopologicalGraph.export(cs.getIncludedEdges(), new File(FOLDER_OUT_DEBUG, "includedArcs"), LineString.class);
     }
     System.out.println("------Annotation of external edges-----");
-    // Information is stored in getPoids method
+    // Detect which faces belong to which streets. If no streets are found, then what ?
     HashMap<String, List<Face>> llFace = detectStrip(cs.getGraph().getFaces(), pol, roads, maxDistanceForNearestRoad);
     if (DEBUG) {
       System.out.println("------Saving for debug  ...-----");
@@ -163,6 +164,7 @@ public class StraightSkeletonParcelDecomposition {
       llFace.keySet().stream().forEach(key -> System.out.println("\t" + key + " with " + llFace.get(key).size()));
       TopologicalGraph.export(cs.getGraph().getFaces(), new File(FOLDER_OUT_DEBUG, "striproad"), Polygon.class);
     }
+    // make group regarding their road which owned them (strips)
     List<List<Face>> stripFace = splittingInAdjacentStrip(llFace);
     if (DEBUG) {
       System.out.println("------Saving for debug  ...-----");
@@ -178,14 +180,16 @@ public class StraightSkeletonParcelDecomposition {
       TopologicalGraph.export(lf, new File(FOLDER_OUT_DEBUG, "striproadCorrected"), Polygon.class);
     }
     System.out.println("------Fast strip cleaning...-----");
+    //merge small parcels with the higher ranked strip
     stripFace = fastStripCleaning(stripFace, minimalArea);
     if (DEBUG) {
-      System.out.println("------Saving for debug ...-----");
+      System.out.println("------Saving fastStripCleaning for debug ...-----");
       TopologicalGraph.export(cs.getGraph().getFaces(), new File(FOLDER_OUT_DEBUG, "fastStripCleaning"), Polygon.class);
     }
+    //TODO ça bugg ici. Le problème est avant sur le marquage des importances 
     List<LineString> interiorEdgesByStrip = detectInteriorEdges(stripFace);
     if (DEBUG) {
-      System.out.println("------Saving for debug  ...-----");
+      System.out.println("------Saving interiorEdgesByStrip for debug  ...-----");
       List<Edge> lf = new ArrayList<>();
       int count = 0;
       for (LineString line : interiorEdgesByStrip) {
@@ -226,24 +230,45 @@ public class StraightSkeletonParcelDecomposition {
     }
     return generateParcel(listOfLists, minWidth, maxWidth, noiseParameter, rng);
   }
-
+  
+//public static roadCreation(double roadWidth) {
+//  double roadAlpha = roadWidth / (p0.distance(p1)*2);
+//  Coordinate p4 = new Coordinate(p0.x + (alpha - roadAlpha) * (p1.x - p0.x), p0.y + (alpha - roadAlpha) * (p1.y - p0.y));
+//  Coordinate p5 = new Coordinate(p3.x + (alpha - roadAlpha) * (p2.x - p3.x), p3.y + (alpha - roadAlpha) * (p2.y - p3.y));
+//  Coordinate p6 = new Coordinate(p0.x + (alpha + roadAlpha) * (p1.x - p0.x), p0.y + (alpha + roadAlpha) * (p1.y - p0.y));
+//  Coordinate p7 = new Coordinate(p3.x + (alpha + roadAlpha) * (p2.x - p3.x), p3.y + (alpha + roadAlpha) * (p2.y - p3.y));
+//  try {
+//    ext.add(pol.getFactory().createLineString(new Coordinate[] { p4, p5, p7, p6, p4 }));
+//  }
+//  catch (NullPointerException np) {
+//	  ext = new ArrayList<>();
+//	  ext.add(pol.getFactory().createLineString(new Coordinate[] { p4, p5, p7, p6, p4 }));   
+//  }
+//  return Arrays.asList(pol.getFactory().createPolygon(new Coordinate[] { p0, p4, p5, p3, p0 }), pol.getFactory().createPolygon(new Coordinate[] { p6, p1, p2, p7, p6 }));
+//}
+  
   ////////////////////////////////////////
   ///////// V2 above
   ///////////////////////////////////////
 
+  /**
+   * Get the interior edges of a list of faces
+   * @param stripFace
+   * @return
+   */
   private static List<LineString> detectInteriorEdges(List<List<Face>> stripFace) {
     List<List<Edge>> lLLArc = new ArrayList<>();
     for (List<Face> lFtemp : stripFace) {
       List<Edge> currentList = new ArrayList<>();
-      lLLArc.add(currentList);
       for (Face f : lFtemp) {
         for (Edge a : f.getEdges()) {
+        	//If arc has been marked as outside, skip 
           if (Integer.parseInt(a.getAttribute(ATT_IS_INSIDE).toString()) == ARC_VALUE_OUTSIDE) {
             continue;
           }
-          if (lFtemp.contains(a.getRight()) && lFtemp.contains(a.getLeft())) {
-            continue;
-          }
+//          if (lFtemp.contains(a.getRight()) && lFtemp.contains(a.getLeft())) {
+//            continue;
+//          }
           if (currentList.contains(a)) {
             continue;
           }
@@ -257,14 +282,16 @@ public class StraightSkeletonParcelDecomposition {
               if (Math.abs(id1 - id2) == 1) {
                 continue;
               }
+              //what is that for ?? if no road is found, it makes calculation crash (coz kills every lines coz size == 1 and id1 & id2 == 0)
               if (Math.abs(id1 - id2) == (stripFace.size() - 1)) {
-                continue;
+//                continue;
               }
             }
           }
           currentList.add(a);
         }
       }
+      lLLArc.add(currentList);
     }
     List<LineString> lsListOut = new ArrayList<>();
     // Merge intoLineString
@@ -274,7 +301,7 @@ public class StraightSkeletonParcelDecomposition {
         for (Edge a : arcs) {
           lsList.add(a.getGeometry());
         }
-        // LineString ls = Operateurs.union(lsList, 0.1);
+        // TODO here result is a tiny part of te interior lines. Sequence is not sequencable
         LineString ls = union(lsList);
         lsListOut.add(ls);
       }
@@ -285,8 +312,22 @@ public class StraightSkeletonParcelDecomposition {
   private static LineString union(List<LineString> list) {
     if (list.isEmpty())
       return null;
+    int i = 0;
+	for (Geometry l : list) {
+		System.out.println(l);
+		try {
+			Geom.exportGeom(l, new File("/tmp/line" + i++));
+		} catch (IOException | FactoryException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+    LineSequencer sequencer = new LineSequencer();
+    list.forEach(l -> sequencer.add(l));
+    System.out.println("isSequenceable ? " + sequencer.isSequenceable());
+  Geometry sequenced = sequencer.getSequencedLineStrings();
     LineMerger merger = new LineMerger();
-    list.forEach(l -> merger.add(l));
+    merger.add(sequenced);
     return (LineString) merger.getMergedLineStrings().iterator().next();// FIXME we assume a lot here
   }
 
@@ -435,9 +476,11 @@ public class StraightSkeletonParcelDecomposition {
       List<Face> lFaces = hashFaces.get(bestRoadName);
       if (lFaces == null) {
         lFaces = new ArrayList<>();
+        lFaces.add(f);
         hashFaces.put(bestRoadName, lFaces);
       }
       lFaces.add(f);
+      hashFaces.put(bestRoadName,lFaces);
     }
     // ... and group them according to roads name
     return hashFaces;
@@ -454,14 +497,17 @@ public class StraightSkeletonParcelDecomposition {
     }
     // Adding id strip attribute
     int count = 0;
+    List<List<Face>> result = new ArrayList<>();
     for (List<Face> lfTemp : lFOut) {
+    List<Face> tmp = new ArrayList<>();
       for (Face fTemp : lfTemp) {
-        // AttributeManager.addAttribute(fTemp, ATT_FACE_ID_STRIP, count + "", "String");
         fTemp.setAttribute(ATT_FACE_ID_STRIP, count + "");
+        tmp.add(fTemp);
       }
+      result.add(tmp);
       count++;
     }
-    return lFOut;
+    return result;
   }
 
   /**
@@ -722,7 +768,6 @@ public class StraightSkeletonParcelDecomposition {
       }
       Optional<SimpleFeature> feat = FindObjectInDirection.find(a.getGeometry(), pol, roads, thresholdRoad); // NearestRoadFinder.findNearest(roads,
       System.out.println("FindObjectInDirection (detectNeighbourdRoad) = " + feat);
-      // a.getGeom(), thresholdRoad);
       if (!feat.isPresent()) {
         // AttributeManager.addAttribute(a, ATT_IMPORTANCE, 0.0, "Double");
         a.setAttribute(ATT_IMPORTANCE, 0.0);
@@ -852,9 +897,9 @@ public class StraightSkeletonParcelDecomposition {
           initStripping.get(previousIndex).addAll(initStripping.remove(i));
           i--;
           nbGroup--;
-        } else if (previousImportance < nextImportance) {
-          System.out.println("Je merge");
-          // The group is merged with the next one
+        } else { 
+//        	if (previousImportance < nextImportance) {
+          // The group is merged with the next one (even if they have the same importance
           initStripping.get(nextIndex--).addAll(initStripping.remove(i));
           i--;
           nbGroup--;
@@ -1174,10 +1219,10 @@ public class StraightSkeletonParcelDecomposition {
     List<LineString> lineStringToMerge = new ArrayList<>();
     List<Edge> encounterdEdges = new ArrayList<>();
     for (Face f : currentGroup) {
-      System.out.println("FACE " + f.getGeometry() + " EDGES = " + f.getEdges().size());
+//      System.out.println("FACE " + f.getGeometry() + " EDGES = " + f.getEdges().size());
       for (Edge a : f.getEdges()) {
         Object o = a.getAttribute(ATT_IS_INSIDE);
-        System.out.println("ATT_IS_INSIDE = " + o);
+//        System.out.println("ATT_IS_INSIDE = " + o);
         if (o == null) {
           continue;
         }

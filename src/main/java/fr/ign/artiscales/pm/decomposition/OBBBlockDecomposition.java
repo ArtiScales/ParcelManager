@@ -216,6 +216,7 @@ public class OBBBlockDecomposition {
     // X and Y move of the centroid
     double alpha = 0.5 + (0.5 - Math.random()) * noiseTemp;
     if (decompositionLevel < decompositionLevelWithRoad) {
+    	// Creation of road
     	double roadWidth = smallRoadWidth;
     	if (decompositionLevel < largeRoadLevel) {
     		roadWidth = largeRoadWidth;
