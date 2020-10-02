@@ -12,14 +12,12 @@ import org.geotools.factory.CommonFactoryFinder;
 import org.geotools.feature.DefaultFeatureCollection;
 import org.geotools.feature.simple.SimpleFeatureBuilder;
 import org.locationtech.jts.geom.Geometry;
-import org.locationtech.jts.geom.Polygon;
 import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.feature.simple.SimpleFeatureType;
 import org.opengis.filter.FilterFactory2;
 
 import fr.ign.artiscales.pm.decomposition.OBBBlockDecomposition;
 import fr.ign.artiscales.pm.decomposition.StraightSkeletonParcelDecomposition;
-import fr.ign.artiscales.pm.decomposition.TopologicalStraightSkeletonParcelDecomposition;
 import fr.ign.artiscales.pm.parcelFunction.MarkParcelAttributeFromPosition;
 import fr.ign.artiscales.pm.parcelFunction.ParcelCollection;
 import fr.ign.artiscales.pm.parcelFunction.ParcelSchema;
@@ -154,7 +152,7 @@ public class ConsolidationDivision extends Workflow{
 		SimpleFeatureCollection roads;
 		if (roadFile != null && roadFile.exists()) {
 			DataStore sdsRoad = Geopackages.getDataStore(roadFile);
-			roads = DataUtilities.collection(Collec.snapDatas(sdsRoad.getFeatureSource(sdsRoad.getTypeNames()[0]).getFeatures(), mergedParcels));
+			roads = DataUtilities.collection(Collec.selectIntersection(sdsRoad.getFeatureSource(sdsRoad.getTypeNames()[0]).getFeatures(), mergedParcels));
 			sdsRoad.dispose();
 		} else
 			roads = null;
@@ -171,7 +169,7 @@ public class ConsolidationDivision extends Workflow{
 					switch (PROCESS) {
 					case "OBB":
 						freshCutParcel = OBBBlockDecomposition.splitParcel(feat,
-								(roads != null && !roads.isEmpty()) ? Collec.snapDatas(roads, (Geometry) feat.getDefaultGeometry()) : null,
+								(roads != null && !roads.isEmpty()) ? Collec.selectIntersection(roads, (Geometry) feat.getDefaultGeometry()) : null,
 								profile.getMaximalArea(), profile.getMinimalWidthContactRoad(), harmonyCoeff, noise,
 								Collec.fromPolygonSFCtoListRingLines(isletCollection.subCollection(
 										ff.bbox(ff.property(feat.getFeatureType().getGeometryDescriptor().getLocalName()), feat.getBounds()))),

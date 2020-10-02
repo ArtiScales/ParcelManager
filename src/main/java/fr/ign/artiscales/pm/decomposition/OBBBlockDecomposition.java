@@ -27,6 +27,8 @@ import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Collec;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Geom;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.MinimalBoundingRectangle;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Tree;
+import fr.ign.artiscales.tools.geoToolsFunctions.vectors.geom.Lines;
+import fr.ign.artiscales.tools.geoToolsFunctions.vectors.geom.Polygons;
 
 public class OBBBlockDecomposition {
 
@@ -84,16 +86,16 @@ public class OBBBlockDecomposition {
 	        if (mark == null || (int) mark != 1) {
 	          result.add(featToSplit);
 	        } else {
-	          Polygon polygon = (Polygon) Geom.getPolygon((Geometry) featToSplit.getDefaultGeometry());
+	          Polygon polygon = Polygons.getPolygon((Geometry) featToSplit.getDefaultGeometry());
 	          DescriptiveStatistics dS = new DescriptiveStatistics();
 				OBBBlockDecomposition.decompose(polygon, extBlock,
-						(roads != null && !roads.isEmpty()) ? Collec.snapDatas(roads, (Geometry) featToSplit.getDefaultGeometry()) : null,
+						(roads != null && !roads.isEmpty()) ? Collec.selectIntersection(roads, (Geometry) featToSplit.getDefaultGeometry()) : null,
 						maximalArea, maximalWidth, noise, harmonyCoeff, smallStreetWidth, largeStreetLevel, largeStreetWidth, forceStreetAccess, 0,
 						decompositionLevelWithoutStreet).stream().forEach(c -> dS.addValue(c.getValue()));
 				int decompositionLevelWithRoad = (int) dS.getPercentile(50) - decompositionLevelWithoutStreet;
 				int decompositionLevelWithLargeRoad = (int) dS.getPercentile(50) - largeStreetLevel;
 				OBBBlockDecomposition.decompose(polygon, extBlock,
-						(roads != null && !roads.isEmpty()) ? Collec.snapDatas(roads, (Geometry) featToSplit.getDefaultGeometry()) : null,
+						(roads != null && !roads.isEmpty()) ? Collec.selectIntersection(roads, (Geometry) featToSplit.getDefaultGeometry()) : null,
 						maximalArea, maximalWidth, noise, harmonyCoeff, smallStreetWidth, decompositionLevelWithLargeRoad, largeStreetWidth,
 						forceStreetAccess, decompositionLevelWithRoad, decompositionLevelWithoutStreet).childrenStream().forEach(p -> {
 							SimpleFeature newFeature = builder.buildFeature(Attribute.makeUniqueId());
@@ -175,7 +177,9 @@ public class OBBBlockDecomposition {
 	 * @param ext
 	 *            outside of the parcels (representing road or public space)
 	 * @param shortDirectionSplit
-	 *            It is split by the short edges or by the long edge. * @param epsilon
+	 *            It is split by the short edges or by the long edge. 
+	 * @param harmonyCoeff
+	 *            intensity of the forcing of a parcel to be connected with a road
 	 * @param noise
 	 *            Irregularity into parcel shape
 	 * @param smallStreetWidth
@@ -188,7 +192,7 @@ public class OBBBlockDecomposition {
 	 * @param decompositionLevel
 	 * @return A list of split polygons
 	 */
-  public static List<Polygon> computeSplittingPolygon(Polygon pol, List<LineString> ext, boolean shortDirectionSplit, double epsilon, double noise, double smallRoadWidth, int largeRoadLevel, double largeRoadWidth,
+  public static List<Polygon> computeSplittingPolygon(Polygon pol, List<LineString> ext, boolean shortDirectionSplit, double harmonyCoeff, double noise, double smallRoadWidth, int largeRoadLevel, double largeRoadWidth,
       int decompositionLevelWithRoad, int decompositionLevel) {
 //	  public static List<Polygon> computeSplittingPolygon(Polygon pol, List<LineString> ext, boolean shortDirectionSplit, double noise, double smallRoadWidth, int largeRoadLevel, double largeRoadWidth,
 //		      int decompositionLevelWithRoad, int decompositionLevel) {
@@ -201,9 +205,9 @@ public class OBBBlockDecomposition {
     double dist2 = coordinates[1].distance(coordinates[2]);
     
     boolean keepCoordinateOrder = dist1 > dist2 ;
-	if (!shortDirectionSplit && dist1 > dist2 && dist2 / dist1 > epsilon)
+	if (!shortDirectionSplit && dist1 > dist2 && dist2 / dist1 > harmonyCoeff)
 		keepCoordinateOrder = !keepCoordinateOrder;
-	else if (!shortDirectionSplit && dist1 < dist2 && dist1 / dist2 > epsilon)
+	else if (!shortDirectionSplit && dist1 < dist2 && dist1 / dist2 > harmonyCoeff)
 		keepCoordinateOrder = !keepCoordinateOrder;
    
     Coordinate p0 = keepCoordinateOrder ? coordinates[0] : coordinates[1];
@@ -322,8 +326,8 @@ public class OBBBlockDecomposition {
     List<Polygon> splitPolygons = split(polygon, splittingPolygon);
     // If a parcel has no road access, there is a probability to make a perpendicular split
     // Probability to make a perpendicular split if no road access or ratio between larger and smaller size of OBB higher than Epsilon
-    if ((forceStreetAccess && ((!ParcelState.isParcelHasRoadAccess(splitPolygons.get(0), null, Geom.getListAsGeom(ext, new GeometryFactory())) 
-    		|| !ParcelState.isParcelHasRoadAccess(splitPolygons.get(1), null, Geom.getListAsGeom(ext, new GeometryFactory())))))) {
+    if ((forceStreetAccess && ((!ParcelState.isParcelHasRoadAccess(splitPolygons.get(0), null, Lines.getListLineStringAsMultiLS(ext, new GeometryFactory())) 
+    		|| !ParcelState.isParcelHasRoadAccess(splitPolygons.get(1), null, Lines.getListLineStringAsMultiLS(ext, new GeometryFactory())))))) {
     	// Same steps but with different splitting geometries
       splittingPolygon = computeSplittingPolygon(polygon, ext, false, harmonyCoeff, noise, smallStreetWidth, largeStreetLevel, largeStreetWidth, decompositionLevelWithStreet, decompositionLevel);
       splitPolygons = split(polygon, splittingPolygon);

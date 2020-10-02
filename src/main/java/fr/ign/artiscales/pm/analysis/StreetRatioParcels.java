@@ -30,6 +30,7 @@ import fr.ign.artiscales.tools.geoToolsFunctions.Csv;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Collec;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Geom;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Geopackages;
+import fr.ign.artiscales.tools.geoToolsFunctions.vectors.geom.Polygons;
 import fr.ign.artiscales.tools.geometryGeneration.CityGeneration;
 
 /**
@@ -131,7 +132,7 @@ public class StreetRatioParcels {
 		HashMap<String, String[]> stat = new HashMap<String, String[]>();
 
 		DataStore sdsRoad = Geopackages.getDataStore(roadFile);
-		SimpleFeatureCollection roads = Collec.snapDatas(sdsRoad.getFeatureSource(sdsRoad.getTypeNames()[0]).getFeatures(), zone);
+		SimpleFeatureCollection roads = Collec.selectIntersection(sdsRoad.getFeatureSource(sdsRoad.getTypeNames()[0]).getFeatures(), zone);
 		SimpleFeatureCollection islets = CityGeneration.createUrbanIslet(cutParcel);
 
 		String[] firstLine = { "CODE", "Urban fabric type", ParcelSchema.getMinParcelCommunityField(), GeneralFields.getZonePreciseNameField(),
@@ -163,9 +164,9 @@ public class StreetRatioParcels {
 				tab[4] = Double.toString(pNew);
 				tab[5] = Double.toString(1 - (pNew / iniA));
 				long nbParcelsWithContactToRoad = Arrays.stream(df.toArray(new SimpleFeature[0]))
-						.filter(feat -> ParcelState.isParcelHasRoadAccess((Polygon) Geom.getPolygon((Geometry) feat.getDefaultGeometry()),
-								Collec.snapDatas(roads, ((Geometry) feat.getDefaultGeometry())),
-								Collec.fromPolygonSFCtoRingMultiLines(Collec.snapDatas(islets, (Geometry) z.getDefaultGeometry()))))
+						.filter(feat -> ParcelState.isParcelHasRoadAccess((Polygon) Polygons.getPolygon((Geometry) feat.getDefaultGeometry()),
+								Collec.selectIntersection(roads, ((Geometry) feat.getDefaultGeometry())),
+								Collec.fromPolygonSFCtoRingMultiLines(Collec.selectIntersection(islets, (Geometry) z.getDefaultGeometry()))))
 						.count();
 				tab[6] = String.valueOf(((double) nbParcelsWithContactToRoad / (double) df.size()));
 				System.out.println("zone " + z.getAttribute("LIBELLE") + " of " + z.getAttribute("INSEE"));

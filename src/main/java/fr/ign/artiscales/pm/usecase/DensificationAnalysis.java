@@ -8,7 +8,6 @@ import org.geotools.data.simple.SimpleFeatureCollection;
 import fr.ign.artiscales.pm.analysis.SingleParcelStat;
 import fr.ign.artiscales.pm.parcelFunction.MarkParcelAttributeFromPosition;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Collec;
-import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Geom;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Geopackages;
 import fr.ign.artiscales.tools.geometryGeneration.CityGeneration;
 
@@ -33,7 +32,7 @@ public class DensificationAnalysis {
 						MarkParcelAttributeFromPosition.markUnBuiltParcel(
 								MarkParcelAttributeFromPosition.markParcelsConnectedToRoad(
 										MarkParcelAttributeFromPosition.markSimulatedParcel(parcelDensifiedOnly),
-										CityGeneration.createUrbanIslet(parcelDensified), roadFile, Geom.createBufferBorder(parcelDensified)),
+										CityGeneration.createUrbanIslet(parcelDensified), roadFile, CityGeneration.createBufferBorder(parcelDensified)),
 								buildingFile));
 		Collec.exportSFC(SingleParcelStat.makeHausdorfDistanceMaps(parcelsDensifCreated, parcelSelec), new File("/tmp/HausdorfDensification"));
 		DataStore dsRoad = Geopackages.getDataStore(

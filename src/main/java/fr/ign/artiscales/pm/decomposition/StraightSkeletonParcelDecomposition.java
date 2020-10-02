@@ -54,13 +54,13 @@ import fr.ign.artiscales.tools.FeaturePolygonizer;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Collec;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Geom;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Geopackages;
+import fr.ign.artiscales.tools.geoToolsFunctions.vectors.geom.Polygons;
 import fr.ign.artiscales.tools.graph.Edge;
 import fr.ign.artiscales.tools.graph.Face;
 import fr.ign.artiscales.tools.graph.Node;
 import fr.ign.artiscales.tools.graph.Strip;
 import fr.ign.artiscales.tools.graph.TopologicalGraph;
 import fr.ign.artiscales.tools.graph.analysis.FindObjectInDirection;
-import fr.ign.artiscales.tools.graph.analysis.Util;
 
 /**
  * Re-implementation of block decomposition into parcels from :
@@ -302,14 +302,14 @@ public class StraightSkeletonParcelDecomposition {
           lsList.add(a.getGeometry());
         }
         // TODO here result is a tiny part of te interior lines. Sequence is not sequencable
-        LineString ls = union(lsList);
-        lsListOut.add(ls);
+//        LineString ls = unionLineString(lsList);
+        lsListOut.addAll(lsList);
       }
     }
     return lsListOut;
   }
 
-  private static LineString union(List<LineString> list) {
+  private static LineString unionLineString(List<LineString> list) {
     if (list.isEmpty())
       return null;
     int i = 0;
@@ -318,7 +318,7 @@ public class StraightSkeletonParcelDecomposition {
 		try {
 			Geom.exportGeom(l, new File("/tmp/line" + i++));
 		} catch (IOException | FactoryException e) {
-			// TODO Auto-generated catch block
+			// TODO del that 
 			e.printStackTrace();
 		}
 	}
@@ -347,7 +347,7 @@ public class StraightSkeletonParcelDecomposition {
 //    Geometry reducedA = GeometryPrecisionReducer.reduce(a, new PrecisionModel(100));
 //    Geometry reducedB = GeometryPrecisionReducer.reduce(a, new PrecisionModel(100));
     Geometry difference = FeaturePolygonizer.getDifference(a, b);
-    List<Polygon> p = Util.getPolygons(difference);
+    List<Polygon> p = Polygons.getPolygons(difference);
     if(p.size() == 0) {
     	System.out.println("polygonDifference: null result for "+ a + " and "+ b);
     	return null;
@@ -358,7 +358,7 @@ public class StraightSkeletonParcelDecomposition {
     }
     return p.get(0);
   }
-
+//TODO that returns 0 (one face of stripFace is empty)
   private static HashMap<String, Coordinate> interiorLimitPointsBetweenStrip(List<List<Face>> stripFace, Polygon pol) {
     LineString exterior = pol.getExteriorRing();
     HashMap<String, List<Edge>> mapLimitArcs = new HashMap<>();
@@ -372,9 +372,10 @@ public class StraightSkeletonParcelDecomposition {
           if (Integer.parseInt(a.getAttribute(ATT_IS_INSIDE).toString()) == ARC_VALUE_OUTSIDE) {
             continue;
           }
-          if (lFtemp.contains(a.getRight()) && lFtemp.contains(a.getLeft())) {
-            continue;
-          }
+//          if (lFtemp.contains(a.getRight()) && lFtemp.contains(a.getLeft())) {
+//            continue;
+//          }
+          //TODO it never goes there
           if (a.getLeft() != null && a.getRight() != null) {
             Object o = a.getLeft().getAttribute(ATT_FACE_ID_STRIP);
             Object o2 = a.getRight().getAttribute(ATT_FACE_ID_STRIP);
@@ -413,9 +414,11 @@ public class StraightSkeletonParcelDecomposition {
       for (Edge a : lA) {
         lsList.add(a.getGeometry());
       }
+      if (lsList.isEmpty())
+    	  continue;
       String key = lA.get(0).getAttribute("TEMP_KEY").toString();
       // LineString ls = Operateurs.union(lsList, 0.1);
-      LineString ls = union(lsList);
+      LineString ls = unionLineString(lsList);
       lsListOut.add(ls);
       Coordinate dp1 = ls.getCoordinateN(0);
       Coordinate dpLast = ls.getCoordinateN(ls.getNumPoints() - 1);
@@ -512,7 +515,7 @@ public class StraightSkeletonParcelDecomposition {
 
   /**
    * Fixing diagonals as named in the article : removing parts of a following strip if it has less importance than the current one
-   * 
+   * TODO repetition in the stripFace object check why
    * @param stripFace
    * @param externalSkeltonArcs
    * @return
@@ -527,8 +530,7 @@ public class StraightSkeletonParcelDecomposition {
       LineString exteriorGroupLineString = determineExteriorLineString(stripFace.get(i));
       lExteriorLineString.add(exteriorGroupLineString);
     }
-    // For each group (it is not necessary to treat the last one as we //
-    // consider the previous and next strip
+    // For each group (it is not necessary to treat the last one as we consider the previous and next strip
     for (int i = 0; i < nbGroup; i++) {
       List<Face> currentGroup = stripFace.get(i);
       int nextIndex = (i == (nbGroup - 1)) ? (0) : (i + 1);
@@ -1109,7 +1111,7 @@ public class StraightSkeletonParcelDecomposition {
           lsProjected.add(nextLimitSide);
         }
       }
-      currentInterior = union(lsProjected);
+      currentInterior = unionLineString(lsProjected);
       // Strip polygon is deomposed part by part
       boolean endFlag = false;
       boolean firstLimit = true;
@@ -1234,7 +1236,7 @@ public class StraightSkeletonParcelDecomposition {
         }
       }
     }
-    return union(lineStringToMerge);
+    return unionLineString(lineStringToMerge);
   }
 
   /**
@@ -1256,7 +1258,7 @@ public class StraightSkeletonParcelDecomposition {
         }
       }
     }
-    return union(lineStringToMerge);
+    return unionLineString(lineStringToMerge);
   }
 
   /**
@@ -1413,7 +1415,7 @@ public class StraightSkeletonParcelDecomposition {
   public static SimpleFeatureCollection decompose(SimpleFeature sf, SimpleFeatureCollection roads, File folderOut, double offsetDistance, double maxDistanceForNearestRoad, double minimalArea,
       double minWidth, double maxWidth, double noiseParameter, RandomGenerator rng) throws SchemaException, NoSuchAuthorityCodeException, IOException, FactoryException {
     // Partial skeleton
-	 List<Polygon> lp = Util.getPolygons((Geometry) sf.getDefaultGeometry());
+	 List<Polygon> lp = Polygons.getPolygons((Geometry) sf.getDefaultGeometry());
 	 DefaultFeatureCollection result = new DefaultFeatureCollection();
 	  for (Polygon pol : lp) {
     CampSkeleton cs = new CampSkeleton((Polygon) sf.getDefaultGeometry(), offsetDistance);
@@ -1485,7 +1487,7 @@ public class StraightSkeletonParcelDecomposition {
     Map<Integer, LineString> psiMap = new HashMap<>();
     for (List<Edge> strip : alphaStrips) {
       Integer currentStripId = alphaStripEdgeMap.get(strip.get(0));
-      LineString l = union(strip.stream().map(e -> e.getGeometry()).collect(Collectors.toList()));
+      LineString l = unionLineString(strip.stream().map(e -> e.getGeometry()).collect(Collectors.toList()));
       System.out.println(l);
       psiMap.put(currentStripId, l);
     }
@@ -1564,7 +1566,7 @@ public class StraightSkeletonParcelDecomposition {
     
     SimpleFeatureBuilder sfBuilder = ParcelSchema.getSFBMinParcel();
     
-    Geom.addSimplePolygonialGeometries(sfBuilder, result,
+    Polygons.addSimplePolygonialGeometries(sfBuilder, result,
 			Collec.getDefaultGeomName(), cs.getGraph().getFaces().stream().map(f->f.getGeometry()).collect(Collectors.toList()));
 //	  Geom.exportGeom(,new File(tmpResult, "cs"+pol.getArea()));
 //     System.out.println("FACES");
@@ -1643,8 +1645,8 @@ public class StraightSkeletonParcelDecomposition {
     // ShapefileDataStore blockDS = new ShapefileDataStore(new File(inputUrbanBlock).toURI().toURL());
     // SimpleFeatureCollection blocks = blockDS.getFeatureSource().getFeatures();
     // String inputParcelShapeFile = "/home/julien/data/PLU_PARIS/PARCELLE_CADASTRALE/PARCELLE_13.gpkg";
-File  inputParcelGpkg = new File("/home/thema/Documents/MC/workspace/ParcelManager/src/main/resources/GeneralTest/parcel.gpkg");
-    File inputRoadGpkg = new File("/home/thema/Documents/MC/workspace/ParcelManager/src/main/resources/GeneralTest/road.gpkg");
+File  inputParcelGpkg = new File("src/main/resources/GeneralTest/parcel.gpkg");
+    File inputRoadGpkg = new File("src/main/resources/GeneralTest/road.gpkg");
     File folderOut = new File("/tmp/");
     folderOut.mkdirs();
     // The output file that will contain all the decompositions
@@ -1665,7 +1667,7 @@ File  inputParcelGpkg = new File("/home/thema/Documents/MC/workspace/ParcelManag
 			while (it.hasNext()) {
 				double maxDepth = 50, maxDistanceForNearestRoad = 100, minimalArea = 20, minWidth = 5, maxWidth = 40, noiseParameter = 0.1;
 				DEBUG = true;
-				List<Polygon> lp = Util.getPolygons((Geometry) it.next().getDefaultGeometry());
+				List<Polygon> lp = Polygons.getPolygons((Geometry) it.next().getDefaultGeometry());
 				for (Polygon p : lp)
 					runStraightSkeleton2(p, roads, maxDepth, maxDistanceForNearestRoad, minimalArea, minWidth, maxWidth,
 							noiseParameter, new MersenneTwister(42));

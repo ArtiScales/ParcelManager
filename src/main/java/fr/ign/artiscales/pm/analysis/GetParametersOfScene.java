@@ -74,7 +74,7 @@ public class GetParametersOfScene {
 		SimpleFeatureCollection parcels = sds.getFeatureSource(sds.getTypeNames()[0]).getFeatures();
 		HashMap<String, SimpleFeatureCollection> listSFC = new HashMap<String, SimpleFeatureCollection>();
 		DataStore sdsZone = Geopackages.getDataStore(zoningFile);
-		SimpleFeatureCollection zonings = DataUtilities.collection(Collec.snapDatas(sdsZone.getFeatureSource(sdsZone.getTypeNames()[0]).getFeatures(), parcels));
+		SimpleFeatureCollection zonings = DataUtilities.collection(Collec.selectIntersection(sdsZone.getFeatureSource(sdsZone.getTypeNames()[0]).getFeatures(), parcels));
 		sdsZone.dispose();
 		switch (scaleZone) {
 		case "community":
@@ -125,7 +125,7 @@ public class GetParametersOfScene {
 					buffer = 10;
 					break;
 				}
-				SimpleFeatureCollection roads = Collec.snapDatas(sdsRoad.getFeatureSource(sdsRoad.getTypeNames()[0]).getFeatures(),
+				SimpleFeatureCollection roads = Collec.selectIntersection(sdsRoad.getFeatureSource(sdsRoad.getTypeNames()[0]).getFeatures(),
 						Geom.unionSFC(sfc).buffer(buffer).buffer(-buffer));
 				if (roads.size() > 1)
 					MakeStatisticGraphs.roadGraph(roads, "length of the " + scaleZone + " " + zone + " roads ", "width of the road",

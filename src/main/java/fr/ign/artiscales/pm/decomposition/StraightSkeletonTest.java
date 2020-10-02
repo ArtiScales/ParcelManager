@@ -8,11 +8,11 @@ import org.locationtech.jts.geom.LineString;
 import org.locationtech.jts.geom.Polygon;
 import org.locationtech.jts.io.ParseException;
 
+import fr.ign.artiscales.tools.geoToolsFunctions.vectors.geom.Lines;
 import fr.ign.artiscales.tools.graph.Edge;
 import fr.ign.artiscales.tools.graph.Face;
 import fr.ign.artiscales.tools.graph.Node;
 import fr.ign.artiscales.tools.graph.TopologicalGraph;
-import fr.ign.artiscales.tools.graph.analysis.Util;
 
 public class StraightSkeletonTest {
 
@@ -54,7 +54,7 @@ public class StraightSkeletonTest {
     Coordinate o = new Coordinate(652810.3017603179, 6857966.40922954);
     Coordinate d = new Coordinate(0.6571914520563683,-0.7537236863360752);
     LineString lineString = (LineString) reader.read("LINESTRING (652792.1862488963 6857976.0127653275, 652803.37 6857975.05)");
-    Coordinate inter = Util.getRayLineSegmentIntersection(o, d, lineString);
+    Coordinate inter = Lines.getRayLineSegmentIntersection(o, d, lineString);
     System.out.println("inter\n"+lineString.getFactory().createPoint(inter));
   }
 }

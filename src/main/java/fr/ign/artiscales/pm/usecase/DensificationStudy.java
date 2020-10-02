@@ -22,7 +22,6 @@ import fr.ign.artiscales.tools.carto.JoinCSVToGeoFile;
 import fr.ign.artiscales.tools.carto.MergeByAttribute;
 import fr.ign.artiscales.tools.geoToolsFunctions.Csv;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Collec;
-import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Geom;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Geopackages;
 import fr.ign.artiscales.tools.geometryGeneration.CityGeneration;
 import fr.ign.artiscales.tools.parameter.ProfileUrbanFabric;
@@ -71,7 +70,7 @@ public class DensificationStudy {
 			File outFolder, boolean isParcelWithoutStreetAllowed, ProfileUrbanFabric profile) throws Exception {
 		outFolder.mkdir();
 		SimpleFeatureCollection islet = CityGeneration.createUrbanIslet(parcels);
-		Geometry buffer = Geom.createBufferBorder(parcels);
+		Geometry buffer = CityGeneration.createBufferBorder(parcels);
 		String splitField = MarkParcelAttributeFromPosition.getMarkFieldName();
 		// get total unbuilt parcels from the urbanized zones
 		SimpleFeatureCollection parcelsVacantLot = MarkParcelAttributeFromPosition.markParcelIntersectFrenchConstructibleZoningType(

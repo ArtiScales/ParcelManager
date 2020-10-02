@@ -45,7 +45,7 @@ public class ParcelGetter {
 	public static SimpleFeatureCollection getParcelByFrenchZoningType(String zone, SimpleFeatureCollection parcelles, File zoningFile)
 			throws IOException {
 		DataStore zonesSDS = Geopackages.getDataStore(zoningFile);
-		SimpleFeatureCollection zonesSFC = Collec.snapDatas(zonesSDS.getFeatureSource(zonesSDS.getTypeNames()[0]).getFeatures(), parcelles);
+		SimpleFeatureCollection zonesSFC = Collec.selectIntersection(zonesSDS.getFeatureSource(zonesSDS.getTypeNames()[0]).getFeatures(), parcelles);
 		List<String> listZones = FrenchZoningSchemas.getUsualNames(zone);
 		DefaultFeatureCollection zoneSelected = new DefaultFeatureCollection();
 		try (SimpleFeatureIterator itZonez = zonesSFC.features()) {
@@ -99,7 +99,7 @@ public class ParcelGetter {
 	 */
 	public static SimpleFeatureCollection getParcelByTypo(String typo, SimpleFeatureCollection parcels, File zoningFile) throws IOException {
 		DataStore zoningDS = Geopackages.getDataStore(zoningFile);
-		SimpleFeatureCollection zoningSFC = Collec.snapDatas(new SpatialIndexFeatureCollection(zoningDS.getFeatureSource(zoningDS.getTypeNames()[0]).getFeatures()), parcels);
+		SimpleFeatureCollection zoningSFC = Collec.selectIntersection(new SpatialIndexFeatureCollection(zoningDS.getFeatureSource(zoningDS.getTypeNames()[0]).getFeatures()), parcels);
 		FilterFactory2 ff = CommonFactoryFinder.getFilterFactory2(GeoTools.getDefaultHints());
 		Filter filter = ff.like(ff.property(typologyField), typo);
 		DefaultFeatureCollection result = new DefaultFeatureCollection();

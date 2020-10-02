@@ -30,8 +30,9 @@ import fr.ign.artiscales.pm.parcelFunction.ParcelSchema;
 import fr.ign.artiscales.pm.parcelFunction.ParcelState;
 import fr.ign.artiscales.tools.geoToolsFunctions.Attribute;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Collec;
-import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Geom;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Geopackages;
+import fr.ign.artiscales.tools.geoToolsFunctions.vectors.geom.Lines;
+import fr.ign.artiscales.tools.geoToolsFunctions.vectors.geom.Polygons;
 import fr.ign.artiscales.tools.geometryGeneration.CityGeneration;
 
 /**
@@ -119,9 +120,9 @@ public class SingleParcelStat {
 				.filter(p -> (int) p.getAttribute(MarkParcelAttributeFromPosition.getMarkFieldName()) == 1).forEach(parcel -> {
 					// if parcel is marked to be analyzed
 					Geometry parcelGeom = (Geometry) parcel.getDefaultGeometry();
-					double widthRoadContact = ParcelState.getParcelFrontSideWidth((Polygon) Geom.getPolygon(parcelGeom),
-							Collec.snapDatas(roads, parcelGeom.buffer(7)),
-							Geom.fromMultiToLineString(Collec.fromPolygonSFCtoRingMultiLines(Collec.snapDatas(islet, parcelGeom.buffer(7)))));
+					double widthRoadContact = ParcelState.getParcelFrontSideWidth((Polygon) Polygons.getPolygon(parcelGeom),
+							Collec.selectIntersection(roads, parcelGeom.buffer(7)),
+							Lines.fromMultiToLineString(Collec.fromPolygonSFCtoRingMultiLines(Collec.selectIntersection(islet, parcelGeom.buffer(7)))));
 					boolean contactWithRoad = false;
 					if (widthRoadContact != 0)
 						contactWithRoad = true;
@@ -150,7 +151,7 @@ public class SingleParcelStat {
 									+ parcel.getAttribute(ParcelSchema.getMinParcelNumberField()),
 							String.valueOf(parcelGeom.getArea()), String.valueOf(parcelGeom.getLength()), String.valueOf(contactWithRoad),
 							String.valueOf(widthRoadContact),
-							String.valueOf(ParcelState.countParcelNeighborhood(parcelGeom, Collec.snapDatas(parcels, parcelGeom.buffer(2)))),
+							String.valueOf(ParcelState.countParcelNeighborhood(parcelGeom, Collec.selectIntersection(parcels, parcelGeom.buffer(2)))),
 							parcelGeom.toString(), String.valueOf(HausDist), String.valueOf(DisHausDst), CodeAppar };
 					csv.writeNext(line);
 				});

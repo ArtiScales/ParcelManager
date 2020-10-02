@@ -37,6 +37,7 @@ import fr.ign.artiscales.tools.geoToolsFunctions.Attribute;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Collec;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Geom;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Geopackages;
+import fr.ign.artiscales.tools.geoToolsFunctions.vectors.geom.Lines;
 
 public class ParcelState {
 
@@ -94,7 +95,7 @@ public class ParcelState {
 		// List<Geometry> roadGeom = Arrays.stream(Collec.snapDatas(roads, poly.buffer(5)).toArray(new SimpleFeature[0]))
 		// .map(g -> ((Geometry) g.getDefaultGeometry()).buffer((double) g.getAttribute("LARGEUR"))).collect(Collectors.toList());
 		List<Geometry> roadGeom = new ArrayList<Geometry>();
-		try (SimpleFeatureIterator roadSnapIt = roads.features()){
+		try (SimpleFeatureIterator roadSnapIt = roads.features()) {
 			while (roadSnapIt.hasNext()) {
 				SimpleFeature feat = roadSnapIt.next();
 				roadGeom.add(((Geometry) feat.getDefaultGeometry())
@@ -124,9 +125,9 @@ public class ParcelState {
 			if (len > 0)
 				return len;
 			if (roads != null) {
-				MultiLineString road = Geom.getListAsGeom(
+				MultiLineString road = Lines.getListLineStringAsMultiLS(
 						Arrays.stream(roads.toArray(new SimpleFeature[0])).filter(r -> ((Geometry) r.getDefaultGeometry()).intersects(p))
-								.flatMap(r -> Geom.getLineString((Geometry) r.getDefaultGeometry()).stream()).collect(Collectors.toList()),
+								.flatMap(r -> Lines.getLineStrings((Geometry) r.getDefaultGeometry()).stream()).collect(Collectors.toList()),
 						new GeometryFactory());
 				len = p.buffer(0.2).intersection(road).getLength();
 				if (len > 0)
@@ -143,8 +144,8 @@ public class ParcelState {
 				if (roads != null) {
 					List<LineString> list = Arrays.stream(roads.toArray(new SimpleFeature[0]))
 							.filter(r -> ((Geometry) r.getDefaultGeometry()).intersects(p))
-							.flatMap(r -> Geom.getLineString((Geometry) r.getDefaultGeometry()).stream()).collect(Collectors.toList());
-					MultiLineString road = Geom.getListAsGeom(list, new GeometryFactory());
+							.flatMap(r -> Lines.getLineStrings((Geometry) r.getDefaultGeometry()).stream()).collect(Collectors.toList());
+					MultiLineString road = Lines.getListLineStringAsMultiLS(list, new GeometryFactory());
 					len = p.buffer(0.4).intersection(road).getLength();
 					if (len > 0)
 						return len;
@@ -261,23 +262,39 @@ public class ParcelState {
 	 * @throws IOException
 	 */
 	public static boolean isAlreadyBuilt(SimpleFeatureCollection batiSFC, SimpleFeature feature) throws IOException {
-		return isAlreadyBuilt(batiSFC, feature, 0.0);
+		return isAlreadyBuilt(batiSFC, feature, 0.0, 0.0);
+	}
+
+	public static boolean isAlreadyBuilt(File buildingFile, SimpleFeature parcel, Geometry emprise) throws IOException {
+		return isAlreadyBuilt(buildingFile, parcel, emprise, 0);
 	}
 
 	/**
-	 * This algorithm looks if a parcel is overlapped by a building and returns true if they are.
-	 * overload of the {@link #isAlreadyBuilt(SimpleFeatureCollection, SimpleFeature, double)} to select only a selection of buildings
+	 * This algorithm looks if a parcel is overlapped by a building and returns true if they are. overload of the
+	 * {@link #isAlreadyBuilt(SimpleFeatureCollection, SimpleFeature, double)} to select only a selection of buildings
 	 * 
 	 * @param buildingFile
 	 * @param parcel
 	 * @param emprise
 	 * @return True if a building is really intersecting the parcel
-	 * @throws Exception
+	 * @throws IOException
 	 */
-	public static boolean isAlreadyBuilt(File buildingFile, SimpleFeature parcel, Geometry emprise) throws Exception {
-		DataStore batiSDS = Geopackages.getDataStore(buildingFile);
-		boolean result = isAlreadyBuilt(Collec.snapDatas(batiSDS.getFeatureSource(batiSDS.getTypeNames()[0]).getFeatures(), emprise), parcel, 0.0);
-		batiSDS.dispose();
+	public static boolean isAlreadyBuilt(File buildingFile, SimpleFeature parcel, Geometry emprise, double uncountedBuildingArea) throws IOException {
+		DataStore batiDS = Geopackages.getDataStore(buildingFile);
+		boolean result = isAlreadyBuilt(Collec.selectIntersection(batiDS.getFeatureSource(batiDS.getTypeNames()[0]).getFeatures(), emprise), parcel,
+				0.0, uncountedBuildingArea);
+		batiDS.dispose();
+		return result;
+	}
+
+	public static boolean isAlreadyBuilt(File buildingFile, SimpleFeature parcel, double bufferBati, double uncountedBuildingArea)
+			throws IOException {
+		DataStore batiDS = Geopackages.getDataStore(buildingFile);
+		boolean result = isAlreadyBuilt(
+				Collec.selectIntersection(batiDS.getFeatureSource(batiDS.getTypeNames()[0]).getFeatures(),
+						((Geometry) parcel.getDefaultGeometry()).buffer(10)),
+				(Geometry) parcel.getDefaultGeometry(), bufferBati, uncountedBuildingArea);
+		batiDS.dispose();
 		return result;
 	}
 
@@ -285,19 +302,25 @@ public class ParcelState {
 	 * This algorithm looks if a parcel is overlapped by a building+a buffer (in most of the cases, buffer is negative to delete small parts of buildings that can slightly overlap
 	 * a parcel) and returns true if they are.
 	 * 
-	 * @param batiSFC
+	 * @param buildingSFC
 	 * @param parcel
 	 * @param bufferBati
 	 * @return True if a building is really intersecting the parcel
 	 * @throws IOException
 	 */
-	public static boolean isAlreadyBuilt(SimpleFeatureCollection batiSFC, SimpleFeature parcel, double bufferBati)
+	public static boolean isAlreadyBuilt(SimpleFeatureCollection buildingSFC, SimpleFeature parcel, double bufferBati, double uncountedBuildingArea)
 			throws IOException {
-		Geometry geom = ((Geometry) parcel.getDefaultGeometry());
-		try (SimpleFeatureIterator iterator = batiSFC.features()) {
-			while (iterator.hasNext())
-				if (geom.intersects(((Geometry) iterator.next().getDefaultGeometry()).buffer(bufferBati)))
+		return isAlreadyBuilt(buildingSFC, (Geometry) parcel.getDefaultGeometry(), bufferBati, uncountedBuildingArea);
+	}
+
+	public static boolean isAlreadyBuilt(SimpleFeatureCollection buildingSFC, Geometry parcelGeom, double bufferBati, double uncountedBuildingArea)
+			throws IOException {
+		try (SimpleFeatureIterator iterator = buildingSFC.features()) {
+			while (iterator.hasNext()) {
+				Geometry buildingGeom = (Geometry) iterator.next().getDefaultGeometry();
+				if (buildingGeom.getArea() >= uncountedBuildingArea && parcelGeom.intersects(buildingGeom.buffer(bufferBati)))
 					return true;
+			}
 		} catch (Exception problem) {
 			problem.printStackTrace();
 		}
@@ -357,7 +380,6 @@ public class ParcelState {
 	 * @return The best evaluation of the MUP-City's cells near the parcel every 5 meters. Return 0 if the cells are 100 meters far from the parcels.
 	 */
 	public static Double getCloseEvalInParcel(SimpleFeature parcel, SimpleFeatureCollection mupSFC) {
-
 		FilterFactory2 ff = CommonFactoryFinder.getFilterFactory2(GeoTools.getDefaultHints());
 		Filter inter = ff.intersects(ff.property(mupSFC.getSchema().getGeometryDescriptor().getLocalName()),
 				ff.literal(((Geometry) parcel.getDefaultGeometry()).buffer(100.0)));
@@ -372,9 +394,8 @@ public class ParcelState {
 				try (SimpleFeatureIterator onlyCellIt = onlyCells.features()) {
 					while (onlyCellIt.hasNext()) {
 						SimpleFeature cell = onlyCellIt.next();
-						if (geometryUp.intersects((Geometry) cell.getDefaultGeometry())) {
+						if (geometryUp.intersects((Geometry) cell.getDefaultGeometry())) 
 							return ((Double) cell.getAttribute("eval"));
-						}
 					}
 				} catch (Exception problem) {
 					problem.printStackTrace();
@@ -420,7 +441,7 @@ public class ParcelState {
 		Geometry parcelInGeometry = GeometryPrecisionReducer.reduce((Geometry) parcelIn.getDefaultGeometry(), precMod);
 
 		try (SimpleFeatureIterator featuresZones = Collec
-				.snapDatas(dsZone.getFeatureSource(dsZone.getTypeNames()[0]).getFeatures(), (Geometry) parcelIn.getDefaultGeometry()).features()) {
+				.selectIntersection(dsZone.getFeatureSource(dsZone.getTypeNames()[0]).getFeatures(), (Geometry) parcelIn.getDefaultGeometry()).features()) {
 			zoneLoop: while (featuresZones.hasNext()) {
 				SimpleFeature feat = featuresZones.next();
 				Geometry featGeometry = GeometryPrecisionReducer.reduce((Geometry) feat.getDefaultGeometry(), precMod);
@@ -522,7 +543,7 @@ public class ParcelState {
 		HashMap<String, Double> repart = new HashMap<String, Double>();
 
 		try (SimpleFeatureIterator featuresZones = Collec
-				.snapDatas(dsZone.getFeatureSource(dsZone.getTypeNames()[0]).getFeatures(), (Geometry) parcelIn.getDefaultGeometry()).features()) {
+				.selectIntersection(dsZone.getFeatureSource(dsZone.getTypeNames()[0]).getFeatures(), (Geometry) parcelIn.getDefaultGeometry()).features()) {
 			zone: while (featuresZones.hasNext()) {
 				SimpleFeature feat = featuresZones.next();
 				Geometry parcelInGeometry = (Geometry) parcelIn.getDefaultGeometry();
@@ -620,7 +641,7 @@ public class ParcelState {
 		}
 		return result;
 	}
-	
+
 	public static String getWidthFieldAttribute() {
 		return widthFieldAttribute;
 	}

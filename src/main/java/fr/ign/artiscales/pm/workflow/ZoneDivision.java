@@ -35,6 +35,7 @@ import fr.ign.artiscales.tools.geoToolsFunctions.Attribute;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Collec;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Geom;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Geopackages;
+import fr.ign.artiscales.tools.geoToolsFunctions.vectors.geom.Polygons;
 import fr.ign.artiscales.tools.geometryGeneration.CityGeneration;
 import fr.ign.artiscales.tools.parameter.ProfileUrbanFabric;
 
@@ -153,7 +154,7 @@ public class ZoneDivision extends Workflow{
 				// avoid most of tricky geometry problems
 				Geometry intersection = Geom.scaledGeometryReductionIntersection(Arrays.asList(((Geometry) feat.getDefaultGeometry()), unionParcel));
 				if (!intersection.isEmpty()) {
-					List<Geometry> geomsZone = Geom.getPolygons(intersection);
+					List<Polygon> geomsZone = Polygons.getPolygons(intersection);
 					for (Geometry geomPartZone : geomsZone) {
 						Geometry geom = GeometryPrecisionReducer.reduce(geomPartZone, new PrecisionModel(100));
 						// avoid silvers (plants the code)
@@ -221,7 +222,7 @@ public class ZoneDivision extends Workflow{
 				case "OBB":
 					((DefaultFeatureCollection) splitedParcels).addAll(OBBBlockDecomposition.splitParcels(tmpZoneToCut, null,
 							profile.getMaximalArea(), profile.getMinimalWidthContactRoad(), profile.getHarmonyCoeff(), profile.getNoise(),
-							Collec.fromPolygonSFCtoListRingLines(Collec.snapDatas(isletCollection, (Geometry) zone.getDefaultGeometry())),
+							Collec.fromPolygonSFCtoListRingLines(Collec.selectIntersection(isletCollection, (Geometry) zone.getDefaultGeometry())),
 							profile.getStreetWidth(), profile.getLargeStreetLevel(), profile.getLargeStreetWidth(), true,
 							profile.getDecompositionLevelWithoutStreet()));
 					break;
@@ -243,7 +244,7 @@ public class ZoneDivision extends Workflow{
 			System.out.println("fresh cuted parcels exported");
 		}
 		// merge the small parcels to bigger ones
-		splitedParcels = ParcelCollection.mergeTooSmallParcels(splitedParcels, (int) profile.getMinimalArea());
+		splitedParcels = ParcelCollection.mergeTooSmallParcels(splitedParcels, profile.getMinimalArea());
 		DefaultFeatureCollection result = new DefaultFeatureCollection();
 		int num = 0;
 		// fix attribute for the simulated parcels
@@ -342,13 +343,13 @@ public class ZoneDivision extends Workflow{
 		SimpleFeatureCollection finalZone;
 		if (genericZone != null && genericZone != "" && (preciseZone == null || preciseZone != ""))
 			finalZone = MarkParcelAttributeFromPosition.getOnlyMarkedParcels(MarkParcelAttributeFromPosition
-					.markParcelIntersectGenericZoningType(Collec.snapDatas(inputSFC, Geom.unionSFC(boundingSFC)), genericZone, zoningFile));
+					.markParcelIntersectGenericZoningType(Collec.selectIntersection(inputSFC, Geom.unionSFC(boundingSFC)), genericZone, zoningFile));
 		else if (preciseZone != null && preciseZone != "")
 			finalZone = MarkParcelAttributeFromPosition.getOnlyMarkedParcels(MarkParcelAttributeFromPosition.markParcelIntersectPreciseZoningType(
-					Collec.snapDatas(inputSFC, Geom.unionSFC(boundingSFC)), genericZone, preciseZone, zoningFile));
+					Collec.selectIntersection(inputSFC, Geom.unionSFC(boundingSFC)), genericZone, preciseZone, zoningFile));
 		else
 			finalZone = MarkParcelAttributeFromPosition
-					.getOnlyMarkedParcels(MarkParcelAttributeFromPosition.markAllParcel(Collec.snapDatas(inputSFC, Geom.unionSFC(boundingSFC))));
+					.getOnlyMarkedParcels(MarkParcelAttributeFromPosition.markAllParcel(Collec.selectIntersection(inputSFC, Geom.unionSFC(boundingSFC))));
 		if (finalZone.isEmpty())
 			System.out.println("createZoneToCut(): zone is empty");
 		return finalZone;

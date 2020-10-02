@@ -42,6 +42,7 @@ import fr.ign.artiscales.tools.geoToolsFunctions.Schemas;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Collec;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Geom;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Geopackages;
+import fr.ign.artiscales.tools.geoToolsFunctions.vectors.geom.Polygons;
 
 public class ParcelCollection {
 
@@ -234,7 +235,7 @@ public class ParcelCollection {
 		List<Geometry> zones = new ArrayList<Geometry>();
 		List<Geometry> intersectionGeoms = new ArrayList<Geometry>();
 		for (Geometry firstZone : notSameMerged) {
-			SimpleFeatureCollection parcelsEvolved = Collec.snapDatas(evolvedParcel, firstZone);
+			SimpleFeatureCollection parcelsEvolved = Collec.selectIntersection(evolvedParcel, firstZone);
 			// If the area of the tested zone is 10x higher than the maximal simulated parcels (by default, 450m), it could be a 'zone'
 			if (firstZone.getArea() > 10 * maxParcelSimulatedSize) {
 				DescriptiveStatistics stat = new DescriptiveStatistics();
@@ -273,7 +274,7 @@ public class ParcelCollection {
 		Geom.exportGeom(listGeom, fInter);
 		listGeom.addAll(zones);
 		DefaultFeatureCollection finalEvolvedParcels = new DefaultFeatureCollection();
-		listGeom.stream().forEach(g -> {finalEvolvedParcels.addAll(Collec.snapDatas(evolvedParcel, g.buffer(-1)));});
+		listGeom.stream().forEach(g -> {finalEvolvedParcels.addAll(Collec.selectIntersection(evolvedParcel, g.buffer(-1)));});
 		Collec.exportSFC(finalEvolvedParcels, fEvolved);
 		ds.dispose();
 		dsRef.dispose();
@@ -300,7 +301,7 @@ public class ParcelCollection {
 	 * @return The input {@link SimpleFeatureCollection} with small parcels merged or removed
 	 * @throws IOException
 	 */
-	public static SimpleFeatureCollection mergeTooSmallParcels(SimpleFeatureCollection parcelsUnsorted, int minimalParcelSize) throws IOException {
+	public static SimpleFeatureCollection mergeTooSmallParcels(SimpleFeatureCollection parcelsUnsorted, double minimalParcelSize) throws IOException {
 		List<Integer> sizeResults = new ArrayList<Integer>();
 		SimpleFeatureCollection result = recursiveMergeTooSmallParcel(parcelsUnsorted, minimalParcelSize);
 		sizeResults.add(result.size());
@@ -314,7 +315,7 @@ public class ParcelCollection {
 		return result;
 	}
 	
-	private static SimpleFeatureCollection recursiveMergeTooSmallParcel(SimpleFeatureCollection parcelsUnsorted, int minimalParcelSize) throws IOException {
+	private static SimpleFeatureCollection recursiveMergeTooSmallParcel(SimpleFeatureCollection parcelsUnsorted, double minimalParcelSize) throws IOException {
 		DefaultFeatureCollection result = new DefaultFeatureCollection();
 		// we sort the parcel collection to process the smallest parcels in first
 		List<String> ids = new ArrayList<String>();	
@@ -324,8 +325,7 @@ public class ParcelCollection {
 			while (itr.hasNext()) {
 				SimpleFeature feature = itr.next();
 				//get the area an generate random numbers for the last 4 for out of 14 decimal. this hack is done to avoid exaclty same key area and delete some features
-				double area = ((Geometry) feature.getDefaultGeometry()).getArea()+Math.random()/1000000;
-				index.put(area, feature);
+				index.put(((Geometry) feature.getDefaultGeometry()).getArea()+Math.random()/1000000, feature);
 			}
 		} catch (Exception problem) {
 			problem.printStackTrace();
@@ -336,7 +336,7 @@ public class ParcelCollection {
 			if (ids.contains(feat.getID())) {
 				continue;
 			}
-			Geometry geom = Geom.getMultiPolygonGeom((Geometry) feat.getDefaultGeometry());
+			Geometry geom = Polygons.getMultiPolygonGeom((Geometry) feat.getDefaultGeometry());
 			if (geom.getArea() < minimalParcelSize) {
 				// System.out.println(feat.getID() + " is too small");
 				DefaultFeatureCollection intersect = new DefaultFeatureCollection();
@@ -380,7 +380,7 @@ public class ParcelCollection {
 									continue;
 								build.set(attr.getName(),thaParcel.getAttribute(attr.getName()) );
 							}
-							lG.add(Geom.getMultiPolygonGeom((Geometry) thaParcel.getDefaultGeometry()));
+							lG.add(Polygons.getMultiPolygonGeom((Geometry) thaParcel.getDefaultGeometry()));
 						}
 					});
 					Geometry g;

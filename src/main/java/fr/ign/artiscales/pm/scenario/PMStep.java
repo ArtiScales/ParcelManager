@@ -29,7 +29,6 @@ import fr.ign.artiscales.pm.workflow.ConsolidationDivision;
 import fr.ign.artiscales.pm.workflow.Densification;
 import fr.ign.artiscales.pm.workflow.ZoneDivision;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Collec;
-import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Geom;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Geopackages;
 import fr.ign.artiscales.tools.geometryGeneration.CityGeneration;
 import fr.ign.artiscales.tools.parameter.ProfileUrbanFabric;
@@ -152,15 +151,16 @@ public class PMStep {
 				break;
 			case "densification":
 				((DefaultFeatureCollection) parcelCut).addAll((new Densification()).densification(parcelMarkedComm,
-						CityGeneration.createUrbanIslet(parcelMarkedComm), OUTFOLDER, BUILDINGFILE, ROADFILE, profile.getMaximalArea(),
-						profile.getMinimalArea(), profile.getMinimalWidthContactRoad(), profile.getLenDriveway(),
-						ParcelState.isArt3AllowsIsolatedParcel(parcel.features().next(), PREDICATEFILE), Geom.createBufferBorder(parcelMarkedComm)));
+						CityGeneration.createUrbanIslet(parcelMarkedComm), OUTFOLDER, BUILDINGFILE, ROADFILE, profile.getHarmonyCoeff(),
+						profile.getNoise(), profile.getMaximalArea(), profile.getMinimalArea(), profile.getMinimalWidthContactRoad(),
+						profile.getLenDriveway(),
+						ParcelState.isArt3AllowsIsolatedParcel(parcel.features().next(), PREDICATEFILE), CityGeneration.createBufferBorder(parcelMarkedComm)));
 				break;
 			case "densificationOrNeighborhood":
 				((DefaultFeatureCollection) parcelCut).addAll(
 						(new Densification()).densificationOrNeighborhood(parcelMarkedComm, CityGeneration.createUrbanIslet(parcelMarkedComm), OUTFOLDER,
 								BUILDINGFILE, ROADFILE, profile, ParcelState.isArt3AllowsIsolatedParcel(parcel.features().next(), PREDICATEFILE),
-								Geom.createBufferBorder(parcelMarkedComm), 5));
+								CityGeneration.createBufferBorder(parcelMarkedComm), 5));
 				break;
 			case "consolidationDivision":
 				ConsolidationDivision.PROCESS = parcelProcess;

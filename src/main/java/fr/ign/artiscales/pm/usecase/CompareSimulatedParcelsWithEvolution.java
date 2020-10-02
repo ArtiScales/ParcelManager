@@ -108,14 +108,14 @@ public class CompareSimulatedParcelsWithEvolution {
 			
 			// evolved parcel crop
 			DataStore sdsEvolvedParcel = Geopackages.getDataStore(evolvedParcelFile);
-			SimpleFeatureCollection sfcEvolvedParcel = Collec.snapDatas(sdsEvolvedParcel.getFeatureSource(sdsEvolvedParcel.getTypeNames()[0]).getFeatures(), geomUnion);
+			SimpleFeatureCollection sfcEvolvedParcel = Collec.selectIntersection(sdsEvolvedParcel.getFeatureSource(sdsEvolvedParcel.getTypeNames()[0]).getFeatures(), geomUnion);
 			Collec.exportSFC(sfcEvolvedParcel, new File(zoneOutFolder, "EvolvedParcel.gpkg"));
 			
 			DataStore sdsGoalParcel = Geopackages.getDataStore(step.getLastOutput() != null ? step.getLastOutput() : step.makeFileName());
 			SingleParcelStat.writeStatSingleParcel(
 					MarkParcelAttributeFromPosition.markSimulatedParcel(MarkParcelAttributeFromPosition.markParcelIntersectPolygonIntersection(
 							sdsGoalParcel.getFeatureSource(sdsGoalParcel.getTypeNames()[0]).getFeatures(), geoms.stream().map(g -> g.buffer(-2)).collect(Collectors.toList()))),
-					sfcEvolvedParcel, Collec.snapDatas(dsRoad.getFeatureSource(dsRoad.getTypeNames()[0]).getFeatures(), geomUnion),
+					sfcEvolvedParcel, Collec.selectIntersection(dsRoad.getFeatureSource(dsRoad.getTypeNames()[0]).getFeatures(), geomUnion),
 					new File(zoneOutFolder, "SimulatedParcelStats.csv"));
 			sdsSimulatedParcel.dispose();
 			sdsGoalParcel.dispose();
@@ -126,7 +126,7 @@ public class CompareSimulatedParcelsWithEvolution {
 			SingleParcelStat.writeStatSingleParcel(
 					MarkParcelAttributeFromPosition.markParcelIntersectPolygonIntersection(sdsEvolvedAndAllParcels.getFeatureSource(sdsEvolvedAndAllParcels.getTypeNames()[0]).getFeatures(),
 							Arrays.stream(sfcEvolvedParcel.toArray(new SimpleFeature[0])).map(g -> ((Geometry) g.getDefaultGeometry()).buffer(-1)).collect(Collectors.toList())),
-					Collec.snapDatas(dsRoad.getFeatureSource(dsRoad.getTypeNames()[0]).getFeatures(), geomUnion), new File(zoneOutFolder, "EvolvedParcelStats.csv"));
+					Collec.selectIntersection(dsRoad.getFeatureSource(dsRoad.getTypeNames()[0]).getFeatures(), geomUnion), new File(zoneOutFolder, "EvolvedParcelStats.csv"));
 			sdsEvolvedParcel.dispose();
 		}
 		dsRoad.dispose();

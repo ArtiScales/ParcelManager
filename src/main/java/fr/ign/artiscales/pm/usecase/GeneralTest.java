@@ -46,7 +46,6 @@ public class GeneralTest {
 		File roadFile = new File(rootFolder, "road.gpkg");
 		File zoningFile = new File(rootFolder, "zoning.gpkg");
 		File buildingFile = new File(rootFolder, "building.gpkg");
-		File polygonIntersection = new File(rootFolder, "polygonIntersection.gpkg");
 		File parcelFile = new File(rootFolder, "parcel.gpkg");
 		File profileFolder = new File(rootFolder, "profileUrbanFabric");
 		File outFolder = new File(rootFolder, "out");
@@ -62,7 +61,8 @@ public class GeneralTest {
 		Workflow.PROCESS = "SS";
 		Workflow.SAVEINTERMEDIATERESULT = true;
 		
-		for (int i = 0; i <= 2; i++) {
+//		for (int i = 0; i <= 2; i++) {
+		for (int i = 1; i <= 1; i++) {
 			// multiple process calculation
 			String ext = "offset";
 			if (i == 1) {
@@ -92,7 +92,7 @@ public class GeneralTest {
 			SimpleFeatureCollection zoning = new SpatialIndexFeatureCollection(DataUtilities
 					.collection((gpkgDSZoning.getFeatureSource(gpkgDSZoning.getTypeNames()[0]).getFeatures())));
 			gpkgDSZoning.dispose();
-			SimpleFeatureCollection zone = ZoneDivision.createZoneToCut("AU", zoning, zoningFile, parcel);
+			SimpleFeatureCollection zone = ZoneDivision.createZoneToCut("AU", "AU1", zoning, zoningFile, parcel);
 			// If no zones, we won't bother
 			if (zone.isEmpty()) {
 				System.out.println("parcelGenZone : no zones to be cut");
@@ -118,9 +118,8 @@ public class GeneralTest {
 			System.out.println("/////////////////////////");
 			System.out.println("consolidRecomp");
 			System.out.println("/////////////////////////");
-			SimpleFeatureCollection markedZone = MarkParcelAttributeFromPosition.markParcelIntersectGenericZoningType(
-					MarkParcelAttributeFromPosition.markParcelIntersectPolygonIntersection(parcel, polygonIntersection),
-					"NC", zoningFile);
+			SimpleFeatureCollection markedZone = MarkParcelAttributeFromPosition.markParcelIntersectPreciseZoningType(finaux, "AU", "AUb",
+					zoningFile);
 			SimpleFeatureCollection cutedNormalZone = (new ConsolidationDivision()).consolidationDivision(markedZone,
 					roadFile, outFolder, profileDetached);
 			SimpleFeatureCollection finalNormalZone = FrenchParcelFields
@@ -140,11 +139,8 @@ public class GeneralTest {
 			System.out.println("parcelDensification");
 			System.out.println("/////////////////////////");
 			SimpleFeatureCollection parcelDensified = (new Densification()).densification(
-					MarkParcelAttributeFromPosition.markParcelIntersectFrenchConstructibleZoningType(
-							MarkParcelAttributeFromPosition.markParcelIntersectPolygonIntersection(finalNormalZone,
-									polygonIntersection),
-							zoningFile),
-					CityGeneration.createUrbanIslet(finalNormalZone), outFolder, buildingFile, roadFile,
+					MarkParcelAttributeFromPosition.markParcelIntersectPreciseZoningType(finalNormalZone,"U","UB", zoningFile), CityGeneration
+							.createUrbanIslet(finalNormalZone), outFolder, buildingFile, roadFile, profileSmallHouse.getHarmonyCoeff(), profileSmallHouse.getNoise(),
 					profileSmallHouse.getMaximalArea(), profileSmallHouse.getMinimalArea(),
 					profileSmallHouse.getMinimalWidthContactRoad(), profileSmallHouse.getLenDriveway(),
 					allowIsolatedParcel);
