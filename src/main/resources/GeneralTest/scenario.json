@@ -7,17 +7,19 @@
 			"workflow": "zoneDivision",
 			"parcelProcess": "OBB",
 			"genericZone": "AU",
+			"preciseZone":"AU1",
 			"communityNumber": "25267",
 			"communityType": "periUrbain",
-			"urbanFabricType": "smallHouse"
+			"urbanFabricType": "largeCollective"
 		},
 		{
 			"workflow": "consolidationDivision",
 			"parcelProcess": "OBB",
-			"genericZone": "NC",
+			"genericZone": "AU",
+			"preciseZone":"AUb",
 			"communityNumber": "25267",
 			"communityType": "periUrbain",
-			"urbanFabricType": "smallHouse"
+			"urbanFabricType": "detachedHouse"
 		},
 		{
 			"workflow": "densification",

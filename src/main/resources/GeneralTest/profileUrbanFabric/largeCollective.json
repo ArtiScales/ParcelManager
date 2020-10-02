@@ -4,7 +4,7 @@
 	"largeStreetWidth": "20",
 	"streetWidth": "12",	
 	"maximalArea":"5500",	
-	"minimalArea":"800",
+	"minimalArea":"2000",
 	"minimalWidthContactRoad": "15",
 	"nameBuildingType":"midBlockFlat",
 	"lenDriveway":"12",
