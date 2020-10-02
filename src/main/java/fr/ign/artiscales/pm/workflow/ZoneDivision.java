@@ -341,10 +341,10 @@ public class ZoneDivision extends Workflow{
 			SimpleFeatureCollection boundingSFC) throws IOException, NoSuchAuthorityCodeException, FactoryException {
 		// get the wanted zones from the zoning file
 		SimpleFeatureCollection finalZone;
-		if (genericZone != null && genericZone != "" && (preciseZone == null || preciseZone != ""))
+		if (genericZone != null && genericZone != "" && (preciseZone == null || preciseZone == ""))
 			finalZone = MarkParcelAttributeFromPosition.getOnlyMarkedParcels(MarkParcelAttributeFromPosition
 					.markParcelIntersectGenericZoningType(Collec.selectIntersection(inputSFC, Geom.unionSFC(boundingSFC)), genericZone, zoningFile));
-		else if (preciseZone != null && preciseZone != "")
+		else if (genericZone != null && genericZone != "" && preciseZone != null && preciseZone != "")
 			finalZone = MarkParcelAttributeFromPosition.getOnlyMarkedParcels(MarkParcelAttributeFromPosition.markParcelIntersectPreciseZoningType(
 					Collec.selectIntersection(inputSFC, Geom.unionSFC(boundingSFC)), genericZone, preciseZone, zoningFile));
 		else

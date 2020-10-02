@@ -21,7 +21,6 @@ import org.opengis.referencing.NoSuchAuthorityCodeException;
 
 import fr.ign.artiscales.pm.fields.GeneralFields;
 import fr.ign.artiscales.pm.fields.french.FrenchParcelFields;
-import fr.ign.artiscales.pm.fields.french.FrenchParcelSchemas;
 import fr.ign.artiscales.pm.parcelFunction.MarkParcelAttributeFromPosition;
 import fr.ign.artiscales.pm.parcelFunction.ParcelSchema;
 import fr.ign.artiscales.pm.parcelFunction.ParcelState;
@@ -44,17 +43,20 @@ public class StreetRatioParcels {
 	private static boolean overwrite = true;
 	private static boolean firstLine = true;
 
-	// public static void main(String[] args) throws Exception {
-	// long start = System.currentTimeMillis();
-	// ShapefileDataStore sds = new ShapefileDataStore(new File("/home/ubuntu/workspace/ParcelManager/src/main/resources/testData/out/zone.gpkg").toURI().toURL());
-	// SimpleFeatureCollection sfc = sds.getFeatureSource().getFeatures();
-	// ShapefileDataStore sds2 = new ShapefileDataStore(new File("//home/ubuntu/workspace/ParcelManager/src/main/resources/testData/out/parcelTotZone.gpkg").toURI().toURL());
-	// SimpleFeatureCollection sfc2 = sds2.getFeatureSource().getFeatures();
-	// streetRatioParcels(sfc, sfc2, new File("/tmp/"), new File("/home/ubuntu/workspace/ParcelManager/src/main/resources/testData/road.gpkg"));
-	// sds.dispose();
-	// sds2.dispose();
-	// System.out.println(System.currentTimeMillis()-start);
-	// }
+//	public static void main(String[] args) throws Exception {
+//		long start = System.currentTimeMillis();
+//		File rootFolder = new File("src/main/resources/GeneralTest/");
+//		File zoningFile = new File(rootFolder, "zoning.gpkg");
+//		DataStore ds = Geopackages.getDataStore(new File(rootFolder, "parcel.gpkg"));
+//		SimpleFeatureCollection sfc = ds.getFeatureSource(ds.getTypeNames()[0]).getFeatures();
+//		DataStore ds2 = Geopackages.getDataStore(new File(rootFolder,"out/OBB/ParcelConsolidRecomp.gpkg"));
+//		SimpleFeatureCollection sfc2 = ds2.getFeatureSource(ds2.getTypeNames()[0]).getFeatures();
+//		streetRatioParcels(MarkParcelAttributeFromPosition.markParcelIntersectPreciseZoningType(sfc, "AU", "AUb",
+//				zoningFile), sfc2, "", new File("/tmp/"), new File(rootFolder, "road.gpkg"));
+//		ds.dispose();
+//		ds2.dispose();
+//		System.out.println(System.currentTimeMillis() - start);
+//	}
 
 	/**
 	 * Calculate the ratio between the parcel area and the total area of a zone. It express the quantity of not parcel land, which could be either streets or public spaces.
@@ -88,7 +90,7 @@ public class StreetRatioParcels {
 			System.out.println("Parcels haven't been previously marked : stop StatParcelStreetRatio");
 			return;
 		}
-		SimpleFeatureBuilder sfBuilderZone = FrenchParcelSchemas.getSFBFrenchZoning();
+		SimpleFeatureBuilder sfBuilderZone = GeneralFields.getSFBZoning();
 		for (int i = 0; i < multiGeom.getNumGeometries(); i++) {
 			Geometry zoneGeom = multiGeom.getGeometryN(i);
 			sfBuilderZone.add(zoneGeom);
@@ -107,7 +109,6 @@ public class StreetRatioParcels {
 			}
 			zone.add(sfBuilderZone.buildFeature(Attribute.makeUniqueId()));
 		}
-		Collec.exportSFC(zone, new File("/tmp/lala"));
 		streetRatioZone(zone, cutParcel, legend, folderOutStat, roadFile);
 	}
 
@@ -169,9 +170,6 @@ public class StreetRatioParcels {
 								Collec.fromPolygonSFCtoRingMultiLines(Collec.selectIntersection(islets, (Geometry) z.getDefaultGeometry()))))
 						.count();
 				tab[6] = String.valueOf(((double) nbParcelsWithContactToRoad / (double) df.size()));
-				System.out.println("zone " + z.getAttribute("LIBELLE") + " of " + z.getAttribute("INSEE"));
-				System.out.println("road access nb " + nbParcelsWithContactToRoad + " on " + df.size());
-				System.out.println("ratio: " + (1 - (pNew / iniA)));
 				stat.put(count++ + "-" + tab[1] + "-" + tab[2], tab);
 			}
 		} catch (Exception problem) {

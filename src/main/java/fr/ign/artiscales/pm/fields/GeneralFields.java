@@ -14,6 +14,7 @@ import org.opengis.referencing.FactoryException;
 import org.opengis.referencing.NoSuchAuthorityCodeException;
 
 import fr.ign.artiscales.pm.fields.french.FrenchParcelFields;
+import fr.ign.artiscales.pm.fields.french.FrenchParcelSchemas;
 import fr.ign.artiscales.pm.fields.french.FrenchZoningSchemas;
 import fr.ign.artiscales.pm.parcelFunction.MarkParcelAttributeFromPosition;
 import fr.ign.artiscales.pm.parcelFunction.ParcelAttribute;
@@ -181,6 +182,17 @@ public class GeneralFields {
 		return false;
 	}
 
+	public static SimpleFeatureBuilder getSFBZoning() throws NoSuchAuthorityCodeException, FactoryException {
+		switch (parcelFieldType) {
+		case "french":
+			return FrenchParcelSchemas.getSFBFrenchZoning();
+		default:
+			System.out.println(
+					"getSFBZoning: unknown method because of an unknown parcel nomenclature (" + parcelFieldType + "). Returned an empty SimpleFeatureBuilder");
+			return Schemas.getBasicSchema("zoning");
+		}
+	}
+	
 	public static String getZoneGenericNameField() {
 		return zoneGenericNameField;
 	}
