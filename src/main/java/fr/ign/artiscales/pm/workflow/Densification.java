@@ -11,6 +11,7 @@ import org.geotools.feature.DefaultFeatureCollection;
 import org.geotools.feature.simple.SimpleFeatureBuilder;
 import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.geom.LineString;
+import org.locationtech.jts.geom.MultiPolygon;
 import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.filter.FilterFactory2;
 
@@ -57,6 +58,7 @@ public class Densification extends Workflow {
 
 	/**
 	 * Apply the densification workflow on a set of marked parcels.
+	 * TODO improvements: if a densification is impossible (mainly for building constructed on the both cut parcel reason), reiterate the flag cut division with noise. The cut may work better ! 
 	 *
 	 * @param parcelCollection
 	 *            {@link SimpleFeatureCollection} of marked parcels.
@@ -97,7 +99,7 @@ public class Densification extends Workflow {
 		FilterFactory2 ff = CommonFactoryFinder.getFilterFactory2();
 		DefaultFeatureCollection onlyCutedParcels = new DefaultFeatureCollection();
 		DefaultFeatureCollection resultParcels = new DefaultFeatureCollection();
-		SimpleFeatureBuilder sFBMinParcel = ParcelSchema.getSFBMinParcelMulti();
+		SimpleFeatureBuilder sFBMinParcel = ParcelSchema.getSFBMinParcel();
 		try (SimpleFeatureIterator iterator = parcelCollection.features()) {
 			while (iterator.hasNext()) {
 				SimpleFeature feat = iterator.next();
@@ -179,16 +181,19 @@ public class Densification extends Workflow {
 						try (SimpleFeatureIterator parcelCutedIt = unsortedFlagParcel.features()) {
 							while (parcelCutedIt.hasNext()) {
 								SimpleFeature parcelCuted = parcelCutedIt.next();
-								sFBMinParcel.set(geomName, parcelCuted.getDefaultGeometry());
-								sFBMinParcel.set(ParcelSchema.getMinParcelSectionField(),
-										makeNewSection((String) feat.getAttribute(ParcelSchema.getMinParcelSectionField())));
-								sFBMinParcel.set(ParcelSchema.getMinParcelNumberField(), String.valueOf(i++));
-								sFBMinParcel.set(ParcelSchema.getMinParcelCommunityField(),
-										feat.getAttribute(ParcelSchema.getMinParcelCommunityField()));
-								SimpleFeature cutedParcel = sFBMinParcel.buildFeature(Attribute.makeUniqueId());
-								resultParcels.add(cutedParcel);
-								if (SAVEINTERMEDIATERESULT)
-									onlyCutedParcels.add(cutedParcel);
+								Geometry pGeom = (Geometry) parcelCuted.getDefaultGeometry();
+								for (int ii = 0; ii < ((MultiPolygon) pGeom).getNumGeometries(); ii++) {
+									sFBMinParcel.set(geomName, ((MultiPolygon) pGeom).getGeometryN(ii));
+									sFBMinParcel.set(ParcelSchema.getMinParcelSectionField(),
+											makeNewSection((String) feat.getAttribute(ParcelSchema.getMinParcelSectionField())));
+									sFBMinParcel.set(ParcelSchema.getMinParcelNumberField(), String.valueOf(i++));
+									sFBMinParcel.set(ParcelSchema.getMinParcelCommunityField(),
+											feat.getAttribute(ParcelSchema.getMinParcelCommunityField()));
+									SimpleFeature cutedParcel = sFBMinParcel.buildFeature(Attribute.makeUniqueId());
+									resultParcels.add(cutedParcel);
+									if (SAVEINTERMEDIATERESULT)
+										onlyCutedParcels.add(cutedParcel);
+								}
 							}
 						} catch (Exception problem) {
 							problem.printStackTrace();
