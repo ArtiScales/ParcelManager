@@ -1,6 +1,7 @@
 package fr.ign.artiscales.pm.workflow;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.List;
 
 import org.geotools.data.DataStore;
@@ -14,6 +15,8 @@ import org.locationtech.jts.geom.LineString;
 import org.locationtech.jts.geom.MultiPolygon;
 import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.filter.FilterFactory2;
+import org.opengis.referencing.FactoryException;
+import org.opengis.referencing.NoSuchAuthorityCodeException;
 
 import fr.ign.artiscales.pm.decomposition.FlagParcelDecomposition;
 import fr.ign.artiscales.pm.decomposition.OBBBlockDecomposition;
@@ -28,7 +31,7 @@ import fr.ign.artiscales.tools.parameter.ProfileUrbanFabric;
 
 /**
  * Simulation following that workflow divides parcels to ensure that they could be densified. The
- * {@link FlagParcelDecomposition#generateFlagSplitedParcels(SimpleFeature, List, double, File, File, Double, Double, Double, boolean, Geometry)} method is applied on the selected
+ * {@link FlagParcelDecomposition#generateFlagSplitedParcels(SimpleFeature, List, double, double, File, File, Double, Double, Double, Geometry)} method is applied on the selected
  * parcels. If the creation of a flag parcel is impossible and the local rules allows parcel to be disconnected from the road network, the
  * {@link OBBBlockDecomposition#splitParcels(SimpleFeature, double, double, double, double, List, double, boolean, int)} is applied. Other behavior can be set relatively to the
  * parcel's sizes.
@@ -64,7 +67,7 @@ public class Densification extends Workflow {
 	 *            {@link SimpleFeatureCollection} of marked parcels.
 	 * @param isletCollection
 	 *            {@link SimpleFeatureCollection} containing the morphological islet. Can be generated with the
-	 *            {@link fr.ign.cogit.geometryGeneration.CityGeneration#createUrbanIslet(SimpleFeatureCollection)} method.
+	 *            {@link fr.ign.artiscales.tools.geometryGeneration.CityGeneration#createUrbanIslet(SimpleFeatureCollection)} method.
 	 * @param outFolder
 	 *            Folder to store result files
 	 * @param buildingFile
@@ -85,10 +88,14 @@ public class Densification extends Workflow {
 	 *            Exclude a zone that won't be considered as a potential road connection. Useful to represent border of the parcel plan. Can be null.
 	 * @return The input parcel {@link SimpleFeatureCollection} with the marked parcels replaced by the simulated parcels. All parcels have the
 	 *         {@link fr.ign.artiscales.pm.parcelFunction.ParcelSchema#getSFBMinParcel()} schema. * @throws Exception
+	 * @throws IOException 
+	 * @throws FactoryException 
+	 * @throws NoSuchAuthorityCodeException 
 	 */
 	public SimpleFeatureCollection densification(SimpleFeatureCollection parcelCollection, SimpleFeatureCollection isletCollection, File outFolder,
 			File buildingFile, File roadFile, double harmonyCoeff, double noise, double maximalAreaSplitParcel, double minimalAreaSplitParcel,
-			double maximalWidthSplitParcel, double lenDriveway, boolean allowIsolatedParcel, Geometry exclusionZone) throws Exception {
+			double maximalWidthSplitParcel, double lenDriveway, boolean allowIsolatedParcel, Geometry exclusionZone)
+			throws IOException, NoSuchAuthorityCodeException, FactoryException {
 		// if parcels doesn't contains the markParcelAttribute field or have no marked parcels
 		if (MarkParcelAttributeFromPosition.isNoParcelMarked(parcelCollection)) {
 			System.out.println("Densification : unmarked parcels");
@@ -112,18 +119,19 @@ public class Densification extends Workflow {
 							.subCollection(ff.bbox(ff.property(feat.getFeatureType().getGeometryDescriptor().getLocalName()), feat.getBounds())));
 					// we flag cut the parcel
 					SimpleFeatureCollection unsortedFlagParcel = FlagParcelDecomposition.generateFlagSplitedParcels(feat, lines, harmonyCoeff, noise,
-							buildingFile, roadFile, maximalAreaSplitParcel, maximalWidthSplitParcel, lenDriveway, allowIsolatedParcel, exclusionZone);
-
+							buildingFile, roadFile, maximalAreaSplitParcel, maximalWidthSplitParcel, lenDriveway, exclusionZone);
+					// If it returned a collection of 1, it was impossible to flag split the parcel. If allowed, we cut the parcel with regular OBB 
+					if (unsortedFlagParcel.size() == 1 && allowIsolatedParcel) 
+						unsortedFlagParcel = OBBBlockDecomposition.splitParcels(feat, maximalAreaSplitParcel, maximalWidthSplitParcel, 0.5, noise, lines, 0, true, 99);
 					// we check if the cut parcels are meeting the expectations
 					boolean add = true;
 					// If the flag cut parcel size is too small, we won't add anything
 					try (SimpleFeatureIterator parcelIt = unsortedFlagParcel.features()) {
-						while (parcelIt.hasNext()) {
+						while (parcelIt.hasNext())
 							if (((Geometry) parcelIt.next().getDefaultGeometry()).getArea() < minimalAreaSplitParcel) {
 								add = false;
 								break;
 							}
-						}
 					} catch (Exception problem) {
 						System.out.println("problem" + problem + "for " + feat + " feature densification");
 						problem.printStackTrace();
@@ -222,14 +230,14 @@ public class Densification extends Workflow {
 	/**
 	 * Apply the densification workflow on a set of marked parcels.
 	 *
-	 * overload of the {@link #densification(SimpleFeatureCollection, SimpleFeatureCollection, File, File, File, double, double, double, double, boolean)} method if we choose to
+	 * overload of the {@link #densification(SimpleFeatureCollection, SimpleFeatureCollection, File, File, File, double, double, double, double, double, double, boolean, Geometry)} method if we choose to
 	 * not use a road Geopackage and no geometry of exclusion
 	 * 
 	 * @param parcelCollection
 	 *            SimpleFeatureCollection of marked parcels.
 	 * @param isletCollection
 	 *            SimpleFeatureCollection containing the morphological islet. Can be generated with the
-	 *            {@link fr.ign.cogit.geometryGeneration.CityGeneration#createUrbanIslet(SimpleFeatureCollection)} method.
+	 *            {@link fr.ign.artiscales.tools.geometryGeneration.CityGeneration#createUrbanIslet(SimpleFeatureCollection)} method.
 	 * @param outFolder
 	 *            folder to store created files
 	 * @param buildingFile
@@ -257,14 +265,14 @@ public class Densification extends Workflow {
 	/**
 	 * Apply the densification workflow on a set of marked parcels.
 	 *
-	 * overload of the {@link #densification(SimpleFeatureCollection, SimpleFeatureCollection, File, File, File, double, double, double, double, boolean)} method if we choose to
+	 * overload of the {@link #densification(SimpleFeatureCollection, SimpleFeatureCollection, File, File, File, double, double, double, double, double, double, boolean, Geometry)} method if we choose to
 	 * not use a road Geopackage
 	 * 
 	 * @param parcelCollection
 	 *            SimpleFeatureCollection of marked parcels.
 	 * @param isletCollection
 	 *            SimpleFeatureCollection containing the morphological islet. Can be generated with the
-	 *            {@link fr.ign.cogit.geometryGeneration.CityGeneration#createUrbanIslet(SimpleFeatureCollection)} method.
+	 *            {@link fr.ign.artiscales.tools.geometryGeneration.CityGeneration#createUrbanIslet(SimpleFeatureCollection)} method.
 	 * @param outFolder
 	 *            folder to store created files
 	 * @param buildingFile
@@ -291,14 +299,14 @@ public class Densification extends Workflow {
 
 	/**
 	 * Apply the densification workflow on a set of marked parcels. Overload
-	 * {@link #densification(SimpleFeatureCollection, SimpleFeatureCollection, File, File, File, double, double, double, double, boolean)} method with a profile building type input
+	 * {@link #densification(SimpleFeatureCollection, SimpleFeatureCollection, File, File, File, ProfileUrbanFabric, boolean, Geometry)} method with a profile building type input
 	 * (which automatically report its parameters to the fields)
 	 * 
 	 * @param parcelCollection
 	 *            SimpleFeatureCollection of marked parcels.
 	 * @param isletCollection
 	 *            SimpleFeatureCollection containing the morphological islet. Can be generated with the
-	 *            {@link fr.ign.cogit.geometryGeneration.CityGeneration#createUrbanIslet(SimpleFeatureCollection)} method.
+	 *            {@link fr.ign.artiscales.tools.geometryGeneration.CityGeneration#createUrbanIslet(SimpleFeatureCollection)} method.
 	 * @param outFolder
 	 *            folder to store result files.
 	 * @param buildingFile
@@ -320,14 +328,14 @@ public class Densification extends Workflow {
 
 	/**
 	 * Apply the densification workflow on a set of marked parcels. Overload
-	 * {@link #densification(SimpleFeatureCollection, SimpleFeatureCollection, File, File, File, double, double, double, double, boolean)} method with a profile building type input
+	 * {@link #densification(SimpleFeatureCollection, SimpleFeatureCollection, File, File, File, double, double, double, double, double, double, boolean, Geometry)} method with a profile building type input
 	 * (which automatically report its parameters to the fields)
 	 * 
 	 * @param parcelCollection
 	 *            SimpleFeatureCollection of marked parcels.
 	 * @param isletCollection
 	 *            SimpleFeatureCollection containing the morphological islet. Can be generated with the
-	 *            {@link fr.ign.cogit.geometryGeneration.CityGeneration#createUrbanIslet(SimpleFeatureCollection)} method.
+	 *            {@link fr.ign.artiscales.tools.geometryGeneration.CityGeneration#createUrbanIslet(SimpleFeatureCollection)} method.
 	 * @param outFolder
 	 *            folder to store result files.
 	 * @param buildingFile
@@ -359,7 +367,7 @@ public class Densification extends Workflow {
 	 *            SimpleFeatureCollection of marked parcels.
 	 * @param isletCollection
 	 *            SimpleFeatureCollection containing the morphological islet. Can be generated with the
-	 *            {@link fr.ign.cogit.geometryGeneration.CityGeneration#createUrbanIslet(SimpleFeatureCollection)} method.
+	 *            {@link fr.ign.artiscales.tools.geometryGeneration.CityGeneration#createUrbanIslet(SimpleFeatureCollection)} method.
 	 * @param outFolder
 	 *            folder to store result files.
 	 * @param buildingFile

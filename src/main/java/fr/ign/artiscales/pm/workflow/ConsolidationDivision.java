@@ -39,27 +39,6 @@ public class ConsolidationDivision extends Workflow{
 
 	public ConsolidationDivision() {
 	}
-	
-	/**
-	 * Method that merges the contiguous marked parcels into zones and then split those zones with a given parcel division algorithm (by default, the Oriented Bounding Box)
-	 * overload of {@link #consolidationDivision(SimpleFeatureCollection, File, File, ProfileUrbanFabric)} for no predefined
-	 * harmony coeff and noise.
-	 * 
-	 * @param parcels
-	 *            The parcels to be merged and cut. Must be marked with the SPLIT filed (see markParcelIntersectMUPOutput for example, with the method concerning MUP-City's output)
-	 * @param roadFile
-	 *            Geopackages of the road segments. Can be null.
-	 * @param outFolder
-	 *            The folder where will be saved intermediate results and temporary files for debug
-	 * @param profile
-	 *            {@link ProfileUrbanFabric} contains the parameters of the wanted urban scene
-	 * @return the set of parcel with decomposition
-	 * @throws Exception
-	 */
-	public SimpleFeatureCollection consolidationDivision(SimpleFeatureCollection parcels, File roadFile, File outFolder,
-			ProfileUrbanFabric profile) throws Exception {
-		return consolidationDivision(parcels, roadFile, outFolder, profile, profile.getHarmonyCoeff(), profile.getNoise());
-	}
 
 	/**
 	 * Method that merges the contiguous marked parcels into zones and then split those zones with a given parcel division algorithm (by default, the Oriented Bounding Box).
@@ -71,16 +50,12 @@ public class ConsolidationDivision extends Workflow{
 	 *            The folder where will be saved intermediate results and temporary files for debug
 	 * @param profile
 	 *            {@link ProfileUrbanFabric} contains the parameters of the wanted urban scene
-	 * @param harmonyCoeff
-	 *            coefficient of minimal ration between length and width of the Oriented Bounding Box
-	 * @param noise
-	 *            level of perturbation
 	 * @return the set of parcel with decomposition
 	 * @throws Exception
 	 */
-	public SimpleFeatureCollection consolidationDivision(SimpleFeatureCollection parcels, File roadFile, File outFolder,
-			ProfileUrbanFabric profile, double harmonyCoeff, double noise) throws Exception {
-		return consolidationDivision(parcels, roadFile, outFolder, profile, null, harmonyCoeff, noise);
+	public SimpleFeatureCollection consolidationDivision(SimpleFeatureCollection parcels, File roadFile, File outFolder, ProfileUrbanFabric profile)
+			throws Exception {
+		return consolidationDivision(parcels, roadFile, outFolder, profile, null);
 	}
 
 	/**
@@ -95,16 +70,12 @@ public class ConsolidationDivision extends Workflow{
 	 * @param profile
 	 *            {@link ProfileUrbanFabric} contains the parameters of the wanted urban scene
 	 * @param polygonIntersection
-	 *            Optional polygon layer that was used to process to the selection of parcels with their intersection. Used to keep only the intersecting simulated parcels.
-	 * @param harmonyCoeff
-	 *            coefficient of minimal ration between length and width of the Oriented Bounding Box
-	 * @param noise
-	 *            level of perturbation
+	 *            Optional polygon layer that was used to process to the selection of parcels with their intersection. Used to keep only the intersecting simulated parcels. CAn be null
 	 * @return the set of parcel with decomposition
 	 * @throws Exception
 	 */
-	public SimpleFeatureCollection consolidationDivision(SimpleFeatureCollection parcels, File roadFile, File outFolder,
-			ProfileUrbanFabric profile, File polygonIntersection, double harmonyCoeff, double noise) throws Exception {
+	public SimpleFeatureCollection consolidationDivision(SimpleFeatureCollection parcels, File roadFile, File outFolder, ProfileUrbanFabric profile,
+			File polygonIntersection) throws Exception {
 		File tmpFolder = new File(outFolder, "tmp");
 		if (DEBUG)
 			tmpFolder.mkdirs();
@@ -170,7 +141,7 @@ public class ConsolidationDivision extends Workflow{
 					case "OBB":
 						freshCutParcel = OBBBlockDecomposition.splitParcel(feat,
 								(roads != null && !roads.isEmpty()) ? Collec.selectIntersection(roads, (Geometry) feat.getDefaultGeometry()) : null,
-								profile.getMaximalArea(), profile.getMinimalWidthContactRoad(), harmonyCoeff, noise,
+								profile.getMaximalArea(), profile.getMinimalWidthContactRoad(), profile.getHarmonyCoeff(), profile.getNoise(),
 								Collec.fromPolygonSFCtoListRingLines(isletCollection.subCollection(
 										ff.bbox(ff.property(feat.getFeatureType().getGeometryDescriptor().getLocalName()), feat.getBounds()))),
 								profile.getStreetWidth(), profile.getLargeStreetLevel(), profile.getLargeStreetWidth(), true,
@@ -179,7 +150,7 @@ public class ConsolidationDivision extends Workflow{
 					case "SS":
 						freshCutParcel = StraightSkeletonParcelDecomposition.decompose(feat, roads, outFolder,
 								profile.getMaxDepth(), profile.getMaxDistanceForNearestRoad(), profile.getMinimalArea(), profile.getMinWidth(),
-								profile.getMaxWidth(), noise, new MersenneTwister(42));
+								profile.getMaxWidth(), profile.getNoise(), new MersenneTwister(42));
 						break;
 					}
 					if (freshCutParcel != null && !freshCutParcel.isEmpty() && freshCutParcel.size() > 0) {

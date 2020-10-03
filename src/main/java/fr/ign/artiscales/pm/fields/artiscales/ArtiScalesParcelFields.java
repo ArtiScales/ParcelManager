@@ -2,7 +2,6 @@ package fr.ign.artiscales.pm.fields.artiscales;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.List;
 
 import org.geotools.data.DataStore;
 import org.geotools.data.simple.SimpleFeatureCollection;
@@ -61,7 +60,7 @@ public class ArtiScalesParcelFields {
 				boolean iPB = ParcelState.isAlreadyBuilt(buildingFile, parcel, (Geometry) parcel.getDefaultGeometry());
 				featureBuilder.set("IsBuild", iPB);
 
-				// BigZoneAttribute
+				// GenericAttribute
 				// if those attributes are already set, it means we can switch this step and the parcel is not new
 				if (parcel.getAttribute("U") != null) {
 					featureBuilder.set("U", parcel.getAttribute("U"));
@@ -71,18 +70,18 @@ public class ArtiScalesParcelFields {
 				}
 				// else, we search for every zones that are intersecting the parcel
 				else {
-					List<String> listBigZone = ParcelState.parcelInBigZone(parcel, zoningFile);
-					if (listBigZone.contains("U")) {
+					String listBigZone = ParcelState.parcelInGenericZone(zoningFile, parcel);
+					if (listBigZone.equals("U")) {
 						featureBuilder.set("U", true);
 					} else {
 						featureBuilder.set("U", false);
 					}
-					if (listBigZone.contains("AU")) {
+					if (listBigZone.equals("AU")) {
 						featureBuilder.set("AU", true);
 					} else {
 						featureBuilder.set("AU", false);
 					}
-					if (listBigZone.contains("NC")) {
+					if (listBigZone.equals("NC")) {
 						featureBuilder.set("NC", true);
 					} else {
 						featureBuilder.set("NC", false);

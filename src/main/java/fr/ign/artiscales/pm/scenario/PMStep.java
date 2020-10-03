@@ -165,7 +165,7 @@ public class PMStep {
 			case "consolidationDivision":
 				ConsolidationDivision.PROCESS = parcelProcess;
 				((DefaultFeatureCollection) parcelCut).addAll((new ConsolidationDivision()).consolidationDivision(parcelMarkedComm, ROADFILE, OUTFOLDER,
-						profile, profile.getHarmonyCoeff(), profile.getNoise()));
+						profile));
 				break;
 			case "densificationStudy":
 				DensificationStudy.runDensificationStudy(parcelMarkedComm, BUILDINGFILE, ROADFILE, ZONINGFILE, OUTFOLDER,

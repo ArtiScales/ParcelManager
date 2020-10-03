@@ -135,8 +135,7 @@ public class ZoneDivision extends Workflow{
 				savedParcels.add(
 						ParcelSchema.setSFBMinParcelWithFeat(parcel, finalParcelBuilder.getFeatureType()).buildFeature(Attribute.makeUniqueId()));
 		});
-		// complete the void left by the existing roads from the zones
-		// Also assess a section number
+		// complete the void left by the existing roads from the zones. Also assess a section number
 		SimpleFeatureBuilder sfBuilder = ParcelSchema.getSFBMinParcelSplit();
 		SimpleFeatureBuilder originalSFB = new SimpleFeatureBuilder(parcelsInZone.getSchema());
 		if (DEBUG) {
@@ -371,7 +370,7 @@ public class ZoneDivision extends Workflow{
 	 * 
 	 * @param feat
 	 *            {@link SimpleFeature} to test.
-	 * @return true if the section field is marked with the {@link #makeNewSection(int)} method.
+	 * @return true if the section field is marked with the {@link #makeNewSection(String)} method.
 	 */
 	public boolean isNewSection(SimpleFeature feat) {
 		String section = (String) feat.getAttribute(ParcelSchema.getMinParcelSectionField());

@@ -1,6 +1,7 @@
 package fr.ign.artiscales.pm.decomposition;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -21,6 +22,8 @@ import org.locationtech.jts.geom.PrecisionModel;
 import org.locationtech.jts.operation.union.CascadedPolygonUnion;
 import org.locationtech.jts.precision.GeometryPrecisionReducer;
 import org.opengis.feature.simple.SimpleFeature;
+import org.opengis.referencing.FactoryException;
+import org.opengis.referencing.NoSuchAuthorityCodeException;
 
 import fr.ign.artiscales.pm.parcelFunction.ParcelState;
 import fr.ign.artiscales.tools.FeaturePolygonizer;
@@ -86,10 +89,10 @@ public class FlagParcelDecomposition {
 //		System.out.println("time : " + (System.currentTimeMillis() - start));
 //	}
 
-	public static SimpleFeatureCollection generateFlagSplitedParcels(SimpleFeature feat, List<LineString> extLines,double harmonyCoeff, double noise, File buildingFile,
-			Double maximalAreaSplitParcel, Double maximalWidthSplitParcel, Double lenDriveway, boolean allowIsolatedParcel) throws Exception {
-		return generateFlagSplitedParcels(feat, extLines, harmonyCoeff, noise, buildingFile, null, maximalAreaSplitParcel, maximalWidthSplitParcel, lenDriveway,
-				allowIsolatedParcel, null);
+	public static SimpleFeatureCollection generateFlagSplitedParcels(SimpleFeature feat, List<LineString> extLines, double harmonyCoeff, double noise,
+			File buildingFile, Double maximalAreaSplitParcel, Double maximalWidthSplitParcel, Double lenDriveway) throws Exception {
+		return generateFlagSplitedParcels(feat, extLines, harmonyCoeff, noise, buildingFile, null, maximalAreaSplitParcel, maximalWidthSplitParcel,
+				lenDriveway, null);
 	}
 
 	/**
@@ -103,13 +106,14 @@ public class FlagParcelDecomposition {
 	 * @param maximalAreaSplitParcel
 	 * @param maximalWidthSplitParcel
 	 * @param lenDriveway
-	 * @param allowIsolatedParcel
 	 * @param exclusionZone
-	 * @throws Exception
+	 * @throws IOException 
+	 * @throws FactoryException 
+	 * @throws NoSuchAuthorityCodeException 
 	 */
 	public static SimpleFeatureCollection generateFlagSplitedParcels(SimpleFeature feat, List<LineString> extLines, double harmonyCoeff, double noise,
 			File buildingFile, File roadFile, Double maximalAreaSplitParcel, Double maximalWidthSplitParcel, Double lenDriveway,
-			boolean allowIsolatedParcel, Geometry exclusionZone) throws Exception {
+			Geometry exclusionZone) throws IOException, NoSuchAuthorityCodeException, FactoryException  {
 		DataStore buildingDS = Geopackages.getDataStore(buildingFile);
 		Polygon parcelGeom = Polygons.getPolygon((Geometry) feat.getDefaultGeometry());
 		// as the road Geopacakge can be left as null, we differ the FlagParcelDecomposition constructor
@@ -129,12 +133,7 @@ public class FlagParcelDecomposition {
 							((Geometry) feat.getDefaultGeometry()).buffer(10)),
 					maximalAreaSplitParcel, maximalWidthSplitParcel, lenDriveway, extLines, exclusionZone);
 		List<Polygon> decomp = fpd.decompParcel(harmonyCoeff, noise);
-		// if the size of the collection is 1, no flag cut has been done. We check if we can normal cut it, if allowed
 		buildingDS.dispose();
-		if (decomp.size() == 1 && allowIsolatedParcel) {
-			System.out.println("normal decomp instead of flagg decomp allowed and done");
-			return OBBBlockDecomposition.splitParcels(feat, maximalAreaSplitParcel, maximalWidthSplitParcel, 0.5, noise, extLines, 0, true, 99);
-		}
 		return Geom.geomsToCollec(decomp, Schemas.getBasicSchemaMultiPolygon("geom"));
 	}
   
@@ -261,7 +260,7 @@ public class FlagParcelDecomposition {
    * @return List of parcels
    * @throws Exception
    */
-  public List<Polygon> decompParcel(double harmonyCoeff, double noise) throws Exception {
+  public List<Polygon> decompParcel(double harmonyCoeff, double noise)  {
     return decompParcel(this.polygonInit, harmonyCoeff, noise);
   }
 
@@ -272,7 +271,7 @@ public class FlagParcelDecomposition {
    * @return the flag cut parcel if possible. The input parcel otherwise
    * @throws Exception
    */
-  private List<Polygon> decompParcel(Polygon p, double harmonyCoeff, double noise) throws Exception {
+  private List<Polygon> decompParcel(Polygon p, double harmonyCoeff, double noise)  {
     // End test condition
     if (this.endCondition(p.getArea(), this.frontSideWidth(p))) 
       return Collections.singletonList(p);

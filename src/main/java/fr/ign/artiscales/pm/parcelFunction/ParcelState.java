@@ -5,12 +5,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
-import java.util.Map.Entry;
 import java.util.stream.Collectors;
 
 import org.geotools.data.DataStore;
@@ -32,7 +27,6 @@ import org.opengis.filter.FilterFactory2;
 import com.opencsv.CSVReader;
 
 import fr.ign.artiscales.pm.fields.GeneralFields;
-import fr.ign.artiscales.pm.fields.french.FrenchZoningSchemas;
 import fr.ign.artiscales.tools.geoToolsFunctions.Attribute;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Collec;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Geom;
@@ -271,7 +265,7 @@ public class ParcelState {
 
 	/**
 	 * This algorithm looks if a parcel is overlapped by a building and returns true if they are. overload of the
-	 * {@link #isAlreadyBuilt(SimpleFeatureCollection, SimpleFeature, double)} to select only a selection of buildings
+	 * {@link #isAlreadyBuilt(SimpleFeatureCollection, SimpleFeature, double, double)} to select only a selection of buildings
 	 * 
 	 * @param buildingFile
 	 * @param parcel
@@ -408,110 +402,16 @@ public class ParcelState {
 
 	/**
 	 * Return a single Zone Generic Name that a parcels intersect. If the parcel intersects multiple, we select the one that covers the most area
-	 * @deprecated
 	 * @param parcelIn
 	 * @param zoningFile
 	 * @return Zone Generic Name that a parcels intersect
 	 * @throws Exception
 	 */
-	public static String parcelInBigZone(File zoningFile, SimpleFeature parcelIn) throws Exception {
-		List<String> bigZones = parcelInBigZone(parcelIn, zoningFile);
-		if (bigZones.isEmpty())
-			return "null";
-		return bigZones.get(0);
-	}
-
-	/**
-	 * return the Zone Generic Name that a parcels intersect result is sorted by the largest intersected zone to the lowest
-	 * @deprecated
-	 * @param parcelIn
-	 * @param zoningFile
-	 * @return A list of the multiple parcel intersected, sorted by area of occupation
-	 * @throws Exception
-	 */
-	public static List<String> parcelInBigZone(SimpleFeature parcelIn, File zoningFile) throws Exception {
-		List<String> result = new LinkedList<String>();
-		DataStore dsZone = Geopackages.getDataStore(zoningFile);
-		// if there's two zones, we need to sort them by making collection. zis iz évy
-		// calculation, but it could worth it
-		boolean twoZones = false;
-		HashMap<String, Double> repart = new HashMap<String, Double>();
-		
-		PrecisionModel precMod = new PrecisionModel(100);
-		Geometry parcelInGeometry = GeometryPrecisionReducer.reduce((Geometry) parcelIn.getDefaultGeometry(), precMod);
-
-		try (SimpleFeatureIterator featuresZones = Collec
-				.selectIntersection(dsZone.getFeatureSource(dsZone.getTypeNames()[0]).getFeatures(), (Geometry) parcelIn.getDefaultGeometry()).features()) {
-			zoneLoop: while (featuresZones.hasNext()) {
-				SimpleFeature feat = featuresZones.next();
-				Geometry featGeometry = GeometryPrecisionReducer.reduce((Geometry) feat.getDefaultGeometry(), precMod);
-				if (featGeometry.buffer(0.5).contains(parcelInGeometry)) {
-					twoZones = false;
-					String zoneName = FrenchZoningSchemas.normalizeNameFrenchBigZone((String) feat.getAttribute(GeneralFields.getZoneGenericNameField()));
-					switch (zoneName) {
-					case "U":
-						result.add("U");
-						result.remove("AU");
-						result.remove("NC");
-						break zoneLoop;
-					case "AU":
-						result.add("AU");
-						result.remove("U");
-						result.remove("NC");
-						break zoneLoop;
-					case "NC":
-						result.add("NC");
-						result.remove("AU");
-						result.remove("U");
-						break zoneLoop;
-					default:
-						result.remove("AU");
-						result.remove("U");
-						result.remove("NC");
-						result.add(zoneName);
-					}
-				}
-				// maybe the parcel is in between two zones (less optimized) intersection
-				else if ((featGeometry).intersects(parcelInGeometry)) {
-					twoZones = true;
-					double area = Geom
-							.scaledGeometryReductionIntersection(Arrays.asList(featGeometry, parcelInGeometry))
-							.getArea();
-					String zoneName = FrenchZoningSchemas.normalizeNameFrenchBigZone((String) feat.getAttribute(GeneralFields.getZoneGenericNameField()));
-					switch (zoneName) {
-					case "U":
-						repart.put("U",repart.getOrDefault("U", 0.0) + area);
-						break;
-					case "AU":
-						repart.put("AU", repart.getOrDefault("AU", 0.0) + area);
-						break;
-					case "NC":
-						repart.put("NC", repart.getOrDefault("NC", 0.0) + area);
-						break;
-					default:
-						repart.put(zoneName, repart.getOrDefault((String) feat.getAttribute(GeneralFields.getZoneGenericNameField()), 0.0) + area);
-					}
-				}
-			}
-		} catch (Exception problem) {
-			problem.printStackTrace();
-		}
-		dsZone.dispose();
-
-		//in case of multi zones, we sort the entries relatively to the highest area
-		if (twoZones == true) {
-			List<Entry<String, Double>> entryList = new ArrayList<Entry<String, Double>>(repart.entrySet());
-			Collections.sort(entryList, new Comparator<Entry<String, Double>>() {
-				@Override
-				public int compare(Entry<String, Double> obj1, Entry<String, Double> obj2) {
-					return obj2.getValue().compareTo(obj1.getValue());
-				}
-			});
-			for (Entry<String, Double> s : entryList) {
-				result.add(s.getKey());
-			}
-		}
-		return result;
+	public static String parcelInGenericZone(File zoningFile, SimpleFeature parcelIn) throws Exception {
+		DataStore ds = Geopackages.getDataStore(zoningFile);
+		String preciseZone = Collec.getIntersectingFieldFromSFC((Geometry) parcelIn.getDefaultGeometry(), ds.getFeatureSource(ds.getTypeNames()[0]).getFeatures(), GeneralFields.getZoneGenericNameField());
+		ds.dispose();
+		return preciseZone;
 	}
 
 	/**
@@ -520,127 +420,17 @@ public class ParcelState {
 	 * 
 	 * @param parcelIn
 	 * @param communityFile
+	 * @param the field name of the typo
 	 * @return the number of most intersected community type
 	 * @throws Exception
 	 */
-	public static String parcelInTypo(File communityFile, SimpleFeature parcelIn) throws Exception {
-		return parcelInTypo(parcelIn, communityFile).get(0);
+	public static String parcelInTypo(File communityFile, SimpleFeature parcelIn, String typoAttribute) throws Exception {
+		DataStore ds = Geopackages.getDataStore(communityFile);
+		String typo = Collec.getIntersectingFieldFromSFC((Geometry) parcelIn.getDefaultGeometry(), ds.getFeatureSource(ds.getTypeNames()[0]).getFeatures(), typoAttribute);
+		ds.dispose();
+		return typo;
 	}
 
-	/**
-	 * return the typologies that a parcels intersect
-	 * @deprecated
-	 * @param parcelIn
-	 * @param communityFile
-	 * @return the multiple parcel intersected, sorted by area of occupation
-	 * @throws Exception
-	 */
-	public static List<String> parcelInTypo(SimpleFeature parcelIn, File communityFile) throws Exception {
-		List<String> result = new ArrayList<String>();
-		DataStore dsZone = Geopackages.getDataStore(communityFile);
-		// objects for crossed zones
-		boolean twoZones = false;
-		HashMap<String, Double> repart = new HashMap<String, Double>();
-
-		try (SimpleFeatureIterator featuresZones = Collec
-				.selectIntersection(dsZone.getFeatureSource(dsZone.getTypeNames()[0]).getFeatures(), (Geometry) parcelIn.getDefaultGeometry()).features()) {
-			zone: while (featuresZones.hasNext()) {
-				SimpleFeature feat = featuresZones.next();
-				Geometry parcelInGeometry = (Geometry) parcelIn.getDefaultGeometry();
-				Geometry featGeometry = (Geometry) feat.getDefaultGeometry();
-				// TODO if same typo in two different typo, won't fall into that trap =>
-				// create a big Geopacakge zone instead?
-				if (featGeometry.buffer(1).contains(parcelInGeometry)) {
-					switch ((String) feat.getAttribute("typo")) {
-					case "rural":
-						result.add("rural");
-						result.remove("periUrbain");
-						result.remove("banlieue");
-						result.remove("centre");
-						break zone;
-					case "periUrbain":
-						result.add("periUrbain");
-						result.remove("rural");
-						result.remove("banlieue");
-						result.remove("centre");
-						break zone;
-					case "banlieue":
-						result.add("banlieue");
-						result.remove("rural");
-						result.remove("periUrbain");
-						result.remove("centre");
-						break zone;
-					case "centre":
-						result.add("centre");
-						result.remove("rural");
-						result.remove("periUrbain");
-						result.remove("banlieue");
-						break zone;
-					}
-				}
-				// maybe the parcel is in between two cities
-				else if (featGeometry.intersects(parcelInGeometry)) {
-					twoZones = true;
-					double area = Geom
-							.scaledGeometryReductionIntersection(Arrays.asList(featGeometry, parcelInGeometry))
-							.getArea();
-					switch ((String) feat.getAttribute("typo")) {
-					case "rural":
-						if (repart.containsKey("rural")) {
-							repart.put("rural", repart.get("rural") + area);
-						} else {
-							repart.put("rural", area);
-						}
-						break;
-					case "centre":
-						if (repart.containsKey("centre")) {
-							repart.put("centre", repart.get("centre") + area);
-						} else {
-							repart.put("centre", area);
-						}
-						break;
-					case "banlieue":
-						if (repart.containsKey("banlieue")) {
-							repart.put("banlieue", repart.get("banlieue") + area);
-						} else {
-							repart.put("banlieue", area);
-						}
-						break;
-					case "periUrbain":
-						if (repart.containsKey("periUrbain")) {
-							repart.put("periUrbain", repart.get("periUrbain") + area);
-						} else {
-							repart.put("periUrbain", area);
-						}
-						break;
-					}
-				}
-			}
-		} catch (Exception problem) {
-			problem.printStackTrace();
-		} 
-
-		if (twoZones == true) {
-			List<Entry<String, Double>> entryList = new ArrayList<Entry<String, Double>>(repart.entrySet());
-			Collections.sort(entryList, new Comparator<Entry<String, Double>>() {
-				@Override
-				public int compare(Entry<String, Double> obj1, Entry<String, Double> obj2) {
-					return obj2.getValue().compareTo(obj1.getValue());
-				}
-			});
-
-			for (Entry<String, Double> s : entryList) {
-				result.add(s.getKey());
-			}
-		}
-
-		dsZone.dispose();
-
-		if (result.isEmpty()) {
-			result.add("null");
-		}
-		return result;
-	}
 
 	public static String getWidthFieldAttribute() {
 		return widthFieldAttribute;
