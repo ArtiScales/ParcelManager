@@ -879,6 +879,7 @@ public class TopologicalStraightSkeletonParcelDecomposition {
         newAbsorbing.add(gainingBetaSplitPolygon);
         newAbsorbing.add(exchangedPolygonPart);
         gainingBetaSplit.setPolygon(Util.polygonUnion(newAbsorbing, precisionReducer));
+        log("UNION\n"+gainingBetaSplit.getGeometry());
 //        loosingBetaSplit.setPolygon(Util.polygonDifference(Arrays.asList(splitAlphaStripSnapped), Arrays.asList(exchangedPolygonPart)));
         log("DIFFERENCE\n"+Util.polygonDifference(Arrays.asList(splitAlphaStripSnapped), Arrays.asList(exchangedPolygonPart)));
         log("REMAINING\n"+remainingPolygonPart);
@@ -907,7 +908,7 @@ public class TopologicalStraightSkeletonParcelDecomposition {
         HalfEdge e = new HalfEdge(straightSkeleton.getGraph().getOrCreateNode(cl.getCoordinateN(0)), straightSkeleton.getGraph().getOrCreateNode(currNode.getCoordinate()));
         e.setAttribute("EXTERIOR", "false");
         straightSkeleton.getGraph().getEdges().add(e);
-        if (loosingBetaSplit.getGeometry() == null || loosingBetaSplit.getGeometry().isEmpty()) {
+        if (remainingPolygonPart == null || loosingBetaSplit.getGeometry() == null || loosingBetaSplit.getGeometry().isEmpty()) {
           log("REMOVING FACE (NULL OR EMPTY)");
           alphaStrips.getFaces().remove(loosingBetaSplit);
         }
