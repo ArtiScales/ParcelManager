@@ -235,9 +235,9 @@ public class ZoneDivision extends Workflow{
 							streetWidth, largeStreetLevel, largeStreetWidth, true, decompositionLevelWithoutStreet));
 					break;
 				case "SS":
-					((DefaultFeatureCollection) splitedParcels).addAll(TopologicalStraightSkeletonParcelDecomposition.runTopoSS(zone, roads, outFolder, maxDepth,
+					((DefaultFeatureCollection) splitedParcels).addAll(TopologicalStraightSkeletonParcelDecomposition.runTopoSS(zone, roads, "NOM_VOIE_G", "IMPORTANCE", outFolder, maxDepth,
 							maxDistanceForNearestRoad, minimalArea, minWidth, maxWidth,
-							noise, new MersenneTwister(42)));			
+							noise == 0 ? 0.1 : noise, new MersenneTwister(42)));			
 					break;
 				case "MS":
 					System.out.println("not implemented yet");
