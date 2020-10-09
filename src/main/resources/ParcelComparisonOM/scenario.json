@@ -1,0 +1,13 @@
+{
+	"rootfile": "src/main/resources/ParcelComparisonOM/",
+	"parcelFile":"src/main/resources/ParcelComparisonOM/parcel2003.gpkg",
+	"polygonIntersectionFile":"src/main/resources/ParcelComparisonOM/out/place.gpkg",
+	"zoneFile":"src/main/resources/ParcelComparisonOM/out/zone.gpkg",
+	"outFolder": "src/main/resources/ParcelComparisonOM/out/",
+	"steps": [
+		{
+			"workflow": "zoneDivision",
+			"parcelProcess": "null",
+			"urbanFabricType": "smallHouse"
+		}]
+}

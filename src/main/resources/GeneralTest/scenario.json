@@ -4,23 +4,25 @@
 	"outFolder": "/tmp/",
 	"steps": [
 		{
-			"goal": "zoneDivision",
+			"workflow": "zoneDivision",
 			"parcelProcess": "OBB",
 			"genericZone": "AU",
+			"preciseZone":"AU1",
 			"communityNumber": "25267",
 			"communityType": "periUrbain",
-			"urbanFabricType": "smallHouse"
+			"urbanFabricType": "largeCollective"
 		},
 		{
-			"goal": "consolidationDivision",
+			"workflow": "consolidationDivision",
 			"parcelProcess": "OBB",
-			"genericZone": "NC",
+			"genericZone": "AU",
+			"preciseZone":"AUb",
 			"communityNumber": "25267",
 			"communityType": "periUrbain",
-			"urbanFabricType": "smallHouse"
+			"urbanFabricType": "detachedHouse"
 		},
 		{
-			"goal": "densification",
+			"workflow": "densification",
 			"genericZone": "U",
 			"communityNumber": "25267",
 			"communityType": "periUrbain",

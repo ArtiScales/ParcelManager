@@ -1,0 +1,57 @@
+val zoneFile = Val[File]
+val parcelFile = Val[File]
+val parcelEvolved = Val[File]
+val outFolder = Val[File]
+val maximalArea = Val[Double]
+val decompositionLevelWithoutStreet = Val[Int]
+val largeStreetLevel = Val[Int]
+val streetWidth = Val[Double]
+val largeStreetWidth = Val[Double]
+val minimalWidthContactRoad = Val[Double]
+val harmonyCoeff = Val[Double]
+val hausdorfDistance = Val[Double]
+val nbParcelDiff = Val[Int]
+val areaParcelDiff = Val[Double]
+
+
+val step1 = ScalaTask("val (hausdorfDistance,nbParcelDiff,areaParcelDiff) = withThreadClassLoader(classLoader(fr.ign.artiscales.compSimuParcel))(fr.ign.artiscales.compSimuParcel.ZoneDivisionOM(zoneFile, parcelFile, parcelEvolved, outFolder, maximalArea, decompositionLevelWithoutStreet ,largeStreetLevel,streetWidth,largeStreetWidth, minimalWidthContactRoad , harmonyCoeff))") set (
+//val step1 = ScalaTask("val (nbParcelDiff,areaParcelDiff) = withThreadClassLoader(classLoader(fr.ign.artiscales.compSimuParcel))(fr.ign.artiscales.compSimuParcel.step1(zoneFile, parcelFile, parcelEvolved, outFolder, maximalArea, decompositionLevelWithoutStreet ,largeStreetLevel,streetWidth,largeStreetWidth, minimalWidthContactRoad , harmonyCoeff))") set (
+    plugins += pluginsOf(fr.ign.artiscales.compSimuParcel),
+    zoneFile := workDirectory / "donnee" / "zone.gpkg",
+    parcelFile := workDirectory / "donnee" / "parcel2003.gpkg",
+    parcelEvolved := workDirectory / "donnee" / "evolvedParcel.gpkg",
+    outFolder := workDirectory / "out",
+ /*  maximalArea := 800.0,
+    decompositionLevelWithoutStreet := 3,
+    largeStreetLevel := 6, 
+    streetWidth := 15, 
+    largeStreetWidth := 20, 
+    minimalWidthContactRoad := 15, 
+    harmonyCoeff := 0.5, */
+    inputs += (
+        zoneFile,parcelFile,parcelEvolved,outFolder,
+        maximalArea, decompositionLevelWithoutStreet, largeStreetLevel, streetWidth, largeStreetWidth, 
+        minimalWidthContactRoad , harmonyCoeff), 
+    outputs += (hausdorfDistance,nbParcelDiff,areaParcelDiff)
+//      outputs += (nbParcelDiff,areaParcelDiff)
+    )
+
+val evol = NSGA2Evolution(
+  evaluation = step1,
+  objective = Seq(hausdorfDistance,nbParcelDiff,areaParcelDiff),
+ //   objective = Seq(nbParcelDiff,areaParcelDiff),
+//  mu = 200,
+  genome = Seq(
+    maximalArea in (80.0 to 1500.0),
+    decompositionLevelWithoutStreet in (0 to 6),
+    largeStreetLevel in (0 to 6),
+    streetWidth in (3.0 to 20.0),
+    largeStreetWidth in (10.0 to 30.0),
+    minimalWidthContactRoad in (5.0 to 30.0),
+    harmonyCoeff in (0.1 to 1)
+),
+  termination = 150,
+  parallelism = 10
+) hook display
+
+evol
