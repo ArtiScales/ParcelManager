@@ -92,7 +92,7 @@ public class MarkParcelAttributeFromPosition {
 	 *            Input parcel {@link SimpleFeatureCollection}
 	 * @param islet
 	 *            {@link SimpleFeatureCollection} containing the morphological islet. Can be generated with the
-	 *            {@link fr.ign.cogit.geometryGeneration.CityGeneration#createUrbanIslet(SimpleFeatureCollection)} method.
+	 *            {@link fr.ign.artiscales.tools.geometryGeneration.CityGeneration#createUrbanIslet(SimpleFeatureCollection)} method.
 	 * @param roadFile
 	 *            Geopackage containing the road segments
 	 * @return {@link SimpleFeatureCollection} of the input parcels with marked parcels on the {@link #markFieldName} field.
@@ -113,7 +113,7 @@ public class MarkParcelAttributeFromPosition {
 	 *            Input parcel {@link SimpleFeatureCollection}
 	 * @param islet
 	 *            {@link SimpleFeatureCollection} containing the morphological islet. Can be generated with the
-	 *            {@link fr.ign.cogit.geometryGeneration.CityGeneration#createUrbanIslet(SimpleFeatureCollection)} method.
+	 *            {@link fr.ign.artiscales.tools.geometryGeneration.CityGeneration#createUrbanIslet(SimpleFeatureCollection)} method.
 	 * @param roadFile
 	 *            Geopackage containing the road segments
 	 * @param exclusionZone
@@ -128,7 +128,6 @@ public class MarkParcelAttributeFromPosition {
 			Geometry exclusionZone) throws NoSuchAuthorityCodeException, FactoryException, IOException {
 		DataStore sds = Geopackages.getDataStore(roadFile);
 		SimpleFeatureCollection roads = Collec.selectIntersection(sds.getFeatureSource(sds.getTypeNames()[0]).getFeatures(), parcels);
-
 		final SimpleFeatureType featureSchema = ParcelSchema.getSFBMinParcelSplit().getFeatureType();
 		DefaultFeatureCollection result = new DefaultFeatureCollection();
 		// if features have the schema that the one intended to set, we bypass
@@ -997,7 +996,6 @@ public class MarkParcelAttributeFromPosition {
 	/**
 	 * Marking parcels is made before (false) or after (true) the simulation process. It won't allow or will the marking of the already simulated parcels
 	 * 
-	 * @param postMark
 	 */
 	public static boolean isPostMark() {
 		return postMark;

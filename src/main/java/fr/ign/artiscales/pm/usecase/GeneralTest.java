@@ -76,7 +76,6 @@ public class GeneralTest {
 				profileLargeCollective.setMaxDepth(0);
 				ext = "SS";
 			}
-				
 			outFolder = new File(rootFolder, "/out/" + ext);
 			outFolder.mkdirs();
 			File statFolder = new File(outFolder, "stat");

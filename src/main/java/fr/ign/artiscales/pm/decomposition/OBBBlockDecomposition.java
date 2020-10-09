@@ -182,11 +182,11 @@ public class OBBBlockDecomposition {
 	 *            intensity of the forcing of a parcel to be connected with a road
 	 * @param noise
 	 *            Irregularity into parcel shape
-	 * @param smallStreetWidth
+	 * @param smallRoadWidth
 	 *            Width of the small streets
-	 * @param largeStreetLevel
+	 * @param largeRoadLevel
 	 *            Level of decomposition in which large streets are generated
-	 * @param largeStreetWidth
+	 * @param largeRoadWidth
 	 *            Width of the large streets
 	 * @param decompositionLevelWithRoad
 	 * @param decompositionLevel
@@ -289,7 +289,7 @@ public class OBBBlockDecomposition {
 	 *
 	 * @param polygon
 	 *            {@link Polygon} of the parcel to be cut
-	 * @param extBlock
+	 * @param ext
 	 *            outside of the parcels (representing road or public space)
 	 * @param roads
 	 *            Road layer (can be null)

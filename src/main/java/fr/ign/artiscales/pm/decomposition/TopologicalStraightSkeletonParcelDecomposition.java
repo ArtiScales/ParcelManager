@@ -26,7 +26,9 @@ import org.apache.commons.math3.random.RandomGenerator;
 import org.geotools.data.DataStore;
 import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.data.simple.SimpleFeatureIterator;
+import org.geotools.feature.DefaultFeatureCollection;
 import org.geotools.feature.SchemaException;
+import org.geotools.feature.simple.SimpleFeatureBuilder;
 import org.locationtech.jts.algorithm.Angle;
 import org.locationtech.jts.algorithm.Orientation;
 import org.locationtech.jts.geom.Coordinate;
@@ -46,6 +48,9 @@ import org.locationtech.jts.precision.GeometryPrecisionReducer;
 import org.locationtech.jts.simplify.TopologyPreservingSimplifier;
 import org.opengis.feature.simple.SimpleFeature;
 
+import fr.ign.artiscales.tools.geoToolsFunctions.Attribute;
+import fr.ign.artiscales.tools.geoToolsFunctions.Schemas;
+import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Collec;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Geopackages;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.geom.Lines;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.geom.Points;
@@ -93,7 +98,7 @@ public class TopologicalStraightSkeletonParcelDecomposition {
   // Indicate the importance of the neighbour road
   // public static String ATT_IMPORTANCE = "IMPORTANCE";
 
-  public static boolean DEBUG = true;
+  public static boolean DEBUG = false;
   public static String FOLDER_OUT_DEBUG = "/tmp/skeleton";
 
   private Polygon initialPolygon;
@@ -1269,7 +1274,7 @@ public class TopologicalStraightSkeletonParcelDecomposition {
       int count = 0;
       boolean stop = false; 
       while (parcelIt.hasNext()&&!stop) {
-        runTopoSS(parcelIt.next(), roads, NAME_ATT_ROAD, NAME_ATT_IMPORTANCE, folderOut, maxDepth, maxDistanceForNearestRoad, minimalArea, minWidth, maxWidth, omega, rng);
+        runTopologicalStraightSkeletonParcelDecomposition(parcelIt.next(), roads, NAME_ATT_ROAD, NAME_ATT_IMPORTANCE, folderOut, maxDepth, maxDistanceForNearestRoad, minimalArea, minWidth, maxWidth, omega, rng);
         count++;
         if (count > 1) stop = true;
       }
@@ -1280,7 +1285,7 @@ public class TopologicalStraightSkeletonParcelDecomposition {
     parcelDS.dispose();
   }
 
-  public static SimpleFeatureCollection runTopoSS(SimpleFeature feat, SimpleFeatureCollection roads, String roadNameAttribute, String roadImportanceAttribute, File folderOut, double maxDepth, double maxDistanceForNearestRoad,
+  public static SimpleFeatureCollection runTopologicalStraightSkeletonParcelDecomposition(SimpleFeature feat, SimpleFeatureCollection roads, String roadNameAttribute, String roadImportanceAttribute, File folderOut, double maxDepth, double maxDistanceForNearestRoad,
       double minimalArea, double minWidth, double maxWidth, double omega, RandomGenerator rng) {
     int count = 0;
     List<Polygon> globalOutputParcels = new ArrayList<>();
@@ -1304,12 +1309,18 @@ public class TopologicalStraightSkeletonParcelDecomposition {
       }
     }
 
-    TopologicalGraph output = new TopologicalGraph(globalOutputParcels, 0.02);
-    export(output, folderOut);
-    // log("OUTPUT/");
-    // globalOutputParcels.forEach(p -> log(p));
-    // log("/OUTPUT");
-    return null;
+	TopologicalGraph output = new TopologicalGraph(globalOutputParcels, 0.02);
+	DefaultFeatureCollection result = new DefaultFeatureCollection();
+	SimpleFeatureBuilder builder = Schemas.getBasicSchema("parcelSplitSS");
+	for (Face face : output.getFaces()) {
+		builder.set(Collec.getDefaultGeomName(), face);
+		result.add(builder.buildFeature(Attribute.makeUniqueId()));
+	}
+	// export(output, folderOut);
+	// log("OUTPUT/");
+	// globalOutputParcels.forEach(p -> log(p));
+	// log("/OUTPUT");
+    return result;
   }
 
   private static void export(TopologicalGraph graph, File directory) {

@@ -21,7 +21,6 @@ import org.locationtech.jts.geom.Polygon;
 import org.locationtech.jts.geom.PrecisionModel;
 import org.locationtech.jts.precision.GeometryPrecisionReducer;
 import org.opengis.feature.simple.SimpleFeature;
-import org.opengis.filter.Filter;
 import org.opengis.filter.FilterFactory2;
 
 import com.opencsv.CSVReader;
@@ -41,7 +40,6 @@ public class ParcelState {
 //		File parcelFile = new File("/tmp/parcelTested");
 //		ShapefileDataStore sds = new ShapefileDataStore(parcelFile.toURI().toURL());
 //		SimpleFeatureIterator sfc = sds.getFeatureSource().getFeatures().features();
-//
 //		try {
 //			while (sfc.hasNext()) {
 //				SimpleFeature sf = sfc.next();
@@ -52,7 +50,6 @@ public class ParcelState {
 //				long endTime2 = System.nanoTime();
 //				System.out.println("duration for isAlreadyBuilt : " + (endTime2 - startTime2) * 1000);
 //			}
-//
 //		} catch (Exception problem) {
 //			problem.printStackTrace();
 //		} finally {
@@ -66,11 +63,12 @@ public class ParcelState {
 	public static int countParcelNeighborhood(Geometry parcelGeom, SimpleFeatureCollection parcels) {
 		int result = 0;
 		try (SimpleFeatureIterator parcelIt = parcels.features()) {
-			while (parcelIt.hasNext()) {
+			while (parcelIt.hasNext()) 
 				if (GeometryPrecisionReducer.reduce((Geometry) parcelIt.next().getDefaultGeometry(), new PrecisionModel(10)).buffer(1)
 						.intersects(GeometryPrecisionReducer.reduce(parcelGeom, new PrecisionModel(10)))) 
 					result++;
-			}
+		} catch (Exception e) {
+			e.printStackTrace();
 		}
 		return result;
 	}
@@ -119,11 +117,11 @@ public class ParcelState {
 			if (len > 0)
 				return len;
 			if (roads != null) {
-				MultiLineString road = Lines.getListLineStringAsMultiLS(
-						Arrays.stream(roads.toArray(new SimpleFeature[0])).filter(r -> ((Geometry) r.getDefaultGeometry()).intersects(p))
-								.flatMap(r -> Lines.getLineStrings((Geometry) r.getDefaultGeometry()).stream()).collect(Collectors.toList()),
-						new GeometryFactory());
-				len = p.buffer(0.2).intersection(road).getLength();
+				len = p.buffer(0.2)
+						.intersection(Lines.getListLineStringAsMultiLS(
+								Arrays.stream(roads.toArray(new SimpleFeature[0])).filter(r -> ((Geometry) r.getDefaultGeometry()).intersects(p))
+										.flatMap(r -> Lines.getLineStrings((Geometry) r.getDefaultGeometry()).stream()).collect(Collectors.toList()),
+								new GeometryFactory())).getLength();
 				if (len > 0)
 					return len;
 				else
@@ -136,11 +134,10 @@ public class ParcelState {
 				if (len > 0)
 					return len;
 				if (roads != null) {
-					List<LineString> list = Arrays.stream(roads.toArray(new SimpleFeature[0]))
-							.filter(r -> ((Geometry) r.getDefaultGeometry()).intersects(p))
-							.flatMap(r -> Lines.getLineStrings((Geometry) r.getDefaultGeometry()).stream()).collect(Collectors.toList());
-					MultiLineString road = Lines.getListLineStringAsMultiLS(list, new GeometryFactory());
-					len = p.buffer(0.4).intersection(road).getLength();
+					len = p.buffer(0.4).intersection(Lines.getListLineStringAsMultiLS(
+							Arrays.stream(roads.toArray(new SimpleFeature[0])).filter(r -> ((Geometry) r.getDefaultGeometry()).intersects(p))
+									.flatMap(r -> Lines.getLineStrings((Geometry) r.getDefaultGeometry()).stream()).collect(Collectors.toList()),
+							new GeometryFactory())).getLength();
 					if (len > 0)
 						return len;
 					else
@@ -232,8 +229,8 @@ public class ParcelState {
 		String[] firstLine = rule.readNext();
 		int nInsee = Attribute.getIndice(firstLine, "insee");
 		int nArt3 = Attribute.getIndice(firstLine, "art_3");
-		for (String[] line : rule.readAll()) {
-			if (insee.equals(line[nInsee])) {
+		for (String[] line : rule.readAll())
+			if (insee.equals(line[nInsee]))
 				if (line[nArt3].equals("1")) {
 					rule.close();
 					return false;
@@ -241,8 +238,6 @@ public class ParcelState {
 					rule.close();
 					return true;
 				}
-			}
-		}
 		rule.close();
 		return false;
 	}
@@ -349,8 +344,7 @@ public class ParcelState {
 	 */
 	public static Double getEvalInParcel(SimpleFeature parcel, SimpleFeatureCollection mupSFC) {
 		FilterFactory2 ff = CommonFactoryFinder.getFilterFactory2(GeoTools.getDefaultHints());
-		Filter inter = ff.intersects(ff.property(mupSFC.getSchema().getGeometryDescriptor().getLocalName()), ff.literal(parcel.getDefaultGeometry()));
-		SimpleFeatureCollection onlyCells = mupSFC.subCollection(inter);
+		SimpleFeatureCollection onlyCells = mupSFC.subCollection(ff.intersects(ff.property(mupSFC.getSchema().getGeometryDescriptor().getLocalName()), ff.literal(parcel.getDefaultGeometry())));
 		Double bestEval = 0.0;
 		// put the best cell evaluation into the parcel
 		if (onlyCells.size() > 0) {
@@ -375,9 +369,8 @@ public class ParcelState {
 	 */
 	public static Double getCloseEvalInParcel(SimpleFeature parcel, SimpleFeatureCollection mupSFC) {
 		FilterFactory2 ff = CommonFactoryFinder.getFilterFactory2(GeoTools.getDefaultHints());
-		Filter inter = ff.intersects(ff.property(mupSFC.getSchema().getGeometryDescriptor().getLocalName()),
-				ff.literal(((Geometry) parcel.getDefaultGeometry()).buffer(100.0)));
-		SimpleFeatureCollection onlyCells = mupSFC.subCollection(inter);
+		SimpleFeatureCollection onlyCells = mupSFC.subCollection(ff.intersects(ff.property(mupSFC.getSchema().getGeometryDescriptor().getLocalName()),
+				ff.literal(((Geometry) parcel.getDefaultGeometry()).buffer(100.0))));
 		Double bestEval = 0.0;
 		// put the best cell evaluation into the parcel
 		if (onlyCells.size() > 0) {
@@ -420,7 +413,7 @@ public class ParcelState {
 	 * 
 	 * @param parcelIn
 	 * @param communityFile
-	 * @param the field name of the typo
+	 * @param typoAttribute the field name of the typo
 	 * @return the number of most intersected community type
 	 * @throws Exception
 	 */
