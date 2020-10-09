@@ -25,7 +25,7 @@ import org.opengis.referencing.FactoryException;
 import org.opengis.referencing.NoSuchAuthorityCodeException;
 
 import fr.ign.artiscales.pm.decomposition.OBBBlockDecomposition;
-import fr.ign.artiscales.pm.decomposition.StraightSkeletonParcelDecomposition;
+import fr.ign.artiscales.pm.decomposition.TopologicalStraightSkeletonParcelDecomposition;
 import fr.ign.artiscales.pm.parcelFunction.MarkParcelAttributeFromPosition;
 import fr.ign.artiscales.pm.parcelFunction.ParcelAttribute;
 import fr.ign.artiscales.pm.parcelFunction.ParcelCollection;
@@ -116,8 +116,18 @@ public class ZoneDivision extends Workflow{
 	 */
 	public SimpleFeatureCollection zoneDivision(SimpleFeatureCollection initialZone, SimpleFeatureCollection parcels, SimpleFeatureCollection roads,
 			File outFolder, ProfileUrbanFabric profile) throws IOException, NoSuchAuthorityCodeException, FactoryException, SchemaException {
+		return zoneDivision(initialZone, parcels, roads, outFolder, profile.getMaximalArea(), profile.getMinimalArea(),
+				profile.getMinimalWidthContactRoad(), profile.getHarmonyCoeff(), profile.getNoise(), profile.getStreetWidth(),
+				profile.getLargeStreetLevel(), profile.getLargeStreetWidth(), profile.getDecompositionLevelWithoutStreet(), profile.getMaxDepth(),
+				profile.getMaxDistanceForNearestRoad(), profile.getMaxWidth(), profile.getMinWidth());
+	}
+
+	public SimpleFeatureCollection zoneDivision(SimpleFeatureCollection initialZone, SimpleFeatureCollection parcels, SimpleFeatureCollection roads,
+			File outFolder, double maximalArea, double minimalArea, double minimalWidthContactRoad, double harmonyCoeff, double noise,
+			double streetWidth, int largeStreetLevel, double largeStreetWidth, int decompositionLevelWithoutStreet, double maxDepth,
+			double maxDistanceForNearestRoad, double maxWidth, double minWidth) throws IOException, SchemaException, FactoryException {
 		File tmpFolder = new File(outFolder, "tmp");
-		if (DEBUG) 
+		if (DEBUG)
 			tmpFolder.mkdirs();
 		// parcel geometry name for all
 		String geomName = parcels.getSchema().getGeometryDescriptor().getLocalName();
@@ -170,7 +180,7 @@ public class ZoneDivision extends Workflow{
 			problem.printStackTrace();
 		}
 		// zone verification
-		if (goOdZone.isEmpty() || Collec.area(goOdZone) < profile.getMinimalArea()) {
+		if (goOdZone.isEmpty() || Collec.area(goOdZone) < minimalArea) {
 			System.out.println("ZoneDivision: no zones to cut or zone is too small to be taken into consideration");
 			return parcels;
 		}
@@ -220,15 +230,14 @@ public class ZoneDivision extends Workflow{
 				switch (PROCESS) {
 				case "OBB":
 					((DefaultFeatureCollection) splitedParcels).addAll(OBBBlockDecomposition.splitParcels(tmpZoneToCut, null,
-							profile.getMaximalArea(), profile.getMinimalWidthContactRoad(), profile.getHarmonyCoeff(), profile.getNoise(),
+							maximalArea, minimalWidthContactRoad, harmonyCoeff, noise,
 							Collec.fromPolygonSFCtoListRingLines(Collec.selectIntersection(isletCollection, (Geometry) zone.getDefaultGeometry())),
-							profile.getStreetWidth(), profile.getLargeStreetLevel(), profile.getLargeStreetWidth(), true,
-							profile.getDecompositionLevelWithoutStreet()));
+							streetWidth, largeStreetLevel, largeStreetWidth, true, decompositionLevelWithoutStreet));
 					break;
 				case "SS":
-					((DefaultFeatureCollection) splitedParcels).addAll(StraightSkeletonParcelDecomposition.decompose(tmpZoneToCut, roads, outFolder,
-							profile.getMaxDepth(), profile.getMaxDistanceForNearestRoad(), profile.getMinimalArea(), profile.getMinWidth(),
-							profile.getMaxWidth(), profile.getNoise(), new MersenneTwister(42)));					
+					((DefaultFeatureCollection) splitedParcels).addAll(TopologicalStraightSkeletonParcelDecomposition.runTopoSS(zone, roads, outFolder, maxDepth,
+							maxDistanceForNearestRoad, minimalArea, minWidth, maxWidth,
+							noise, new MersenneTwister(42)));			
 					break;
 				case "MS":
 					System.out.println("not implemented yet");
@@ -243,7 +252,7 @@ public class ZoneDivision extends Workflow{
 			System.out.println("fresh cuted parcels exported");
 		}
 		// merge the small parcels to bigger ones
-		splitedParcels = ParcelCollection.mergeTooSmallParcels(splitedParcels, profile.getMinimalArea());
+		splitedParcels = ParcelCollection.mergeTooSmallParcels(splitedParcels, minimalArea);
 		DefaultFeatureCollection result = new DefaultFeatureCollection();
 		int num = 0;
 		// fix attribute for the simulated parcels
