@@ -17,7 +17,7 @@ import org.opengis.feature.simple.SimpleFeatureType;
 import org.opengis.filter.FilterFactory2;
 
 import fr.ign.artiscales.pm.decomposition.OBBBlockDecomposition;
-import fr.ign.artiscales.pm.decomposition.StraightSkeletonParcelDecomposition;
+import fr.ign.artiscales.pm.decomposition.TopologicalStraightSkeletonParcelDecomposition;
 import fr.ign.artiscales.pm.parcelFunction.MarkParcelAttributeFromPosition;
 import fr.ign.artiscales.pm.parcelFunction.ParcelCollection;
 import fr.ign.artiscales.pm.parcelFunction.ParcelSchema;
@@ -148,9 +148,9 @@ public class ConsolidationDivision extends Workflow{
 								profile.getDecompositionLevelWithoutStreet());
 						break;
 					case "SS":
-						freshCutParcel = StraightSkeletonParcelDecomposition.decompose(feat, roads, outFolder,
-								profile.getMaxDepth(), profile.getMaxDistanceForNearestRoad(), profile.getMinimalArea(), profile.getMinWidth(),
-								profile.getMaxWidth(), profile.getNoise(), new MersenneTwister(42));
+						freshCutParcel = TopologicalStraightSkeletonParcelDecomposition.runTopoSS(feat, roads, outFolder, profile.getMaxDepth(),
+								profile.getMaxDistanceForNearestRoad(), profile.getMinimalArea(), profile.getMinWidth(), profile.getMaxWidth(),
+								profile.getNoise(), new MersenneTwister(42));
 						break;
 					}
 					if (freshCutParcel != null && !freshCutParcel.isEmpty() && freshCutParcel.size() > 0) {
