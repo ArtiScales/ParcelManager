@@ -10,8 +10,6 @@ import org.geotools.data.simple.SimpleFeatureIterator;
 import org.geotools.feature.DefaultFeatureCollection;
 import org.geotools.feature.simple.SimpleFeatureBuilder;
 import org.opengis.feature.simple.SimpleFeature;
-import org.opengis.referencing.FactoryException;
-import org.opengis.referencing.NoSuchAuthorityCodeException;
 
 import fr.ign.artiscales.pm.fields.french.FrenchParcelFields;
 import fr.ign.artiscales.pm.fields.french.FrenchParcelSchemas;
@@ -107,7 +105,7 @@ public class GeneralFields {
 	 *            {@link SimpleFeatureCollection} of parcels.
 	 * @return The collection with the "CODE" field added.
 	 */
-	public static SimpleFeatureCollection addParcelCode(SimpleFeatureCollection parcels) throws IOException {
+	public static SimpleFeatureCollection addParcelCode(SimpleFeatureCollection parcels) {
 		switch (parcelFieldType) {
 		case "french":
 			return FrenchParcelFields.addFrenchParcelCode(parcels);
@@ -115,7 +113,7 @@ public class GeneralFields {
 		System.out.println("No parcel field type defined for GeneralFields.addParcelCode. Return null");
 		return null;
 	}
-	
+
 	/**
 	 * Add the {@link #zoneCommunityCode} field for every parcels of a {@link SimpleFeatureCollection}. Only french solution implemented yet.
 	 * 
@@ -182,17 +180,17 @@ public class GeneralFields {
 		return false;
 	}
 
-	public static SimpleFeatureBuilder getSFBZoning() throws NoSuchAuthorityCodeException, FactoryException {
+	public static SimpleFeatureBuilder getSFBZoning() {
 		switch (parcelFieldType) {
 		case "french":
 			return FrenchParcelSchemas.getSFBFrenchZoning();
 		default:
-			System.out.println(
-					"getSFBZoning: unknown method because of an unknown parcel nomenclature (" + parcelFieldType + "). Returned an empty SimpleFeatureBuilder");
+			System.out.println("getSFBZoning: unknown method because of an unknown parcel nomenclature (" + parcelFieldType
+					+ "). Returned an empty SimpleFeatureBuilder");
 			return Schemas.getBasicSchema("zoning");
 		}
 	}
-	
+
 	public static String getZoneGenericNameField() {
 		return zoneGenericNameField;
 	}
@@ -234,12 +232,10 @@ public class GeneralFields {
 	 * @param sfcWithInfo
 	 *            {@link SimpleFeatureCollection} containing the interesting attribute informations.
 	 * @return A {@link SimpleFeatureCollection} with attributes following the minimal schema
-	 * @throws FactoryException
-	 * @throws NoSuchAuthorityCodeException
 	 * @throws IOException
 	 */
 	public static SimpleFeatureCollection transformSFCToMinParcel(SimpleFeatureCollection sfc, SimpleFeatureCollection sfcWithInfo)
-			throws NoSuchAuthorityCodeException, FactoryException, IOException {
+			throws IOException {
 		DefaultFeatureCollection result = new DefaultFeatureCollection();
 		SimpleFeatureBuilder builder = Schemas.getSFBSchemaWithMultiPolygon(ParcelSchema.getSFBMinParcel().getFeatureType());
 		try (SimpleFeatureIterator it = sfc.features()) {
@@ -282,18 +278,12 @@ public class GeneralFields {
 		DefaultFeatureCollection result = new DefaultFeatureCollection();
 		boolean split = Collec.isCollecContainsAttribute(parcels, MarkParcelAttributeFromPosition.getMarkFieldName()) && hasMark;
 		Arrays.stream(parcels.toArray(new SimpleFeature[0])).forEach(feat -> {
-			try {
-				SimpleFeatureBuilder sfb;
-				if (split)
-					sfb = ParcelSchema.setSFBMinParcelWithFeat(feat, ParcelSchema.getSFBMinParcelSplit().getFeatureType());
-				else
-					sfb = ParcelSchema.setSFBMinParcelWithFeat(feat, ParcelSchema.getSFBMinParcel().getFeatureType());
-				result.add(sfb.buildFeature(Attribute.makeUniqueId()));
-			} catch (NoSuchAuthorityCodeException e) {
-				e.printStackTrace();
-			} catch (FactoryException e) {
-				e.printStackTrace();
-			}
+			SimpleFeatureBuilder sfb;
+			if (split)
+				sfb = ParcelSchema.setSFBMinParcelWithFeat(feat, ParcelSchema.getSFBMinParcelSplit().getFeatureType());
+			else
+				sfb = ParcelSchema.setSFBMinParcelWithFeat(feat, ParcelSchema.getSFBMinParcel().getFeatureType());
+			result.add(sfb.buildFeature(Attribute.makeUniqueId()));
 		});
 		return result;
 	}

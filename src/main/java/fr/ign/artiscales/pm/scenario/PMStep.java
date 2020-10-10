@@ -13,8 +13,6 @@ import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.feature.DefaultFeatureCollection;
 import org.locationtech.jts.geom.Geometry;
 import org.opengis.feature.simple.SimpleFeature;
-import org.opengis.referencing.FactoryException;
-import org.opengis.referencing.NoSuchAuthorityCodeException;
 
 import fr.ign.artiscales.pm.fields.GeneralFields;
 import fr.ign.artiscales.pm.fields.french.FrenchParcelFields;
@@ -213,20 +211,15 @@ public class PMStep {
 	 * If none of this informations are set, the algorithm selects all the parcels.
 	 * 
 	 * @return The parcel collection with a mark for the interesting parcels to simulate.
-	 * @throws IOException 
-	 * @throws FactoryException 
-	 * @throws NoSuchAuthorityCodeException 
+	 * @throws IOException
 	 */
-	public SimpleFeatureCollection getSimulationParcels(SimpleFeatureCollection parcelIn) throws IOException, NoSuchAuthorityCodeException, FactoryException  {
-
+	public SimpleFeatureCollection getSimulationParcels(SimpleFeatureCollection parcelIn) throws IOException {
 		// special case where zoneDivision will return other than parcel
-		if (workflow.equals("zoneDivision")) {
+		if (workflow.equals("zoneDivision"))
 			ParcelSchema.setMinParcelCommunityField(GeneralFields.getZoneCommunityCode());
-		}
-		
-		//select the parcels from the interesting communities
+		// select the parcels from the interesting communities
 		SimpleFeatureCollection parcel = new DefaultFeatureCollection();
-		// if a community information has been set 
+		// if a community information has been set
 		if (communityNumber != null && communityNumber != "") {
 			// if a list of community has been set, the numbers must be separated with 
 			if (communityNumber.contains(",")) {
@@ -353,10 +346,8 @@ public class PMStep {
 	 * 
 	 * @return A list of the geometries of the simulated parcels
 	 * @throws IOException
-	 * @throws FactoryException
-	 * @throws NoSuchAuthorityCodeException
 	 */
-	public List<Geometry> getBoundsOfZone() throws IOException, NoSuchAuthorityCodeException, FactoryException {
+	public List<Geometry> getBoundsOfZone() throws IOException {
 		DataStore ds = Geopackages.getDataStore(PARCELFILE);
 		List<Geometry> lG = new ArrayList<Geometry>();
 		if (workflow.equals("zoneDivision")) {
@@ -378,11 +369,9 @@ public class PMStep {
 	 * Get the zones to simulate for the <i>Zone Division</i> workflow. If a specific zone input is set at the {@link #ZONE} location, it will automatically get and return it. 
 	 * @param parcel
 	 * @return
-	 * @throws NoSuchAuthorityCodeException
 	 * @throws IOException
-	 * @throws FactoryException
 	 */
-	private SimpleFeatureCollection getZone(SimpleFeatureCollection parcel) throws NoSuchAuthorityCodeException, IOException, FactoryException {
+	private SimpleFeatureCollection getZone(SimpleFeatureCollection parcel) throws  IOException {
 		SimpleFeatureCollection zoneIn;
 		// If a specific zone is an input, we take them directly. We also have to set attributes from pre-existing parcel field.
 		if (ZONE != null && ZONE.exists()) {

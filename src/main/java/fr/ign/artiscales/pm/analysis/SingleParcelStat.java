@@ -18,8 +18,6 @@ import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.geom.Polygon;
 import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.feature.simple.SimpleFeatureType;
-import org.opengis.referencing.FactoryException;
-import org.opengis.referencing.NoSuchAuthorityCodeException;
 
 import com.opencsv.CSVWriter;
 
@@ -43,35 +41,34 @@ import fr.ign.artiscales.tools.geometryGeneration.CityGeneration;
  */
 public class SingleParcelStat {
 
-//	 public static void main(String[] args) throws Exception {
-//	 long strat = System.currentTimeMillis();
-//	 File root = new File("/home/mcolomb/PMtest/ParcelComparison/");
-//	 DataStore dsParcelEv = Geopackages.getDataStore(new File(root,"/out/consolidationDivisionWithOBBOnNC_Of/EvolvedParcel.gpkg"));
-//		DataStore dsParcelSimu = Geopackages.getDataStore(new File(root, "/out/consolidationDivisionWithOBBOnNC_Of/SimulatedParcel.gpkg"));
-//		SimpleFeatureCollection parcelEv = FrenchParcelFields.addCommunityCode(
-//				MarkParcelAttributeFromPosition.markAllParcel(dsParcelEv.getFeatureSource(dsParcelEv.getTypeNames()[0]).getFeatures()));
-//		SimpleFeatureCollection parcelSimu = MarkParcelAttributeFromPosition
-//				.markAllParcel(dsParcelSimu.getFeatureSource(dsParcelSimu.getTypeNames()[0]).getFeatures());
-//		DataStore dsRoad = Geopackages.getDataStore(new File(root, "/road.gpkg"));
-//		SimpleFeatureCollection road = dsRoad.getFeatureSource(dsRoad.getTypeNames()[0]).getFeatures();
-//	
-//	 writeStatSingleParcel(parcelEv, road, new File(root,"out2/ev.csv"));
-//	 writeStatSingleParcel(parcelSimu, road, parcelEv, new File(root,"out2/sim.csv"));
-//	
-//	// Collec.exportSFC(makeHausdorfDistanceMaps(parcelEv, parcelSimu), new File("/tmp/haus"));
-//	 dsParcelEv.dispose();
-//	 dsParcelSimu.dispose();
-//	 dsRoad.dispose();
-//	 System.out.println("time : " + (System.currentTimeMillis() - strat));
-//	 }
+	// public static void main(String[] args) throws Exception {
+	// long strat = System.currentTimeMillis();
+	// File root = new File("/home/mcolomb/PMtest/ParcelComparison/");
+	// DataStore dsParcelEv = Geopackages.getDataStore(new File(root,"/out/consolidationDivisionWithOBBOnNC_Of/EvolvedParcel.gpkg"));
+	// DataStore dsParcelSimu = Geopackages.getDataStore(new File(root, "/out/consolidationDivisionWithOBBOnNC_Of/SimulatedParcel.gpkg"));
+	// SimpleFeatureCollection parcelEv = FrenchParcelFields.addCommunityCode(
+	// MarkParcelAttributeFromPosition.markAllParcel(dsParcelEv.getFeatureSource(dsParcelEv.getTypeNames()[0]).getFeatures()));
+	// SimpleFeatureCollection parcelSimu = MarkParcelAttributeFromPosition
+	// .markAllParcel(dsParcelSimu.getFeatureSource(dsParcelSimu.getTypeNames()[0]).getFeatures());
+	// DataStore dsRoad = Geopackages.getDataStore(new File(root, "/road.gpkg"));
+	// SimpleFeatureCollection road = dsRoad.getFeatureSource(dsRoad.getTypeNames()[0]).getFeatures();
+	//
+	// writeStatSingleParcel(parcelEv, road, new File(root,"out2/ev.csv"));
+	// writeStatSingleParcel(parcelSimu, road, parcelEv, new File(root,"out2/sim.csv"));
+	//
+	// // Collec.exportSFC(makeHausdorfDistanceMaps(parcelEv, parcelSimu), new File("/tmp/haus"));
+	// dsParcelEv.dispose();
+	// dsParcelSimu.dispose();
+	// dsRoad.dispose();
+	// System.out.println("time : " + (System.currentTimeMillis() - strat));
+	// }
 
-	public static void writeStatSingleParcel(File parcelFile, File roadFile, File parcelStatCsv, boolean markAll)
-			throws NoSuchAuthorityCodeException, IOException, FactoryException {
+	public static void writeStatSingleParcel(File parcelFile, File roadFile, File parcelStatCsv, boolean markAll) throws IOException {
 		writeStatSingleParcel(parcelFile, null, roadFile, parcelStatCsv, markAll);
 	}
 
 	public static void writeStatSingleParcel(File parcelFile, File parcelToCompare, File roadFile, File parcelStatCsv, boolean markAll)
-			throws NoSuchAuthorityCodeException, IOException, FactoryException {
+			throws IOException {
 		DataStore dsRoad = Geopackages.getDataStore(roadFile);
 		DataStore dsParcel = Geopackages.getDataStore(parcelFile);
 		SimpleFeatureCollection parcels;
@@ -90,21 +87,19 @@ public class SingleParcelStat {
 		dsRoad.dispose();
 		dsParcel.dispose();
 	}
-	
-	public static void writeStatSingleParcel(SimpleFeatureCollection parcels, File roadFile, File parcelStatCsv)
-			throws NoSuchAuthorityCodeException, IOException, FactoryException {
+
+	public static void writeStatSingleParcel(SimpleFeatureCollection parcels, File roadFile, File parcelStatCsv) throws IOException {
 		DataStore sds = Geopackages.getDataStore(roadFile);
 		writeStatSingleParcel(parcels, sds.getFeatureSource(sds.getTypeNames()[0]).getFeatures(), parcelStatCsv);
 		sds.dispose();
 	}
 
-	public static void writeStatSingleParcel(SimpleFeatureCollection parcels, SimpleFeatureCollection roads, File parcelStatCsv)
-			throws NoSuchAuthorityCodeException, IOException, FactoryException {
+	public static void writeStatSingleParcel(SimpleFeatureCollection parcels, SimpleFeatureCollection roads, File parcelStatCsv) throws IOException {
 		writeStatSingleParcel(parcels, roads, null, parcelStatCsv);
 	}
 
 	public static void writeStatSingleParcel(SimpleFeatureCollection parcels, SimpleFeatureCollection roads, SimpleFeatureCollection parcelToCompare,
-			File parcelStatCsv) throws NoSuchAuthorityCodeException, IOException, FactoryException {
+			File parcelStatCsv) throws IOException {
 		// look if there's mark field. If not, every parcels are marked
 		if (!Collec.isCollecContainsAttribute(parcels, MarkParcelAttributeFromPosition.getMarkFieldName())) {
 			System.out.println(
@@ -121,8 +116,8 @@ public class SingleParcelStat {
 					// if parcel is marked to be analyzed
 					Geometry parcelGeom = (Geometry) parcel.getDefaultGeometry();
 					double widthRoadContact = ParcelState.getParcelFrontSideWidth((Polygon) Polygons.getPolygon(parcelGeom),
-							Collec.selectIntersection(roads, parcelGeom.buffer(7)),
-							Lines.fromMultiToLineString(Collec.fromPolygonSFCtoRingMultiLines(Collec.selectIntersection(islet, parcelGeom.buffer(7)))));
+							Collec.selectIntersection(roads, parcelGeom.buffer(7)), Lines.fromMultiToLineString(
+									Collec.fromPolygonSFCtoRingMultiLines(Collec.selectIntersection(islet, parcelGeom.buffer(7)))));
 					boolean contactWithRoad = false;
 					if (widthRoadContact != 0)
 						contactWithRoad = true;
@@ -187,10 +182,10 @@ public class SingleParcelStat {
 	/**
 	 * Calculate the difference between the average area of two Geopackages. Find a better indicator to compare distribution.
 	 * 
-	 * @param parcelInFile        
-	 * 			The reference Geopackage
-	 * @param parcelToCompareFile 
-	 * 			The Geopackage to compare
+	 * @param parcelInFile
+	 *            The reference Geopackage
+	 * @param parcelToCompareFile
+	 *            The Geopackage to compare
 	 * @return the difference of average (absolute value)
 	 * @throws IOException
 	 */
@@ -203,7 +198,7 @@ public class SingleParcelStat {
 		sdsParcelToCompareFile.dispose();
 		return Math.abs(result);
 	}
-	
+
 	public static double hausdorfDistanceAverage(SimpleFeatureCollection parcelIn, SimpleFeatureCollection parcelToCompare) {
 		HausdorffSimilarityMeasure hausDis = new HausdorffSimilarityMeasure();
 		DescriptiveStatistics stat = new DescriptiveStatistics();
@@ -222,7 +217,7 @@ public class SingleParcelStat {
 	}
 
 	public static SimpleFeatureCollection makeHausdorfDistanceMaps(SimpleFeatureCollection parcelIn, SimpleFeatureCollection parcelToCompare)
-			throws NoSuchAuthorityCodeException, FactoryException, IOException {
+			throws IOException {
 		if (!Collec.isCollecContainsAttribute(parcelIn, "CODE"))
 			GeneralFields.addParcelCode(parcelIn);
 		if (!Collec.isCollecContainsAttribute(parcelToCompare, "CODE"))

@@ -22,8 +22,6 @@ import org.locationtech.jts.geom.PrecisionModel;
 import org.locationtech.jts.operation.union.CascadedPolygonUnion;
 import org.locationtech.jts.precision.GeometryPrecisionReducer;
 import org.opengis.feature.simple.SimpleFeature;
-import org.opengis.referencing.FactoryException;
-import org.opengis.referencing.NoSuchAuthorityCodeException;
 
 import fr.ign.artiscales.pm.parcelFunction.ParcelState;
 import fr.ign.artiscales.tools.FeaturePolygonizer;
@@ -107,13 +105,11 @@ public class FlagParcelDecomposition {
 	 * @param maximalWidthSplitParcel
 	 * @param lenDriveway
 	 * @param exclusionZone
-	 * @throws IOException 
-	 * @throws FactoryException 
-	 * @throws NoSuchAuthorityCodeException 
+	 * @throws IOException
 	 */
 	public static SimpleFeatureCollection generateFlagSplitedParcels(SimpleFeature feat, List<LineString> extLines, double harmonyCoeff, double noise,
 			File buildingFile, File roadFile, Double maximalAreaSplitParcel, Double maximalWidthSplitParcel, Double lenDriveway,
-			Geometry exclusionZone) throws IOException, NoSuchAuthorityCodeException, FactoryException  {
+			Geometry exclusionZone) throws IOException {
 		DataStore buildingDS = Geopackages.getDataStore(buildingFile);
 		Polygon parcelGeom = Polygons.getPolygon((Geometry) feat.getDefaultGeometry());
 		// as the road Geopacakge can be left as null, we differ the FlagParcelDecomposition constructor

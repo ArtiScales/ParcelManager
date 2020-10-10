@@ -8,7 +8,6 @@ import org.locationtech.jts.geom.Polygon;
 import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.feature.simple.SimpleFeatureType;
 import org.opengis.referencing.FactoryException;
-import org.opengis.referencing.NoSuchAuthorityCodeException;
 
 import fr.ign.artiscales.pm.fields.french.FrenchParcelFields;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Collec;
@@ -19,10 +18,14 @@ public class ArtiScalesSchemas {
 	//// AsAS Schemas : basic parcels schema used in ArtiScales
 	/////////////////////
 	/////////////////////
-	public static SimpleFeatureBuilder getSFBParcelAsAS() throws NoSuchAuthorityCodeException, FactoryException {
+	public static SimpleFeatureBuilder getSFBParcelAsAS() {
 		SimpleFeatureTypeBuilder sfTypeBuilder = new SimpleFeatureTypeBuilder();
 		sfTypeBuilder.setName("parcelAsAS");
-		sfTypeBuilder.setCRS(CRS.decode("EPSG:2154"));
+		try {
+			sfTypeBuilder.setCRS(CRS.decode("EPSG:2154"));
+		} catch (FactoryException e) {
+			e.printStackTrace();
+		}
 		sfTypeBuilder.add(Collec.getDefaultGeomName(), Polygon.class);
 		sfTypeBuilder.setDefaultGeometry(Collec.getDefaultGeomName());
 		sfTypeBuilder.add("CODE", String.class);
@@ -101,10 +104,14 @@ public class ArtiScalesSchemas {
 	//// AsASSplit Schemas : parcels schema used in ArtiScales for marking which parcel is cut (or merged) on parcel reshaping process
 	/////////////////////
 	/////////////////////
-	public static SimpleFeatureBuilder getSFBParcelAsASSplit() throws NoSuchAuthorityCodeException, FactoryException {
+	public static SimpleFeatureBuilder getSFBParcelAsASSplit() {
 		SimpleFeatureTypeBuilder sfTypeBuilder = new SimpleFeatureTypeBuilder();
 		sfTypeBuilder.setName("parcelAsASSplit");
-		sfTypeBuilder.setCRS(CRS.decode("EPSG:2154"));
+		try {
+			sfTypeBuilder.setCRS(CRS.decode("EPSG:2154"));
+		} catch (FactoryException e) {
+			e.printStackTrace();
+		}
 		sfTypeBuilder.add(Collec.getDefaultGeomName(), Polygon.class);
 		sfTypeBuilder.setDefaultGeometry(Collec.getDefaultGeomName());
 		sfTypeBuilder.add("CODE", String.class);

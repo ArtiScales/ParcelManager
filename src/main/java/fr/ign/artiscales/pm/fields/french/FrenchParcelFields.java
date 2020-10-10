@@ -13,8 +13,6 @@ import org.locationtech.jts.geom.Geometry;
 import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.feature.simple.SimpleFeatureType;
 import org.opengis.feature.type.AttributeDescriptor;
-import org.opengis.referencing.FactoryException;
-import org.opengis.referencing.NoSuchAuthorityCodeException;
 
 import fr.ign.artiscales.pm.fields.GeneralFields;
 import fr.ign.artiscales.pm.parcelFunction.MarkParcelAttributeFromPosition;
@@ -29,15 +27,13 @@ public class FrenchParcelFields {
 	 * 
 	 * @param parcels
 	 *            Input parcel {@link SimpleFeatureCollection}.
-	 * @return A {@link SimpleFeatureCollection} with the fileds of parcels that have been converted to the {@link fr.ign.artiscales.pm.parcelFunction.ParcelSchema#getSFBMinParcel()}
-	 *         schema.
-	 * @throws FactoryException
-	 * @throws NoSuchAuthorityCodeException
+	 * @return A {@link SimpleFeatureCollection} with the fileds of parcels that have been converted to the
+	 *         {@link fr.ign.artiscales.pm.parcelFunction.ParcelSchema#getSFBMinParcel()} schema.
 	 * @throws IOException
 	 */
-	public static SimpleFeatureCollection frenchParcelToMinParcel(SimpleFeatureCollection parcels) throws NoSuchAuthorityCodeException, FactoryException, IOException {
+	public static SimpleFeatureCollection frenchParcelToMinParcel(SimpleFeatureCollection parcels) throws IOException {
 		DefaultFeatureCollection result = new DefaultFeatureCollection();
-		if (Collec.isCollecContainsAttribute(parcels, MarkParcelAttributeFromPosition.getMarkFieldName())){
+		if (Collec.isCollecContainsAttribute(parcels, MarkParcelAttributeFromPosition.getMarkFieldName())) {
 			SimpleFeatureBuilder builder = ParcelSchema.getSFBMinParcelSplit();
 			try (SimpleFeatureIterator parcelIt = parcels.features()){
 				while (parcelIt.hasNext()) {
@@ -68,11 +64,9 @@ public class FrenchParcelFields {
 	 * @param parcels {@link SimpleFeatureCollection} containing parcels which to fix attributes
 	 * @param initialParcels {@link SimpleFeatureCollection} containing the original parcels which their original attributes
 	 * @return A {@link SimpleFeatureCollection} with their original attributes
-	 * @throws FactoryException 
-	 * @throws NoSuchAuthorityCodeException 
 	 * @throws IOException 
 	 */
-	public static SimpleFeatureCollection setOriginalFrenchParcelAttributes(SimpleFeatureCollection parcels, SimpleFeatureCollection initialParcels) throws NoSuchAuthorityCodeException, FactoryException, IOException {
+	public static SimpleFeatureCollection setOriginalFrenchParcelAttributes(SimpleFeatureCollection parcels, SimpleFeatureCollection initialParcels) throws IOException {
 		DefaultFeatureCollection parcelFinal = new DefaultFeatureCollection();
 		SimpleFeatureBuilder featureBuilder = FrenchParcelSchemas.getSFBFrenchParcel();
 		try (SimpleFeatureIterator parcelIt = parcels.features()){

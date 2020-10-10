@@ -16,8 +16,6 @@ import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.geom.Polygon;
 import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.filter.FilterFactory2;
-import org.opengis.referencing.FactoryException;
-import org.opengis.referencing.NoSuchAuthorityCodeException;
 
 import fr.ign.artiscales.pm.fields.GeneralFields;
 import fr.ign.artiscales.pm.fields.french.FrenchParcelFields;
@@ -72,12 +70,10 @@ public class StreetRatioParcels {
 	 *            folder to store the results
 	 * @param roadFile
 	 *            the road Shapefile
-	 * @throws NoSuchAuthorityCodeException
 	 * @throws IOException
-	 * @throws FactoryException
 	 */
 	public static void streetRatioParcels(SimpleFeatureCollection initialMarkedParcel, SimpleFeatureCollection cutParcel, String legend,
-			File folderOutStat, File roadFile) throws IOException, NoSuchAuthorityCodeException, FactoryException {
+			File folderOutStat, File roadFile) throws IOException {
 
 		// We construct zones to analyze the street ratio for each operations.
 		DefaultFeatureCollection zone = new DefaultFeatureCollection();
@@ -124,11 +120,9 @@ public class StreetRatioParcels {
 	 * @param roadFile
 	 *            the road Shapefile
 	 * @throws IOException
-	 * @throws NoSuchAuthorityCodeException
-	 * @throws FactoryException
 	 */
-	public static void streetRatioZone(SimpleFeatureCollection zone, SimpleFeatureCollection cutParcel, String legend, File folderOutStat, File roadFile)
-			throws IOException, NoSuchAuthorityCodeException, FactoryException {
+	public static void streetRatioZone(SimpleFeatureCollection zone, SimpleFeatureCollection cutParcel, String legend, File folderOutStat,
+			File roadFile) throws IOException {
 		System.out.println("++++++++++Road Ratios++++++++++");
 		HashMap<String, String[]> stat = new HashMap<String, String[]>();
 

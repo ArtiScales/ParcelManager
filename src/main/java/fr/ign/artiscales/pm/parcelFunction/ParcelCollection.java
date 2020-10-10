@@ -32,8 +32,6 @@ import org.opengis.feature.simple.SimpleFeatureType;
 import org.opengis.feature.type.AttributeDescriptor;
 import org.opengis.filter.FilterFactory2;
 import org.opengis.filter.expression.PropertyName;
-import org.opengis.referencing.FactoryException;
-import org.opengis.referencing.NoSuchAuthorityCodeException;
 
 import fr.ign.artiscales.pm.fields.artiscales.ArtiScalesSchemas;
 import fr.ign.artiscales.tools.FeaturePolygonizer;
@@ -72,11 +70,8 @@ public class ParcelCollection {
 	 * @param parcelOutFolder
 	 *            Folder where are stored the result geopackages
 	 * @throws IOException
-	 * @throws FactoryException 
-	 * @throws NoSuchAuthorityCodeException 
 	 */
-	public static void sortDifferentParcel(File parcelRefFile, File parcelToCompareFile, File parcelOutFolder)
-			throws IOException, NoSuchAuthorityCodeException, FactoryException {
+	public static void sortDifferentParcel(File parcelRefFile, File parcelToCompareFile, File parcelOutFolder) throws IOException {
 		sortDifferentParcel(parcelRefFile, parcelToCompareFile, parcelOutFolder, 100, 450);
 	}
 
@@ -106,11 +101,9 @@ public class ParcelCollection {
 	 * @param maxParcelSimulatedSize
 	 *            The maximal size of parcels of the usual urban fabric profile. If the algorithm is used outside the simulation, default value of 450 square meters is used.
 	 * @throws IOException
-	 * @throws FactoryException
-	 * @throws NoSuchAuthorityCodeException
 	 */
 	public static void sortDifferentParcel(File parcelRefFile, File parcelToCompareFile, File parcelOutFolder, double minParcelSimulatedSize,
-			double maxParcelSimulatedSize) throws IOException, NoSuchAuthorityCodeException, FactoryException {
+			double maxParcelSimulatedSize) throws IOException {
 		File fSame = new File(parcelOutFolder, "same"+Collec.getDefaultGISFileType());
 		File fEvolved = new File(parcelOutFolder, "evolvedParcel"+Collec.getDefaultGISFileType());
 		File fNotSame = new File(parcelOutFolder, "notSame"+Collec.getDefaultGISFileType());
@@ -558,12 +551,10 @@ public class ParcelCollection {
  * @param parcelCuted
  * @param parcelToNotAdd
  * @return completed parcel collection
- * @throws NoSuchAuthorityCodeException
- * @throws FactoryException
  * @throws IOException
  */
 	public static SimpleFeatureCollection completeParcelMissing(SimpleFeatureCollection parcelTot, SimpleFeatureCollection parcelCuted,
-			List<String> parcelToNotAdd) throws NoSuchAuthorityCodeException, FactoryException, IOException {
+			List<String> parcelToNotAdd) throws IOException {
 		DefaultFeatureCollection result = new DefaultFeatureCollection();
 		SimpleFeatureType schema = parcelTot.features().next().getFeatureType();
 		// result.addAll(parcelCuted);

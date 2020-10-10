@@ -15,8 +15,6 @@ import org.locationtech.jts.geom.LineString;
 import org.locationtech.jts.geom.MultiPolygon;
 import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.filter.FilterFactory2;
-import org.opengis.referencing.FactoryException;
-import org.opengis.referencing.NoSuchAuthorityCodeException;
 
 import fr.ign.artiscales.pm.decomposition.FlagParcelDecomposition;
 import fr.ign.artiscales.pm.decomposition.OBBBlockDecomposition;
@@ -89,13 +87,10 @@ public class Densification extends Workflow {
 	 * @return The input parcel {@link SimpleFeatureCollection} with the marked parcels replaced by the simulated parcels. All parcels have the
 	 *         {@link fr.ign.artiscales.pm.parcelFunction.ParcelSchema#getSFBMinParcel()} schema. * @throws Exception
 	 * @throws IOException 
-	 * @throws FactoryException 
-	 * @throws NoSuchAuthorityCodeException 
 	 */
 	public SimpleFeatureCollection densification(SimpleFeatureCollection parcelCollection, SimpleFeatureCollection isletCollection, File outFolder,
 			File buildingFile, File roadFile, double harmonyCoeff, double noise, double maximalAreaSplitParcel, double minimalAreaSplitParcel,
-			double maximalWidthSplitParcel, double lenDriveway, boolean allowIsolatedParcel, Geometry exclusionZone)
-			throws IOException, NoSuchAuthorityCodeException, FactoryException {
+			double maximalWidthSplitParcel, double lenDriveway, boolean allowIsolatedParcel, Geometry exclusionZone) throws IOException {
 		// if parcels doesn't contains the markParcelAttribute field or have no marked parcels
 		if (MarkParcelAttributeFromPosition.isNoParcelMarked(parcelCollection)) {
 			System.out.println("Densification : unmarked parcels");

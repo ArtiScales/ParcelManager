@@ -10,7 +10,6 @@ import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.feature.simple.SimpleFeatureType;
 import org.opengis.feature.type.AttributeDescriptor;
 import org.opengis.referencing.FactoryException;
-import org.opengis.referencing.NoSuchAuthorityCodeException;
 
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Collec;
 
@@ -28,10 +27,14 @@ public class ParcelSchema {
 	/////////////////////
 	/////////////////////
 
-	public static SimpleFeatureBuilder getSFBMinParcel() throws NoSuchAuthorityCodeException, FactoryException {
+	public static SimpleFeatureBuilder getSFBMinParcel() {
 		SimpleFeatureTypeBuilder sfTypeBuilder = new SimpleFeatureTypeBuilder();
 		sfTypeBuilder.setName("minParcel");
-		sfTypeBuilder.setCRS(CRS.decode(epsg));
+		try {
+			sfTypeBuilder.setCRS(CRS.decode(epsg));
+		} catch (FactoryException e) {
+			e.printStackTrace();
+		}
 		sfTypeBuilder.add(Collec.getDefaultGeomName(), Polygon.class);
 		sfTypeBuilder.setDefaultGeometry(Collec.getDefaultGeomName());
 		sfTypeBuilder.add(minParcelSectionField, String.class);
@@ -40,10 +43,14 @@ public class ParcelSchema {
 		return new SimpleFeatureBuilder(sfTypeBuilder.buildFeatureType());
 	}
 
-	public static SimpleFeatureBuilder getSFBMinParcelMulti() throws NoSuchAuthorityCodeException, FactoryException {
+	public static SimpleFeatureBuilder getSFBMinParcelMulti(){
 		SimpleFeatureTypeBuilder sfTypeBuilder = new SimpleFeatureTypeBuilder();
 		sfTypeBuilder.setName("minParcel");
-		sfTypeBuilder.setCRS(CRS.decode(epsg));
+		try {
+			sfTypeBuilder.setCRS(CRS.decode(epsg));
+		} catch (FactoryException e) {
+			e.printStackTrace();
+		}
 		sfTypeBuilder.add(Collec.getDefaultGeomName(), MultiPolygon.class);
 		sfTypeBuilder.setDefaultGeometry(Collec.getDefaultGeomName());
 		sfTypeBuilder.add(minParcelSectionField, String.class);
@@ -73,10 +80,14 @@ public class ParcelSchema {
 		return builder;
 	}
 
-	public static SimpleFeatureBuilder getSFBMinParcelSplit() throws NoSuchAuthorityCodeException, FactoryException {
+	public static SimpleFeatureBuilder getSFBMinParcelSplit() {
 		SimpleFeatureTypeBuilder sfTypeBuilder = new SimpleFeatureTypeBuilder();
 		sfTypeBuilder.setName("minParcelSplit");
-		sfTypeBuilder.setCRS(CRS.decode(epsg));
+		try {
+			sfTypeBuilder.setCRS(CRS.decode(epsg));
+		} catch (FactoryException e) {
+			e.printStackTrace();
+		}
 		sfTypeBuilder.add(Collec.getDefaultGeomName(), Polygon.class);
 		sfTypeBuilder.setDefaultGeometry(Collec.getDefaultGeomName());
 		sfTypeBuilder.add(minParcelSectionField, String.class);

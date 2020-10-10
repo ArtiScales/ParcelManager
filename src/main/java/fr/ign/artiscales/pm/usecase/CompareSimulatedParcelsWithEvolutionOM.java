@@ -10,9 +10,6 @@ import java.util.List;
 import org.geotools.data.DataStore;
 import org.geotools.data.DataUtilities;
 import org.geotools.data.simple.SimpleFeatureCollection;
-import org.geotools.feature.SchemaException;
-import org.opengis.referencing.FactoryException;
-import org.opengis.referencing.NoSuchAuthorityCodeException;
 
 import com.opencsv.CSVReader;
 
@@ -87,12 +84,8 @@ public class CompareSimulatedParcelsWithEvolutionOM {
 	 * Simulate the Zone Division workflow from parameters contained in a CSV file (which could be an output of OpenMole)
 	 * @param csvIn
 	 * @throws IOException
-	 * @throws NoSuchAuthorityCodeException
-	 * @throws FactoryException
-	 * @throws SchemaException
 	 */
-	public static void simulateZoneDivisionFromCSV(File csvIn, File zoneFile, File parcelFile, File outFolder)
-			throws IOException, NoSuchAuthorityCodeException, FactoryException, SchemaException {
+	public static void simulateZoneDivisionFromCSV(File csvIn, File zoneFile, File parcelFile, File outFolder) throws IOException {
 		CSVReader r = new CSVReader(new FileReader(csvIn));
 		outFolder.mkdir();
 		ZoneDivision.DEBUG = false;

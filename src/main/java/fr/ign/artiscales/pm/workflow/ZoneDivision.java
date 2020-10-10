@@ -12,7 +12,6 @@ import org.geotools.data.DataUtilities;
 import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.data.simple.SimpleFeatureIterator;
 import org.geotools.feature.DefaultFeatureCollection;
-import org.geotools.feature.SchemaException;
 import org.geotools.feature.simple.SimpleFeatureBuilder;
 import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.geom.Polygon;
@@ -74,13 +73,9 @@ public class ZoneDivision extends Workflow{
 	 * @param profile Urban fabric profile of the wanted parcel plan
 	 * @param outFolder folder where everything is stored
 	 * @return Geopackage containing only the cuted parcel plan
-	 * @throws NoSuchAuthorityCodeException
-	 * @throws FactoryException
 	 * @throws IOException
-	 * @throws SchemaException
 	 */
-	public File zoneDivision(File zoneFile, File parcelFile, ProfileUrbanFabric profile, File outFolder) 
-			throws IOException, NoSuchAuthorityCodeException, FactoryException, SchemaException {
+	public File zoneDivision(File zoneFile, File parcelFile, ProfileUrbanFabric profile, File outFolder) throws IOException {
 		DataStore sdsZone = Geopackages.getDataStore(zoneFile);
 		DataStore sdsParcel = Geopackages.getDataStore(parcelFile);
 		SimpleFeatureCollection zone = DataUtilities.collection(sdsZone.getFeatureSource(sdsZone.getTypeNames()[0]).getFeatures());
@@ -93,7 +88,7 @@ public class ZoneDivision extends Workflow{
 		return new File(outFolder, "parcelZoneDivisionOnly" + Collec.getDefaultGISFileType());
 	}
 	public SimpleFeatureCollection zoneDivision(SimpleFeatureCollection initialZone, SimpleFeatureCollection parcels,
-			File outFolder, ProfileUrbanFabric profile) throws IOException, NoSuchAuthorityCodeException, FactoryException, SchemaException {
+			File outFolder, ProfileUrbanFabric profile) throws IOException {
 		return 	zoneDivision( initialZone, parcels, null, outFolder,  profile) ;
 	}
 	/**
@@ -109,13 +104,10 @@ public class ZoneDivision extends Workflow{
 	 *            {@link ProfileUrbanFabric} contains the parameters of the wanted urban scene
 	 * @return The input parcel {@link SimpleFeatureCollection} with the marked parcels replaced by the simulated parcels. All parcels have the
 	 *         {@link fr.ign.artiscales.pm.parcelFunction.ParcelSchema#getSFBMinParcel()} schema.
-	 * @throws FactoryException
-	 * @throws NoSuchAuthorityCodeException
 	 * @throws IOException
-	 * @throws SchemaException
 	 */
 	public SimpleFeatureCollection zoneDivision(SimpleFeatureCollection initialZone, SimpleFeatureCollection parcels, SimpleFeatureCollection roads,
-			File outFolder, ProfileUrbanFabric profile) throws IOException, NoSuchAuthorityCodeException, FactoryException, SchemaException {
+			File outFolder, ProfileUrbanFabric profile) throws IOException {
 		return zoneDivision(initialZone, parcels, roads, outFolder, profile.getMaximalArea(), profile.getMinimalArea(),
 				profile.getMinimalWidthContactRoad(), profile.getHarmonyCoeff(), profile.getNoise(), profile.getStreetWidth(),
 				profile.getLargeStreetLevel(), profile.getLargeStreetWidth(), profile.getDecompositionLevelWithoutStreet(), profile.getMaxDepth(),
@@ -125,7 +117,7 @@ public class ZoneDivision extends Workflow{
 	public SimpleFeatureCollection zoneDivision(SimpleFeatureCollection initialZone, SimpleFeatureCollection parcels, SimpleFeatureCollection roads,
 			File outFolder, double maximalArea, double minimalArea, double minimalWidthContactRoad, double harmonyCoeff, double noise,
 			double streetWidth, int largeStreetLevel, double largeStreetWidth, int decompositionLevelWithoutStreet, double maxDepth,
-			double maxDistanceForNearestRoad, double maxWidth, double minWidth) throws IOException, SchemaException, FactoryException {
+			double maxDistanceForNearestRoad, double maxWidth, double minWidth) throws IOException {
 		File tmpFolder = new File(outFolder, "tmp");
 		if (DEBUG)
 			tmpFolder.mkdirs();
@@ -326,8 +318,8 @@ public class ZoneDivision extends Workflow{
 
 	/**
 	 * Create a zone to cut by selecting features from a Geopackage regarding a fixed value. Name of the field is by default set to <i>TYPEZONE</i> and must be changed if needed
-	 * with the {@link fr.ign.artiscales.pm.fields.GeneralFields#setZoneGenericNameField(String)} method. Name of a <i>generic zone</i> and a <i>precise Zone</i> can be provided and
-	 * can be null. If null, inputSFC is usually directly a ready-to-use zone and all given zone are marked. Also takes a bounding {@link SimpleFeatureCollection} to bound the
+	 * with the {@link fr.ign.artiscales.pm.fields.GeneralFields#setZoneGenericNameField(String)} method. Name of a <i>generic zone</i> and a <i>precise Zone</i> can be provided
+	 * and can be null. If null, inputSFC is usually directly a ready-to-use zone and all given zone are marked. Also takes a bounding {@link SimpleFeatureCollection} to bound the
 	 * output.
 	 * 
 	 * @param genericZone
@@ -342,11 +334,9 @@ public class ZoneDivision extends Workflow{
 	 *            {@link SimpleFeatureCollection} to bound the process on a wanted location
 	 * @return An extraction of the zoning collection
 	 * @throws IOException
-	 * @throws FactoryException
-	 * @throws NoSuchAuthorityCodeException
 	 */
 	public static SimpleFeatureCollection createZoneToCut(String genericZone, String preciseZone, SimpleFeatureCollection inputSFC, File zoningFile,
-			SimpleFeatureCollection boundingSFC) throws IOException, NoSuchAuthorityCodeException, FactoryException {
+			SimpleFeatureCollection boundingSFC) throws IOException {
 		// get the wanted zones from the zoning file
 		SimpleFeatureCollection finalZone;
 		if (genericZone != null && genericZone != "" && (preciseZone == null || preciseZone == ""))

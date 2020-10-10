@@ -10,8 +10,6 @@ import org.geotools.feature.DefaultFeatureCollection;
 import org.geotools.feature.simple.SimpleFeatureBuilder;
 import org.locationtech.jts.geom.Geometry;
 import org.opengis.feature.simple.SimpleFeature;
-import org.opengis.referencing.FactoryException;
-import org.opengis.referencing.NoSuchAuthorityCodeException;
 
 import fr.ign.artiscales.pm.fields.french.FrenchParcelFields;
 import fr.ign.artiscales.pm.parcelFunction.ParcelState;
@@ -30,11 +28,9 @@ public class ArtiScalesParcelFields {
 	 *            A Geopacakge containing outputs of MUP-City. Can be empty
 	 * @return The parcel set with the right attributes
 	 * @throws IOException 
-	 * @throws FactoryException 
-	 * @throws NoSuchAuthorityCodeException 
 	 */
 	public static SimpleFeatureCollection fixParcelAttributes(SimpleFeatureCollection parcels, SimpleFeatureCollection originalParcels, File buildingFile,
-			File polygonIntersectionFile, File zoningFile, boolean allOrCell) throws NoSuchAuthorityCodeException, FactoryException, IOException   {
+			File polygonIntersectionFile, File zoningFile, boolean allOrCell) throws IOException   {
 		SimpleFeatureCollection parcelsFrenched = FrenchParcelFields.setOriginalFrenchParcelAttributes(parcels, originalParcels);
 		DefaultFeatureCollection parcelFinal = new DefaultFeatureCollection();
 		int i = 0;

@@ -12,8 +12,6 @@ import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.data.simple.SimpleFeatureIterator;
 import org.locationtech.jts.geom.Geometry;
 import org.opengis.feature.simple.SimpleFeature;
-import org.opengis.referencing.FactoryException;
-import org.opengis.referencing.NoSuchAuthorityCodeException;
 
 import fr.ign.artiscales.pm.fields.GeneralFields;
 import fr.ign.artiscales.pm.parcelFunction.MarkParcelAttributeFromPosition;
@@ -40,7 +38,7 @@ public class GetParametersOfScene {
 	// TODO mettre la possibilité de mélanger ces échelles List<String> scaleZone = Arrays.asList("community");
 	static File parcelFile, buildingFile, zoningFile, roadFile, outFolder;
 
-	public static void main(String[] args) throws NoSuchAuthorityCodeException, IOException, FactoryException {
+	public static void main(String[] args) throws IOException {
 		outFolder = new File("/tmp/ParametersOfScene");
 		setFiles(new File("src/main/resources/ParcelComparison/"));
 		parcelFile = new File("/tmp/parcelChosen"+Collec.getDefaultGISFileType());
@@ -67,7 +65,11 @@ public class GetParametersOfScene {
 		outFolder.mkdirs();
 	}
 
-	public static void genParcelAreaBoundaries() throws NoSuchAuthorityCodeException, IOException, FactoryException {
+	/**
+	 * Generate a graph with the area of parcels 
+	 * @throws IOException
+	 */
+	public static void genParcelAreaBoundaries() throws IOException {
 		DataStore sds = Geopackages.getDataStore(parcelFile);
 		DataStore sdsRoad = Geopackages.getDataStore(roadFile);
 //		sdsRoad.setCharset(Charset.forName("UTF-8"));

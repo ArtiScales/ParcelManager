@@ -8,7 +8,6 @@ import org.locationtech.jts.geom.Polygon;
 import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.feature.simple.SimpleFeatureType;
 import org.opengis.referencing.FactoryException;
-import org.opengis.referencing.NoSuchAuthorityCodeException;
 
 import fr.ign.artiscales.pm.parcelFunction.MarkParcelAttributeFromPosition;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Collec;
@@ -20,10 +19,14 @@ public class FrenchParcelSchemas {
 	/////////////////////
 	/////////////////////
 
-	public static SimpleFeatureBuilder getSFBFrenchZoning() throws NoSuchAuthorityCodeException, FactoryException {
+	public static SimpleFeatureBuilder getSFBFrenchZoning() {
 		SimpleFeatureTypeBuilder sfTypeBuilder = new SimpleFeatureTypeBuilder();
 		sfTypeBuilder.setName("frenchZoning");
-		sfTypeBuilder.setCRS(CRS.decode("EPSG:2154"));
+		try {
+			sfTypeBuilder.setCRS(CRS.decode("EPSG:2154"));
+		} catch (FactoryException e) {
+			e.printStackTrace();
+		}
 		sfTypeBuilder.add(Collec.getDefaultGeomName(), Polygon.class);
 		sfTypeBuilder.setDefaultGeometry(Collec.getDefaultGeomName());
 		sfTypeBuilder.add("LIBELLE", String.class);
@@ -39,10 +42,14 @@ public class FrenchParcelSchemas {
 	/////////////////////
 	/////////////////////
 
-	public static SimpleFeatureBuilder getSFBFrenchParcel() throws NoSuchAuthorityCodeException, FactoryException {
+	public static SimpleFeatureBuilder getSFBFrenchParcel() {
 		SimpleFeatureTypeBuilder sfTypeBuilder = new SimpleFeatureTypeBuilder();
 		sfTypeBuilder.setName("frenchParcel");
-		sfTypeBuilder.setCRS(CRS.decode("EPSG:2154"));
+		try {
+			sfTypeBuilder.setCRS(CRS.decode("EPSG:2154"));
+		} catch (FactoryException e) {
+			e.printStackTrace();
+		}
 		sfTypeBuilder.add(Collec.getDefaultGeomName(), Polygon.class);
 		sfTypeBuilder.setDefaultGeometry(Collec.getDefaultGeomName());
 		sfTypeBuilder.add("NUMERO", String.class);
@@ -76,10 +83,14 @@ public class FrenchParcelSchemas {
 		return parcelBuilder;
 	}
 
-	public static SimpleFeatureBuilder getSFBFrenchParcelSplit() throws NoSuchAuthorityCodeException, FactoryException {
+	public static SimpleFeatureBuilder getSFBFrenchParcelSplit() {
 		SimpleFeatureTypeBuilder sfTypeBuilder = new SimpleFeatureTypeBuilder();
 		sfTypeBuilder.setName("frenchParcelSplit");
-		sfTypeBuilder.setCRS(CRS.decode("EPSG:2154"));
+		try {
+			sfTypeBuilder.setCRS(CRS.decode("EPSG:2154"));
+		} catch (FactoryException e) {
+			e.printStackTrace();
+		}
 		sfTypeBuilder.add(Collec.getDefaultGeomName(), Polygon.class);
 		sfTypeBuilder.setDefaultGeometry(Collec.getDefaultGeomName());
 		sfTypeBuilder.add("NUMERO", String.class);

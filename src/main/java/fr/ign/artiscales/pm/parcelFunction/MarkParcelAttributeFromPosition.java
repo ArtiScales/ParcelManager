@@ -21,8 +21,6 @@ import org.opengis.feature.simple.SimpleFeatureType;
 import org.opengis.feature.type.AttributeDescriptor;
 import org.opengis.filter.FilterFactory2;
 import org.opengis.filter.expression.PropertyName;
-import org.opengis.referencing.FactoryException;
-import org.opengis.referencing.NoSuchAuthorityCodeException;
 
 import fr.ign.artiscales.pm.fields.GeneralFields;
 import fr.ign.artiscales.pm.fields.french.FrenchZoningSchemas;
@@ -97,12 +95,10 @@ public class MarkParcelAttributeFromPosition {
 	 *            Geopackage containing the road segments
 	 * @return {@link SimpleFeatureCollection} of the input parcels with marked parcels on the {@link #markFieldName} field.
 	 * 
-	 * @throws NoSuchAuthorityCodeException
-	 * @throws FactoryException
 	 * @throws IOException
 	 */
 	public static SimpleFeatureCollection markParcelsConnectedToRoad(SimpleFeatureCollection parcels, SimpleFeatureCollection islet, File roadFile)
-			throws NoSuchAuthorityCodeException, FactoryException, IOException {
+			throws IOException {
 		return markParcelsConnectedToRoad(parcels, islet, roadFile, null);
 	}
 
@@ -120,12 +116,10 @@ public class MarkParcelAttributeFromPosition {
 	 *            Zone to be excluded for not counting an empty parcel as a road
 	 * @return {@link SimpleFeatureCollection} of the input parcels with marked parcels on the {@link #markFieldName} field.
 	 * 
-	 * @throws NoSuchAuthorityCodeException
-	 * @throws FactoryException
 	 * @throws IOException
 	 */
 	public static SimpleFeatureCollection markParcelsConnectedToRoad(SimpleFeatureCollection parcels, SimpleFeatureCollection islet, File roadFile,
-			Geometry exclusionZone) throws NoSuchAuthorityCodeException, FactoryException, IOException {
+			Geometry exclusionZone) throws IOException {
 		DataStore sds = Geopackages.getDataStore(roadFile);
 		SimpleFeatureCollection roads = Collec.selectIntersection(sds.getFeatureSource(sds.getTypeNames()[0]).getFeatures(), parcels);
 		final SimpleFeatureType featureSchema = ParcelSchema.getSFBMinParcelSplit().getFeatureType();
@@ -177,12 +171,9 @@ public class MarkParcelAttributeFromPosition {
 	 * @param size
 	 *            Area threshold
 	 * @return {@link SimpleFeatureCollection} of the input parcels with marked parcels on the {@link #markFieldName} field.
-	 * @throws NoSuchAuthorityCodeException
-	 * @throws FactoryException
 	 * @throws IOException
 	 */
-	public static SimpleFeatureCollection markParcelsInf(SimpleFeatureCollection parcels, double size)
-			throws NoSuchAuthorityCodeException, FactoryException, IOException {
+	public static SimpleFeatureCollection markParcelsInf(SimpleFeatureCollection parcels, double size) throws IOException {
 		final SimpleFeatureType featureSchema = ParcelSchema.getSFBMinParcelSplit().getFeatureType();
 		DefaultFeatureCollection result = new DefaultFeatureCollection();
 		// if features have the schema that the one intended to set, we bypass
@@ -224,12 +215,9 @@ public class MarkParcelAttributeFromPosition {
 	 * @param size
 	 *            Area threshold
 	 * @return {@link SimpleFeatureCollection} of the input parcels with marked parcels on the {@link #markFieldName} field.
-	 * @throws NoSuchAuthorityCodeException
-	 * @throws FactoryException
 	 * @throws IOException
 	 */
-	public static SimpleFeatureCollection markParcelsSup(SimpleFeatureCollection parcels, double size)
-			throws NoSuchAuthorityCodeException, FactoryException, IOException {
+	public static SimpleFeatureCollection markParcelsSup(SimpleFeatureCollection parcels, double size) throws IOException {
 		final SimpleFeatureType featureSchema = ParcelSchema.getSFBMinParcelSplit().getFeatureType();
 		DefaultFeatureCollection result = new DefaultFeatureCollection();
 		// if features have the schema that the one intended to set, we bypass
@@ -298,12 +286,9 @@ public class MarkParcelAttributeFromPosition {
 	 * @param nbParcelToMark
 	 *            number of parcel wanted
 	 * @return {@link SimpleFeatureCollection} of the input parcels with random marked parcels on the {@link #markFieldName} field.
-	 * @throws NoSuchAuthorityCodeException
-	 * @throws FactoryException
 	 * @throws IOException
 	 */
-	public static SimpleFeatureCollection markRandomParcels(SimpleFeatureCollection parcels, int minSize, int nbParcelToMark)
-			throws NoSuchAuthorityCodeException, FactoryException, IOException {
+	public static SimpleFeatureCollection markRandomParcels(SimpleFeatureCollection parcels, int minSize, int nbParcelToMark) throws IOException {
 		return markRandomParcels(parcels, null, null, minSize, nbParcelToMark);
 	}
 
@@ -322,12 +307,10 @@ public class MarkParcelAttributeFromPosition {
 	 * @param nbParcelToMark
 	 *            Number of parcel wanted
 	 * @return {@link SimpleFeatureCollection} of the input parcels with random marked parcels on the {@link #markFieldName} field.
-	 * @throws NoSuchAuthorityCodeException
-	 * @throws FactoryException
 	 * @throws IOException
 	 */
 	public static SimpleFeatureCollection markRandomParcels(SimpleFeatureCollection parcels, String genericZone, File zoningFile, double minSize,
-			int nbParcelToMark) throws NoSuchAuthorityCodeException, FactoryException, IOException {
+			int nbParcelToMark) throws IOException {
 		if (zoningFile != null && genericZone != null)
 			parcels = markParcelIntersectGenericZoningType(parcels, genericZone, zoningFile);
 		List<SimpleFeature> list = Arrays.stream(parcels.toArray(new SimpleFeature[0]))
@@ -352,11 +335,8 @@ public class MarkParcelAttributeFromPosition {
 	 *            Geopackage containing building features
 	 * @return {@link SimpleFeatureCollection} of the input parcels with marked parcels on the {@link #markFieldName} field.
 	 * @throws IOException
-	 * @throws NoSuchAuthorityCodeException
-	 * @throws FactoryException
 	 */
-	public static SimpleFeatureCollection markUnBuiltParcel(SimpleFeatureCollection parcels, File buildingFile)
-			throws IOException, NoSuchAuthorityCodeException, FactoryException {
+	public static SimpleFeatureCollection markUnBuiltParcel(SimpleFeatureCollection parcels, File buildingFile) throws IOException {
 		DataStore sds = Geopackages.getDataStore(buildingFile);
 		SimpleFeatureCollection buildings = Collec.selectIntersection(sds.getFeatureSource(sds.getTypeNames()[0]).getFeatures(), parcels);
 		final SimpleFeatureType featureSchema = ParcelSchema.getSFBMinParcelSplit().getFeatureType();
@@ -407,11 +387,8 @@ public class MarkParcelAttributeFromPosition {
 	 *            Geopackage representing the buildings
 	 * @return {@link SimpleFeatureCollection} of the input parcels with marked parcels on the {@link #markFieldName} field.
 	 * @throws IOException
-	 * @throws NoSuchAuthorityCodeException
-	 * @throws FactoryException
 	 */
-	public static SimpleFeatureCollection markBuiltParcel(SimpleFeatureCollection parcels, File buildingFile)
-			throws IOException, NoSuchAuthorityCodeException, FactoryException {
+	public static SimpleFeatureCollection markBuiltParcel(SimpleFeatureCollection parcels, File buildingFile) throws IOException {
 		DataStore sds = Geopackages.getDataStore(buildingFile);
 		SimpleFeatureCollection buildings = Collec
 				.selectIntersection(DataUtilities.collection(sds.getFeatureSource(sds.getTypeNames()[0]).getFeatures()), parcels);
@@ -463,11 +440,9 @@ public class MarkParcelAttributeFromPosition {
 	 *            a {@link List} of {@link Geometry} which can intersect parcels
 	 * @return {@link SimpleFeatureCollection} of the input parcels with marked parcels on the {@link #markFieldName} field.
 	 * @throws IOException
-	 * @throws FactoryException
-	 * @throws NoSuchAuthorityCodeException
 	 */
 	public static SimpleFeatureCollection markParcelIntersectPolygonIntersection(SimpleFeatureCollection parcels, List<Geometry> geoms)
-			throws IOException, NoSuchAuthorityCodeException, FactoryException {
+			throws IOException {
 		DefaultFeatureCollection result = new DefaultFeatureCollection();
 		final SimpleFeatureType featureSchema = ParcelSchema.getSFBMinParcelSplit().getFeatureType();
 		// if features have the schema that the one intended to set, we bypass
@@ -518,11 +493,9 @@ public class MarkParcelAttributeFromPosition {
 	 *            A Geopackage containing the collection of polygons
 	 * @return {@link SimpleFeatureCollection} of the input parcels with marked parcels on the {@link #markFieldName} field.
 	 * @throws IOException
-	 * @throws FactoryException
-	 * @throws NoSuchAuthorityCodeException
 	 */
 	public static SimpleFeatureCollection markParcelIntersectPolygonIntersection(SimpleFeatureCollection parcels, File polygonIntersectionFile)
-			throws IOException, NoSuchAuthorityCodeException, FactoryException {
+			throws IOException {
 		DefaultFeatureCollection result = new DefaultFeatureCollection();
 		DataStore sds = Geopackages.getDataStore(polygonIntersectionFile);
 		// put in memory coz it provoked an unlock error - TODO can't find where that came from
@@ -573,13 +546,10 @@ public class MarkParcelAttributeFromPosition {
 	 * @param zoningFile
 	 *            A Geopackage containing the zoning plan
 	 * @return {@link SimpleFeatureCollection} of the input parcels with marked parcels on the {@link #markFieldName} field.
-	 * @throws FactoryException
-	 * @throws NoSuchAuthorityCodeException
 	 * @throws IOException
-	 * @throws Exception
 	 */
 	public static SimpleFeatureCollection markParcelIntersectGenericZoningType(SimpleFeatureCollection parcels, String genericZone, File zoningFile)
-			throws NoSuchAuthorityCodeException, FactoryException, IOException {
+			throws IOException {
 		final SimpleFeatureType featureSchema = ParcelSchema.getSFBMinParcelSplit().getFeatureType();
 		DefaultFeatureCollection result = new DefaultFeatureCollection();
 		DataStore dsZone = Geopackages.getDataStore(zoningFile);
@@ -630,12 +600,10 @@ public class MarkParcelAttributeFromPosition {
 	 * @param zoningFile
 	 *            A Geopackage containing the zoning plan
 	 * @return {@link SimpleFeatureCollection} of the input parcels with marked parcels on the {@link #markFieldName} field.
-	 * @throws NoSuchAuthorityCodeException
-	 * @throws FactoryException
 	 * @throws IOException
 	 */
 	public static SimpleFeatureCollection markParcelIntersectZoningWithoutPreciseZonings(SimpleFeatureCollection parcels, String genericZone,
-			List<String> preciseZone, File zoningFile) throws NoSuchAuthorityCodeException, FactoryException, IOException {
+			List<String> preciseZone, File zoningFile) throws IOException {
 		final SimpleFeatureType featureSchema = ParcelSchema.getSFBMinParcelSplit().getFeatureType();
 		DefaultFeatureCollection result = new DefaultFeatureCollection();
 		SimpleFeatureBuilder featureBuilder = ParcelSchema.getSFBMinParcelSplit();
@@ -674,12 +642,10 @@ public class MarkParcelAttributeFromPosition {
 	 * @param zoningFile
 	 *            A Geopackage containing the zoning plan
 	 * @return {@link SimpleFeatureCollection} of the input parcels with marked parcels on the {@link #markFieldName} field.
-	 * @throws FactoryException
-	 * @throws NoSuchAuthorityCodeException
 	 * @throws IOException
 	 */
 	public static SimpleFeatureCollection markParcelIntersectPreciseZoningType(SimpleFeatureCollection parcels, String genericZone,
-			String preciseZone, File zoningFile) throws NoSuchAuthorityCodeException, FactoryException, IOException {
+			String preciseZone, File zoningFile) throws IOException {
 		final SimpleFeatureType featureSchema = ParcelSchema.getSFBMinParcelSplit().getFeatureType();
 		// Get the zoning usual names
 		List<String> genericZoneUsualNames = GeneralFields.getGenericZoneUsualNames(genericZone);
@@ -738,12 +704,11 @@ public class MarkParcelAttributeFromPosition {
 	 * @param zoningFile
 	 *            A Geopackage containing the zoning plan
 	 * @return {@link SimpleFeatureCollection} of the input parcels with marked parcels on the {@link #markFieldName} field.
-	 * @throws FactoryException
-	 * @throws NoSuchAuthorityCodeException
+	 * 
 	 * @throws IOException
 	 */
 	public static SimpleFeatureCollection markParcelIntersectFrenchConstructibleZoningType(SimpleFeatureCollection parcels, File zoningFile)
-			throws NoSuchAuthorityCodeException, FactoryException, IOException {
+			throws IOException {
 		final SimpleFeatureType featureSchema = ParcelSchema.getSFBMinParcelSplit().getFeatureType();
 		DataStore sds = Geopackages.getDataStore(zoningFile);
 		SimpleFeatureCollection zonings = sds.getFeatureSource(sds.getTypeNames()[0]).getFeatures();
@@ -781,18 +746,15 @@ public class MarkParcelAttributeFromPosition {
 		return result;
 	}
 
-	public static SimpleFeatureCollection markParcelOfCommunityType(SimpleFeatureCollection parcels, String attribute)
-			throws NoSuchAuthorityCodeException, FactoryException {
+	public static SimpleFeatureCollection markParcelOfCommunityType(SimpleFeatureCollection parcels, String attribute) {
 		return markParcelOfCommunity(parcels, ParcelAttribute.getCommunityTypeFieldName(), attribute);
 	}
 
-	public static SimpleFeatureCollection markParcelOfCommunityNumber(SimpleFeatureCollection parcels, String attribute)
-			throws NoSuchAuthorityCodeException, FactoryException {
+	public static SimpleFeatureCollection markParcelOfCommunityNumber(SimpleFeatureCollection parcels, String attribute) {
 		return markParcelOfCommunity(parcels, ParcelSchema.getMinParcelCommunityField(), attribute);
 	}
 
-	public static SimpleFeatureCollection markParcelOfCommunity(SimpleFeatureCollection parcels, String fieldName, String attribute)
-			throws NoSuchAuthorityCodeException, FactoryException {
+	public static SimpleFeatureCollection markParcelOfCommunity(SimpleFeatureCollection parcels, String fieldName, String attribute) {
 		final SimpleFeatureType featureSchema = ParcelSchema.getSFBMinParcelSplit().getFeatureType();
 		DefaultFeatureCollection result = new DefaultFeatureCollection();
 		// if features have the schema that the one intended to set, we bypass
@@ -892,12 +854,9 @@ public class MarkParcelAttributeFromPosition {
 	 * @param parcels
 	 *            Input parcel {@link SimpleFeatureCollection}
 	 * @return {@link SimpleFeatureCollection} of the input parcels with marked parcels on the {@link #markFieldName} field.
-	 * @throws FactoryException
-	 * @throws NoSuchAuthorityCodeException
 	 * @throws IOException
 	 */
-	public static SimpleFeatureCollection markSimulatedParcel(SimpleFeatureCollection parcels)
-			throws IOException, NoSuchAuthorityCodeException, FactoryException {
+	public static SimpleFeatureCollection markSimulatedParcel(SimpleFeatureCollection parcels) throws IOException {
 		final SimpleFeatureType featureSchema = ParcelSchema.getSFBMinParcelSplit().getFeatureType();
 		DefaultFeatureCollection result = new DefaultFeatureCollection();
 		SimpleFeatureBuilder featureBuilder = ParcelSchema.getSFBMinParcelSplit();

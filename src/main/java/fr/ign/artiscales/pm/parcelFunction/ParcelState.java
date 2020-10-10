@@ -34,38 +34,38 @@ import fr.ign.artiscales.tools.geoToolsFunctions.vectors.geom.Lines;
 
 public class ParcelState {
 
-//	public static void main(String[] args) throws Exception {
-//		File geoFile = new File("/home/ubuntu/boulot/these/result2903/dataGeo/");
-//		File batiFile = new File(geoFile, "building");
-//		File parcelFile = new File("/tmp/parcelTested");
-//		ShapefileDataStore sds = new ShapefileDataStore(parcelFile.toURI().toURL());
-//		SimpleFeatureIterator sfc = sds.getFeatureSource().getFeatures().features();
-//		try {
-//			while (sfc.hasNext()) {
-//				SimpleFeature sf = sfc.next();
-//				System.out.println("sf " + sf.getAttribute("NUMERO"));
-//				long startTime2 = System.currentTimeMillis();
-//
-//				isAlreadyBuilt(batiFile, sf);
-//				long endTime2 = System.nanoTime();
-//				System.out.println("duration for isAlreadyBuilt : " + (endTime2 - startTime2) * 1000);
-//			}
-//		} catch (Exception problem) {
-//			problem.printStackTrace();
-//		} finally {
-//			sfc.close();
-//		}
-//		sds.dispose();
-//	}
-	  private static String widthFieldAttribute = "LARGEUR";
-	  private static double defaultWidthRoad = 7.5;
-	
+	// public static void main(String[] args) throws Exception {
+	// File geoFile = new File("/home/ubuntu/boulot/these/result2903/dataGeo/");
+	// File batiFile = new File(geoFile, "building");
+	// File parcelFile = new File("/tmp/parcelTested");
+	// ShapefileDataStore sds = new ShapefileDataStore(parcelFile.toURI().toURL());
+	// SimpleFeatureIterator sfc = sds.getFeatureSource().getFeatures().features();
+	// try {
+	// while (sfc.hasNext()) {
+	// SimpleFeature sf = sfc.next();
+	// System.out.println("sf " + sf.getAttribute("NUMERO"));
+	// long startTime2 = System.currentTimeMillis();
+	//
+	// isAlreadyBuilt(batiFile, sf);
+	// long endTime2 = System.nanoTime();
+	// System.out.println("duration for isAlreadyBuilt : " + (endTime2 - startTime2) * 1000);
+	// }
+	// } catch (Exception problem) {
+	// problem.printStackTrace();
+	// } finally {
+	// sfc.close();
+	// }
+	// sds.dispose();
+	// }
+	private static String widthFieldAttribute = "LARGEUR";
+	private static double defaultWidthRoad = 7.5;
+
 	public static int countParcelNeighborhood(Geometry parcelGeom, SimpleFeatureCollection parcels) {
 		int result = 0;
 		try (SimpleFeatureIterator parcelIt = parcels.features()) {
-			while (parcelIt.hasNext()) 
+			while (parcelIt.hasNext())
 				if (GeometryPrecisionReducer.reduce((Geometry) parcelIt.next().getDefaultGeometry(), new PrecisionModel(10)).buffer(1)
-						.intersects(GeometryPrecisionReducer.reduce(parcelGeom, new PrecisionModel(10)))) 
+						.intersects(GeometryPrecisionReducer.reduce(parcelGeom, new PrecisionModel(10))))
 					result++;
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -100,7 +100,7 @@ public class ParcelState {
 		return roadGeom;
 	}
 
-  	/**
+	/**
 	 * Determine the width of the parcel on road.
 	 * 
 	 * @param p
@@ -121,7 +121,8 @@ public class ParcelState {
 						.intersection(Lines.getListLineStringAsMultiLS(
 								Arrays.stream(roads.toArray(new SimpleFeature[0])).filter(r -> ((Geometry) r.getDefaultGeometry()).intersects(p))
 										.flatMap(r -> Lines.getLineStrings((Geometry) r.getDefaultGeometry()).stream()).collect(Collectors.toList()),
-								new GeometryFactory())).getLength();
+								new GeometryFactory()))
+						.getLength();
 				if (len > 0)
 					return len;
 				else
@@ -150,7 +151,6 @@ public class ParcelState {
 		}
 	}
 
-	
 	/**
 	 * Indicate if the given polygon has a proximity to the road, which can be represented by multiple ways. This could be a road Geopackage or a {@link Geometry} representing the
 	 * exterior of a parcel plan.
@@ -221,7 +221,7 @@ public class ParcelState {
 	 * @throws IOException
 	 */
 	public static boolean isArt3AllowsIsolatedParcel(String insee, File predicateFile) throws IOException {
-		if(!predicateFile.exists())
+		if (!predicateFile.exists())
 			return false;
 		// get rule file
 		CSVReader rule = new CSVReader(new FileReader(predicateFile));
@@ -323,7 +323,7 @@ public class ParcelState {
 	 *            Input {@link SimpleFeature} parcel
 	 * @param outMup
 	 *            Shapefile to the vectorized MUP-City output
-	 * @return The best evaluation of the intersected MUP-City's cells 
+	 * @return The best evaluation of the intersected MUP-City's cells
 	 * @throws IOException
 	 */
 	public static Double getEvalInParcel(SimpleFeature parcel, File outMup) throws IOException {
@@ -344,16 +344,17 @@ public class ParcelState {
 	 */
 	public static Double getEvalInParcel(SimpleFeature parcel, SimpleFeatureCollection mupSFC) {
 		FilterFactory2 ff = CommonFactoryFinder.getFilterFactory2(GeoTools.getDefaultHints());
-		SimpleFeatureCollection onlyCells = mupSFC.subCollection(ff.intersects(ff.property(mupSFC.getSchema().getGeometryDescriptor().getLocalName()), ff.literal(parcel.getDefaultGeometry())));
+		SimpleFeatureCollection onlyCells = mupSFC.subCollection(
+				ff.intersects(ff.property(mupSFC.getSchema().getGeometryDescriptor().getLocalName()), ff.literal(parcel.getDefaultGeometry())));
 		Double bestEval = 0.0;
 		// put the best cell evaluation into the parcel
 		if (onlyCells.size() > 0) {
 			try (SimpleFeatureIterator onlyCellIt = onlyCells.features()) {
-				while (onlyCellIt.hasNext()) 
+				while (onlyCellIt.hasNext())
 					bestEval = Math.max(bestEval, (Double) onlyCellIt.next().getAttribute("eval"));
 			} catch (Exception problem) {
 				problem.printStackTrace();
-			} 
+			}
 		}
 		return bestEval;
 	}
@@ -381,12 +382,12 @@ public class ParcelState {
 				try (SimpleFeatureIterator onlyCellIt = onlyCells.features()) {
 					while (onlyCellIt.hasNext()) {
 						SimpleFeature cell = onlyCellIt.next();
-						if (geometryUp.intersects((Geometry) cell.getDefaultGeometry())) 
+						if (geometryUp.intersects((Geometry) cell.getDefaultGeometry()))
 							return ((Double) cell.getAttribute("eval"));
 					}
 				} catch (Exception problem) {
 					problem.printStackTrace();
-				} 
+				}
 				distBuffer = distBuffer + 5;
 			}
 		}
@@ -395,35 +396,37 @@ public class ParcelState {
 
 	/**
 	 * Return a single Zone Generic Name that a parcels intersect. If the parcel intersects multiple, we select the one that covers the most area
+	 * 
 	 * @param parcelIn
 	 * @param zoningFile
 	 * @return Zone Generic Name that a parcels intersect
-	 * @throws Exception
+	 * @throws IOException
 	 */
-	public static String parcelInGenericZone(File zoningFile, SimpleFeature parcelIn) throws Exception {
+	public static String parcelInGenericZone(File zoningFile, SimpleFeature parcelIn) throws IOException {
 		DataStore ds = Geopackages.getDataStore(zoningFile);
-		String preciseZone = Collec.getIntersectingFieldFromSFC((Geometry) parcelIn.getDefaultGeometry(), ds.getFeatureSource(ds.getTypeNames()[0]).getFeatures(), GeneralFields.getZoneGenericNameField());
+		String preciseZone = Collec.getIntersectingFieldFromSFC((Geometry) parcelIn.getDefaultGeometry(),
+				ds.getFeatureSource(ds.getTypeNames()[0]).getFeatures(), GeneralFields.getZoneGenericNameField());
 		ds.dispose();
 		return preciseZone;
 	}
 
 	/**
-	 * return a single typology that a parcels intersect if the parcel intersects
-	 * multiple, we select the one that covers the most area
+	 * return a single typology that a parcels intersect if the parcel intersects multiple, we select the one that covers the most area
 	 * 
 	 * @param parcelIn
 	 * @param communityFile
-	 * @param typoAttribute the field name of the typo
+	 * @param typoAttribute
+	 *            the field name of the typo
 	 * @return the number of most intersected community type
 	 * @throws Exception
 	 */
 	public static String parcelInTypo(File communityFile, SimpleFeature parcelIn, String typoAttribute) throws Exception {
 		DataStore ds = Geopackages.getDataStore(communityFile);
-		String typo = Collec.getIntersectingFieldFromSFC((Geometry) parcelIn.getDefaultGeometry(), ds.getFeatureSource(ds.getTypeNames()[0]).getFeatures(), typoAttribute);
+		String typo = Collec.getIntersectingFieldFromSFC((Geometry) parcelIn.getDefaultGeometry(),
+				ds.getFeatureSource(ds.getTypeNames()[0]).getFeatures(), typoAttribute);
 		ds.dispose();
 		return typo;
 	}
-
 
 	public static String getWidthFieldAttribute() {
 		return widthFieldAttribute;
