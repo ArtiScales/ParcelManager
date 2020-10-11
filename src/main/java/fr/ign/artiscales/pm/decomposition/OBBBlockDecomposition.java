@@ -67,18 +67,16 @@ public class OBBBlockDecomposition {
 	 *            Is the polygon should be turned in order to assure the connection with the road ? Also regarding the <i>harmony coeff</i>. Most of cases, it's yes
 	 * 
 	 * @return a collection of subdivised parcels
-	 * @throws Exception
 	 */
 	public static SimpleFeatureCollection splitParcels(SimpleFeature toSplit, double maximalArea, double maximalWidth, double harmonyCoeff,
-			double noise, List<LineString> extBlock, double streetWidth, boolean forceStreetAccess, int decompositionLevelWithoutStreet)
-			throws Exception {
+			double noise, List<LineString> extBlock, double streetWidth, boolean forceStreetAccess, int decompositionLevelWithoutStreet) {
 		return splitParcel(toSplit, null, maximalArea, maximalWidth, harmonyCoeff, noise, extBlock, streetWidth, 999, streetWidth,
 				forceStreetAccess, decompositionLevelWithoutStreet);
 	}
 
 	public static SimpleFeatureCollection splitParcel(SimpleFeature featToSplit, SimpleFeatureCollection roads, double maximalArea, double maximalWidth,
 			double harmonyCoeff, double noise, List<LineString> extBlock, double smallStreetWidth, int largeStreetLevel, double largeStreetWidth,
-			boolean forceStreetAccess, int decompositionLevelWithoutStreet) throws Exception {
+			boolean forceStreetAccess, int decompositionLevelWithoutStreet) {
 			DefaultFeatureCollection result = new DefaultFeatureCollection();
 			SimpleFeatureBuilder builder = new SimpleFeatureBuilder(featToSplit.getFeatureType());
 	        Object mark = featToSplit.getAttribute(MarkParcelAttributeFromPosition.getMarkFieldName());

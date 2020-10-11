@@ -41,7 +41,7 @@ public class StreetRatioParcels {
 	private static boolean overwrite = true;
 	private static boolean firstLine = true;
 
-//	public static void main(String[] args) throws Exception {
+//	public static void main(String[] args) throws IOException {
 //		long start = System.currentTimeMillis();
 //		File rootFolder = new File("src/main/resources/GeneralTest/");
 //		File zoningFile = new File(rootFolder, "zoning.gpkg");

@@ -1,6 +1,7 @@
 package fr.ign.artiscales.pm.workflow;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.Arrays;
 
 import org.apache.commons.math3.random.MersenneTwister;
@@ -51,10 +52,9 @@ public class ConsolidationDivision extends Workflow{
 	 * @param profile
 	 *            {@link ProfileUrbanFabric} contains the parameters of the wanted urban scene
 	 * @return the set of parcel with decomposition
-	 * @throws Exception
+	 * @throws IOException 
 	 */
-	public SimpleFeatureCollection consolidationDivision(SimpleFeatureCollection parcels, File roadFile, File outFolder, ProfileUrbanFabric profile)
-			throws Exception {
+	public SimpleFeatureCollection consolidationDivision(SimpleFeatureCollection parcels, File roadFile, File outFolder, ProfileUrbanFabric profile) throws IOException {
 		return consolidationDivision(parcels, roadFile, outFolder, profile, null);
 	}
 
@@ -72,10 +72,10 @@ public class ConsolidationDivision extends Workflow{
 	 * @param polygonIntersection
 	 *            Optional polygon layer that was used to process to the selection of parcels with their intersection. Used to keep only the intersecting simulated parcels. CAn be null
 	 * @return the set of parcel with decomposition
-	 * @throws Exception
+	 * @throws IOException 
 	 */
 	public SimpleFeatureCollection consolidationDivision(SimpleFeatureCollection parcels, File roadFile, File outFolder, ProfileUrbanFabric profile,
-			File polygonIntersection) throws Exception {
+			File polygonIntersection) throws IOException {
 		File tmpFolder = new File(outFolder, "tmp");
 		if (DEBUG)
 			tmpFolder.mkdirs();

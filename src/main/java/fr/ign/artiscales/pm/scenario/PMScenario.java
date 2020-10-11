@@ -1,6 +1,7 @@
 package fr.ign.artiscales.pm.scenario;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -37,7 +38,7 @@ public class PMScenario {
 //		pm.executeStep();
 //	}
 
-	public PMScenario(File jSON, File tmpfolder) throws Exception {
+	public PMScenario(File jSON, File tmpfolder) throws IOException {
 		PMStep.setSaveIntermediateResult(SAVEINTERMEDIATERESULT);
 		JsonFactory factory = new JsonFactory();
 		JsonParser parser = factory.createParser(jSON);
@@ -187,7 +188,7 @@ public class PMScenario {
 				profileFolder);
 	}
 
-	public void executeStep() throws Exception {
+	public void executeStep() throws IOException {
 		for (PMStep pmstep : getStepList()) {
 			System.out.println("try " + pmstep);
 			if (REUSESIMULATEDPARCELS)

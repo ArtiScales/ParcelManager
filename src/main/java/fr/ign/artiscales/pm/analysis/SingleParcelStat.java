@@ -41,7 +41,7 @@ import fr.ign.artiscales.tools.geometryGeneration.CityGeneration;
  */
 public class SingleParcelStat {
 
-	// public static void main(String[] args) throws Exception {
+	// public static void main(String[] args) throws IOException {
 	// long strat = System.currentTimeMillis();
 	// File root = new File("/home/mcolomb/PMtest/ParcelComparison/");
 	// DataStore dsParcelEv = Geopackages.getDataStore(new File(root,"/out/consolidationDivisionWithOBBOnNC_Of/EvolvedParcel.gpkg"));

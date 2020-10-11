@@ -345,9 +345,10 @@ public class Densification extends Workflow {
 	 *            Exclude a zone that won't be considered as a potential road connection. Useful to represent border of the parcel plan. Can be null.
 	 * @return The input parcel {@link SimpleFeatureCollection} with the marked parcels replaced by the simulated parcels. All parcels have the
 	 *         {@link fr.ign.artiscales.pm.parcelFunction.ParcelSchema#getSFBMinParcel()} schema. * @throws Exception
+	 * @throws IOException 
 	 */
 	public SimpleFeatureCollection densification(SimpleFeatureCollection parcelCollection, SimpleFeatureCollection isletCollection, File outFolder,
-			File buildingFile, File roadFile, ProfileUrbanFabric profile, boolean allowIsolatedParcel, Geometry exclusionZone) throws Exception {
+			File buildingFile, File roadFile, ProfileUrbanFabric profile, boolean allowIsolatedParcel, Geometry exclusionZone) throws IOException {
 		return densification(parcelCollection, isletCollection, outFolder, buildingFile, roadFile, profile.getHarmonyCoeff(), profile.getNoise(),
 				profile.getMaximalArea(), profile.getMinimalArea(), profile.getMinimalWidthContactRoad(), profile.getLenDriveway(),
 				allowIsolatedParcel, exclusionZone);
@@ -380,11 +381,11 @@ public class Densification extends Workflow {
 	 *            {@link fr.ign.artiscales.pm.workflow.ConsolidationDivision#consolidationDivision(SimpleFeatureCollection, File, File, ProfileUrbanFabric)} method.
 	 * @return The input parcel {@link SimpleFeatureCollection} with the marked parcels replaced by the simulated parcels. All parcels have the
 	 *         {@link fr.ign.artiscales.pm.parcelFunction.ParcelSchema#getSFBMinParcel()} schema.
-	 * @throws Exception
+	 * @throws IOException 
 	 */
 	public SimpleFeatureCollection densificationOrNeighborhood(SimpleFeatureCollection parcelCollection, SimpleFeatureCollection isletCollection,
 			File outFolder, File buildingFile, File roadFile, ProfileUrbanFabric profile, boolean allowIsolatedParcel, Geometry exclusionZone,
-			int factorOflargeZoneCreation) throws Exception {
+			int factorOflargeZoneCreation) throws IOException {
 		// TODO stupid hack but I can't figure out how those SimpleFeatuceCollection's attributes are changed if not wrote in hard
 		File tmp = new File(outFolder, "tmp");
 		tmp.mkdirs();

@@ -103,9 +103,9 @@ public class PMStep {
 	/**
 	 * Execute the current PM Step.
 	 * @return The ShapeFile containing the whole parcels of the given collection, where the simulated parcel have replaced the former parcels. 
-	 * @throws Exception
+	 * @throws IOException 
 	 */
-	public File execute() throws Exception {
+	public File execute() throws IOException  {
 		OUTFOLDER.mkdirs();
 		//convert the parcel to a common type
 		DataStore dSParcel = Geopackages.getDataStore(PARCELFILE);

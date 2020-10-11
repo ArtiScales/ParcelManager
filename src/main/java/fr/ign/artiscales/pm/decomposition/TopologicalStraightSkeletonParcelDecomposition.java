@@ -206,9 +206,8 @@ public class TopologicalStraightSkeletonParcelDecomposition {
   private static int classify(Node node, HalfEdge previous, Optional<Pair<String, Double>> previousAttributes, HalfEdge next, Optional<Pair<String, Double>> nextAttributes) {
     if (isReflex(node, previous, next))
       return NONE;
-    if (previousAttributes.map(a -> a.getRight()).orElse(0.0) > nextAttributes.map(a -> a.getRight()).orElse(0.0)) {
+    if (previousAttributes.map(a -> a.getRight()).orElse(0.0) > nextAttributes.map(a -> a.getRight()).orElse(0.0)) 
       return PREVIOUS;
-    }
     return NEXT;
   }
 
@@ -1308,12 +1307,12 @@ public class TopologicalStraightSkeletonParcelDecomposition {
         e.printStackTrace();
       }
     }
-
+    System.out.println(globalOutputParcels);
 	TopologicalGraph output = new TopologicalGraph(globalOutputParcels, 0.02);
 	DefaultFeatureCollection result = new DefaultFeatureCollection();
 	SimpleFeatureBuilder builder = Schemas.getBasicSchema("parcelSplitSS");
 	for (Face face : output.getFaces()) {
-		builder.set(Collec.getDefaultGeomName(), face);
+		builder.set(Collec.getDefaultGeomName(), face.getGeometry());
 		result.add(builder.buildFeature(Attribute.makeUniqueId()));
 	}
 	// export(output, folderOut);

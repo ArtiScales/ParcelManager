@@ -1,6 +1,7 @@
 package fr.ign.artiscales.pm.usecase;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -64,10 +65,11 @@ public class DensificationStudy {
 	 * @param outFolder
 	 * @param isParcelWithoutStreetAllowed
 	 * @param profile
+	 * @throws IOException 
 	 * @throws Exception
 	 */
 	public static void runDensificationStudy(SimpleFeatureCollection parcels, File buildingFile, File roadFile, File zoningFile,
-			File outFolder, boolean isParcelWithoutStreetAllowed, ProfileUrbanFabric profile) throws Exception {
+			File outFolder, boolean isParcelWithoutStreetAllowed, ProfileUrbanFabric profile) throws IOException {
 		outFolder.mkdir();
 		SimpleFeatureCollection islet = CityGeneration.createUrbanIslet(parcels);
 		Geometry buffer = CityGeneration.createBufferBorder(parcels);

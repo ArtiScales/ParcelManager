@@ -418,9 +418,9 @@ public class ParcelState {
 	 * @param typoAttribute
 	 *            the field name of the typo
 	 * @return the number of most intersected community type
-	 * @throws Exception
+	 * @throws IOException 
 	 */
-	public static String parcelInTypo(File communityFile, SimpleFeature parcelIn, String typoAttribute) throws Exception {
+	public static String parcelInTypo(File communityFile, SimpleFeature parcelIn, String typoAttribute) throws IOException {
 		DataStore ds = Geopackages.getDataStore(communityFile);
 		String typo = Collec.getIntersectingFieldFromSFC((Geometry) parcelIn.getDefaultGeometry(),
 				ds.getFeatureSource(ds.getTypeNames()[0]).getFeatures(), typoAttribute);

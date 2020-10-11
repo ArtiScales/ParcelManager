@@ -1,6 +1,7 @@
 package fr.ign.artiscales.pm.usecase;
 
 import java.io.File;
+import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -36,7 +37,7 @@ import fr.ign.artiscales.tools.geometryGeneration.CityGeneration;
  */
 public class CompareSimulatedParcelsWithEvolution {
 
-	public static void main(String[] args) throws Exception {
+	public static void main(String[] args) throws IOException {
 		Instant start = Instant.now();
 		// definition of the geopackages representing two set of parcel
 		File rootFolder = new File("src/main/resources/ParcelComparison/");
@@ -54,7 +55,7 @@ public class CompareSimulatedParcelsWithEvolution {
 	}
 
 	public static void compareSimulatedParcelsWithEvolutionWorkflow(File rootFolder, File parcelRefFile, File parcelCompFile, File roadFile,
-			File scenarioFile, File outFolder) throws Exception {
+			File scenarioFile, File outFolder) throws IOException {
 		// Mark and export the parcels that have changed between the two set of time
 		ParcelCollection.sortDifferentParcel(parcelRefFile, parcelCompFile, outFolder);
 		// create ilots for parcel densification in case they haven't been generated before

@@ -88,7 +88,7 @@ public class FlagParcelDecomposition {
 //	}
 
 	public static SimpleFeatureCollection generateFlagSplitedParcels(SimpleFeature feat, List<LineString> extLines, double harmonyCoeff, double noise,
-			File buildingFile, Double maximalAreaSplitParcel, Double maximalWidthSplitParcel, Double lenDriveway) throws Exception {
+			File buildingFile, Double maximalAreaSplitParcel, Double maximalWidthSplitParcel, Double lenDriveway) throws IOException {
 		return generateFlagSplitedParcels(feat, extLines, harmonyCoeff, noise, buildingFile, null, maximalAreaSplitParcel, maximalWidthSplitParcel,
 				lenDriveway, null);
 	}
@@ -254,7 +254,6 @@ public class FlagParcelDecomposition {
    * The decomposition method
    * 
    * @return List of parcels
-   * @throws Exception
    */
   public List<Polygon> decompParcel(double harmonyCoeff, double noise)  {
     return decompParcel(this.polygonInit, harmonyCoeff, noise);
@@ -265,7 +264,6 @@ public class FlagParcelDecomposition {
    * 
    * @param p
    * @return the flag cut parcel if possible. The input parcel otherwise
-   * @throws Exception
    */
   private List<Polygon> decompParcel(Polygon p, double harmonyCoeff, double noise)  {
     // End test condition
@@ -368,7 +366,7 @@ public class FlagParcelDecomposition {
   }
 
   //TODO move those functions to ArtiScales-Tools? 
-  private Geometry getDifference(Geometry a, Geometry b) throws Exception {
+  private Geometry getDifference(Geometry a, Geometry b) {
     PrecisionModel pm = new PrecisionModel(100);
     Geometry jtsGeomA = GeometryPrecisionReducer.reduce(a, pm);
     Geometry jtsGeomB = GeometryPrecisionReducer.reduce(b, pm);
@@ -376,21 +374,21 @@ public class FlagParcelDecomposition {
   }
 
   @SuppressWarnings("unused")
-private Pair<Geometry,Geometry> getIntersectionDifference(Geometry a, Geometry b) throws Exception {
+private Pair<Geometry,Geometry> getIntersectionDifference(Geometry a, Geometry b) {
     PrecisionModel pm = new PrecisionModel(100);
     Geometry jtsGeomA = GeometryPrecisionReducer.reduce(a, pm);
     Geometry jtsGeomB = GeometryPrecisionReducer.reduce(b, pm);
     return FeaturePolygonizer.getIntersectionDifference(new ArrayList<Geometry>(Arrays.asList(jtsGeomA)), new ArrayList<Geometry>(Arrays.asList(jtsGeomB)));
   }
 
-  private Geometry getUnion(Geometry a, Geometry b) throws Exception {
+  private Geometry getUnion(Geometry a, Geometry b) {
     PrecisionModel pm = new PrecisionModel(100);
     Geometry jtsGeomA = GeometryPrecisionReducer.reduce(a, pm);
     Geometry jtsGeomB = GeometryPrecisionReducer.reduce(b, pm);
     return new CascadedPolygonUnion(new ArrayList<Geometry>(Arrays.asList(jtsGeomA, jtsGeomB))).union();
   }
 
-  private Geometry getIntersection(Geometry a, Geometry b) throws Exception {
+  private Geometry getIntersection(Geometry a, Geometry b) {
     try {
       return a.intersection(b);
     } catch (Exception e) {
