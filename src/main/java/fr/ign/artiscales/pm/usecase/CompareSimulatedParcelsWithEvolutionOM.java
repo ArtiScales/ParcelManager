@@ -19,11 +19,11 @@ import fr.ign.artiscales.pm.parcelFunction.ParcelSchema;
 import fr.ign.artiscales.pm.scenario.PMScenario;
 import fr.ign.artiscales.pm.scenario.PMStep;
 import fr.ign.artiscales.pm.workflow.ZoneDivision;
-import fr.ign.artiscales.tools.geoToolsFunctions.Csv;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Collec;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Geopackages;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Shp;
 import fr.ign.artiscales.tools.geometryGeneration.CityGeneration;
+import fr.ign.artiscales.tools.io.Csv;
 import fr.ign.artiscales.tools.parameter.ProfileUrbanFabric;
 
 

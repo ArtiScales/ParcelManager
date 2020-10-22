@@ -31,52 +31,75 @@ import fr.ign.artiscales.tools.geometryGeneration.CityGeneration;
  */
 public class GetParametersOfScene {
 
-	/**
-	 * The scale of the studied zone. Can either be community, genericZone, preciseZone or islet
-	 */
-	static String scaleZone = "community";
+	// static String scaleZone = "community";
 	// TODO mettre la possibilité de mélanger ces échelles List<String> scaleZone = Arrays.asList("community");
 	static File parcelFile, buildingFile, zoningFile, roadFile, outFolder;
 
 	public static void main(String[] args) throws IOException {
 		outFolder = new File("/tmp/ParametersOfScene");
-		setFiles(new File("src/main/resources/ParcelComparison/"));
-		parcelFile = new File("/tmp/parcelChosen"+Collec.getDefaultGISFileType());
+		setFiles(new File("src/main/resources/GeneralTest/"));
 		// genParcelAreaBoundaries(pF);
-		scaleZone = "genericZone";
+		String scaleZone = "genericZone";
 		// genParcelAreaBoundaries(pF);
 		// scaleZone = "preciseZone";
-		genParcelAreaBoundaries();
+		generateAnalysisOfScene(scaleZone);
 	}
 
+	/**
+	 * Set automaticlally the file names with their basic names from a root folder. Possible to change them with dedicaded setters
+	 * 
+	 * @param mainFolder root folder containing the geographic layers.
+	 */
 	public static void setFiles(File mainFolder) {
-		parcelFile = new File(mainFolder, "parcel"+Collec.getDefaultGISFileType());
+		parcelFile = new File(mainFolder, "parcel" + Collec.getDefaultGISFileType());
 		if (!parcelFile.exists())
 			System.out.println(parcelFile + " doesn't exist");
-		buildingFile = new File(mainFolder, "building"+Collec.getDefaultGISFileType());
+		buildingFile = new File(mainFolder, "building" + Collec.getDefaultGISFileType());
 		if (!buildingFile.exists())
 			System.out.println(buildingFile + " doesn't exist");
-		zoningFile = new File(mainFolder, "zoning"+Collec.getDefaultGISFileType());
+		zoningFile = new File(mainFolder, "zoning" + Collec.getDefaultGISFileType());
 		if (!zoningFile.exists())
 			System.out.println(zoningFile + " doesn't exist");
-		roadFile = new File(mainFolder, "road"+Collec.getDefaultGISFileType());
+		roadFile = new File(mainFolder, "road" + Collec.getDefaultGISFileType());
 		if (!roadFile.exists())
 			System.out.println(roadFile + " doesn't exist");
 		outFolder.mkdirs();
 	}
+	/// **
+	// * Allow the
+	// * @param scalesZone
+	// * @throws IOException
+	// */
+	// public static void generateAnalysisOfScene(List<String> scalesZone) throws IOException {
+	// for (String scaleZone : scalesZone)
+	// generateAnalysisOfScene(scaleZone);
+	// //TODO finish that
+	// }
 
 	/**
-	 * Generate a graph with the area of parcels 
+	 * Generate a graph with the area of parcels.
+	 * 
+	 * @param scaleZone
+	 *            The scale of the studied zone. Can either be:
+	 *            <ul>
+	 *            <li>community</li>
+	 *            <li>genericZone</li>
+	 *            <li>preciseZone</li>
+	 *            <li>islet</li>
+	 *            </ul>
+	 * 
 	 * @throws IOException
 	 */
-	public static void genParcelAreaBoundaries() throws IOException {
-		DataStore sds = Geopackages.getDataStore(parcelFile);
-		DataStore sdsRoad = Geopackages.getDataStore(roadFile);
-//		sdsRoad.setCharset(Charset.forName("UTF-8"));
-		SimpleFeatureCollection parcels = sds.getFeatureSource(sds.getTypeNames()[0]).getFeatures();
+	public static void generateAnalysisOfScene(String scaleZone) throws IOException {
+		DataStore ds = Geopackages.getDataStore(parcelFile);
+		// sdsRoad.setCharset(Charset.forName("UTF-8"));
+		SimpleFeatureCollection parcels = ds.getFeatureSource(ds.getTypeNames()[0]).getFeatures();
+		DataStore dsRoad = Geopackages.getDataStore(roadFile);
+		SimpleFeatureCollection road = dsRoad.getFeatureSource(dsRoad.getTypeNames()[0]).getFeatures();
 		HashMap<String, SimpleFeatureCollection> listSFC = new HashMap<String, SimpleFeatureCollection>();
 		DataStore sdsZone = Geopackages.getDataStore(zoningFile);
-		SimpleFeatureCollection zonings = DataUtilities.collection(Collec.selectIntersection(sdsZone.getFeatureSource(sdsZone.getTypeNames()[0]).getFeatures(), parcels));
+		SimpleFeatureCollection zonings = DataUtilities
+				.collection(Collec.selectIntersection(sdsZone.getFeatureSource(sdsZone.getTypeNames()[0]).getFeatures(), parcels));
 		sdsZone.dispose();
 		switch (scaleZone) {
 		case "community":
@@ -107,35 +130,83 @@ public class GetParametersOfScene {
 		}
 		for (String zone : listSFC.keySet()) {
 			// Parcel's area
-			SimpleFeatureCollection sfc = MarkParcelAttributeFromPosition
+			SimpleFeatureCollection sfcBuild = MarkParcelAttributeFromPosition
 					.getOnlyMarkedParcels(MarkParcelAttributeFromPosition.markBuiltParcel(listSFC.get(zone), buildingFile));
-			if (sfc.size() > 1) {
-				AreaGraph vals = MakeStatisticGraphs.sortValuesAndCategorize(
-						Arrays.stream(sfc.toArray(new SimpleFeature[0])).collect(Collectors.toList()), scaleZone + zone, true);
-				vals.toCSV(outFolder);
-				MakeStatisticGraphs.makeGraphHisto(vals, outFolder, "area of the built parcel of the " + scaleZone + " " + zone + " without crests",
-						"parcel area", "nb parcels", 15);
-				// Road informations is harder to produce. We are based on the road Geopackage and on the ratio of road/area calculation to produce estimations
-				// we create a buffer around the zone to get corresponding road segments. The buffer length depends on the type of scale
-				double buffer = 42;
-				switch (scaleZone) {
-				case "genericZone":
-					buffer = 20;
-					break;
-				case "preciseZone":
-				case "islet":
-					buffer = 10;
-					break;
+			SimpleFeatureCollection sfcParcel = MarkParcelAttributeFromPosition.getOnlyMarkedParcels(listSFC.get(zone));
+			HashMap<String, SimpleFeatureCollection> lSFC = new HashMap<String, SimpleFeatureCollection>();
+			lSFC.put("total parcels", sfcParcel);
+			lSFC.put("built parcels", sfcBuild);
+
+			for (String nameSfc : lSFC.keySet()) {
+				SimpleFeatureCollection sfc = lSFC.get(nameSfc);
+				if (sfc.size() > 1) {
+					AreaGraph vals = MakeStatisticGraphs.sortValuesAndCategorize(
+							Arrays.stream(sfc.toArray(new SimpleFeature[0])).collect(Collectors.toList()), scaleZone + zone, true);
+					vals.toCSV(outFolder);
+					MakeStatisticGraphs.makeGraphHisto(vals, outFolder,
+							"area of the" + nameSfc + "of the " + scaleZone + " " + zone + " without crests", "parcel area", "nb parcels", 15);
+					// Road informations is harder to produce. We are based on the road Geopackage and on the ratio of road/area calculation to produce estimations
+					// we create a buffer around the zone to get corresponding road segments. The buffer length depends on the type of scale
+					double buffer = 42;
+					switch (scaleZone) {
+					case "genericZone":
+						buffer = 20;
+						break;
+					case "preciseZone":
+					case "islet":
+						buffer = 10;
+						break;
+					}
+					SimpleFeatureCollection roadsSelected = Collec.selectIntersection(road, Geom.unionSFC(sfc).buffer(buffer).buffer(-buffer));
+					if (roadsSelected.size() > 1)
+						MakeStatisticGraphs.roadGraph(roadsSelected, "length of the " + scaleZone + " " + zone + " roads ", "width of the road",
+								"lenght of the type of road", outFolder);
+					// TODO ajouter ratio parcels?
 				}
-				SimpleFeatureCollection roads = Collec.selectIntersection(sdsRoad.getFeatureSource(sdsRoad.getTypeNames()[0]).getFeatures(),
-						Geom.unionSFC(sfc).buffer(buffer).buffer(-buffer));
-				if (roads.size() > 1)
-					MakeStatisticGraphs.roadGraph(roads, "length of the " + scaleZone + " " + zone + " roads ", "width of the road",
-							"lenght of the type of road", outFolder);
-				// TODO ajouter ratio parcels?
 			}
 		}
-		sdsRoad.dispose();
-		sds.dispose();
+		dsRoad.dispose();
+		ds.dispose();
+
+	}
+
+	public static File getParcelFile() {
+		return parcelFile;
+	}
+
+	public static void setParcelFile(File parcelFile) {
+		GetParametersOfScene.parcelFile = parcelFile;
+	}
+
+	public static File getBuildingFile() {
+		return buildingFile;
+	}
+
+	public static void setBuildingFile(File buildingFile) {
+		GetParametersOfScene.buildingFile = buildingFile;
+	}
+
+	public static File getZoningFile() {
+		return zoningFile;
+	}
+
+	public static void setZoningFile(File zoningFile) {
+		GetParametersOfScene.zoningFile = zoningFile;
+	}
+
+	public static File getRoadFile() {
+		return roadFile;
+	}
+
+	public static void setRoadFile(File roadFile) {
+		GetParametersOfScene.roadFile = roadFile;
+	}
+
+	public static File getOutFolder() {
+		return outFolder;
+	}
+
+	public static void setOutFolder(File outFolder) {
+		GetParametersOfScene.outFolder = outFolder;
 	}
 }

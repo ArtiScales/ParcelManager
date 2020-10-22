@@ -12,7 +12,7 @@ It is possible to set every files with the following names:
   * ***zoningFile***: Geopackage representing the zoning plan.
   * ***buildingFile***: Geopackage representing the buildings.
   * ***communityFile***: Geopackage representing the community limits. It must have a field containing the city's code (<i>DEPCOM</i> by default) (can be ***NULL***).
-  * ***predicateFile***: .csv file containing the rules of the (see xxx in the ArtiScales project to correctly set those rules) (can be ***NULL***).
+  * ***predicateFile***: .csv file containing specific urban rules. Based on the ArtiScales project to correctly set those rules) (can be ***NULL***).
   * ***polygonIntersection***: Geopackage containing polygons which represent an interest for the parcel to be urbanized (can be ***NULL***).
   * ***profileUrbanFabric***: folder where the urban fabric profile are stored under .json names <!-- (see xxx for doc about those folders)-->
   * ***outFolder***: folder where the result are stored
@@ -66,7 +66,7 @@ It is possible to hack this method by using another kind of Geopackage and put i
 
 Once a parcel has been simulated, it attribute filed <i>SECTION</i> (see attribute policy) is marked with a long value, depending on the <b><i>workflow</i></b> used. We check that field to know if a parcel has been simulated. By default, parcels cannot be marked again if they have been already simulated. It is possible to change that behaviour, for post treatments means by exemple, in setting the static boolean <b>MarkParcelAttributeFromPosition.postMark</b> to <b>true</b>.
 
-<h3>Parcel Manager Goals</h3>
+<h3>Parcel Manager Workflows</h3>
 Different algorithm are available in Parcel Manager.
 The parameter <b><i>workflow</i></b> can be set with one of those three values:
 
@@ -79,7 +79,7 @@ Diferrent process can be used to divise parcels.
 The parameter <b><i>parcelProcess</i></b> can be set with one of those three values: 
 
 * ***OBB***: use the oriented bounding box method
-* ***SS***: use the straight skeleton method (not propely working yet)
+* ***SS***: use the straight skeleton method
 * ***MS***: use the median line skeleton method (not implemented yet)
 
 <h3>Urban Fabric profiles</h3>
@@ -87,4 +87,5 @@ The parameter <b><i>parcelProcess</i></b> can be set with one of those three val
 It is possible to set different type of urban fabric that would lead to the construction of buildings. 
 The java object **parameter.ProfileUrbanFabric** from the ArtiScales-tools project is used. 
 The ***urbanFabric*** parameter defines the profile of the parcels parameters.
+Examples can be found in the folders of every *use cases*
 

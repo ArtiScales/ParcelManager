@@ -569,6 +569,7 @@ public class MarkParcelAttributeFromPosition {
 				}
 				result.add(feat);
 			});
+			dsZone.dispose();
 			return result;
 		}
 		SimpleFeatureBuilder featureBuilder = ParcelSchema.getSFBMinParcelSplit();
@@ -585,6 +586,7 @@ public class MarkParcelAttributeFromPosition {
 			e.printStackTrace();
 		}
 		signalIfNoParcelMarked(result, "markParcelIntersectGenericZoningType");
+		dsZone.dispose();
 		return result;
 	}
 
