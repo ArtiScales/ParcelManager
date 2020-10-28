@@ -153,7 +153,7 @@ public class SingleParcelStat {
 		csv.close();
 	}
 
-	// public static double egress(Geometry geom) {
+	// public static double aspectRatio(Geometry geom) {
 	// MinimumBoundingCircle mbc = new MinimumBoundingCircle(geom);
 	//// MaximumInscribedCircle mic = new MaximumInscribedCircle(geom, 1);
 	//// return mic.getRadiusLine().getLength() / mbc.getDiameter().getLength();

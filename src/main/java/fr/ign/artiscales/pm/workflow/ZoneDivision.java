@@ -221,15 +221,17 @@ public class ZoneDivision extends Workflow{
 				tmpZoneToCut.add(zone);
 				switch (PROCESS) {
 				case "OBB":
-					((DefaultFeatureCollection) splitedParcels).addAll(OBBBlockDecomposition.splitParcels(tmpZoneToCut, null,
-							maximalArea, minimalWidthContactRoad, harmonyCoeff, noise,
-							Collec.fromPolygonSFCtoListRingLines(Collec.selectIntersection(isletCollection, (Geometry) zone.getDefaultGeometry())),
-							streetWidth, largeStreetLevel, largeStreetWidth, true, decompositionLevelWithoutStreet));
+					((DefaultFeatureCollection) splitedParcels)
+							.addAll(OBBBlockDecomposition.splitParcels(tmpZoneToCut, null, maximalArea, minimalWidthContactRoad, harmonyCoeff, noise,
+									Collec.fromPolygonSFCtoListRingLines(
+											Collec.selectIntersection(isletCollection, (Geometry) zone.getDefaultGeometry())),
+									streetWidth, largeStreetLevel, largeStreetWidth, true, decompositionLevelWithoutStreet));
 					break;
 				case "SS":
-					((DefaultFeatureCollection) splitedParcels).addAll(TopologicalStraightSkeletonParcelDecomposition.runTopologicalStraightSkeletonParcelDecomposition(zone, roads, "NOM_VOIE_G", "IMPORTANCE", outFolder, maxDepth,
-							maxDistanceForNearestRoad, minimalArea, minWidth, maxWidth,
-							noise == 0 ? 0.1 : noise, new MersenneTwister(42)));			
+					((DefaultFeatureCollection) splitedParcels)
+							.addAll(TopologicalStraightSkeletonParcelDecomposition.runTopologicalStraightSkeletonParcelDecomposition(zone, roads,
+									"NOM_VOIE_G", "IMPORTANCE", outFolder, maxDepth, maxDistanceForNearestRoad, minimalArea, minWidth, maxWidth,
+									noise == 0 ? 0.1 : noise, new MersenneTwister(42), true, streetWidth));
 					break;
 				case "MS":
 					System.out.println("not implemented yet");

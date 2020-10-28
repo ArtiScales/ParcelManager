@@ -23,12 +23,12 @@ import fr.ign.artiscales.pm.parcelFunction.MarkParcelAttributeFromPosition;
 import fr.ign.artiscales.pm.parcelFunction.ParcelSchema;
 import fr.ign.artiscales.pm.parcelFunction.ParcelState;
 import fr.ign.artiscales.tools.geoToolsFunctions.Attribute;
-import fr.ign.artiscales.tools.geoToolsFunctions.Csv;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Collec;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Geom;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Geopackages;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.geom.Polygons;
 import fr.ign.artiscales.tools.geometryGeneration.CityGeneration;
+import fr.ign.artiscales.tools.io.Csv;
 
 /**
  * Street/generated surface ratio. Only developped for french parcels.
@@ -36,7 +36,7 @@ import fr.ign.artiscales.tools.geometryGeneration.CityGeneration;
  * @author Maxime Colomb
  *
  */
-public class StreetRatioParcels {
+public class RoadRatioParcels {
 
 	private static boolean overwrite = true;
 	private static boolean firstLine = true;
@@ -58,7 +58,7 @@ public class StreetRatioParcels {
 
 	/**
 	 * Calculate the ratio between the parcel area and the total area of a zone. It express the quantity of not parcel land, which could be either streets or public spaces.
-	 * Calculate zones and then send the whole to the {@link #streetRatioZone(SimpleFeatureCollection, SimpleFeatureCollection,String, File, File)} method.
+	 * Calculate zones and then send the whole to the {@link #roadRatioZone(SimpleFeatureCollection, SimpleFeatureCollection,String, File, File)} method.
 	 * 
 	 * @param initialMarkedParcel
 	 *            {@link SimpleFeatureCollection} of the initial set of parcels which are marked if they had to simulated. Marks could be made with the methods contained in the
@@ -72,7 +72,7 @@ public class StreetRatioParcels {
 	 *            the road Shapefile
 	 * @throws IOException
 	 */
-	public static void streetRatioParcels(SimpleFeatureCollection initialMarkedParcel, SimpleFeatureCollection cutParcel, String legend,
+	public static void roadRatioParcels(SimpleFeatureCollection initialMarkedParcel, SimpleFeatureCollection cutParcel, String legend,
 			File folderOutStat, File roadFile) throws IOException {
 
 		// We construct zones to analyze the street ratio for each operations.
@@ -105,11 +105,12 @@ public class StreetRatioParcels {
 			}
 			zone.add(sfBuilderZone.buildFeature(Attribute.makeUniqueId()));
 		}
-		streetRatioZone(zone, cutParcel, legend, folderOutStat, roadFile);
+		roadRatioZone(zone, cutParcel, legend, folderOutStat, roadFile);
 	}
 
 	/**
-	 * Calculate the ratio between the parcel area and the total area of a zone. It express the quantity of not parcel land, which could be either streets or public spaces
+	 * Calculate the ratio between the area of a set of parcels and the total area of a zone. The fact that the zone and the area must be verified by the user. The result express
+	 * the quantity of not parcel land, which could be either roads or public spaces.
 	 * 
 	 * @param zone
 	 *            {@link SimpleFeatureCollection} of initial zones
@@ -121,7 +122,7 @@ public class StreetRatioParcels {
 	 *            the road Shapefile
 	 * @throws IOException
 	 */
-	public static void streetRatioZone(SimpleFeatureCollection zone, SimpleFeatureCollection cutParcel, String legend, File folderOutStat,
+	public static void roadRatioZone(SimpleFeatureCollection zone, SimpleFeatureCollection cutParcel, String legend, File folderOutStat,
 			File roadFile) throws IOException {
 		System.out.println("++++++++++Road Ratios++++++++++");
 		HashMap<String, String[]> stat = new HashMap<String, String[]>();
@@ -170,9 +171,9 @@ public class StreetRatioParcels {
 			problem.printStackTrace();
 		}
 		sdsRoad.dispose();
-		if (StreetRatioParcels.firstLine) {
+		if (RoadRatioParcels.firstLine) {
 			Csv.needFLine = true;
-			StreetRatioParcels.firstLine = false;
+			RoadRatioParcels.firstLine = false;
 		} else
 			Csv.needFLine = false;
 		Csv.generateCsvFile(stat, folderOutStat, "streetRatioParcelZone", !overwrite, firstLine);

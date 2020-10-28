@@ -5,7 +5,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 
-import fr.ign.artiscales.tools.geoToolsFunctions.Csv;
+import fr.ign.artiscales.tools.io.Csv;
 
 public class AreaGraph {
 	public AreaGraph(List<Double> sortedDistribution, double boundMin, double boundMax, String nameDistribution) {

@@ -569,6 +569,7 @@ public class MarkParcelAttributeFromPosition {
 				}
 				result.add(feat);
 			});
+			dsZone.dispose();
 			return result;
 		}
 		SimpleFeatureBuilder featureBuilder = ParcelSchema.getSFBMinParcelSplit();
@@ -585,6 +586,7 @@ public class MarkParcelAttributeFromPosition {
 			e.printStackTrace();
 		}
 		signalIfNoParcelMarked(result, "markParcelIntersectGenericZoningType");
+		dsZone.dispose();
 		return result;
 	}
 
@@ -942,12 +944,22 @@ public class MarkParcelAttributeFromPosition {
 		}
 	}
 
+	/**
+	 * Return a {@link SimpleFeatureCollection} containing only the marked parcels on their <i>{@value #markFieldName}</i> field.
+	 * 
+	 * @param in
+	 *            input {@link SimpleFeatureCollection} with marking attribute
+	 * @return
+	 */
 	public static SimpleFeatureCollection getOnlyMarkedParcels(SimpleFeatureCollection in) {
 		DefaultFeatureCollection result = new DefaultFeatureCollection();
+		if (!Collec.isCollecContainsAttribute(in, getMarkFieldName())) {
+			System.out.println("getOnlyMarkedParcels : no " + getMarkFieldName() + " field");
+			return null;
+		}
 		Arrays.stream(in.toArray(new SimpleFeature[0])).forEach(feat -> {
-			if ((int) feat.getAttribute(markFieldName) == 1) {
+			if ((int) feat.getAttribute(markFieldName) == 1)
 				result.add(feat);
-			}
 		});
 		return result;
 	}

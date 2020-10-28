@@ -1,18 +1,26 @@
 # Field Attributes
-Parcel Manager is made to be adaptable for every input of parcels. 
-It works with three basic fields, defined as follow:
+## Parcel
+Parcel Manager is made to be adaptable for every parcels nomenclature.
+It simply works with three basic fields, defined as follow:
 <ul>
     <li>The <i>community field</i> represent the unique identifier of the community (it can be a zipcode or a statistical code). Its default name is '<b>DEPCOM</b>'</li>
     <li>The <i>section field</i> represent a zone which must be unique for each communities. Its default name is '<b>SECTION</b>'</li>
     <li>The <i>number field</i> represent a unique number of parcel within each section. Its default name is '<b>NUMERO</b>'</li>
 </ul>
-Those attribute are generated during every Parcel Manager process.
-If the input parcels already contains those attributes, they are copied to the not simuled parcels. If the field names are different, it is possible to change them with the static setters from the <a href="https://github.com/ArtiScales/ArtiScales-tools/blob/master/src/main/java/fr/ign/cogit/parcelFunction/ParcelSchema.java">parcelFunction.ParcelSchema class</a>.
-If the correspondance is missing with the input data, the unsimuled parcels will have null fields. 
-It is also possible to convert the parcel type to this minimum type, with methods like <i>frenchParcelToMinParcel(...)</i> from the <a href="https://github.com/ArtiScales/ParcelManager/blob/master/src/main/java/fr/ign/artiscales/fields/french/FrenchParcelFields.java">fields.french.FrenchParcelFields class</a>.
-Other methods such as <i>setOriginalFrenchParcelAttributes(...)</i> helps re-assignate the fields after a Parcel Manager simulation.
+Those three attributes are generated and dealt with in every Parcel Manager workflows.
+Reshaped parcels have a new <i>section</i> value, based on the value of the <a href="https://github.com/ArtiScales/ParcelManager/blob/master/src/main/java/fr/ign/artiscales/pm/workflow/Workflow.java">abstract workflow.Workflow.makeNewSection()</a> method and incremented.
+<i>Number</i> value is also incremented for each new zone.
 
-The zoning plan also have specific attribute policy. It must contains two specific fields:
+If the input parcels already contains attributes that share the same field name, they are copied for every parcels. 
+To match the field names of the input parcels, change them with the static setters from the <a href="https://github.com/ArtiScales/ArtiScales-tools/blob/master/src/main/java/fr/ign/artiscales/pm/parcelFunction/ParcelSchema.java">parcelFunction.ParcelSchema</a> class.
+<!--If the correspondance is missing with the input data, the unsimuled parcels will have null fields.--> 
+It is also possible to convert the parcel type to this minimum type, with methods like <i>frenchParcelToMinParcel(...)</i> from the <a href="https://github.com/ArtiScales/ParcelManager/blob/master/src/main/java/fr/ign/artiscales/pm/fields/french/FrenchParcelFields.java">fields.french.FrenchParcelFields</a> class.
+Other methods such as <i>setOriginalFrenchParcelAttributes(...)</i> helps re-assignate the fields after a Parcel Manager simulation.
+It is possible to copy those methods to adapt them for another parcel nomenclature.
+
+##Zoning plan
+
+The zoning plan also have specific attribute nomenclature. It must contains two specific fields:
 
 <ul>
     <li>a <i>generic name</i> represent the general permission of the zones. Its default name is '<b>TYPEZONE</b>' and can be of three different types:

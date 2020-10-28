@@ -21,10 +21,10 @@ import fr.ign.artiscales.pm.scenario.PMStep;
 import fr.ign.artiscales.pm.workflow.Densification;
 import fr.ign.artiscales.tools.carto.JoinCSVToGeoFile;
 import fr.ign.artiscales.tools.carto.MergeByAttribute;
-import fr.ign.artiscales.tools.geoToolsFunctions.Csv;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Collec;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Geopackages;
 import fr.ign.artiscales.tools.geometryGeneration.CityGeneration;
+import fr.ign.artiscales.tools.io.Csv;
 import fr.ign.artiscales.tools.parameter.ProfileUrbanFabric;
 
 /**
@@ -66,7 +66,6 @@ public class DensificationStudy {
 	 * @param isParcelWithoutStreetAllowed
 	 * @param profile
 	 * @throws IOException 
-	 * @throws Exception
 	 */
 	public static void runDensificationStudy(SimpleFeatureCollection parcels, File buildingFile, File roadFile, File zoningFile,
 			File outFolder, boolean isParcelWithoutStreetAllowed, ProfileUrbanFabric profile) throws IOException {
