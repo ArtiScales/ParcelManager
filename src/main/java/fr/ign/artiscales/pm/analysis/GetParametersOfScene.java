@@ -54,8 +54,12 @@ public class GetParametersOfScene {
 	/**
 	 * Set automaticlally the file names with their basic names from a root folder. Possible to change them with dedicaded setters
 	 * 
+<<<<<<< HEAD
 	 * @param mainFolder
 	 *            root folder containing the geographic layers.
+=======
+	 * @param mainFolder root folder containing the geographic layers.
+>>>>>>> 65ef530bc51b90621d238bd2e7e34d57ebfffdfa
 	 */
 	public static void setFiles(File mainFolder) {
 		parcelFile = new File(mainFolder, "parcel" + Collec.getDefaultGISFileType());
