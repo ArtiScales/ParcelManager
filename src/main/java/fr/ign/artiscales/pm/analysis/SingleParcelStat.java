@@ -12,6 +12,8 @@ import org.geotools.data.simple.SimpleFeatureIterator;
 import org.geotools.feature.DefaultFeatureCollection;
 import org.geotools.feature.simple.SimpleFeatureBuilder;
 import org.geotools.feature.simple.SimpleFeatureTypeBuilder;
+import org.locationtech.jts.algorithm.MinimumBoundingCircle;
+import org.locationtech.jts.algorithm.construct.MaximumInscribedCircle;
 import org.locationtech.jts.algorithm.distance.DiscreteHausdorffDistance;
 import org.locationtech.jts.algorithm.match.HausdorffSimilarityMeasure;
 import org.locationtech.jts.geom.Geometry;
@@ -108,7 +110,7 @@ public class SingleParcelStat {
 		}
 		CSVWriter csv = new CSVWriter(new FileWriter(parcelStatCsv, false));
 		String[] firstLine = { "code", "area", "perimeter", "contactWithRoad", "widthContactWithRoad", "numberOfNeighborhood", "Geometry", "HausDist",
-				"DisHausDst", "CodeAppar" };
+				"DisHausDst", "CodeAppar", "AspctRatio" };
 		csv.writeNext(firstLine);
 		SimpleFeatureCollection islet = CityGeneration.createUrbanIslet(parcels);
 		Arrays.stream(parcels.toArray(new SimpleFeature[0]))
@@ -125,6 +127,7 @@ public class SingleParcelStat {
 					double HausDist = 0;
 					double DisHausDst = 0;
 					String CodeAppar = "";
+					// Setting of Hausdorf distance
 					if (parcelToCompare != null) {
 						HausdorffSimilarityMeasure hausDis = new HausdorffSimilarityMeasure();
 						SimpleFeature parcelCompare = Collec.getIntersectingSimpleFeatureFromSFC(parcelGeom, parcelToCompare);
@@ -140,6 +143,9 @@ public class SingleParcelStat {
 								CodeAppar = (String) parcelCompare.getAttribute("CODE");
 						}
 					}
+					// Calculating Aspect Ratio
+					MinimumBoundingCircle mbc = new MinimumBoundingCircle(parcelGeom);
+					MaximumInscribedCircle mic = new MaximumInscribedCircle(parcelGeom, 1);
 					String[] line = {
 							parcel.getAttribute(ParcelSchema.getMinParcelCommunityField()) + "-"
 									+ parcel.getAttribute(ParcelSchema.getMinParcelSectionField()) + "-"
@@ -147,7 +153,8 @@ public class SingleParcelStat {
 							String.valueOf(parcelGeom.getArea()), String.valueOf(parcelGeom.getLength()), String.valueOf(contactWithRoad),
 							String.valueOf(widthRoadContact),
 							String.valueOf(ParcelState.countParcelNeighborhood(parcelGeom, Collec.selectIntersection(parcels, parcelGeom.buffer(2)))),
-							parcelGeom.toString(), String.valueOf(HausDist), String.valueOf(DisHausDst), CodeAppar };
+							parcelGeom.toString(), String.valueOf(HausDist), String.valueOf(DisHausDst), CodeAppar,
+							String.valueOf(mic.getRadiusLine().getLength() / mbc.getDiameter().getLength()) };
 					csv.writeNext(line);
 				});
 		csv.close();
