@@ -176,7 +176,7 @@ public class RoadRatioParcels {
 			RoadRatioParcels.firstLine = false;
 		} else
 			Csv.needFLine = false;
-		Csv.generateCsvFile(stat, folderOutStat, "streetRatioParcelZone", !overwrite, firstLine);
+		Csv.generateCsvFile(stat, folderOutStat, "streetRatioParcelZone"+legend, !overwrite, firstLine);
 		overwrite = false;
 	}
 

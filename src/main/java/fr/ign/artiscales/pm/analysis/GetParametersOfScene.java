@@ -35,6 +35,9 @@ public class GetParametersOfScene {
 	// TODO mettre la possibilité de mélanger ces échelles List<String> scaleZone = Arrays.asList("community");
 	static File parcelFile, buildingFile, zoningFile, roadFile, outFolder;
 
+	/**
+	 * Proceed to the analysis of parameters in every defined zones of the geographic files.
+	 */
 	public static void main(String[] args) throws IOException {
 		outFolder = new File("/tmp/ParametersOfScene");
 		setFiles(new File("src/main/resources/GeneralTest/"));
@@ -142,9 +145,18 @@ public class GetParametersOfScene {
 		// Public Space Ratio
 		dsRoad.dispose();
 		ds.dispose();
-		System.out.println("##### " + scaleZone + "done");
+		System.out.println("##### " + scaleZone + " done");
 	}
 
+	/**
+	 * Generate the road information in the give zones
+	 * 
+	 * @param collection
+	 * @param road
+	 * @param scaleZone
+	 * @param zone
+	 * @throws IOException
+	 */
 	public static void publicSpaceRatio(SimpleFeatureCollection collection, SimpleFeatureCollection road, String scaleZone, String zone)
 			throws IOException {
 		// Road informations is harder to produce. We are based on the road Geopackage and on the ratio of road/area calculation to produce estimations
@@ -160,8 +172,6 @@ public class GetParametersOfScene {
 			break;
 		}
 		Geometry zoneGeom = Geom.unionSFC(collection).buffer(buffer).buffer(-buffer);
-		Geom.exportGeom(zoneGeom, new File("/tmp/tmpZonepublicSpaceRatio"));
-
 		SimpleFeatureCollection roadsSelected = Collec.selectIntersection(road, zoneGeom);
 		if (roadsSelected.size() > 1)
 			MakeStatisticGraphs.roadGraph(roadsSelected, "length of the " + scaleZone + " " + zone + " roads ", "width of the road",
@@ -171,7 +181,7 @@ public class GetParametersOfScene {
 	}
 
 	/**
-	 * Calculate the
+	 * Calculate the area bound of every parcels then only the build parcels.
 	 * 
 	 * @param collection
 	 * @param scaleZone
@@ -181,15 +191,13 @@ public class GetParametersOfScene {
 	public static void areaBuiltAndTotal(SimpleFeatureCollection collection, String scaleZone, String zone) throws IOException {
 		if (collection.isEmpty())
 			return;
-		SimpleFeatureCollection sfcBuild = MarkParcelAttributeFromPosition
-				.getOnlyMarkedParcels(MarkParcelAttributeFromPosition.markBuiltParcel(collection, buildingFile));
-		SimpleFeatureCollection sfcParcel = MarkParcelAttributeFromPosition.getOnlyMarkedParcels(collection);
 		HashMap<String, SimpleFeatureCollection> lSFC = new HashMap<String, SimpleFeatureCollection>();
-		lSFC.put("total parcels", sfcParcel);
-		lSFC.put("built parcels", sfcBuild);
+		lSFC.put("total parcels", MarkParcelAttributeFromPosition.getOnlyMarkedParcels(collection));
+		lSFC.put("built parcels",
+				MarkParcelAttributeFromPosition.getOnlyMarkedParcels(MarkParcelAttributeFromPosition.markBuiltParcel(collection, buildingFile)));
 		for (String nameSfc : lSFC.keySet()) {
 			SimpleFeatureCollection sfc = lSFC.get(nameSfc);
-			if (sfc.size() > 1) {
+			if (sfc != null && sfc.size() > 2) {
 				AreaGraph vals = MakeStatisticGraphs.sortValuesAndCategorize(
 						Arrays.stream(sfc.toArray(new SimpleFeature[0])).collect(Collectors.toList()), scaleZone + zone, true);
 				vals.toCSV(outFolder);

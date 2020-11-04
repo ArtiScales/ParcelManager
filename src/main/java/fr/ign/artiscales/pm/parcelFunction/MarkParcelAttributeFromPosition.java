@@ -945,7 +945,7 @@ public class MarkParcelAttributeFromPosition {
 	}
 
 	/**
-	 * Return a {@link SimpleFeatureCollection} containing only the marked parcels on their <i>{@value #markFieldName}</i> field.
+	 * Return a {@link SimpleFeatureCollection} containing only the marked parcels on their <i>markFieldName</i> field.
 	 * 
 	 * @param in
 	 *            input {@link SimpleFeatureCollection} with marking attribute
