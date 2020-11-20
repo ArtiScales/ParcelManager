@@ -43,27 +43,27 @@ import fr.ign.artiscales.tools.geometryGeneration.CityGeneration;
  */
 public class SingleParcelStat {
 
-	// public static void main(String[] args) throws IOException {
-	// long strat = System.currentTimeMillis();
-	// File root = new File("/home/mcolomb/PMtest/ParcelComparison/");
-	// DataStore dsParcelEv = Geopackages.getDataStore(new File(root,"/out/consolidationDivisionWithOBBOnNC_Of/EvolvedParcel.gpkg"));
-	// DataStore dsParcelSimu = Geopackages.getDataStore(new File(root, "/out/consolidationDivisionWithOBBOnNC_Of/SimulatedParcel.gpkg"));
-	// SimpleFeatureCollection parcelEv = FrenchParcelFields.addCommunityCode(
-	// MarkParcelAttributeFromPosition.markAllParcel(dsParcelEv.getFeatureSource(dsParcelEv.getTypeNames()[0]).getFeatures()));
-	// SimpleFeatureCollection parcelSimu = MarkParcelAttributeFromPosition
-	// .markAllParcel(dsParcelSimu.getFeatureSource(dsParcelSimu.getTypeNames()[0]).getFeatures());
-	// DataStore dsRoad = Geopackages.getDataStore(new File(root, "/road.gpkg"));
-	// SimpleFeatureCollection road = dsRoad.getFeatureSource(dsRoad.getTypeNames()[0]).getFeatures();
-	//
-	// writeStatSingleParcel(parcelEv, road, new File(root,"out2/ev.csv"));
-	// writeStatSingleParcel(parcelSimu, road, parcelEv, new File(root,"out2/sim.csv"));
-	//
-	// // Collec.exportSFC(makeHausdorfDistanceMaps(parcelEv, parcelSimu), new File("/tmp/haus"));
-	// dsParcelEv.dispose();
-	// dsParcelSimu.dispose();
-	// dsRoad.dispose();
-	// System.out.println("time : " + (System.currentTimeMillis() - strat));
-	// }
+	 public static void main(String[] args) throws IOException {
+	 long strat = System.currentTimeMillis();
+	 File root = new File("/home/mcolomb/PMtest/ParcelComparison/");
+	 DataStore dsParcelEv = Geopackages.getDataStore(new File(root,"/out/evolvedParcel.gpkg"));
+	 DataStore dsParcelSimu = Geopackages.getDataStore(new File(root, "/out/simulatedParcels.gpkg"));
+	 SimpleFeatureCollection parcelEv = FrenchParcelFields.addCommunityCode(
+	 MarkParcelAttributeFromPosition.markAllParcel(dsParcelEv.getFeatureSource(dsParcelEv.getTypeNames()[0]).getFeatures()));
+	 SimpleFeatureCollection parcelSimu = MarkParcelAttributeFromPosition
+	 .markAllParcel(dsParcelSimu.getFeatureSource(dsParcelSimu.getTypeNames()[0]).getFeatures());
+	 DataStore dsRoad = Geopackages.getDataStore(new File(root, "/road.gpkg"));
+	 SimpleFeatureCollection road = dsRoad.getFeatureSource(dsRoad.getTypeNames()[0]).getFeatures();
+	
+	 writeStatSingleParcel(parcelEv, road, new File(root,"out2/ev.csv"));
+	 writeStatSingleParcel(parcelSimu, road, parcelEv, new File(root,"out2/sim.csv"));
+	
+	 // Collec.exportSFC(makeHausdorfDistanceMaps(parcelEv, parcelSimu), new File("/tmp/haus"));
+	 dsParcelEv.dispose();
+	 dsParcelSimu.dispose();
+	 dsRoad.dispose();
+	 System.out.println("time : " + (System.currentTimeMillis() - strat));
+	 }
 
 	public static void writeStatSingleParcel(File parcelFile, File roadFile, File parcelStatCsv, boolean markAll) throws IOException {
 		writeStatSingleParcel(parcelFile, null, roadFile, parcelStatCsv, markAll);
@@ -124,8 +124,8 @@ public class SingleParcelStat {
 					if (widthRoadContact != 0)
 						contactWithRoad = true;
 					// if we set a parcel plan to compare, we calculate the Hausdorf distances for the parcels that intersects the most parts.
-					double HausDist = 0;
-					double DisHausDst = 0;
+					String HausDist = "NA";
+					String DisHausDst = "NA";
 					String CodeAppar = "";
 					// Setting of Hausdorf distance
 					if (parcelToCompare != null) {
@@ -134,8 +134,8 @@ public class SingleParcelStat {
 						if (parcelCompare != null) {
 							Geometry parcelCompareGeom = (Geometry) parcelCompare.getDefaultGeometry();
 							DiscreteHausdorffDistance dhd = new DiscreteHausdorffDistance(parcelGeom, parcelCompareGeom);
-							HausDist = hausDis.measure(parcelGeom, parcelCompareGeom);
-							DisHausDst = dhd.distance();
+							HausDist = String.valueOf(hausDis.measure(parcelGeom, parcelCompareGeom));
+							DisHausDst = String.valueOf(dhd.distance());
 							if (!Collec.isSchemaContainsAttribute(parcelCompare.getFeatureType(), "CODE")
 									&& GeneralFields.getParcelFieldType().equals("french"))
 								CodeAppar = FrenchParcelFields.makeDEPCOMCode(parcelCompare);
@@ -153,7 +153,7 @@ public class SingleParcelStat {
 							String.valueOf(parcelGeom.getArea()), String.valueOf(parcelGeom.getLength()), String.valueOf(contactWithRoad),
 							String.valueOf(widthRoadContact),
 							String.valueOf(ParcelState.countParcelNeighborhood(parcelGeom, Collec.selectIntersection(parcels, parcelGeom.buffer(2)))),
-							parcelGeom.toString(), String.valueOf(HausDist), String.valueOf(DisHausDst), CodeAppar,
+							parcelGeom.toString(), HausDist, DisHausDst, CodeAppar,
 							String.valueOf(mic.getRadiusLine().getLength() / mbc.getDiameter().getLength()) };
 					csv.writeNext(line);
 				});

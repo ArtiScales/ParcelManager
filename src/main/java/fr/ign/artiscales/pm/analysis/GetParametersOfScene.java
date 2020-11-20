@@ -25,7 +25,7 @@ import fr.ign.artiscales.tools.geometryGeneration.CityGeneration;
 
 /**
  * This class generates values for the description of an urban fabric. It is aimed to help the setting of {@link fr.ign.artiscales.tools.parameter.ProfileUrbanFabric} parameters.
- * It can work on different scales, from the ilot or the {@link GeneralFields#zonePreciseNameField} to a whole community.
+ * It can work on different scales, from the block or the {@link GeneralFields#zonePreciseNameField} of a zoning plan to a whole community.
  * 
  * @author Maxime Colomb
  *
