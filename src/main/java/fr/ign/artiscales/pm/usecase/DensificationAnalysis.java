@@ -32,7 +32,7 @@ public class DensificationAnalysis {
 						MarkParcelAttributeFromPosition.markUnBuiltParcel(
 								MarkParcelAttributeFromPosition.markParcelsConnectedToRoad(
 										MarkParcelAttributeFromPosition.markSimulatedParcel(parcelDensifiedOnly),
-										CityGeneration.createUrbanIslet(parcelDensified), roadFile, CityGeneration.createBufferBorder(parcelDensified)),
+										CityGeneration.createUrbanBlock(parcelDensified), roadFile, CityGeneration.createBufferBorder(parcelDensified)),
 								buildingFile));
 		Collec.exportSFC(SingleParcelStat.makeHausdorfDistanceMaps(parcelsDensifCreated, parcelSelec), new File("/tmp/HausdorfDensification"));
 		DataStore dsRoad = Geopackages.getDataStore(

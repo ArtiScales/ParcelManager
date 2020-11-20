@@ -70,13 +70,13 @@ public class FlagParcelDecomposition {
 //		FilterFactory2 ff = CommonFactoryFinder.getFilterFactory2();
 //		ShapefileDataStore sds = new ShapefileDataStore(inputShapeFile.toURI().toURL());
 //		SimpleFeatureCollection parcels = MarkParcelAttributeFromPosition.markParcelIntersectGenericZoningType(sds.getFeatureSource().getFeatures(),"U",zoningFile);
-//		SimpleFeatureCollection islet = CityGeneration.createUrbanIslet(parcels);
+//		SimpleFeatureCollection block = CityGeneration.createUrbanBlock(parcels);
 //		try (SimpleFeatureIterator it = parcels.features()) {
 //			while (it.hasNext()) {
 //				SimpleFeature feat = it.next();
 //				if (feat.getAttribute(MarkParcelAttributeFromPosition.getMarkFieldName()) != null
 //						&& (int) feat.getAttribute(MarkParcelAttributeFromPosition.getMarkFieldName()) == 1) {
-//					generateFlagSplitedParcels(feat, Collec.fromPolygonSFCtoListRingLines(islet.subCollection(ff.bbox(
+//					generateFlagSplitedParcels(feat, Collec.fromPolygonSFCtoListRingLines(block.subCollection(ff.bbox(
 //							ff.property(feat.getFeatureType().getGeometryDescriptor().getLocalName()), feat.getBounds()))), 0, tmpFolder, inputBuildingFile, inputRoad, 400.0, 15.0, 3.0, false, null);
 //				}
 //			}
@@ -501,7 +501,7 @@ private Pair<Geometry,Geometry> getIntersectionDifference(Geometry a, Geometry b
   }
 
 	/**
-	 * We generate an exterior with the studied polygon itself if no exterior islet has been set
+	 * We generate an exterior with the studied polygon itself if no exterior block has been set
 	 *   
 	 */
   private void generateExt() {

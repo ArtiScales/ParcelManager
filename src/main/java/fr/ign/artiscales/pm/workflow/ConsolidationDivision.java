@@ -101,7 +101,7 @@ public class ConsolidationDivision extends Workflow{
 			System.out.println("done step 1");
 		}
 		////////////////
-		// second step : merge of the parcel that touches themselves by islet
+		// second step : merge of the parcel that touches themselves by block
 		////////////////
 		DefaultFeatureCollection mergedParcels = new DefaultFeatureCollection();
 		SimpleFeatureBuilder sfBuilder = ParcelSchema.getSFBMinParcelSplit();
@@ -129,7 +129,7 @@ public class ConsolidationDivision extends Workflow{
 			roads = null;
 		SimpleFeatureBuilder sfBuilderFinalParcel = ParcelSchema.getSFBMinParcel();
 		DefaultFeatureCollection cutParcels = new DefaultFeatureCollection();
-		SimpleFeatureCollection isletCollection = CityGeneration.createUrbanIslet(parcels);
+		SimpleFeatureCollection blockCollection = CityGeneration.createUrbanBlock(parcels);
 		FilterFactory2 ff = CommonFactoryFinder.getFilterFactory2();
 		Arrays.stream(mergedParcels.toArray(new SimpleFeature[0])).forEach(feat -> {
 			if (((Geometry) feat.getDefaultGeometry()).getArea() > profile.getMaximalArea()) {
@@ -142,7 +142,7 @@ public class ConsolidationDivision extends Workflow{
 						freshCutParcel = OBBBlockDecomposition.splitParcel(feat,
 								(roads != null && !roads.isEmpty()) ? Collec.selectIntersection(roads, (Geometry) feat.getDefaultGeometry()) : null,
 								profile.getMaximalArea(), profile.getMinimalWidthContactRoad(), profile.getHarmonyCoeff(), profile.getNoise(),
-								Collec.fromPolygonSFCtoListRingLines(isletCollection.subCollection(
+								Collec.fromPolygonSFCtoListRingLines(blockCollection.subCollection(
 										ff.bbox(ff.property(feat.getFeatureType().getGeometryDescriptor().getLocalName()), feat.getBounds()))),
 								profile.getStreetWidth(), profile.getLargeStreetLevel(), profile.getLargeStreetWidth(), true,
 								profile.getDecompositionLevelWithoutStreet());

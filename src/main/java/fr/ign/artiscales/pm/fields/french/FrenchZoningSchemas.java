@@ -10,18 +10,19 @@ import fr.ign.artiscales.pm.fields.GeneralFields;
 public class FrenchZoningSchemas {
 
 	/**
-	 * Decide the possibility of urbanization of an urban zoning feature according to the French urban planning habits. The <i>zoneNameField<i> field must be <b>U</b> or alike and the
-	 * <i>zonePreciseNameField<i> field must be a variation of the <b>UA</b>, <b>UB</b>, <b>UC</b>, <b>UD</b> zones. It also allows the types <b>U</b>, <b>C</b> and <b>ZC</b> that could provide
-	 * from Cartes Communales.
+	 * Decide the possibility of urbanization of an urban zoning feature according to the French urban planning habits. The <i>zoneNameField<i> field must be <b>U</b> or alike and
+	 * the <i>zonePreciseNameField<i> field must be a variation of the <b>UA</b>, <b>UB</b>, <b>UC</b>, <b>UD</b> zones. It also allows the types <b>U</b>, <b>C</b> and <b>ZC</b>
+	 * that could provide from Cartes Communales.
 	 * 
-	 * <i>ZoneGenericNameField<i> and <i>zonePreciseNameField<i> are <i>TYPEZONE</i> and <i>LIBELLE</i> can be changed with the setters from the {@link fr.ign.artiscales.pm.fields.GeneralFields} class.
+	 * <i>ZoneGenericNameField<i> and <i>zonePreciseNameField<i> are <i>TYPEZONE</i> and <i>LIBELLE</i> can be changed with the setters from the
+	 * {@link fr.ign.artiscales.pm.fields.GeneralFields} class.
 	 * 
 	 * @param zone
 	 *            Simple Feature of the input zone
 	 * @return true if the urban zone is urbanizable, wrong otherwise.
 	 */
 	public static boolean isUrbanZoneUsuallyAdmitResidentialConstruction(SimpleFeature zone) {
-		if (zone == null) 
+		if (zone == null)
 			return false;
 		String libelle = ((String) zone.getAttribute(GeneralFields.getZonePreciseNameField())).toLowerCase();
 		if (normalizeNameFrenchBigZone((String) zone.getAttribute(GeneralFields.getZoneGenericNameField())).equals("U") && libelle != null
@@ -32,11 +33,12 @@ public class FrenchZoningSchemas {
 	}
 
 	/**
-	 * Decide the possibility of urbanization of an urban zoning feature according to the French urban planning habits. The <i>ZoneGenericNameField<i> field must be <b>U</b> or alike and the
-	 * <i>zonePreciseNameField<i> field must be a variation of the <b>UA</b>, <b>UB</b>, <b>UC</b>, <b>UD</b> zones. It also allows the types <b>U</b>, <b>C</b> and <b>ZC</b> that could provide
-	 * from Cartes Communales.
+	 * Decide the possibility of urbanization of an urban zoning feature according to the French urban planning habits. The <i>ZoneGenericNameField<i> field must be <b>U</b> or
+	 * alike and the <i>zonePreciseNameField<i> field must be a variation of the <b>UA</b>, <b>UB</b>, <b>UC</b>, <b>UD</b> zones. It also allows the types <b>U</b>, <b>C</b> and
+	 * <b>ZC</b> that could provide from Cartes Communales.
 	 * 
-	 * <i>ZoneGenericNameField<i> and <i>zonePreciseNameField<i> are <i>TYPEZONE</i> and <i>LIBELLE</i> can be changed with the setters from the {@link fr.ign.artiscales.pm.fields.GeneralFields} class.
+	 * <i>ZoneGenericNameField<i> and <i>zonePreciseNameField<i> are <i>TYPEZONE</i> and <i>LIBELLE</i> can be changed with the setters from the
+	 * {@link fr.ign.artiscales.pm.fields.GeneralFields} class.
 	 * 
 	 * @param zone
 	 *            Simple Feature of the input zone
@@ -44,7 +46,8 @@ public class FrenchZoningSchemas {
 	 */
 	public static boolean isZoneUsuallyAdmitResidentialConstruction(SimpleFeature zone) {
 		String libelle = ((String) zone.getAttribute(GeneralFields.getZonePreciseNameField())).toLowerCase();
-		if (isUrbanZoneUsuallyAdmitResidentialConstruction(zone) && normalizeNameFrenchBigZone((String) zone.getAttribute(GeneralFields.getZoneGenericNameField())).equals("AU") 
+		if (isUrbanZoneUsuallyAdmitResidentialConstruction(zone)
+				&& normalizeNameFrenchBigZone((String) zone.getAttribute(GeneralFields.getZoneGenericNameField())).equals("AU")
 				&& (libelle.startsWith("1") || libelle.startsWith("au1")))
 			return true;
 		return false;
@@ -113,5 +116,16 @@ public class FrenchZoningSchemas {
 			listZones.add("ZNC");
 		}
 		return listZones;
-	}	
+	}
+
+	public static String getTranslatedName(String genericZone) {
+		switch (normalizeNameFrenchBigZone(genericZone)) {
+		case "U":
+			return "Urbanized";
+		case "AU":
+			return "To be urbanized";
+		default:
+			return "Not urbanized";
+		}
+	}
 }

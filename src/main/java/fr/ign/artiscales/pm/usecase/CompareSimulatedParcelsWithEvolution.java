@@ -59,7 +59,7 @@ public class CompareSimulatedParcelsWithEvolution {
 		// Mark and export the parcels that have changed between the two set of time
 		ParcelCollection.sortDifferentParcel(parcelRefFile, parcelCompFile, outFolder);
 		// create ilots for parcel densification in case they haven't been generated before
-		CityGeneration.createUrbanIslet(parcelRefFile, rootFolder);
+		CityGeneration.createUrbanBlock(parcelRefFile, rootFolder);
 
 		PMScenario.setSaveIntermediateResult(true);
 //		PMStep.setDEBUG(true);

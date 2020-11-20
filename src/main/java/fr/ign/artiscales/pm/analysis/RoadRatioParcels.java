@@ -41,20 +41,20 @@ public class RoadRatioParcels {
 	private static boolean overwrite = true;
 	private static boolean firstLine = true;
 
-//	public static void main(String[] args) throws IOException {
-//		long start = System.currentTimeMillis();
-//		File rootFolder = new File("src/main/resources/GeneralTest/");
-//		File zoningFile = new File(rootFolder, "zoning.gpkg");
-//		DataStore ds = Geopackages.getDataStore(new File(rootFolder, "parcel.gpkg"));
-//		SimpleFeatureCollection sfc = ds.getFeatureSource(ds.getTypeNames()[0]).getFeatures();
-//		DataStore ds2 = Geopackages.getDataStore(new File(rootFolder,"out/OBB/ParcelConsolidRecomp.gpkg"));
-//		SimpleFeatureCollection sfc2 = ds2.getFeatureSource(ds2.getTypeNames()[0]).getFeatures();
-//		streetRatioParcels(MarkParcelAttributeFromPosition.markParcelIntersectPreciseZoningType(sfc, "AU", "AUb",
-//				zoningFile), sfc2, "", new File("/tmp/"), new File(rootFolder, "road.gpkg"));
-//		ds.dispose();
-//		ds2.dispose();
-//		System.out.println(System.currentTimeMillis() - start);
-//	}
+	// public static void main(String[] args) throws IOException {
+	// long start = System.currentTimeMillis();
+	// File rootFolder = new File("src/main/resources/GeneralTest/");
+	// File zoningFile = new File(rootFolder, "zoning.gpkg");
+	// DataStore ds = Geopackages.getDataStore(new File(rootFolder, "parcel.gpkg"));
+	// SimpleFeatureCollection sfc = ds.getFeatureSource(ds.getTypeNames()[0]).getFeatures();
+	// DataStore ds2 = Geopackages.getDataStore(new File(rootFolder,"out/OBB/ParcelConsolidRecomp.gpkg"));
+	// SimpleFeatureCollection sfc2 = ds2.getFeatureSource(ds2.getTypeNames()[0]).getFeatures();
+	// streetRatioParcels(MarkParcelAttributeFromPosition.markParcelIntersectPreciseZoningType(sfc, "AU", "AUb",
+	// zoningFile), sfc2, "", new File("/tmp/"), new File(rootFolder, "road.gpkg"));
+	// ds.dispose();
+	// ds2.dispose();
+	// System.out.println(System.currentTimeMillis() - start);
+	// }
 
 	/**
 	 * Calculate the ratio between the parcel area and the total area of a zone. It express the quantity of not parcel land, which could be either streets or public spaces.
@@ -62,8 +62,8 @@ public class RoadRatioParcels {
 	 * 
 	 * @param initialMarkedParcel
 	 *            {@link SimpleFeatureCollection} of the initial set of parcels which are marked if they had to simulated. Marks could be made with the methods contained in the
-	 *            class {@link fr.ign.artiscales.pm.parcelFunction.MarkParcelAttributeFromPosition}. The field attribute is named <i>SPLIT</i> by default. It is possible to change it with the
-	 *            {@link fr.ign.artiscales.pm.parcelFunction.MarkParcelAttributeFromPosition#setMarkFieldName(String)} function.
+	 *            class {@link fr.ign.artiscales.pm.parcelFunction.MarkParcelAttributeFromPosition}. The field attribute is named <i>SPLIT</i> by default. It is possible to change
+	 *            it with the {@link fr.ign.artiscales.pm.parcelFunction.MarkParcelAttributeFromPosition#setMarkFieldName(String)} function.
 	 * @param cutParcel
 	 *            A collection of parcels after a Parcel Manager simulation
 	 * @param folderOutStat
@@ -129,7 +129,7 @@ public class RoadRatioParcels {
 
 		DataStore sdsRoad = Geopackages.getDataStore(roadFile);
 		SimpleFeatureCollection roads = Collec.selectIntersection(sdsRoad.getFeatureSource(sdsRoad.getTypeNames()[0]).getFeatures(), zone);
-		SimpleFeatureCollection islets = CityGeneration.createUrbanIslet(cutParcel);
+		SimpleFeatureCollection blocks = CityGeneration.createUrbanBlock(cutParcel);
 
 		String[] firstLine = { "CODE", "Urban fabric type", ParcelSchema.getMinParcelCommunityField(), GeneralFields.getZonePreciseNameField(),
 				"InitialArea", "ParcelsArea", "RatioArea", "RatioParcelConnectionRoad" };
@@ -153,18 +153,20 @@ public class RoadRatioParcels {
 					problem.printStackTrace();
 				}
 				double iniA = ((Geometry) z.getDefaultGeometry()).getArea();
+				GeneralFields.setParcelFieldType("every");
 				double pNew = areaParcelNewlySimulated(df);
+				GeneralFields.setParcelFieldType("french");
 				if (pNew == 0.0)
-					continue ;
+					continue;
 				tab[3] = Double.toString(iniA);
 				tab[4] = Double.toString(pNew);
 				tab[5] = Double.toString(1 - (pNew / iniA));
-				long nbParcelsWithContactToRoad = Arrays.stream(df.toArray(new SimpleFeature[0]))
+				// get the ratio of parcels having a connection to the road
+				tab[6] = String.valueOf(((double) Arrays.stream(df.toArray(new SimpleFeature[0]))
 						.filter(feat -> ParcelState.isParcelHasRoadAccess((Polygon) Polygons.getPolygon((Geometry) feat.getDefaultGeometry()),
 								Collec.selectIntersection(roads, ((Geometry) feat.getDefaultGeometry())),
-								Collec.fromPolygonSFCtoRingMultiLines(Collec.selectIntersection(islets, (Geometry) z.getDefaultGeometry()))))
-						.count();
-				tab[6] = String.valueOf(((double) nbParcelsWithContactToRoad / (double) df.size()));
+								Collec.fromPolygonSFCtoRingMultiLines(Collec.selectIntersection(blocks, (Geometry) z.getDefaultGeometry()))))
+						.count() / (double) df.size()));
 				stat.put(count++ + "-" + tab[1] + "-" + tab[2], tab);
 			}
 		} catch (Exception problem) {
@@ -173,13 +175,19 @@ public class RoadRatioParcels {
 		sdsRoad.dispose();
 		if (RoadRatioParcels.firstLine) {
 			Csv.needFLine = true;
-			RoadRatioParcels.firstLine = false;
+			RoadRatioParcels.setFirstLine(false);
 		} else
 			Csv.needFLine = false;
-		Csv.generateCsvFile(stat, folderOutStat, "streetRatioParcelZone"+legend, !overwrite, firstLine);
+		Csv.generateCsvFile(stat, folderOutStat, "streetRatioParcelZone" + legend, !overwrite, firstLine);
 		overwrite = false;
 	}
 
+	/**
+	 * Get the area of parcels that have been marked with a simulated field
+	 * 
+	 * @param markedParcels
+	 * @return
+	 */
 	private static double areaParcelNewlySimulated(SimpleFeatureCollection markedParcels) {
 		double totArea = 0.0;
 		try (SimpleFeatureIterator parcels = markedParcels.features()) {
@@ -192,5 +200,9 @@ public class RoadRatioParcels {
 			problem.printStackTrace();
 		}
 		return totArea;
+	}
+
+	public static void setFirstLine(boolean firstLine) {
+		RoadRatioParcels.firstLine = firstLine;
 	}
 }

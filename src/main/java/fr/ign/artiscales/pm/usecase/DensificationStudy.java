@@ -70,14 +70,14 @@ public class DensificationStudy {
 	public static void runDensificationStudy(SimpleFeatureCollection parcels, File buildingFile, File roadFile, File zoningFile,
 			File outFolder, boolean isParcelWithoutStreetAllowed, ProfileUrbanFabric profile) throws IOException {
 		outFolder.mkdir();
-		SimpleFeatureCollection islet = CityGeneration.createUrbanIslet(parcels);
+		SimpleFeatureCollection block = CityGeneration.createUrbanBlock(parcels);
 		Geometry buffer = CityGeneration.createBufferBorder(parcels);
 		String splitField = MarkParcelAttributeFromPosition.getMarkFieldName();
 		// get total unbuilt parcels from the urbanized zones
 		SimpleFeatureCollection parcelsVacantLot = MarkParcelAttributeFromPosition.markParcelIntersectFrenchConstructibleZoningType(
 				MarkParcelAttributeFromPosition.markUnBuiltParcel(parcels, buildingFile), zoningFile);
 		// Collec.exportSFC(parcelsVacantLot, new File("/tmp/parcelsVacantLot"));
-		SimpleFeatureCollection parcelsVacantLotCreated = (new Densification()).densificationOrNeighborhood(parcelsVacantLot, islet, outFolder, buildingFile,
+		SimpleFeatureCollection parcelsVacantLotCreated = (new Densification()).densificationOrNeighborhood(parcelsVacantLot, block, outFolder, buildingFile,
 				roadFile, profile, isParcelWithoutStreetAllowed, buffer, 5);
 		// Collec.exportSFC(parcelsVacantLotCreated, new File("/tmp/parcelsVacantLotCreated"));
 
@@ -86,7 +86,7 @@ public class DensificationStudy {
 				.markParcelIntersectFrenchConstructibleZoningType(MarkParcelAttributeFromPosition.markBuiltParcel(parcels, buildingFile), zoningFile);
 		// Collec.exportSFC(parcelsDensifZone, new File("/tmp/parcelsDensifZone"));
 
-		SimpleFeatureCollection parcelsDensifCreated = (new Densification()).densification(parcelsDensifZone, islet, outFolder, buildingFile,
+		SimpleFeatureCollection parcelsDensifCreated = (new Densification()).densification(parcelsDensifZone, block, outFolder, buildingFile,
 				roadFile, profile, isParcelWithoutStreetAllowed, buffer);
 		// Collec.exportSFC(parcelsDensifCreated, new File("/tmp/parcelsDensifCreated"));
 
@@ -102,8 +102,8 @@ public class DensificationStudy {
 				.markUnBuiltParcel(MarkParcelAttributeFromPosition.markSimulatedParcel(parcelsDensifCreated), buildingFile);
 		// If the parcels have to be connected to the road, we mark them
 		if (!isParcelWithoutStreetAllowed) {
-			parcelsVacantLotCreated = MarkParcelAttributeFromPosition.markParcelsConnectedToRoad(parcelsVacantLotCreated, CityGeneration.createUrbanIslet(parcelsVacantLotCreated), roadFile, buffer);
-			parcelsDensifCreated = MarkParcelAttributeFromPosition.markParcelsConnectedToRoad(parcelsDensifCreated, islet, roadFile, buffer);
+			parcelsVacantLotCreated = MarkParcelAttributeFromPosition.markParcelsConnectedToRoad(parcelsVacantLotCreated, CityGeneration.createUrbanBlock(parcelsVacantLotCreated), roadFile, buffer);
+			parcelsDensifCreated = MarkParcelAttributeFromPosition.markParcelsConnectedToRoad(parcelsDensifCreated, block, roadFile, buffer);
 		}
 		// exporting output geopackages and countings
 		List<SimpleFeature> vacantParcelU = Arrays.stream(parcelsDensifCreated.toArray(new SimpleFeature[0]))

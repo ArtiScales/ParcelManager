@@ -112,14 +112,14 @@ public class SingleParcelStat {
 		String[] firstLine = { "code", "area", "perimeter", "contactWithRoad", "widthContactWithRoad", "numberOfNeighborhood", "Geometry", "HausDist",
 				"DisHausDst", "CodeAppar", "AspctRatio" };
 		csv.writeNext(firstLine);
-		SimpleFeatureCollection islet = CityGeneration.createUrbanIslet(parcels);
+		SimpleFeatureCollection block = CityGeneration.createUrbanBlock(parcels);
 		Arrays.stream(parcels.toArray(new SimpleFeature[0]))
 				.filter(p -> (int) p.getAttribute(MarkParcelAttributeFromPosition.getMarkFieldName()) == 1).forEach(parcel -> {
 					// if parcel is marked to be analyzed
 					Geometry parcelGeom = (Geometry) parcel.getDefaultGeometry();
 					double widthRoadContact = ParcelState.getParcelFrontSideWidth((Polygon) Polygons.getPolygon(parcelGeom),
 							Collec.selectIntersection(roads, parcelGeom.buffer(7)), Lines.fromMultiToLineString(
-									Collec.fromPolygonSFCtoRingMultiLines(Collec.selectIntersection(islet, parcelGeom.buffer(7)))));
+									Collec.fromPolygonSFCtoRingMultiLines(Collec.selectIntersection(block, parcelGeom.buffer(7)))));
 					boolean contactWithRoad = false;
 					if (widthRoadContact != 0)
 						contactWithRoad = true;

@@ -213,7 +213,7 @@ public class ZoneDivision extends Workflow{
 		}
 		// Parcel subdivision
 		SimpleFeatureCollection splitedParcels = new DefaultFeatureCollection();
-		SimpleFeatureCollection isletCollection = CityGeneration.createUrbanIslet(parcels);
+		SimpleFeatureCollection blockCollection = CityGeneration.createUrbanBlock(parcels);
 		try (SimpleFeatureIterator it = goOdZone.features()) {
 			while (it.hasNext()) {
 				SimpleFeature zone = it.next();
@@ -224,7 +224,7 @@ public class ZoneDivision extends Workflow{
 					((DefaultFeatureCollection) splitedParcels)
 							.addAll(OBBBlockDecomposition.splitParcels(tmpZoneToCut, null, maximalArea, minimalWidthContactRoad, harmonyCoeff, noise,
 									Collec.fromPolygonSFCtoListRingLines(
-											Collec.selectIntersection(isletCollection, (Geometry) zone.getDefaultGeometry())),
+											Collec.selectIntersection(blockCollection, (Geometry) zone.getDefaultGeometry())),
 									streetWidth, largeStreetLevel, largeStreetWidth, true, decompositionLevelWithoutStreet));
 					break;
 				case "SS":

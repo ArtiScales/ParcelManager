@@ -59,7 +59,7 @@ public class CompareSimulatedParcelsWithEvolutionOM {
 		ParcelCollection.sortDifferentParcel(fileParcelPast, fileParcelNow, outFolder);
 
 		// create ilots for parcel densification in case they haven't been generated before
-		CityGeneration.createUrbanIslet(fileParcelPast, rootFolder);
+		CityGeneration.createUrbanBlock(fileParcelPast, rootFolder);
 		
 		PMScenario.setSaveIntermediateResult(true);
 		PMStep.setDEBUG(true);

@@ -63,9 +63,9 @@ public class Densification extends Workflow {
 	 *
 	 * @param parcelCollection
 	 *            {@link SimpleFeatureCollection} of marked parcels.
-	 * @param isletCollection
-	 *            {@link SimpleFeatureCollection} containing the morphological islet. Can be generated with the
-	 *            {@link fr.ign.artiscales.tools.geometryGeneration.CityGeneration#createUrbanIslet(SimpleFeatureCollection)} method.
+	 * @param blockCollection
+	 *            {@link SimpleFeatureCollection} containing the morphological block. Can be generated with the
+	 *            {@link fr.ign.artiscales.tools.geometryGeneration.CityGeneration#createUrbanBlock(SimpleFeatureCollection)} method.
 	 * @param outFolder
 	 *            Folder to store result files
 	 * @param buildingFile
@@ -88,7 +88,7 @@ public class Densification extends Workflow {
 	 *         {@link fr.ign.artiscales.pm.parcelFunction.ParcelSchema#getSFBMinParcel()} schema. * @throws Exception
 	 * @throws IOException
 	 */
-	public SimpleFeatureCollection densification(SimpleFeatureCollection parcelCollection, SimpleFeatureCollection isletCollection, File outFolder,
+	public SimpleFeatureCollection densification(SimpleFeatureCollection parcelCollection, SimpleFeatureCollection blockCollection, File outFolder,
 			File buildingFile, File roadFile, double harmonyCoeff, double noise, double maximalAreaSplitParcel, double minimalAreaSplitParcel,
 			double maximalWidthSplitParcel, double lenDriveway, boolean allowIsolatedParcel, Geometry exclusionZone) throws IOException {
 		// if parcels doesn't contains the markParcelAttribute field or have no marked parcels
@@ -109,8 +109,8 @@ public class Densification extends Workflow {
 				if (feat.getAttribute(MarkParcelAttributeFromPosition.getMarkFieldName()) != null
 						&& feat.getAttribute(MarkParcelAttributeFromPosition.getMarkFieldName()).equals(1)
 						&& ((Geometry) feat.getDefaultGeometry()).getArea() > maximalAreaSplitParcel) {
-					// we get the needed islet lines
-					List<LineString> lines = Collec.fromPolygonSFCtoListRingLines(isletCollection
+					// we get the needed block lines
+					List<LineString> lines = Collec.fromPolygonSFCtoListRingLines(blockCollection
 							.subCollection(ff.bbox(ff.property(feat.getFeatureType().getGeometryDescriptor().getLocalName()), feat.getBounds())));
 					// we flag cut the parcel
 					SimpleFeatureCollection unsortedFlagParcel = FlagParcelDecomposition.generateFlagSplitedParcels(feat, lines, harmonyCoeff, noise,
@@ -234,9 +234,9 @@ public class Densification extends Workflow {
 	 * 
 	 * @param parcelCollection
 	 *            SimpleFeatureCollection of marked parcels.
-	 * @param isletCollection
-	 *            SimpleFeatureCollection containing the morphological islet. Can be generated with the
-	 *            {@link fr.ign.artiscales.tools.geometryGeneration.CityGeneration#createUrbanIslet(SimpleFeatureCollection)} method.
+	 * @param blockCollection
+	 *            SimpleFeatureCollection containing the morphological block. Can be generated with the
+	 *            {@link fr.ign.artiscales.tools.geometryGeneration.CityGeneration#createUrbanBlock(SimpleFeatureCollection)} method.
 	 * @param outFolder
 	 *            folder to store created files
 	 * @param buildingFile
@@ -254,10 +254,10 @@ public class Densification extends Workflow {
 	 * @return The input parcel {@link SimpleFeatureCollection} with the marked parcels replaced by the simulated parcels. All parcels have the
 	 *         {@link fr.ign.artiscales.pm.parcelFunction.ParcelSchema#getSFBMinParcel()} schema. * @throws Exception
 	 */
-	public SimpleFeatureCollection densification(SimpleFeatureCollection parcelCollection, SimpleFeatureCollection isletCollection, File outFolder,
+	public SimpleFeatureCollection densification(SimpleFeatureCollection parcelCollection, SimpleFeatureCollection blockCollection, File outFolder,
 			File buildingFile, File roadFile, double harmonyCoeff, double noise, double maximalAreaSplitParcel, double minimalAreaSplitParcel,
 			double maximalWidthSplitParcel, double lenDriveway, boolean allowIsolatedParcel) throws Exception {
-		return densification(parcelCollection, isletCollection, outFolder, buildingFile, null, harmonyCoeff, noise, maximalAreaSplitParcel,
+		return densification(parcelCollection, blockCollection, outFolder, buildingFile, null, harmonyCoeff, noise, maximalAreaSplitParcel,
 				minimalAreaSplitParcel, maximalWidthSplitParcel, lenDriveway, allowIsolatedParcel, null);
 	}
 
@@ -269,9 +269,9 @@ public class Densification extends Workflow {
 	 * 
 	 * @param parcelCollection
 	 *            SimpleFeatureCollection of marked parcels.
-	 * @param isletCollection
-	 *            SimpleFeatureCollection containing the morphological islet. Can be generated with the
-	 *            {@link fr.ign.artiscales.tools.geometryGeneration.CityGeneration#createUrbanIslet(SimpleFeatureCollection)} method.
+	 * @param blockCollection
+	 *            SimpleFeatureCollection containing the morphological block. Can be generated with the
+	 *            {@link fr.ign.artiscales.tools.geometryGeneration.CityGeneration#createUrbanBlock(SimpleFeatureCollection)} method.
 	 * @param outFolder
 	 *            folder to store created files
 	 * @param buildingFile
@@ -289,10 +289,10 @@ public class Densification extends Workflow {
 	 * @return The input parcel {@link SimpleFeatureCollection} with the marked parcels replaced by the simulated parcels. All parcels have the
 	 *         {@link fr.ign.artiscales.pm.parcelFunction.ParcelSchema#getSFBMinParcel()} schema. * @throws Exception
 	 */
-	public SimpleFeatureCollection densification(SimpleFeatureCollection parcelCollection, SimpleFeatureCollection isletCollection, File outFolder,
+	public SimpleFeatureCollection densification(SimpleFeatureCollection parcelCollection, SimpleFeatureCollection blockCollection, File outFolder,
 			File buildingFile, double harmonyCoeff, double noise, double maximalAreaSplitParcel, double minimalAreaSplitParcel,
 			double maximalWidthSplitParcel, double lenDriveway, boolean allowIsolatedParcel) throws Exception {
-		return densification(parcelCollection, isletCollection, outFolder, buildingFile, null, harmonyCoeff, noise, maximalAreaSplitParcel,
+		return densification(parcelCollection, blockCollection, outFolder, buildingFile, null, harmonyCoeff, noise, maximalAreaSplitParcel,
 				minimalAreaSplitParcel, maximalWidthSplitParcel, lenDriveway, allowIsolatedParcel);
 	}
 
@@ -303,9 +303,9 @@ public class Densification extends Workflow {
 	 * 
 	 * @param parcelCollection
 	 *            SimpleFeatureCollection of marked parcels.
-	 * @param isletCollection
-	 *            SimpleFeatureCollection containing the morphological islet. Can be generated with the
-	 *            {@link fr.ign.artiscales.tools.geometryGeneration.CityGeneration#createUrbanIslet(SimpleFeatureCollection)} method.
+	 * @param blockCollection
+	 *            SimpleFeatureCollection containing the morphological block. Can be generated with the
+	 *            {@link fr.ign.artiscales.tools.geometryGeneration.CityGeneration#createUrbanBlock(SimpleFeatureCollection)} method.
 	 * @param outFolder
 	 *            folder to store result files.
 	 * @param buildingFile
@@ -320,9 +320,9 @@ public class Densification extends Workflow {
 	 *         {@link fr.ign.artiscales.pm.parcelFunction.ParcelSchema#getSFBMinParcel()} schema.
 	 * @throws Exception
 	 */
-	public SimpleFeatureCollection densification(SimpleFeatureCollection parcelCollection, SimpleFeatureCollection isletCollection, File outFolder,
+	public SimpleFeatureCollection densification(SimpleFeatureCollection parcelCollection, SimpleFeatureCollection blockCollection, File outFolder,
 			File buildingFile, File roadFile, ProfileUrbanFabric profile, boolean allowIsolatedParcel) throws Exception {
-		return densification(parcelCollection, isletCollection, outFolder, buildingFile, roadFile, profile, allowIsolatedParcel, null);
+		return densification(parcelCollection, blockCollection, outFolder, buildingFile, roadFile, profile, allowIsolatedParcel, null);
 	}
 
 	/**
@@ -332,9 +332,9 @@ public class Densification extends Workflow {
 	 * 
 	 * @param parcelCollection
 	 *            SimpleFeatureCollection of marked parcels.
-	 * @param isletCollection
-	 *            SimpleFeatureCollection containing the morphological islet. Can be generated with the
-	 *            {@link fr.ign.artiscales.tools.geometryGeneration.CityGeneration#createUrbanIslet(SimpleFeatureCollection)} method.
+	 * @param blockCollection
+	 *            SimpleFeatureCollection containing the morphological block. Can be generated with the
+	 *            {@link fr.ign.artiscales.tools.geometryGeneration.CityGeneration#createUrbanBlock(SimpleFeatureCollection)} method.
 	 * @param outFolder
 	 *            folder to store result files.
 	 * @param buildingFile
@@ -351,9 +351,9 @@ public class Densification extends Workflow {
 	 *         {@link fr.ign.artiscales.pm.parcelFunction.ParcelSchema#getSFBMinParcel()} schema. * @throws Exception
 	 * @throws IOException
 	 */
-	public SimpleFeatureCollection densification(SimpleFeatureCollection parcelCollection, SimpleFeatureCollection isletCollection, File outFolder,
+	public SimpleFeatureCollection densification(SimpleFeatureCollection parcelCollection, SimpleFeatureCollection blockCollection, File outFolder,
 			File buildingFile, File roadFile, ProfileUrbanFabric profile, boolean allowIsolatedParcel, Geometry exclusionZone) throws IOException {
-		return densification(parcelCollection, isletCollection, outFolder, buildingFile, roadFile, profile.getHarmonyCoeff(), profile.getNoise(),
+		return densification(parcelCollection, blockCollection, outFolder, buildingFile, roadFile, profile.getHarmonyCoeff(), profile.getNoise(),
 				profile.getMaximalArea(), profile.getMinimalArea(), profile.getMinimalWidthContactRoad(), profile.getLenDriveway(),
 				allowIsolatedParcel, exclusionZone);
 	}
@@ -365,9 +365,9 @@ public class Densification extends Workflow {
 	 *
 	 * @param parcelCollection
 	 *            SimpleFeatureCollection of marked parcels.
-	 * @param isletCollection
-	 *            SimpleFeatureCollection containing the morphological islet. Can be generated with the
-	 *            {@link fr.ign.artiscales.tools.geometryGeneration.CityGeneration#createUrbanIslet(SimpleFeatureCollection)} method.
+	 * @param blockCollection
+	 *            SimpleFeatureCollection containing the morphological block. Can be generated with the
+	 *            {@link fr.ign.artiscales.tools.geometryGeneration.CityGeneration#createUrbanBlock(SimpleFeatureCollection)} method.
 	 * @param outFolder
 	 *            folder to store result files.
 	 * @param buildingFile
@@ -387,7 +387,7 @@ public class Densification extends Workflow {
 	 *         {@link fr.ign.artiscales.pm.parcelFunction.ParcelSchema#getSFBMinParcel()} schema.
 	 * @throws IOException
 	 */
-	public SimpleFeatureCollection densificationOrNeighborhood(SimpleFeatureCollection parcelCollection, SimpleFeatureCollection isletCollection,
+	public SimpleFeatureCollection densificationOrNeighborhood(SimpleFeatureCollection parcelCollection, SimpleFeatureCollection blockCollection,
 			File outFolder, File buildingFile, File roadFile, ProfileUrbanFabric profile, boolean allowIsolatedParcel, Geometry exclusionZone,
 			int factorOflargeZoneCreation) throws IOException {
 		// TODO stupid hack but I can't figure out how those SimpleFeatuceCollection's attributes are changed if not wrote in hard
@@ -397,7 +397,7 @@ public class Densification extends Workflow {
 		// We flagcut the parcels which size is inferior to 4x the max parcel size
 		SimpleFeatureCollection parcelDensified = densification(
 				MarkParcelAttributeFromPosition.markParcelsInf(parcelCollection, profile.getMaximalArea() * factorOflargeZoneCreation),
-				isletCollection, outFolder, buildingFile, roadFile, profile.getHarmonyCoeff(), profile.getNoise(), profile.getMaximalArea(),
+				blockCollection, outFolder, buildingFile, roadFile, profile.getHarmonyCoeff(), profile.getNoise(), profile.getMaximalArea(),
 				profile.getMinimalArea(), profile.getMinimalWidthContactRoad(), profile.getLenDriveway(), allowIsolatedParcel, exclusionZone);
 		// if parcels are too big, we try to create neighborhoods inside them with the consolidation algorithm
 		// We first re-mark the parcels that were marked.

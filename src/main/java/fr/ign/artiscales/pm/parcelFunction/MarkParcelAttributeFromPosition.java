@@ -42,13 +42,13 @@ public class MarkParcelAttributeFromPosition {
 	// public static void main(String[] args) throws Exception {
 	// File parcelsMarkedF = new File("/home/ubuntu/workspace/ParcelManager/src/main/resources/testData/out/parcelTotZone.gpkg");
 	// File roadFile = new File("/home/ubuntu/workspace/ParcelManager/src/main/resources/testData/road.gpkg");
-	// File isletFileF = new File("/tmp/Islet.gpkg");
+	// File blockFileF = new File("/tmp/block.gpkg");
 	// long startTime = System.currentTimeMillis();
 	// DataStore sdsParcel = Geopackages.getDataStore(parcelsMarkedF);
 	// SimpleFeatureCollection parcels = sdsParcel.getFeatureSource(sdsParcel.getTypeNames()[0]).getFeatures();
-	// DataStore sdsIslet = Geopackages.getDataStore(isletFileF);
-	// SimpleFeatureCollection islet = sdsIslet.getFeatureSource(sdsIslet.getTypeNames()[0]).getFeatures();
-	// markParcelsConnectedToRoad(parcels, islet, roadFile);
+	// DataStore sdsIslet = Geopackages.getDataStore(blockFileF);
+	// SimpleFeatureCollection block = sdsIslet.getFeatureSource(sdsIslet.getTypeNames()[0]).getFeatures();
+	// markParcelsConnectedToRoad(parcels, block, roadFile);
 	// sdsParcel.dispose();
 	// long stopTime = System.currentTimeMillis();
 	// System.out.println(stopTime - startTime);
@@ -88,18 +88,18 @@ public class MarkParcelAttributeFromPosition {
 	 * 
 	 * @param parcels
 	 *            Input parcel {@link SimpleFeatureCollection}
-	 * @param islet
-	 *            {@link SimpleFeatureCollection} containing the morphological islet. Can be generated with the
-	 *            {@link fr.ign.artiscales.tools.geometryGeneration.CityGeneration#createUrbanIslet(SimpleFeatureCollection)} method.
+	 * @param block
+	 *            {@link SimpleFeatureCollection} containing the morphological block. Can be generated with the
+	 *            {@link fr.ign.artiscales.tools.geometryGeneration.CityGeneration#createUrbanBlock(SimpleFeatureCollection)} method.
 	 * @param roadFile
 	 *            Geopackage containing the road segments
 	 * @return {@link SimpleFeatureCollection} of the input parcels with marked parcels on the {@link #markFieldName} field.
 	 * 
 	 * @throws IOException
 	 */
-	public static SimpleFeatureCollection markParcelsConnectedToRoad(SimpleFeatureCollection parcels, SimpleFeatureCollection islet, File roadFile)
+	public static SimpleFeatureCollection markParcelsConnectedToRoad(SimpleFeatureCollection parcels, SimpleFeatureCollection block, File roadFile)
 			throws IOException {
-		return markParcelsConnectedToRoad(parcels, islet, roadFile, null);
+		return markParcelsConnectedToRoad(parcels, block, roadFile, null);
 	}
 
 	/**
@@ -107,9 +107,9 @@ public class MarkParcelAttributeFromPosition {
 	 * 
 	 * @param parcels
 	 *            Input parcel {@link SimpleFeatureCollection}
-	 * @param islet
-	 *            {@link SimpleFeatureCollection} containing the morphological islet. Can be generated with the
-	 *            {@link fr.ign.artiscales.tools.geometryGeneration.CityGeneration#createUrbanIslet(SimpleFeatureCollection)} method.
+	 * @param block
+	 *            {@link SimpleFeatureCollection} containing the morphological block. Can be generated with the
+	 *            {@link fr.ign.artiscales.tools.geometryGeneration.CityGeneration#createUrbanBlock(SimpleFeatureCollection)} method.
 	 * @param roadFile
 	 *            Geopackage containing the road segments
 	 * @param exclusionZone
@@ -118,7 +118,7 @@ public class MarkParcelAttributeFromPosition {
 	 * 
 	 * @throws IOException
 	 */
-	public static SimpleFeatureCollection markParcelsConnectedToRoad(SimpleFeatureCollection parcels, SimpleFeatureCollection islet, File roadFile,
+	public static SimpleFeatureCollection markParcelsConnectedToRoad(SimpleFeatureCollection parcels, SimpleFeatureCollection block, File roadFile,
 			Geometry exclusionZone) throws IOException {
 		DataStore sds = Geopackages.getDataStore(roadFile);
 		SimpleFeatureCollection roads = Collec.selectIntersection(sds.getFeatureSource(sds.getTypeNames()[0]).getFeatures(), parcels);
@@ -131,7 +131,7 @@ public class MarkParcelAttributeFromPosition {
 					Geometry geomFeat = (Geometry) feat.getDefaultGeometry();
 					if (isAlreadyMarked(feat) != 0
 							&& ParcelState.isParcelHasRoadAccess((Polygon) Polygons.getPolygon(geomFeat), Collec.selectIntersection(roads, geomFeat),
-									Collec.fromPolygonSFCtoRingMultiLines(Collec.selectIntersection(islet, geomFeat)), exclusionZone))
+									Collec.fromPolygonSFCtoRingMultiLines(Collec.selectIntersection(block, geomFeat)), exclusionZone))
 						feat.setAttribute(markFieldName, 1);
 					else
 						feat.setAttribute(markFieldName, 0);
@@ -151,7 +151,7 @@ public class MarkParcelAttributeFromPosition {
 				featureBuilder = ParcelSchema.setSFBMinParcelSplitWithFeat(feat, featureBuilder, featureSchema, 0);
 				if (isAlreadyMarked(feat) != 0
 						&& ParcelState.isParcelHasRoadAccess((Polygon) Polygons.getPolygon(geomFeat), Collec.selectIntersection(roads, geomFeat),
-								Collec.fromPolygonSFCtoRingMultiLines(Collec.selectIntersection(islet, geomFeat)), exclusionZone))
+								Collec.fromPolygonSFCtoRingMultiLines(Collec.selectIntersection(block, geomFeat)), exclusionZone))
 					featureBuilder.set(markFieldName, 1);
 				result.add(featureBuilder.buildFeature(Attribute.makeUniqueId()));
 			}
@@ -896,7 +896,7 @@ public class MarkParcelAttributeFromPosition {
 	 * @return input {@link SimpleFeatureCollection} with a new {@link #markFieldName} field with only 1 (true) in it.
 	 * @throws IOException
 	 */
-	public static SimpleFeatureCollection markAllParcel(SimpleFeatureCollection sfcIn) throws IOException {
+	public static SimpleFeatureCollection markAllParcel(SimpleFeatureCollection sfcIn) {
 		DefaultFeatureCollection result = new DefaultFeatureCollection();
 		SimpleFeatureBuilder featureBuilder = ParcelSchema.addSplitField(sfcIn.getSchema());
 		try (SimpleFeatureIterator it = sfcIn.features()) {
@@ -910,7 +910,12 @@ public class MarkParcelAttributeFromPosition {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		return result.collection();
+		try {
+			return result.collection();
+		} catch (IOException e) {
+			e.printStackTrace();
+			return null;
+		}
 	}
 
 	/**

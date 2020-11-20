@@ -6,6 +6,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.stream.Collectors;
 
+import org.apache.commons.math3.exception.NullArgumentException;
 import org.geotools.data.DataStore;
 import org.geotools.data.DataUtilities;
 import org.geotools.data.simple.SimpleFeatureCollection;
@@ -32,7 +33,7 @@ import fr.ign.artiscales.tools.geometryGeneration.CityGeneration;
 public class GetParametersOfScene {
 
 	// static String scaleZone = "community";
-	// TODO mettre la possibilité de mélanger ces échelles List<String> scaleZone = Arrays.asList("community");
+	// TODO program the possibility of mixing those scales - List<String> scaleZone = Arrays.asList("community");
 	static File parcelFile, buildingFile, zoningFile, roadFile, outFolder;
 
 	/**
@@ -43,23 +44,19 @@ public class GetParametersOfScene {
 		setFiles(new File("src/main/resources/GeneralTest/"));
 		String scaleZone = "genericZone";
 		generateAnalysisOfScene(scaleZone);
-		scaleZone = "preciseZone";
-		generateAnalysisOfScene(scaleZone);
-		scaleZone = "community";
-		generateAnalysisOfScene(scaleZone);
-		scaleZone = "islet";
-		generateAnalysisOfScene(scaleZone);
+		// scaleZone = "preciseZone";
+		// generateAnalysisOfScene(scaleZone);
+		// scaleZone = "community";
+		// generateAnalysisOfScene(scaleZone);
+		// scaleZone = "block";
+		// generateAnalysisOfScene(scaleZone);
 	}
 
 	/**
 	 * Set automaticlally the file names with their basic names from a root folder. Possible to change them with dedicaded setters
 	 * 
-<<<<<<< HEAD
 	 * @param mainFolder
 	 *            root folder containing the geographic layers.
-=======
-	 * @param mainFolder root folder containing the geographic layers.
->>>>>>> 65ef530bc51b90621d238bd2e7e34d57ebfffdfa
 	 */
 	public static void setFiles(File mainFolder) {
 		parcelFile = new File(mainFolder, "parcel" + Collec.getDefaultGISFileType());
@@ -88,7 +85,7 @@ public class GetParametersOfScene {
 	// }
 
 	/**
-	 * Generate a graph with the area of parcels.
+	 * Generate every indications about the urban scene.
 	 * 
 	 * @param scaleZone
 	 *            The scale of the studied zone. Can either be:
@@ -96,7 +93,7 @@ public class GetParametersOfScene {
 	 *            <li>community</li>
 	 *            <li>genericZone</li>
 	 *            <li>preciseZone</li>
-	 *            <li>islet</li>
+	 *            <li>block</li>
 	 *            </ul>
 	 * 
 	 * @throws IOException
@@ -111,6 +108,7 @@ public class GetParametersOfScene {
 		SimpleFeatureCollection zonings = DataUtilities
 				.collection(Collec.selectIntersection(sdsZone.getFeatureSource(sdsZone.getTypeNames()[0]).getFeatures(), parcels));
 		sdsZone.dispose();
+		// get the concerned features
 		switch (scaleZone) {
 		case "community":
 			for (String cityCodes : ParcelAttribute.getCityCodesOfParcels(parcels))
@@ -126,10 +124,10 @@ public class GetParametersOfScene {
 				listSFC.put(preciseZone, MarkParcelAttributeFromPosition.getOnlyMarkedParcels(
 						MarkParcelAttributeFromPosition.markParcelIntersectPreciseZoningType(parcels, "", preciseZone, zoningFile)));
 			break;
-		case "islet":
-			SimpleFeatureCollection islet = CityGeneration.createUrbanIslet(parcels);
+		case "block":
+			SimpleFeatureCollection block = CityGeneration.createUrbanBlock(parcels);
 			int i = 0;
-			try (SimpleFeatureIterator it = islet.features()) {
+			try (SimpleFeatureIterator it = block.features()) {
 				while (it.hasNext())
 					listSFC.put(String.valueOf(i++), MarkParcelAttributeFromPosition.getOnlyMarkedParcels(MarkParcelAttributeFromPosition
 							.markParcelIntersectPolygonIntersection(parcels, Arrays.asList((Geometry) it.next().getDefaultGeometry()))));
@@ -143,10 +141,9 @@ public class GetParametersOfScene {
 			// Parcel's area
 			areaBuiltAndTotal(listSFC.get(zone), scaleZone, zone);
 			// Road Information
-			publicSpaceRatio(listSFC.get(zone), DataUtilities.collection(dsRoad.getFeatureSource(dsRoad.getTypeNames()[0]).getFeatures()), scaleZone,
+			roadInformations(listSFC.get(zone), DataUtilities.collection(dsRoad.getFeatureSource(dsRoad.getTypeNames()[0]).getFeatures()), scaleZone,
 					zone);
 		}
-		// Public Space Ratio
 		dsRoad.dispose();
 		ds.dispose();
 		System.out.println("##### " + scaleZone + " done");
@@ -155,13 +152,13 @@ public class GetParametersOfScene {
 	/**
 	 * Generate the road information in the give zones
 	 * 
-	 * @param collection
+	 * @param zoneCollection
 	 * @param road
 	 * @param scaleZone
-	 * @param zone
+	 * @param zoneName
 	 * @throws IOException
 	 */
-	public static void publicSpaceRatio(SimpleFeatureCollection collection, SimpleFeatureCollection road, String scaleZone, String zone)
+	public static void roadInformations(SimpleFeatureCollection zoneCollection, SimpleFeatureCollection road, String scaleZone, String zoneName)
 			throws IOException {
 		// Road informations is harder to produce. We are based on the road Geopackage and on the ratio of road/area calculation to produce estimations
 		// we create a buffer around the zone to get corresponding road segments. The buffer length depends on the type of scale
@@ -171,17 +168,21 @@ public class GetParametersOfScene {
 			buffer = 20;
 			break;
 		case "preciseZone":
-		case "islet":
+		case "block":
 			buffer = 10;
 			break;
 		}
-		Geometry zoneGeom = Geom.unionSFC(collection).buffer(buffer).buffer(-buffer);
+		Geometry zoneGeom = Geom.unionSFC(zoneCollection).buffer(buffer).buffer(-buffer);
 		SimpleFeatureCollection roadsSelected = Collec.selectIntersection(road, zoneGeom);
 		if (roadsSelected.size() > 1)
-			MakeStatisticGraphs.roadGraph(roadsSelected, "length of the " + scaleZone + " " + zone + " roads ", "width of the road",
-					"lenght of the type of road", outFolder);
-		RoadRatioParcels.roadRatioZone(Geom.geomsToCollec(Arrays.asList(zoneGeom), GeneralFields.getSFBZoning()), collection, zone, outFolder,
+			MakeStatisticGraphs.roadGraph(roadsSelected, "Characteristics of the " + getZoneEnglishName(scaleZone, zoneName) + " roads ",
+					"Type of road", "Total lenght of road", outFolder);
+
+		DataStore parcelDS = Collec.getDataStore(parcelFile);
+		RoadRatioParcels.roadRatioZone(zoneCollection, parcelDS.getFeatureSource(parcelDS.getTypeNames()[0]).getFeatures(), zoneName, outFolder,
 				roadFile);
+		RoadRatioParcels.setFirstLine(true);
+		parcelDS.dispose();
 	}
 
 	/**
@@ -205,10 +206,24 @@ public class GetParametersOfScene {
 				AreaGraph vals = MakeStatisticGraphs.sortValuesAndCategorize(
 						Arrays.stream(sfc.toArray(new SimpleFeature[0])).collect(Collectors.toList()), scaleZone + zone, true);
 				vals.toCSV(outFolder);
-				MakeStatisticGraphs.makeGraphHisto(vals, outFolder, "area of the" + nameSfc + "of the " + scaleZone + " " + zone + " without crests",
-						"parcel area", "nb parcels", 15);
+				MakeStatisticGraphs.makeGraphHisto(vals, outFolder, "area of the" + nameSfc + "of the " + getZoneEnglishName(scaleZone, zone),
+						"parcel area", "number of parcels", 15);
 			}
 		}
+	}
+
+	private static String getZoneEnglishName(String scaleZone, String zone) {
+		switch (scaleZone) {
+		case "genericZone":
+			return GeneralFields.getGenericZoneEnglishName(zone);
+		case "preciseZone":
+			return "zone-" + zone;
+		case "block":
+			return "block-" + zone;
+		case "community":
+			return "community-" + zone;
+		}
+		throw new NullArgumentException();
 	}
 
 	public static File getParcelFile() {

@@ -147,6 +147,22 @@ public class GeneralFields {
 	}
 
 	/**
+	 * Trivial method to get the genericZone list of a type
+	 * 
+	 * @param genericZone
+	 *            the given generic zone
+	 * @return the given list( as final)
+	 */
+	public static String getGenericZoneEnglishName(String genericZone) {
+		switch (parcelFieldType) {
+		case "french":
+			return FrenchZoningSchemas.getTranslatedName(genericZone);
+		}
+		System.out.println("No parcel field type defined for GeneralFields.getGenericZoneUsualNames. Return null");
+		return null;
+	}
+
+	/**
 	 * This method allows to determine if a parcel has been simulated regarding to different parcel types of nomenclature. For now, only the French verification but other methods
 	 * can be set to determine if a parcel has been simulated.
 	 * 
@@ -158,6 +174,8 @@ public class GeneralFields {
 		switch (parcelFieldType) {
 		case "french":
 			return isParcelLikeFrenchHasSimulatedFileds(feature);
+		case "every":
+			return true;
 		default:
 			System.out.println(
 					"isParcelHasSimulatedFields: unknown method because of an unknown parcel nomenclature (" + parcelFieldType + "). Returned false");

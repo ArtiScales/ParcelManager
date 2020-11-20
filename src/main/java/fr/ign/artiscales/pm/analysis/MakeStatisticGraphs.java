@@ -194,7 +194,7 @@ public class MakeStatisticGraphs {
 				String line = (String) road.getAttribute("NATURE");
 				if (!((String) road.getAttribute("CL_ADMIN")).equals("Autre"))
 					line = line + "-" + ((String) road.getAttribute("CL_ADMIN"));
-				line = line + "-largeur:" + road.getAttribute("LARGEUR");
+				line = line + "- Width:" + road.getAttribute("LARGEUR")+ "m";
 				vals.put(line, ((Geometry) road.getDefaultGeometry()).getLength() + vals.getOrDefault((double) road.getAttribute("LARGEUR"), 0.0));
 			}
 		} catch (Exception e) {

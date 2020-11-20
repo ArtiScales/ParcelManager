@@ -57,7 +57,7 @@ public class GeneralTest {
 		ProfileUrbanFabric profileSmallHouse = ProfileUrbanFabric.convertJSONtoProfile(new File(profileFolder, "smallHouse.json"));
 		ProfileUrbanFabric profileLargeCollective = ProfileUrbanFabric.convertJSONtoProfile(new File(profileFolder, "largeCollective.json"));
 		Workflow.DEBUG = true;
-		Workflow.PROCESS = "SS";
+		Workflow.PROCESS = "OBB";
 		Workflow.SAVEINTERMEDIATERESULT = true;
 
 		// for (int i = 0; i <= 2; i++) {
@@ -130,7 +130,7 @@ public class GeneralTest {
 			System.out.println("/////////////////////////");
 			SimpleFeatureCollection parcelDensified = (new Densification()).densification(
 					MarkParcelAttributeFromPosition.markParcelIntersectPreciseZoningType(finalNormalZone, "U", "UB", zoningFile),
-					CityGeneration.createUrbanIslet(finalNormalZone), outFolder, buildingFile, roadFile, profileSmallHouse.getHarmonyCoeff(),
+					CityGeneration.createUrbanBlock(finalNormalZone), outFolder, buildingFile, roadFile, profileSmallHouse.getHarmonyCoeff(),
 					profileSmallHouse.getNoise(), profileSmallHouse.getMaximalArea(), profileSmallHouse.getMinimalArea(),
 					profileSmallHouse.getMinimalWidthContactRoad(), profileSmallHouse.getLenDriveway(), allowIsolatedParcel);
 			SimpleFeatureCollection finaux3 = FrenchParcelFields.setOriginalFrenchParcelAttributes(parcelDensified, parcel);

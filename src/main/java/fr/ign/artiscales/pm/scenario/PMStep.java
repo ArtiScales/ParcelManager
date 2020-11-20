@@ -149,14 +149,14 @@ public class PMStep {
 				break;
 			case "densification":
 				((DefaultFeatureCollection) parcelCut).addAll((new Densification()).densification(parcelMarkedComm,
-						CityGeneration.createUrbanIslet(parcelMarkedComm), OUTFOLDER, BUILDINGFILE, ROADFILE, profile.getHarmonyCoeff(),
+						CityGeneration.createUrbanBlock(parcelMarkedComm), OUTFOLDER, BUILDINGFILE, ROADFILE, profile.getHarmonyCoeff(),
 						profile.getNoise(), profile.getMaximalArea(), profile.getMinimalArea(), profile.getMinimalWidthContactRoad(),
 						profile.getLenDriveway(),
 						ParcelState.isArt3AllowsIsolatedParcel(parcel.features().next(), PREDICATEFILE), CityGeneration.createBufferBorder(parcelMarkedComm)));
 				break;
 			case "densificationOrNeighborhood":
 				((DefaultFeatureCollection) parcelCut).addAll(
-						(new Densification()).densificationOrNeighborhood(parcelMarkedComm, CityGeneration.createUrbanIslet(parcelMarkedComm), OUTFOLDER,
+						(new Densification()).densificationOrNeighborhood(parcelMarkedComm, CityGeneration.createUrbanBlock(parcelMarkedComm), OUTFOLDER,
 								BUILDINGFILE, ROADFILE, profile, ParcelState.isArt3AllowsIsolatedParcel(parcel.features().next(), PREDICATEFILE),
 								CityGeneration.createBufferBorder(parcelMarkedComm), 5));
 				break;
