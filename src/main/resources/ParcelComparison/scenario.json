@@ -6,11 +6,6 @@
 	"outFolder": "src/main/resources/ParcelComparison/out/",
 	"steps": [
 		{
-			"workflow": "zoneDivision",
-			"parcelProcess": "OBB",
-			"urbanFabricType": "smallHouse"
-		},	
-		{
 			"workflow": "densificationOrNeighborhood",
 			"parcelProcess": "OBB",
 			"genericZone": "U",

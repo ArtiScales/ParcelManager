@@ -57,9 +57,10 @@ public class ParcelCollection {
 	 * <ul>
 	 * <li><b>same</b> contains the reference parcels that have not evolved</li>
 	 * <li><b>notSame</b> contains the reference parcels that have evolved</li>
-	 * <li><b>place</b> contains the <i>notSame</i> parcels with a reduction buffer, used for a precise intersection with other parcel in Parcel Manager
-	 * scenarios. The large parcels that are selected for a zone simulation (see below) aren't present.</li>
-	 * <li><b>zone</b> contains special zones to be simulated</li>
+	 * <li><b>place</b> contains the <i>notSame</i> parcels with a reduction buffer, used for a precise intersection with other parcel in Parcel Manager scenarios. The large
+	 * parcels that are selected for a zone simulation (see below) aren't present.</li>
+	 * <li><b>zone</b> contains special zones to be simulated. They consist in a small evolved parts of large parcels that mostly haven't evolved. If we don't proceed to its
+	 * calculation, the large parcel won't be selected.</li> urbanized. Can also be ignored</li> *
 	 * <li><b>evolvedParcel</b> contains only the compared parcels that have evolved</li>
 	 * </ul>
 	 * 
@@ -84,8 +85,8 @@ public class ParcelCollection {
 	 * <li><b>same</b> contains the reference parcels that have not evolved</li>
 	 * <li><b>notSame</b> contains the reference parcels that have evolved</li>
 	 * <li><b>evolvedParcel</b> contains the compared parcels that have evolved</li>
-	 * <li><b>zone</b> contains reference parcels that evolved as a zone. Zones are a part of a very large parcels for which a small part has been cut in order to be
-	 * urbanized.</li>
+	 * <li><b>zone</b> contains special zones to be simulated. They consist in a small evolved parts of large parcels that mostly haven't evolved. If we don't proceed to its
+	 * calculation, the large parcel won't be selected.</li> urbanized. Can also be ignored</li> *
 	 * <li><b>place</b> contains reference parcels that evolved and aren't a <b>zone</b>. We apply a reduction buffer for a precise intersection with other parcel in Parcel Manager
 	 * scenarios.</li>
 	 * </ul>

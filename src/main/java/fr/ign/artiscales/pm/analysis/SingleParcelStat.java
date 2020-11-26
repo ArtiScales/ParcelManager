@@ -154,7 +154,7 @@ public class SingleParcelStat {
 							String.valueOf(widthRoadContact),
 							String.valueOf(ParcelState.countParcelNeighborhood(parcelGeom, Collec.selectIntersection(parcels, parcelGeom.buffer(2)))),
 							parcelGeom.toString(), HausDist, DisHausDst, CodeAppar,
-							String.valueOf(mic.getRadiusLine().getLength() / mbc.getDiameter().getLength()) };
+							String.valueOf(mic.getRadiusLine().getLength() * 2 / mbc.getDiameter().getLength()) };
 					csv.writeNext(line);
 				});
 		csv.close();
