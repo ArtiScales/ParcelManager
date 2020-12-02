@@ -10,7 +10,7 @@ public class FigureIterationStep {
 		long start = System.currentTimeMillis();
 		PMStep.setGENERATEATTRIBUTES(false);
 		PMScenario.setReuseSimulatedParcels(false);
-		PMScenario pm = new PMScenario(new File("src/main/resources/FigureIterationStep/scenario.json"), new File("/tmp/"));
+		PMScenario pm = new PMScenario(new File("src/main/resources/FigureIterationStep/scenario.json"));
 		pm.executeStep();
 		System.out.println(System.currentTimeMillis() - start);
 	}

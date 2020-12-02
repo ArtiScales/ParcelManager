@@ -3,6 +3,7 @@ package fr.ign.artiscales.pm.fields.french;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.data.simple.SimpleFeatureIterator;
@@ -93,7 +94,7 @@ public class FrenchParcelFields {
 				featureBuilder.set("SECTION", section);
 				String numero = (String) iniParcel.getAttribute(ParcelSchema.getMinParcelNumberField());
 				featureBuilder.set("NUMERO", numero);
-				featureBuilder.set("CODE_DEP", insee.substring(0, 2));
+				featureBuilder.set("CODE_DEP", Objects.requireNonNull(insee).substring(0, 2));
 				featureBuilder.set("CODE_COM", insee.substring(2, 5));
 				featureBuilder.set("CODE", insee + "000" + section + numero);
 				featureBuilder.set("COM_ABS", "000");
@@ -116,8 +117,8 @@ public class FrenchParcelFields {
 	 * @return French parcels informations
 	 */
 	public static String showFrenchParcel(SimpleFeature parcel) {
-		return "Parcel in " + (String) parcel.getAttribute("CODE_DEP") + ((String) parcel.getAttribute("CODE_COM")) + ". Section "
-				+ ((String) parcel.getAttribute("SECTION")) + " and number " + ((String) parcel.getAttribute("NUMERO"));
+		return "Parcel in " + parcel.getAttribute("CODE_DEP") + parcel.getAttribute("CODE_COM") + ". Section "
+				+ (parcel.getAttribute("SECTION")) + " and number " + parcel.getAttribute("NUMERO");
 	}
 	
 	/**
@@ -128,8 +129,8 @@ public class FrenchParcelFields {
 	 * @return the string code
 	 */
 	public static String makeFrenchParcelCode(SimpleFeature parcel) {
-		return ((String) parcel.getAttribute("CODE_DEP")) + ((String) parcel.getAttribute("CODE_COM")) + ((String) parcel.getAttribute("COM_ABS"))
-				+ ((String) parcel.getAttribute("SECTION")) + ((String) parcel.getAttribute("NUMERO"));
+		return parcel.getAttribute("CODE_DEP") + ((String) parcel.getAttribute("CODE_COM")) + parcel.getAttribute("COM_ABS")
+				+ parcel.getAttribute("SECTION") + parcel.getAttribute("NUMERO");
 	}
 	
 	/**
@@ -206,7 +207,7 @@ public class FrenchParcelFields {
 	 * @return A list with all unique parcel codes
 	 */
 	public static List<String> getFrenchCodeParcels(SimpleFeatureCollection parcels) {
-		List<String> result = new ArrayList<String>();
+		List<String> result = new ArrayList<>();
 		try (SimpleFeatureIterator parcelIt = parcels.features()) {
 			while (parcelIt.hasNext()) {
 				SimpleFeature feat = parcelIt.next();
@@ -235,7 +236,7 @@ public class FrenchParcelFields {
 	 */
 	public static String makeDEPCOMCode(SimpleFeature parcel) {
 		if (Collec.isSimpleFeatureContainsAttribute(parcel, "CODE_DEP") && Collec.isSimpleFeatureContainsAttribute(parcel, "CODE_COM")) {
-			return ((String) parcel.getAttribute("CODE_DEP")) + ((String) parcel.getAttribute("CODE_COM"));
+			return parcel.getAttribute("CODE_DEP") + ((String) parcel.getAttribute("CODE_COM"));
 		} else {
 			return null;
 		}

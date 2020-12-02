@@ -12,7 +12,6 @@ import org.geotools.feature.DefaultFeatureCollection;
 import org.geotools.feature.simple.SimpleFeatureBuilder;
 import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.geom.LineString;
-import org.locationtech.jts.geom.MultiPolygon;
 import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.filter.FilterFactory2;
 
@@ -55,7 +54,7 @@ public class Densification extends Workflow {
 	// }
 
 	public Densification() {
-	};
+	}
 
 	/**
 	 * Apply the densification workflow on a set of marked parcels. TODO improvements: if a densification is impossible (mainly for building constructed on the both cut parcel
@@ -188,12 +187,12 @@ public class Densification extends Workflow {
 							while (parcelCutedIt.hasNext()) {
 								SimpleFeature parcelCuted = parcelCutedIt.next();
 								Geometry pGeom = (Geometry) parcelCuted.getDefaultGeometry();
-								for (int ii = 0; ii < ((MultiPolygon) pGeom).getNumGeometries(); ii++) {
-									sFBMinParcel.set(geomName, ((MultiPolygon) pGeom).getGeometryN(ii));
+								for (int ii = 0; ii < pGeom.getNumGeometries(); ii++) {
+									sFBMinParcel.set(geomName, pGeom.getGeometryN(ii));
 									sFBMinParcel.set(ParcelSchema.getMinParcelSectionField(),
-											makeNewSection((String) feat.getAttribute(ParcelSchema.getMinParcelSectionField())+"-"+i++));
+											makeNewSection(feat.getAttribute(ParcelSchema.getMinParcelSectionField())+"-"+i++));
 									sFBMinParcel.set(ParcelSchema.getMinParcelNumberField(),
-											(String) feat.getAttribute(ParcelSchema.getMinParcelNumberField()));
+											feat.getAttribute(ParcelSchema.getMinParcelNumberField()));
 									sFBMinParcel.set(ParcelSchema.getMinParcelCommunityField(),
 											feat.getAttribute(ParcelSchema.getMinParcelCommunityField()));
 									SimpleFeature cutedParcel = sFBMinParcel.buildFeature(Attribute.makeUniqueId());
@@ -257,7 +256,7 @@ public class Densification extends Workflow {
 	public SimpleFeatureCollection densification(SimpleFeatureCollection parcelCollection, SimpleFeatureCollection blockCollection, File outFolder,
 			File buildingFile, File roadFile, double harmonyCoeff, double noise, double maximalAreaSplitParcel, double minimalAreaSplitParcel,
 			double maximalWidthSplitParcel, double lenDriveway, boolean allowIsolatedParcel) throws Exception {
-		return densification(parcelCollection, blockCollection, outFolder, buildingFile, null, harmonyCoeff, noise, maximalAreaSplitParcel,
+		return densification(parcelCollection, blockCollection, outFolder, buildingFile, roadFile, harmonyCoeff, noise, maximalAreaSplitParcel,
 				minimalAreaSplitParcel, maximalWidthSplitParcel, lenDriveway, allowIsolatedParcel, null);
 	}
 

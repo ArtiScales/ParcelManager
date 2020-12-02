@@ -2,11 +2,7 @@ package fr.ign.artiscales.pm.analysis;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
@@ -77,9 +73,8 @@ public class MakeStatisticGraphs {
 	 * @param nameDistrib
 	 *            The name of the distribution
 	 * @return An {@link AreaGraph} object
-	 * @throws IOException
 	 */
-	public static AreaGraph sortValuesAndCategorize(SimpleFeatureCollection parcelOut, String nameDistrib) throws IOException {
+	public static AreaGraph sortValuesAndCategorize(SimpleFeatureCollection parcelOut, String nameDistrib) {
 		return sortValuesAndCategorize(Arrays.stream(parcelOut.toArray(new SimpleFeature[0])).collect(Collectors.toList()), nameDistrib, false);
 	}
 
@@ -94,10 +89,9 @@ public class MakeStatisticGraphs {
 	 * @param cutCrest
 	 *            Cut the top and low 10% values
 	 * @return a Graph object
-	 * @throws IOException
 	 */
-	public static AreaGraph sortValuesAndCategorize(List<SimpleFeature> parcelOut, String nameDistrib, boolean cutCrest) throws IOException {
-		List<Double> areaParcel = new ArrayList<Double>();
+	public static AreaGraph sortValuesAndCategorize(List<SimpleFeature> parcelOut, String nameDistrib, boolean cutCrest) {
+		List<Double> areaParcel = new ArrayList<>();
 		DescriptiveStatistics stat = new DescriptiveStatistics();
 		for (SimpleFeature sf : parcelOut) {
 			double area = ((Geometry) sf.getDefaultGeometry()).getArea();
@@ -109,20 +103,17 @@ public class MakeStatisticGraphs {
 		double aMax = 0;
 		double aMin = 100000000;
 		// erase the 10% of min and max
-		List<Double> areaParcelWithoutCrest = new ArrayList<Double>();
+		List<Double> areaParcelWithoutCrest = new ArrayList<>();
 		double infThres = stat.getPercentile(10);
 		double supThres = stat.getPercentile(90);
-		for (double a : areaParcel) {
-			if (cutCrest && (a < infThres || a > supThres))
-				continue;
-			else {
+		for (double a : areaParcel)
+			if (cutCrest && (a >= infThres || a <= supThres)) {
 				areaParcelWithoutCrest.add(a);
 				if (a < aMin)
 					aMin = a;
 				if (a > aMax)
 					aMax = a;
 			}
-		}
 		Collections.sort(areaParcelWithoutCrest);
 		return new AreaGraph(areaParcelWithoutCrest, aMin, aMax, nameDistrib);
 	}
@@ -146,7 +137,7 @@ public class MakeStatisticGraphs {
 	 */
 	public static void makeGraphHisto(AreaGraph graph, File graphDepotFolder, String title, String xTitle, String yTitle, int range)
 			throws IOException {
-		makeGraphHisto(Arrays.asList(graph), graphDepotFolder, title, xTitle, yTitle, range);
+		makeGraphHisto(Collections.singletonList(graph), graphDepotFolder, title, xTitle, yTitle, range);
 	}
 
 	public static void makeGraphHisto(List<AreaGraph> graphs, File graphDepotFolder, String title, String xTitle, String yTitle, int range)
@@ -187,22 +178,22 @@ public class MakeStatisticGraphs {
 	 */
 	public static void roadGraph(SimpleFeatureCollection roads, String title, String xTitle, String yTitle, File graphDepotFolder)
 			throws IOException {
-		HashMap<String, Double> vals = new HashMap<String, Double>();
+		HashMap<String, Double> vals = new HashMap<>();
 		try (SimpleFeatureIterator it = roads.features()) {
 			while (it.hasNext()) {
 				SimpleFeature road = it.next();
 				String line = (String) road.getAttribute("NATURE");
-				if (!((String) road.getAttribute("CL_ADMIN")).equals("Autre"))
-					line = line + "-" + ((String) road.getAttribute("CL_ADMIN"));
+				if (!Objects.equals(road.getAttribute("CL_ADMIN"), "Autre"))
+					line = line + "-" + road.getAttribute("CL_ADMIN");
 				line = line + "- Width:" + road.getAttribute("LARGEUR")+ "m";
-				vals.put(line, ((Geometry) road.getDefaultGeometry()).getLength() + vals.getOrDefault((double) road.getAttribute("LARGEUR"), 0.0));
+				vals.put(line, ((Geometry) road.getDefaultGeometry()).getLength() + vals.getOrDefault(road.getAttribute("LARGEUR"), 0.0));
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
 		// general settings
 		CategoryChart chart = new CategoryChartBuilder().width(600).height(600).title(title).xAxisTitle(xTitle).yAxisTitle(yTitle).build();
-		chart.addSeries("roads length", vals.keySet().stream().collect(Collectors.toList()), vals.values().stream().collect(Collectors.toList()));
+		chart.addSeries("roads length", new ArrayList<>(vals.keySet()), new ArrayList<>(vals.values()));
 
 		// Customize Chart
 		// chart.getStyler().setLegendPosition(LegendPosition.InsideNW);

@@ -116,15 +116,15 @@ public class StraightSkeleton {
   public static LoopL<Edge> buildEdgeLoops(Polygon p, double[] angles) {
     int countAngle = 0;
     Machine directionMachine = new Machine();
-    LoopL<Edge> input = new LoopL<Edge>();
-    Loop<Edge> loop = new Loop<Edge>();
+    LoopL<Edge> input = new LoopL<>();
+    Loop<Edge> loop = new Loop<>();
     for (Edge e : convertLineString(p.getExteriorRing(), false)) {
       loop.append(e);
       countAngle = setMachine(e, angles, countAngle, directionMachine);
     }
     input.add(loop);
     for (int i = 0; i < p.getNumInteriorRing(); i++) {
-      Loop<Edge> loopIn = new Loop<Edge>();
+      Loop<Edge> loopIn = new Loop<>();
       input.add(loopIn);
       for (Edge e : convertLineString(p.getInteriorRingN(i), true)) {
         loopIn.append(e);
@@ -145,7 +145,7 @@ public class StraightSkeleton {
     if (map.containsKey(p)) {
       return map.get(p);
     }
-    Coordinate snapped = snap(p, graph.getEdges().stream().map(f -> f.getGeometry()).collect(Collectors.toList()), factory);
+    Coordinate snapped = snap(p, graph.getEdges().stream().map(HalfEdge::getGeometry).collect(Collectors.toList()), factory);
     if (map.containsKey(snapped)) {
       return map.get(snapped);
     }
@@ -252,7 +252,7 @@ public class StraightSkeleton {
   }
 
   private static Coordinate snap(Coordinate toSnap, List<LineString> existingGeometries, GeometryFactory factory) {
-    Geometry noded = factory.createGeometryCollection(existingGeometries.stream().map(p -> p.getBoundary()).toArray(Geometry[]::new));
+    Geometry noded = factory.createGeometryCollection(existingGeometries.stream().map(LineString::getBoundary).toArray(Geometry[]::new));
     for (Coordinate c : noded.getCoordinates()) {
       if (c.distance(toSnap) < 0.01)
         return c;
@@ -267,8 +267,8 @@ public class StraightSkeleton {
    */
   public static List<Edge> fromDPLToEdges(Coordinate[] dpl) {
     int nbPoints = dpl.length;
-    List<Edge> lEOut = new ArrayList<Edge>();
-    List<Corner> lC = new ArrayList<Corner>();
+    List<Edge> lEOut = new ArrayList<>();
+    List<Corner> lC = new ArrayList<>();
     for (int i = 0; i < nbPoints - 1; i++) {
       lC.add(fromPositionToCorner(dpl[i]));
     }
@@ -304,7 +304,7 @@ public class StraightSkeleton {
 
   // private static PrecisionModel precModel = new PrecisionModel(100);
 
-  private TopologicalGraph graph = null;
+  private TopologicalGraph graph;
 
   /**
    * 

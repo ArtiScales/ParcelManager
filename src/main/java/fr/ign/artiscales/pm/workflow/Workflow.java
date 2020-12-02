@@ -12,7 +12,7 @@ public abstract class Workflow {
 	 */
 	public static boolean SAVEINTERMEDIATERESULT = false;
 	/**
-	 * If true, overwrite the output saved Geopackages. If false, happend the simulated parcels to a potential already existing Geopackage.
+	 * If true, overwrite the output saved Geopackages. If false, append the simulated parcels to a potential already existing Geopackage.
 	 */
 	public static boolean OVERWRITEGEOPACKAGE = true;
 	/**

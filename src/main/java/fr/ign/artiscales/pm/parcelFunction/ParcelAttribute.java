@@ -105,7 +105,7 @@ public class ParcelAttribute {
 	 * @return The list of every <i>city code numbers</i> from the input parcels.
 	 */
 	public static List<String> getCityCodesOfParcels(SimpleFeatureCollection parcels) {
-		List<String> result = new ArrayList<String>();
+		List<String> result = new ArrayList<>();
 		Arrays.stream(parcels.toArray(new SimpleFeature[0])).forEach(feat -> {
 			String code = ((String) feat.getAttribute(ParcelSchema.getMinParcelCommunityField()));
 			if (code != null && !code.isEmpty()) {
@@ -118,7 +118,7 @@ public class ParcelAttribute {
 					if (c != null && !result.contains(c)) {
 						result.add(c);
 					}
-				} catch (Exception e) {
+				} catch (Exception ignored) {
 				}
 			}
 		});
@@ -134,7 +134,7 @@ public class ParcelAttribute {
 	 * @return the most represented <i>city code numbers</i>
 	 */
 	public static String getCityCodeOfParcels(SimpleFeatureCollection parcels) {
-		HashMap<String, Integer> result = new HashMap<String, Integer>(); 
+		HashMap<String, Integer> result = new HashMap<>();
 		try (SimpleFeatureIterator it = parcels.features()) {
 			while (it.hasNext()) {
 				SimpleFeature feat = it.next();
@@ -147,7 +147,7 @@ public class ParcelAttribute {
 						if (c != null && !result.containsKey(c)) {
 							result.put(code, result.getOrDefault(code, 1));
 						}
-					} catch (Exception e) {
+					} catch (Exception ignored) {
 					}
 				}
 			}

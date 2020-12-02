@@ -252,7 +252,7 @@ public class OBBBlockDecomposition {
   public static List<Polygon> split(Polygon poly1, Polygon poly2) {
 	  Geometry intersection = Geom.scaledGeometryReductionIntersection(Arrays.asList(poly1, poly2));
     if (intersection instanceof Polygon)
-      return Arrays.asList((Polygon) intersection);
+      return Collections.singletonList((Polygon) intersection);
     List<Polygon> res = new ArrayList<>(intersection.getNumGeometries());
     for (int i = 0; i < intersection.getNumGeometries(); i++) {
       Geometry geom = intersection.getGeometryN(i);

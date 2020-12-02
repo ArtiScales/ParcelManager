@@ -60,16 +60,16 @@ public class CompareSimulatedParcelsWithEvolutionOM {
 
 		// create ilots for parcel densification in case they haven't been generated before
 		CityGeneration.createUrbanBlock(fileParcelPast, rootFolder);
-		
+
 		PMScenario.setSaveIntermediateResult(true);
 		PMStep.setDEBUG(true);
 		PMStep.setGENERATEATTRIBUTES(false);
-		PMScenario pm = new PMScenario(scenarioFile, outFolder);
+		PMScenario pm = new PMScenario(scenarioFile);
 		pm.executeStep();
 		System.out.println("++++++++++ Done with PMscenario ++++++++++");
 		System.out.println();
-		
-		List<File> lF = new	ArrayList<File>();
+
+		List<File> lF = new	ArrayList<>();
 
 		//get the intermediate files resulting of the PM steps and merge them together
 		for (File f : outFolder.listFiles())
@@ -79,30 +79,28 @@ public class CompareSimulatedParcelsWithEvolutionOM {
 		Shp.mergeVectFiles(lF, simulatedFile);
 		PMStep.setParcel(fileParcelPast);
 		PMStep.setPOLYGONINTERSECTION(null);
-		}
+	}
 	/**
 	 * Simulate the Zone Division workflow from parameters contained in a CSV file (which could be an output of OpenMole)
-	 * @param csvIn
-	 * @throws IOException
 	 */
 	public static void simulateZoneDivisionFromCSV(File csvIn, File zoneFile, File parcelFile, File outFolder) throws IOException {
 		CSVReader r = new CSVReader(new FileReader(csvIn));
 		outFolder.mkdir();
 		ZoneDivision.DEBUG = false;
 		String[] firstLine = r.readNext();
-		List<Integer> listId = new ArrayList<Integer>();
-		for (int i = 0 ; i < firstLine.length ; i++) 
+		List<Integer> listId = new ArrayList<>();
+		for (int i = 0 ; i < firstLine.length ; i++)
 			if (firstLine[i].startsWith("Out-"))
 				listId.add(i);
 		int i = 0 ;
-		for (String[] line : r.readAll()) 
+		for (String[] line : r.readAll())
 			Files.copy((new ZoneDivision()).zoneDivision(zoneFile, parcelFile, new ProfileUrbanFabric(firstLine, line), outFolder).toPath(), new File(outFolder, i++ + Csv.makeLine(listId, line)).toPath());
 		r.close();
 	}
-	
+
 	/**
 	 * Method to create different geopackages of each zoning type and community of an input Geopackage. 
-	 * 
+	 *
 	 * @param toSortFile Geopackage file to sort (zones or parcels)
 	 * @param zoningFile the zoning plan in a geopackage format (field names are set in the {@link GeneralFields} class)
 	 * @param outFolder the folder which will contain the exported geopackages
@@ -114,10 +112,10 @@ public class CompareSimulatedParcelsWithEvolutionOM {
 		DataStore dsZoning = Geopackages.getDataStore(zoningFile);
 		SimpleFeatureCollection zoning = DataUtilities.collection(dsZoning.getFeatureSource(dsZoning.getTypeNames()[0]).getFeatures());
 		SimpleFeatureCollection toSort = DataUtilities.collection(dsToSort.getFeatureSource(dsToSort.getTypeNames()[0]).getFeatures());
-		String[] vals = {ParcelSchema.getMinParcelCommunityField(), GeneralFields.getZonePreciseNameField()}; 
+		String[] vals = {ParcelSchema.getMinParcelCommunityField(), GeneralFields.getZonePreciseNameField()};
 		for (String uniquePreciseName : Collec.getEachUniqueFieldFromSFC(zoning, vals)) {
 			SimpleFeatureCollection eachZoning = Collec.getSFCfromSFCIntersection(toSort, Collec.getSFCPart(zoning, vals, uniquePreciseName.split("-")));
-			if (eachZoning == null || eachZoning.isEmpty()) 
+			if (eachZoning == null || eachZoning.isEmpty())
 				continue;
 			Collec.exportSFC(eachZoning, new File(outFolder, uniquePreciseName));
 		}

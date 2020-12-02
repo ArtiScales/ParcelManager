@@ -43,27 +43,27 @@ import fr.ign.artiscales.tools.geometryGeneration.CityGeneration;
  */
 public class SingleParcelStat {
 
-	 public static void main(String[] args) throws IOException {
-	 long strat = System.currentTimeMillis();
-	 File root = new File("/home/mcolomb/PMtest/ParcelComparison/");
-	 DataStore dsParcelEv = Geopackages.getDataStore(new File(root,"/out/evolvedParcel.gpkg"));
-	 DataStore dsParcelSimu = Geopackages.getDataStore(new File(root, "/out/simulatedParcels.gpkg"));
-	 SimpleFeatureCollection parcelEv = FrenchParcelFields.addCommunityCode(
-	 MarkParcelAttributeFromPosition.markAllParcel(dsParcelEv.getFeatureSource(dsParcelEv.getTypeNames()[0]).getFeatures()));
-	 SimpleFeatureCollection parcelSimu = MarkParcelAttributeFromPosition
-	 .markAllParcel(dsParcelSimu.getFeatureSource(dsParcelSimu.getTypeNames()[0]).getFeatures());
-	 DataStore dsRoad = Geopackages.getDataStore(new File(root, "/road.gpkg"));
-	 SimpleFeatureCollection road = dsRoad.getFeatureSource(dsRoad.getTypeNames()[0]).getFeatures();
-	
-	 writeStatSingleParcel(parcelEv, road, new File(root,"out2/ev.csv"));
-	 writeStatSingleParcel(parcelSimu, road, parcelEv, new File(root,"out2/sim.csv"));
-	
-	 // Collec.exportSFC(makeHausdorfDistanceMaps(parcelEv, parcelSimu), new File("/tmp/haus"));
-	 dsParcelEv.dispose();
-	 dsParcelSimu.dispose();
-	 dsRoad.dispose();
-	 System.out.println("time : " + (System.currentTimeMillis() - strat));
-	 }
+//	 public static void main(String[] args) throws IOException {
+//	 long strat = System.currentTimeMillis();
+//	 File root = new File("~/PMtest/ParcelComparison/");
+//	 DataStore dsParcelEv = Geopackages.getDataStore(new File(root,"/out/evolvedParcel.gpkg"));
+//	 DataStore dsParcelSimu = Geopackages.getDataStore(new File(root, "/out/simulatedParcels.gpkg"));
+//	 SimpleFeatureCollection parcelEv = FrenchParcelFields.addCommunityCode(
+//	 MarkParcelAttributeFromPosition.markAllParcel(dsParcelEv.getFeatureSource(dsParcelEv.getTypeNames()[0]).getFeatures()));
+//	 SimpleFeatureCollection parcelSimu = MarkParcelAttributeFromPosition
+//	 .markAllParcel(dsParcelSimu.getFeatureSource(dsParcelSimu.getTypeNames()[0]).getFeatures());
+//	 DataStore dsRoad = Geopackages.getDataStore(new File(root, "/road.gpkg"));
+//	 SimpleFeatureCollection road = dsRoad.getFeatureSource(dsRoad.getTypeNames()[0]).getFeatures();
+//
+//	 writeStatSingleParcel(parcelEv, road, new File(root,"out2/ev.csv"));
+//	 writeStatSingleParcel(parcelSimu, road, parcelEv, new File(root,"out2/sim.csv"));
+//
+//	 // Collec.exportSFC(makeHausdorfDistanceMaps(parcelEv, parcelSimu), new File("/tmp/haus"));
+//	 dsParcelEv.dispose();
+//	 dsParcelSimu.dispose();
+//	 dsRoad.dispose();
+//	 System.out.println("time : " + (System.currentTimeMillis() - strat));
+//	 }
 
 	public static void writeStatSingleParcel(File parcelFile, File roadFile, File parcelStatCsv, boolean markAll) throws IOException {
 		writeStatSingleParcel(parcelFile, null, roadFile, parcelStatCsv, markAll);
@@ -117,7 +117,7 @@ public class SingleParcelStat {
 				.filter(p -> (int) p.getAttribute(MarkParcelAttributeFromPosition.getMarkFieldName()) == 1).forEach(parcel -> {
 					// if parcel is marked to be analyzed
 					Geometry parcelGeom = (Geometry) parcel.getDefaultGeometry();
-					double widthRoadContact = ParcelState.getParcelFrontSideWidth((Polygon) Polygons.getPolygon(parcelGeom),
+					double widthRoadContact = ParcelState.getParcelFrontSideWidth(Polygons.getPolygon(parcelGeom),
 							Collec.selectIntersection(roads, parcelGeom.buffer(7)), Lines.fromMultiToLineString(
 									Collec.fromPolygonSFCtoRingMultiLines(Collec.selectIntersection(block, parcelGeom.buffer(7)))));
 					boolean contactWithRoad = false;
@@ -194,7 +194,7 @@ public class SingleParcelStat {
 	 * @param parcelToCompareFile
 	 *            The Geopackage to compare
 	 * @return the difference of average (absolute value)
-	 * @throws IOException
+	 * @throws IOException io
 	 */
 	public static double diffAreaAverage(File parcelInFile, File parcelToCompareFile) throws IOException {
 		DataStore sdsParcelIn = Geopackages.getDataStore(parcelInFile);
@@ -252,15 +252,11 @@ public class SingleParcelStat {
 					DiscreteHausdorffDistance dhd = new DiscreteHausdorffDistance(parcelGeom, parcelCompareGeom);
 					builder.set("DisHausDst", dhd.distance());
 					builder.set("HausDist", hausDis.measure(parcelGeom, parcelCompareGeom));
-					builder.set("CODE", parcel.getAttribute("CODE"));
 					builder.set("CodeAppar", parcelCompare.getAttribute("CODE"));
-					builder.set(schema.getGeometryDescriptor().getLocalName(), parcelGeom);
-					result.add(builder.buildFeature(Attribute.makeUniqueId()));
-				} else {
-					builder.set("CODE", parcel.getAttribute("CODE"));
-					builder.set(schema.getGeometryDescriptor().getLocalName(), parcelGeom);
-					result.add(builder.buildFeature(Attribute.makeUniqueId()));
 				}
+				builder.set("CODE", parcel.getAttribute("CODE"));
+				builder.set(schema.getGeometryDescriptor().getLocalName(), parcelGeom);
+				result.add(builder.buildFeature(Attribute.makeUniqueId()));
 			}
 		} catch (Exception problem) {
 			problem.printStackTrace();

@@ -51,9 +51,8 @@ public class ParcelGetter {
 		try (SimpleFeatureIterator itZonez = zonesSFC.features()) {
 			while (itZonez.hasNext()) {
 				SimpleFeature zones = itZonez.next();
-				if (listZones.contains(zones.getAttribute(GeneralFields.getZoneGenericNameField()))) {
+				if (listZones.contains(zones.getAttribute(GeneralFields.getZoneGenericNameField())))
 					zoneSelected.add(zones);
-				}
 			}
 		} catch (Exception problem) {
 			problem.printStackTrace();
@@ -195,7 +194,7 @@ public class ParcelGetter {
 				if (((String) feat.getAttribute(firstFieldName)).concat(((String) feat.getAttribute(secondFieldName))).equals(val)) {
 				  Geometry original = (Geometry) feat.getDefaultGeometry();
           Geometry g = original.getFactory().createGeometry(original);
-          g.apply((Coordinate c) -> coord2D(c));
+          g.apply(ParcelGetter::coord2D);
           g.geometryChanged();
           feat.setDefaultGeometry(g);
 					result.add(feat);
@@ -207,7 +206,7 @@ public class ParcelGetter {
 		return result.collection();
 	}
   private static void coord2D(Coordinate c) {
-    if (!CoordinateXY.class.isInstance(c))
+    if (!(c instanceof CoordinateXY))
       c.setZ(Double.NaN);
   }	
 	/**
@@ -234,7 +233,7 @@ public class ParcelGetter {
 		Arrays.stream(parcelIn.toArray(new SimpleFeature[0])).forEach(feat -> {
 			if (Collec.isSimpleFeatureContainsAttribute(feat, ParcelSchema.getMinParcelCommunityField())
 					&& feat.getAttribute(ParcelSchema.getMinParcelCommunityField()) != null
-					&& ((String) feat.getAttribute(ParcelSchema.getMinParcelCommunityField())).equals(val))
+					&& feat.getAttribute(ParcelSchema.getMinParcelCommunityField()).equals(val))
 				result.add(feat);
 		});
 		return result.collection();

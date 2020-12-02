@@ -71,7 +71,7 @@ public class GeneralFields {
 	 * @return The list of every <i>city code numbers</i> from the input parcels.
 	 */
 	public static List<String> getPreciseZoningTypes(SimpleFeatureCollection zonings) {
-		List<String> result = new ArrayList<String>();
+		List<String> result = new ArrayList<>();
 		Arrays.stream(zonings.toArray(new SimpleFeature[0])).forEach(feat -> {
 			String code = ((String) feat.getAttribute(zonePreciseNameField));
 			if (code != null && !code.isEmpty() && !result.contains(code))
@@ -89,7 +89,7 @@ public class GeneralFields {
 	 * @return The list of every <i>city code numbers</i> from the input parcels.
 	 */
 	public static List<String> getGenericZoningTypes(SimpleFeatureCollection zonings) {
-		List<String> result = new ArrayList<String>();
+		List<String> result = new ArrayList<>();
 		Arrays.stream(zonings.toArray(new SimpleFeature[0])).forEach(feat -> {
 			String code = ((String) feat.getAttribute(zoneGenericNameField));
 			if (code != null && !code.isEmpty() && !result.contains(code))
@@ -121,7 +121,7 @@ public class GeneralFields {
 	 *            {@link SimpleFeatureCollection} of parcels.
 	 * @return The collection with the "CODE" field added.
 	 */
-	public static SimpleFeatureCollection addCommunityCode(SimpleFeatureCollection parcels) throws IOException {
+	public static SimpleFeatureCollection addCommunityCode(SimpleFeatureCollection parcels) {
 		switch (parcelFieldType) {
 		case "french":
 			return FrenchParcelFields.addCommunityCode(parcels);
@@ -192,10 +192,8 @@ public class GeneralFields {
 	 * @return True if the parcel section looks like it has been simulated.
 	 */
 	public static boolean isParcelLikeFrenchHasSimulatedFileds(SimpleFeature feature) {
-		if (((String) feature.getAttribute(ParcelSchema.getMinParcelSectionField())) != null
-				&& ((String) feature.getAttribute(ParcelSchema.getMinParcelSectionField())).length() > 3)
-			return true;
-		return false;
+		return (feature.getAttribute(ParcelSchema.getMinParcelSectionField())) != null
+				&& ((String) feature.getAttribute(ParcelSchema.getMinParcelSectionField())).length() > 3;
 	}
 
 	public static SimpleFeatureBuilder getSFBZoning() {

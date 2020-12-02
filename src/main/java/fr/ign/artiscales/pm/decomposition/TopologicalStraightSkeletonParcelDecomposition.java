@@ -1,54 +1,5 @@
 package fr.ign.artiscales.pm.decomposition;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Optional;
-import java.util.Random;
-import java.util.Set;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
-import org.apache.commons.lang3.tuple.ImmutablePair;
-import org.apache.commons.lang3.tuple.ImmutableTriple;
-import org.apache.commons.lang3.tuple.Pair;
-import org.apache.commons.lang3.tuple.Triple;
-import org.apache.commons.math3.distribution.NormalDistribution;
-import org.apache.commons.math3.distribution.RealDistribution;
-import org.apache.commons.math3.random.MersenneTwister;
-import org.apache.commons.math3.random.RandomGenerator;
-import org.geotools.data.DataStore;
-import org.geotools.data.simple.SimpleFeatureCollection;
-import org.geotools.data.simple.SimpleFeatureIterator;
-import org.geotools.feature.DefaultFeatureCollection;
-import org.geotools.feature.SchemaException;
-import org.geotools.feature.simple.SimpleFeatureBuilder;
-import org.locationtech.jts.algorithm.Angle;
-import org.locationtech.jts.algorithm.Orientation;
-import org.locationtech.jts.geom.Coordinate;
-import org.locationtech.jts.geom.Geometry;
-import org.locationtech.jts.geom.GeometryFactory;
-import org.locationtech.jts.geom.LineSegment;
-import org.locationtech.jts.geom.LineString;
-import org.locationtech.jts.geom.LinearRing;
-import org.locationtech.jts.geom.Point;
-import org.locationtech.jts.geom.Polygon;
-import org.locationtech.jts.geom.PrecisionModel;
-import org.locationtech.jts.linearref.LengthIndexedLine;
-import org.locationtech.jts.operation.linemerge.LineMerger;
-import org.locationtech.jts.operation.overlay.snap.GeometrySnapper;
-import org.locationtech.jts.operation.polygonize.Polygonizer;
-import org.locationtech.jts.precision.GeometryPrecisionReducer;
-import org.locationtech.jts.simplify.TopologyPreservingSimplifier;
-import org.opengis.feature.simple.SimpleFeature;
-
 import fr.ign.artiscales.tools.FeaturePolygonizer;
 import fr.ign.artiscales.tools.geoToolsFunctions.Attribute;
 import fr.ign.artiscales.tools.geoToolsFunctions.Schemas;
@@ -62,6 +13,36 @@ import fr.ign.artiscales.tools.graph.recursiveGraph.Face;
 import fr.ign.artiscales.tools.graph.recursiveGraph.HalfEdge;
 import fr.ign.artiscales.tools.graph.recursiveGraph.Node;
 import fr.ign.artiscales.tools.graph.recursiveGraph.TopologicalGraph;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.ImmutableTriple;
+import org.apache.commons.lang3.tuple.Pair;
+import org.apache.commons.lang3.tuple.Triple;
+import org.apache.commons.math3.distribution.NormalDistribution;
+import org.apache.commons.math3.distribution.RealDistribution;
+import org.apache.commons.math3.random.MersenneTwister;
+import org.apache.commons.math3.random.RandomGenerator;
+import org.geotools.data.DataStore;
+import org.geotools.data.simple.SimpleFeatureCollection;
+import org.geotools.data.simple.SimpleFeatureIterator;
+import org.geotools.feature.DefaultFeatureCollection;
+import org.geotools.feature.simple.SimpleFeatureBuilder;
+import org.locationtech.jts.algorithm.Angle;
+import org.locationtech.jts.algorithm.Orientation;
+import org.locationtech.jts.geom.*;
+import org.locationtech.jts.linearref.LengthIndexedLine;
+import org.locationtech.jts.operation.linemerge.LineMerger;
+import org.locationtech.jts.operation.overlay.snap.GeometrySnapper;
+import org.locationtech.jts.operation.polygonize.Polygonizer;
+import org.locationtech.jts.precision.GeometryPrecisionReducer;
+import org.locationtech.jts.simplify.TopologyPreservingSimplifier;
+import org.opengis.feature.simple.SimpleFeature;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.*;
+import java.util.Map.Entry;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Re-implementation of block decomposition into parcels from :
@@ -449,13 +430,13 @@ public class TopologicalStraightSkeletonParcelDecomposition {
 		for (Face face : facesWithMultipleFrontages) {
 			// get its primary strip
 			Optional<HalfEdge> opPrimaryStrip = primaryStrips.stream()
-					.filter(s -> s.getChildren().stream().map(e -> e.getFace()).filter(f -> f == face).count() > 0).findFirst();
+					.filter(s -> s.getChildren().stream().map(e -> e.getFace()).anyMatch(f -> f == face)).findFirst();
 			if (opPrimaryStrip.isPresent()) {
 				HalfEdge primaryStrip = opPrimaryStrip.get();
 				log("primary\n" + primaryStrip.getGeometry());
 				// gather its secondary strips
 				List<HalfEdge> secondary = secondaryStrips.stream()
-						.filter(s -> s.getChildren().stream().map(e -> e.getFace()).filter(f -> f == face).count() > 0).collect(Collectors.toList());
+						.filter(s -> s.getChildren().stream().map(e -> e.getFace()).anyMatch(f -> f == face)).collect(Collectors.toList());
 				// get the first halfedge of the face
 				List<Triple<HalfEdge, List<HalfEdge>, Double>> triples = secondary.stream().map(e -> {
 					log("secondary\n" + e.getGeometry());
@@ -1118,10 +1099,10 @@ public class TopologicalStraightSkeletonParcelDecomposition {
 	}
 
 	private static Polygon snap(Polygon poly, Coordinate c, double tolerance) {
-		LinearRing shell = snap((LinearRing) poly.getExteriorRing(), c, tolerance);
+		LinearRing shell = snap(poly.getExteriorRing(), c, tolerance);
 		LinearRing[] holes = new LinearRing[poly.getNumInteriorRing()];
 		for (int i = 0; i < holes.length; i++) {
-			holes[i] = snap((LinearRing) poly.getInteriorRingN(i), c, tolerance);
+			holes[i] = snap(poly.getInteriorRingN(i), c, tolerance);
 		}
 		return poly.getFactory().createPolygon(shell, holes);
 	}
@@ -1208,9 +1189,9 @@ public class TopologicalStraightSkeletonParcelDecomposition {
 		return null;
 	}
 
-	private static int RIGHT = 1;
-	private static int LEFT = -1;
-	private static int NEITHER = 0;
+	private static final int RIGHT = 1;
+	private static final int LEFT = -1;
+	private static final int NEITHER = 0;
 
 	private int position(Polygon polygon, LineString line) {
 		GeometrySnapper snapper = new GeometrySnapper(line);
@@ -1265,7 +1246,7 @@ public class TopologicalStraightSkeletonParcelDecomposition {
 		return (int) ca.stream().filter(c -> cb.contains(c)).count();
 	}
 
-	public static void main(String[] args) throws IOException, SchemaException {
+	public static void main(String[] args) throws IOException {
 		// File rootFolder = new File("src/main/resources/GeneralTest/");
 		// File roadFile = new File(rootFolder, "road.gpkg");
 		// File parcelFile = new File(rootFolder, "parcel.gpkg");

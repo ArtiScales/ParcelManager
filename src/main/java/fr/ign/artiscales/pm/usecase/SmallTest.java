@@ -10,7 +10,7 @@ public class SmallTest {
 		long start = System.currentTimeMillis();
 		PMScenario.setSaveIntermediateResult(true);
 		PMStep.setDEBUG(true);
-		PMScenario pm = new PMScenario(new File("src/main/resources/smallTest/scenario.json"), new File("/tmp/"));
+		PMScenario pm = new PMScenario(new File("src/main/resources/smallTest/scenario.json"));
 		pm.executeStep();
 		System.out.println(System.currentTimeMillis() - start);
 	}

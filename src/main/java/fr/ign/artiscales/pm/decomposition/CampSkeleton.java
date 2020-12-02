@@ -37,7 +37,7 @@ import fr.ign.artiscales.tools.graph.TopologicalGraph;
  * 
  */
 public class CampSkeleton {
-  private Polygon p;
+  private final Polygon p;
 
   /**
    * Calcul du squelette droit, le résultat est obtenu par le getCarteTopo() Le même poids est appliqué à tous les arcs

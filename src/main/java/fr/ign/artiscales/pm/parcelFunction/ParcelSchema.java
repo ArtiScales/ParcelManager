@@ -3,7 +3,6 @@ package fr.ign.artiscales.pm.parcelFunction;
 import org.geotools.feature.simple.SimpleFeatureBuilder;
 import org.geotools.feature.simple.SimpleFeatureTypeBuilder;
 import org.geotools.referencing.CRS;
-import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.geom.MultiPolygon;
 import org.locationtech.jts.geom.Polygon;
 import org.opengis.feature.simple.SimpleFeature;
@@ -61,12 +60,11 @@ public class ParcelSchema {
 	}
 
 	public static SimpleFeatureBuilder setSFBMinParcelWithFeat(SimpleFeature feat, SimpleFeatureType schema) {
-		SimpleFeatureBuilder finalParcelBuilder = new SimpleFeatureBuilder(schema);
-		return finalParcelBuilder = setSFBMinParcelWithFeat(feat, finalParcelBuilder, schema);
+		return setSFBMinParcelWithFeat(feat, new SimpleFeatureBuilder(schema), schema);
 	}
 
 	public static SimpleFeatureBuilder setSFBMinParcelWithFeat(SimpleFeature feat, SimpleFeatureBuilder builder, SimpleFeatureType schema) {
-		builder.set(schema.getGeometryDescriptor().getName().toString(), (Geometry) feat.getDefaultGeometry());
+		builder.set(schema.getGeometryDescriptor().getName().toString(), feat.getDefaultGeometry());
 		builder.set(minParcelSectionField, feat.getAttribute(minParcelSectionField));
 		builder.set(minParcelNumberField, feat.getAttribute(minParcelNumberField));
 
@@ -102,13 +100,12 @@ public class ParcelSchema {
 	}
 
 	public static SimpleFeatureBuilder setSFBMinParcelSplitWithFeat(SimpleFeature feat, SimpleFeatureType schema, int isSplit) {
-		SimpleFeatureBuilder finalParcelBuilder = new SimpleFeatureBuilder(schema);
-		return finalParcelBuilder = setSFBMinParcelSplitWithFeat(feat, finalParcelBuilder, schema, isSplit);
+		return setSFBMinParcelSplitWithFeat(feat, new SimpleFeatureBuilder(schema), schema, isSplit);
 	}
 
 	public static SimpleFeatureBuilder setSFBMinParcelSplitWithFeat(SimpleFeature feat, SimpleFeatureBuilder builder, SimpleFeatureType schema,
 			int isSplit) {
-		builder.set(schema.getGeometryDescriptor().getName().toString(), (Geometry) feat.getDefaultGeometry());
+		builder.set(schema.getGeometryDescriptor().getName().toString(), feat.getDefaultGeometry());
 		builder.set(MarkParcelAttributeFromPosition.getMarkFieldName(), isSplit);
 		builder.set(minParcelSectionField, feat.getAttribute(minParcelSectionField));
 		builder.set(minParcelNumberField, feat.getAttribute(minParcelNumberField));
@@ -127,8 +124,8 @@ public class ParcelSchema {
 	 * Create a builder out of a SimpleFeatureCollection's schema and add a mark field of type <b>int</i>. The mark name can be set with the method
 	 * {@link fr.ign.artiscales.pm.parcelFunction.MarkParcelAttributeFromPosition#setMarkFieldName(String)}.
 	 * 
-	 * @param schema
-	 * @return a SimpleFeatureBuilder felative to the schema + a marking field
+	 * @param schema input schema
+	 * @return a SimpleFeatureBuilder relative to the schema + a marking field
 	 */
 	public static SimpleFeatureBuilder addSplitField(SimpleFeatureType schema) {
 		SimpleFeatureTypeBuilder sfTypeBuilder = new SimpleFeatureTypeBuilder();

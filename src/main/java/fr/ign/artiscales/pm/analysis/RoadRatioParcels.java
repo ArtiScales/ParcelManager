@@ -1,22 +1,5 @@
 package fr.ign.artiscales.pm.analysis;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.HashMap;
-
-import org.geotools.data.DataStore;
-import org.geotools.data.simple.SimpleFeatureCollection;
-import org.geotools.data.simple.SimpleFeatureIterator;
-import org.geotools.factory.CommonFactoryFinder;
-import org.geotools.feature.DefaultFeatureCollection;
-import org.geotools.feature.simple.SimpleFeatureBuilder;
-import org.geotools.util.factory.GeoTools;
-import org.locationtech.jts.geom.Geometry;
-import org.locationtech.jts.geom.Polygon;
-import org.opengis.feature.simple.SimpleFeature;
-import org.opengis.filter.FilterFactory2;
-
 import fr.ign.artiscales.pm.fields.GeneralFields;
 import fr.ign.artiscales.pm.fields.french.FrenchParcelFields;
 import fr.ign.artiscales.pm.parcelFunction.MarkParcelAttributeFromPosition;
@@ -29,6 +12,21 @@ import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Geopackages;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.geom.Polygons;
 import fr.ign.artiscales.tools.geometryGeneration.CityGeneration;
 import fr.ign.artiscales.tools.io.Csv;
+import org.geotools.data.DataStore;
+import org.geotools.data.simple.SimpleFeatureCollection;
+import org.geotools.data.simple.SimpleFeatureIterator;
+import org.geotools.factory.CommonFactoryFinder;
+import org.geotools.feature.DefaultFeatureCollection;
+import org.geotools.feature.simple.SimpleFeatureBuilder;
+import org.geotools.util.factory.GeoTools;
+import org.locationtech.jts.geom.Geometry;
+import org.opengis.feature.simple.SimpleFeature;
+import org.opengis.filter.FilterFactory2;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.HashMap;
 
 /**
  * Street/generated surface ratio. Only developped for french parcels.
@@ -125,7 +123,7 @@ public class RoadRatioParcels {
 	public static void roadRatioZone(SimpleFeatureCollection zone, SimpleFeatureCollection cutParcel, String legend, File folderOutStat,
 			File roadFile) throws IOException {
 		System.out.println("++++++++++Road Ratios++++++++++");
-		HashMap<String, String[]> stat = new HashMap<String, String[]>();
+		HashMap<String, String[]> stat = new HashMap<>();
 
 		DataStore sdsRoad = Geopackages.getDataStore(roadFile);
 		SimpleFeatureCollection roads = Collec.selectIntersection(sdsRoad.getFeatureSource(sdsRoad.getTypeNames()[0]).getFeatures(), zone);
@@ -163,7 +161,7 @@ public class RoadRatioParcels {
 				tab[5] = Double.toString(1 - (pNew / iniA));
 				// get the ratio of parcels having a connection to the road
 				tab[6] = String.valueOf(((double) Arrays.stream(df.toArray(new SimpleFeature[0]))
-						.filter(feat -> ParcelState.isParcelHasRoadAccess((Polygon) Polygons.getPolygon((Geometry) feat.getDefaultGeometry()),
+						.filter(feat -> ParcelState.isParcelHasRoadAccess(Polygons.getPolygon((Geometry) feat.getDefaultGeometry()),
 								Collec.selectIntersection(roads, ((Geometry) feat.getDefaultGeometry())),
 								Collec.fromPolygonSFCtoRingMultiLines(Collec.selectIntersection(blocks, (Geometry) z.getDefaultGeometry()))))
 						.count() / (double) df.size()));

@@ -48,7 +48,7 @@ public class AreaGraph {
 	}
 
 	public void toCSV(File folderOut) throws IOException {
-		HashMap<String, Object[]> data = new HashMap<String, Object[]>();
+		HashMap<String, Object[]> data = new HashMap<>();
 		data.put("sortedDistribution", sortedDistribution.toArray());
 		Csv.generateCsvFileCol(data, folderOut, nameDistrib);
 //		Csv.calculateColumnsBasicStat(new File(folderOut, nameDistrib + ".csv"), 0, true);

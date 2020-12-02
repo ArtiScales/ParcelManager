@@ -1,18 +1,13 @@
 package fr.ign.artiscales.pm.parcelFunction;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map.Entry;
-import java.util.SortedMap;
-import java.util.TreeMap;
-import java.util.stream.Collectors;
-
+import fr.ign.artiscales.pm.fields.artiscales.ArtiScalesSchemas;
+import fr.ign.artiscales.tools.FeaturePolygonizer;
+import fr.ign.artiscales.tools.geoToolsFunctions.Attribute;
+import fr.ign.artiscales.tools.geoToolsFunctions.Schemas;
+import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Collec;
+import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Geom;
+import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Geopackages;
+import fr.ign.artiscales.tools.geoToolsFunctions.vectors.geom.Polygons;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
@@ -33,14 +28,11 @@ import org.opengis.feature.type.AttributeDescriptor;
 import org.opengis.filter.FilterFactory2;
 import org.opengis.filter.expression.PropertyName;
 
-import fr.ign.artiscales.pm.fields.artiscales.ArtiScalesSchemas;
-import fr.ign.artiscales.tools.FeaturePolygonizer;
-import fr.ign.artiscales.tools.geoToolsFunctions.Attribute;
-import fr.ign.artiscales.tools.geoToolsFunctions.Schemas;
-import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Collec;
-import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Geom;
-import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Geopackages;
-import fr.ign.artiscales.tools.geoToolsFunctions.vectors.geom.Polygons;
+import java.io.File;
+import java.io.IOException;
+import java.util.*;
+import java.util.Map.Entry;
+import java.util.stream.Collectors;
 
 public class ParcelCollection {
 
@@ -226,8 +218,8 @@ public class ParcelCollection {
 		// We now seek if a large part of the evolved parcel stays intact and small parts, which represents parcels created for residential development purposes, are generated.
 		List<Geometry> notSameMerged = Geom.unionTouchingGeometries(
 				Arrays.stream(notSame.toArray(new SimpleFeature[0])).map(x -> (Geometry) x.getDefaultGeometry()).collect(Collectors.toList()));
-		List<Geometry> zones = new ArrayList<Geometry>();
-		List<Geometry> intersectionGeoms = new ArrayList<Geometry>();
+		List<Geometry> zones = new ArrayList<>();
+		List<Geometry> intersectionGeoms = new ArrayList<>();
 		for (Geometry firstZone : notSameMerged) {
 			SimpleFeatureCollection parcelsEvolved = Collec.selectIntersection(evolvedParcel, firstZone);
 			// If the area of the tested zone is 10x higher than the maximal simulated parcels (by default, 450m), it could be a 'zone'
@@ -237,7 +229,7 @@ public class ParcelCollection {
 				Arrays.stream(parcelsEvolved.toArray(new SimpleFeature[0])).forEach(sf -> stat.addValue(((Geometry) sf.getDefaultGeometry()).getArea()));
 				// if parcel's area is 20x higher than the median of the distribution
 				if (stat.getMax() > stat.getPercentile(50) * 20) {
-					List<Geometry> intrestingZones = new ArrayList<Geometry>();
+					List<Geometry> intrestingZones = new ArrayList<>();
 					Arrays.stream(parcelsEvolved.toArray(new SimpleFeature[0])).forEach(sf -> {
 						Geometry geom = (Geometry) sf.getDefaultGeometry();
 						if (geom.getArea() < 10 * stat.getPercentile(50))
@@ -251,15 +243,11 @@ public class ParcelCollection {
 							intersectionGeoms.add(g);
 					}
 				} else
-					Arrays.stream(parcelsEvolved.toArray(new SimpleFeature[0])).forEach(sf -> {
-						intersectionGeoms.add((Geometry) sf.getDefaultGeometry());
-					});
+					Arrays.stream(parcelsEvolved.toArray(new SimpleFeature[0])).forEach(sf -> intersectionGeoms.add((Geometry) sf.getDefaultGeometry()));
 			} 
 			// Otherwise, goes to the 'place' collection
 			else
-				Arrays.stream(parcelsEvolved.toArray(new SimpleFeature[0])).forEach(sf -> {
-					intersectionGeoms.add((Geometry) sf.getDefaultGeometry());
-				});
+				Arrays.stream(parcelsEvolved.toArray(new SimpleFeature[0])).forEach(sf -> intersectionGeoms.add((Geometry) sf.getDefaultGeometry()));
 		}
 		Geom.exportGeom(zones, fZone);
 		List<Geometry> listGeom = Geom.unionTouchingGeometries(
@@ -268,7 +256,7 @@ public class ParcelCollection {
 		Geom.exportGeom(listGeom, fInter);
 		listGeom.addAll(zones);
 		DefaultFeatureCollection finalEvolvedParcels = new DefaultFeatureCollection();
-		listGeom.stream().forEach(g -> {finalEvolvedParcels.addAll(Collec.selectIntersection(evolvedParcel, g.buffer(-1)));});
+		listGeom.stream().forEach(g -> finalEvolvedParcels.addAll(Collec.selectIntersection(evolvedParcel, g.buffer(-1))));
 		Collec.exportSFC(finalEvolvedParcels, fEvolved);
 		ds.dispose();
 		dsRef.dispose();
@@ -293,10 +281,9 @@ public class ParcelCollection {
 	 * @param minimalParcelSize
 	 *            Threshold which parcels are under to be merged
 	 * @return The input {@link SimpleFeatureCollection} with small parcels merged or removed
-	 * @throws IOException
 	 */
-	public static SimpleFeatureCollection mergeTooSmallParcels(SimpleFeatureCollection parcelsUnsorted, double minimalParcelSize) throws IOException {
-		List<Integer> sizeResults = new ArrayList<Integer>();
+	public static SimpleFeatureCollection mergeTooSmallParcels(SimpleFeatureCollection parcelsUnsorted, double minimalParcelSize) {
+		List<Integer> sizeResults = new ArrayList<>();
 		SimpleFeatureCollection result = recursiveMergeTooSmallParcel(parcelsUnsorted, minimalParcelSize);
 		sizeResults.add(result.size());
 		do {
@@ -309,10 +296,10 @@ public class ParcelCollection {
 		return result;
 	}
 	
-	private static SimpleFeatureCollection recursiveMergeTooSmallParcel(SimpleFeatureCollection parcelsUnsorted, double minimalParcelSize) throws IOException {
+	private static SimpleFeatureCollection recursiveMergeTooSmallParcel(SimpleFeatureCollection parcelsUnsorted, double minimalParcelSize) {
 		DefaultFeatureCollection result = new DefaultFeatureCollection();
 		// we sort the parcel collection to process the smallest parcels in first
-		List<String> ids = new ArrayList<String>();	
+		List<String> ids = new ArrayList<>();
 		//easy hack to sort parcels by their size
 		SortedMap<Double, SimpleFeature> index = new TreeMap<>();
 		try (SimpleFeatureIterator itr = parcelsUnsorted.features()) {
@@ -342,20 +329,13 @@ public class ParcelCollection {
 				if (intersect.size() > 0) {
 					// System.out.println(intersect.size() + " intersecting");
 					// if the tiny parcel intersects a bigger parcel, we seek the longest side to which parcel could be incorporated
-					HashMap<String, Double> repart = new HashMap<String, Double>();
-					Arrays.stream(intersect.toArray(new SimpleFeature[0])).forEach(interParcel -> {
-						repart.put(interParcel.getID(),
-								Geom.scaledGeometryReductionIntersection(Arrays.asList((Geometry) interParcel.getDefaultGeometry(), geom.buffer(1)))
-										.getArea());
-					});
+					HashMap<String, Double> repart = new HashMap<>();
+					Arrays.stream(intersect.toArray(new SimpleFeature[0])).forEach(interParcel -> repart.put(interParcel.getID(),
+							Geom.scaledGeometryReductionIntersection(Arrays.asList((Geometry) interParcel.getDefaultGeometry(), geom.buffer(1)))
+									.getArea()));
 					// we sort to place the biggest intersecting parcel in first
-					List<Entry<String, Double>> entryList = new ArrayList<Entry<String, Double>>(repart.entrySet());
-					Collections.sort(entryList, new Comparator<Entry<String, Double>>() {
-						@Override
-						public int compare(Entry<String, Double> obj1, Entry<String, Double> obj2) {
-							return obj2.getValue().compareTo(obj1.getValue());
-						}
-					});
+					List<Entry<String, Double>> entryList = new ArrayList<>(repart.entrySet());
+					entryList.sort((obj1, obj2) -> obj2.getValue().compareTo(obj1.getValue()));
 					String idToMerge = entryList.get(0).getKey();
 					// if the big parcel has already been merged with a small parcel, we skip it and will return to that small parcel in a future iteration
 					if (ids.contains(idToMerge)) {
@@ -364,7 +344,7 @@ public class ParcelCollection {
 					}
 					ids.add(idToMerge);
 					// we now merge geometries and copy attributes to the new Feature
-					List<Geometry> lG = new ArrayList<Geometry>();
+					List<Geometry> lG = new ArrayList<>();
 					lG.add(geom);
 					SimpleFeatureBuilder build = Schemas.getSFBSchemaWithMultiPolygon(parcelsUnsorted.getSchema());
 					Arrays.stream(intersect.toArray(new SimpleFeature[0])).forEach(thaParcel -> {
@@ -595,20 +575,17 @@ public class ParcelCollection {
 	 * @param parcelIn
 	 * @param size
 	 * @return a pair
-	 * @throws IOException
 	 */
-	public static Pair<SimpleFeatureCollection,SimpleFeatureCollection> sortParcelsBySize(SimpleFeatureCollection parcelIn, double size) throws IOException {
+	public static Pair<SimpleFeatureCollection,SimpleFeatureCollection> sortParcelsBySize(SimpleFeatureCollection parcelIn, double size) {
 		DefaultFeatureCollection less = new DefaultFeatureCollection();
 		DefaultFeatureCollection more = new DefaultFeatureCollection();
 		Arrays.stream(parcelIn.toArray(new SimpleFeature[0])).forEach(feat -> {
-			if (((Geometry) feat.getDefaultGeometry()).getArea() >= size) {
+			if (((Geometry) feat.getDefaultGeometry()).getArea() >= size)
 				more.add(feat);
-			} else {
+			else
 				less.add(feat);
-			}
 		});
-		return new ImmutablePair<SimpleFeatureCollection, SimpleFeatureCollection>(
-				less, more);
+		return new ImmutablePair<>(less, more);
 	}
 
 	/**

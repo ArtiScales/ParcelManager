@@ -1,28 +1,5 @@
 package fr.ign.artiscales.pm.workflow;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.List;
-import java.util.stream.Collectors;
-
-import org.apache.commons.math3.random.MersenneTwister;
-import org.geotools.data.DataStore;
-import org.geotools.data.DataUtilities;
-import org.geotools.data.simple.SimpleFeatureCollection;
-import org.geotools.data.simple.SimpleFeatureIterator;
-import org.geotools.feature.DefaultFeatureCollection;
-import org.geotools.feature.simple.SimpleFeatureBuilder;
-import org.locationtech.jts.geom.Geometry;
-import org.locationtech.jts.geom.Polygon;
-import org.locationtech.jts.geom.PrecisionModel;
-import org.locationtech.jts.precision.GeometryPrecisionReducer;
-import org.opengis.feature.simple.SimpleFeature;
-import org.opengis.feature.simple.SimpleFeatureType;
-import org.opengis.feature.type.AttributeDescriptor;
-import org.opengis.referencing.FactoryException;
-import org.opengis.referencing.NoSuchAuthorityCodeException;
-
 import fr.ign.artiscales.pm.decomposition.OBBBlockDecomposition;
 import fr.ign.artiscales.pm.decomposition.TopologicalStraightSkeletonParcelDecomposition;
 import fr.ign.artiscales.pm.parcelFunction.MarkParcelAttributeFromPosition;
@@ -37,12 +14,32 @@ import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Geopackages;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.geom.Polygons;
 import fr.ign.artiscales.tools.geometryGeneration.CityGeneration;
 import fr.ign.artiscales.tools.parameter.ProfileUrbanFabric;
+import org.apache.commons.math3.random.MersenneTwister;
+import org.geotools.data.DataStore;
+import org.geotools.data.DataUtilities;
+import org.geotools.data.simple.SimpleFeatureCollection;
+import org.geotools.data.simple.SimpleFeatureIterator;
+import org.geotools.feature.DefaultFeatureCollection;
+import org.geotools.feature.simple.SimpleFeatureBuilder;
+import org.locationtech.jts.geom.Geometry;
+import org.locationtech.jts.geom.Polygon;
+import org.locationtech.jts.geom.PrecisionModel;
+import org.locationtech.jts.precision.GeometryPrecisionReducer;
+import org.opengis.feature.simple.SimpleFeature;
+import org.opengis.feature.simple.SimpleFeatureType;
+import org.opengis.feature.type.AttributeDescriptor;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Simulation following this workflow operates on a zone rather than on parcels. Zones can either be taken from a zoning plan or from a ready-to-use zone parcel collection. Their
  * integration is anyhow made with the {@link #createZoneToCut(String, SimpleFeatureCollection, File, SimpleFeatureCollection)} method. The parcel which are across the zone are cut
  * and the parts that aren't contained into * the zone are kept with their attributes. The chosen parcel division process (OBB by default) is then applied on the zone.
- * 
+ *
  * @author Maxime Colomb
  *
  */
@@ -50,7 +47,7 @@ public class ZoneDivision extends Workflow{
 
 	public ZoneDivision() {
 	}
-	
+
 //	public static void main(String[] args) throws Exception {
 //		File evolvedParcel = new File(
 //				"/home/thema/.openmole/thema-HP-ZBook-14/webui/projects/compare/donnee/evolvedParcel.gpkg");
@@ -65,7 +62,7 @@ public class ZoneDivision extends Workflow{
 //		System.out.println(SingleParcelStat.diffAreaAverage(simuledFile, evolvedParcel));
 //		System.out.println(SingleParcelStat.hausdorfDistanceAverage(simuledFile, evolvedParcel));
 //	}
-	
+
 	/**
 	 * Method to use from fresh Geopackages. Also used by OpenMole tasks. 
 	 * @param zoneFile Geopackage representing the zones to be cut
@@ -80,7 +77,7 @@ public class ZoneDivision extends Workflow{
 		DataStore sdsParcel = Geopackages.getDataStore(parcelFile);
 		SimpleFeatureCollection zone = DataUtilities.collection(sdsZone.getFeatureSource(sdsZone.getTypeNames()[0]).getFeatures());
 		SimpleFeatureCollection parcel = DataUtilities.collection(sdsParcel.getFeatureSource(sdsParcel.getTypeNames()[0]).getFeatures());
-		sdsZone.dispose(); 
+		sdsZone.dispose();
 		sdsParcel.dispose();
 		SAVEINTERMEDIATERESULT = true;
 		OVERWRITEGEOPACKAGE = true;
@@ -88,13 +85,13 @@ public class ZoneDivision extends Workflow{
 		return new File(outFolder, "parcelZoneDivisionOnly" + Collec.getDefaultGISFileType());
 	}
 	public SimpleFeatureCollection zoneDivision(SimpleFeatureCollection initialZone, SimpleFeatureCollection parcels,
-			File outFolder, ProfileUrbanFabric profile) throws IOException {
+												File outFolder, ProfileUrbanFabric profile) throws IOException {
 		return 	zoneDivision( initialZone, parcels, null, outFolder,  profile) ;
 	}
 	/**
 	 * Merge and recut a specific zone. Cut first the surrounding parcels to keep them unsplit, then split the zone parcel and remerge them all into the original parcel file A bit
 	 * complicated algorithm to deal with non-existing pieces of parcels (as road).
-	 * 
+	 *
 	 * @param initialZone
 	 *            Zone which will be used to cut parcels. Will cut parcels that intersects them and keep their infos. Will then fill the empty spaces in between the zones and feed
 	 *            it to the OBB algorithm.
@@ -107,7 +104,7 @@ public class ZoneDivision extends Workflow{
 	 * @throws IOException
 	 */
 	public SimpleFeatureCollection zoneDivision(SimpleFeatureCollection initialZone, SimpleFeatureCollection parcels, SimpleFeatureCollection roads,
-			File outFolder, ProfileUrbanFabric profile) throws IOException {
+												File outFolder, ProfileUrbanFabric profile) throws IOException {
 		return zoneDivision(initialZone, parcels, roads, outFolder, profile.getMaximalArea(), profile.getMinimalArea(),
 				profile.getMinimalWidthContactRoad(), profile.getHarmonyCoeff(), profile.getNoise(), profile.getStreetWidth(),
 				profile.getLargeStreetLevel(), profile.getLargeStreetWidth(), profile.getDecompositionLevelWithoutStreet(), profile.getMaxDepth(),
@@ -115,9 +112,9 @@ public class ZoneDivision extends Workflow{
 	}
 
 	public SimpleFeatureCollection zoneDivision(SimpleFeatureCollection initialZone, SimpleFeatureCollection parcels, SimpleFeatureCollection roads,
-			File outFolder, double maximalArea, double minimalArea, double minimalWidthContactRoad, double harmonyCoeff, double noise,
-			double streetWidth, int largeStreetLevel, double largeStreetWidth, int decompositionLevelWithoutStreet, double maxDepth,
-			double maxDistanceForNearestRoad, double maxWidth, double minWidth) throws IOException {
+												File outFolder, double maximalArea, double minimalArea, double minimalWidthContactRoad, double harmonyCoeff, double noise,
+												double streetWidth, int largeStreetLevel, double largeStreetWidth, int decompositionLevelWithoutStreet, double maxDepth,
+												double maxDistanceForNearestRoad, double maxWidth, double minWidth) throws IOException {
 		File tmpFolder = new File(outFolder, "tmp");
 		if (DEBUG)
 			tmpFolder.mkdirs();
@@ -220,22 +217,22 @@ public class ZoneDivision extends Workflow{
 				DefaultFeatureCollection tmpZoneToCut = new DefaultFeatureCollection();
 				tmpZoneToCut.add(zone);
 				switch (PROCESS) {
-				case "OBB":
-					((DefaultFeatureCollection) splitedParcels)
-							.addAll(OBBBlockDecomposition.splitParcels(tmpZoneToCut, null, maximalArea, minimalWidthContactRoad, harmonyCoeff, noise,
-									Collec.fromPolygonSFCtoListRingLines(
-											Collec.selectIntersection(blockCollection, (Geometry) zone.getDefaultGeometry())),
-									streetWidth, largeStreetLevel, largeStreetWidth, true, decompositionLevelWithoutStreet));
-					break;
-				case "SS":
-					((DefaultFeatureCollection) splitedParcels)
-							.addAll(TopologicalStraightSkeletonParcelDecomposition.runTopologicalStraightSkeletonParcelDecomposition(zone, roads,
-									"NOM_VOIE_G", "IMPORTANCE", outFolder, maxDepth, maxDistanceForNearestRoad, minimalArea, minWidth, maxWidth,
-									noise == 0 ? 0.1 : noise, new MersenneTwister(42), true, streetWidth));
-					break;
-				case "MS":
-					System.out.println("not implemented yet");
-					break;
+					case "OBB":
+						((DefaultFeatureCollection) splitedParcels)
+								.addAll(OBBBlockDecomposition.splitParcels(tmpZoneToCut, null, maximalArea, minimalWidthContactRoad, harmonyCoeff, noise,
+										Collec.fromPolygonSFCtoListRingLines(
+												Collec.selectIntersection(blockCollection, (Geometry) zone.getDefaultGeometry())),
+										streetWidth, largeStreetLevel, largeStreetWidth, true, decompositionLevelWithoutStreet));
+						break;
+					case "SS":
+						((DefaultFeatureCollection) splitedParcels)
+								.addAll(TopologicalStraightSkeletonParcelDecomposition.runTopologicalStraightSkeletonParcelDecomposition(zone, roads,
+										"NOM_VOIE_G", "IMPORTANCE", outFolder, maxDepth, maxDistanceForNearestRoad, minimalArea, minWidth, maxWidth,
+										noise == 0 ? 0.1 : noise, new MersenneTwister(42), true, streetWidth));
+						break;
+					case "MS":
+						System.out.println("not implemented yet");
+						break;
 				}
 			}
 		} catch (Exception problem) {
@@ -299,7 +296,7 @@ public class ZoneDivision extends Workflow{
 	 * Create a zone to cut by selecting features from a Geopackage regarding a fixed value. Name of the field is by default set to <i>TYPEZONE</i> and must be changed if needed
 	 * with the {@link fr.ign.artiscales.pm.fields.GeneralFields#setZoneGenericNameField(String)} method. Name of a Generic Zone is provided and can be null. If null, inputSFC is
 	 * usually directly a ready-to-use zone and all given zone are marked. Also takes a bounding {@link SimpleFeatureCollection} to bound the output.
-	 * 
+	 *
 	 * @param genericZone
 	 *            Name of the generic zone to be cut
 	 * @param inputSFC
@@ -310,11 +307,9 @@ public class ZoneDivision extends Workflow{
 	 *            {@link SimpleFeatureCollection} to bound the process on a wanted location
 	 * @return An extraction of the zoning collection
 	 * @throws IOException
-	 * @throws FactoryException
-	 * @throws NoSuchAuthorityCodeException
 	 */
 	public static SimpleFeatureCollection createZoneToCut(String genericZone, SimpleFeatureCollection inputSFC, File zoningFile,
-			SimpleFeatureCollection boundingSFC) throws IOException, NoSuchAuthorityCodeException, FactoryException {
+														  SimpleFeatureCollection boundingSFC) throws IOException {
 		return createZoneToCut(genericZone, null, inputSFC, zoningFile, boundingSFC);
 	}
 
@@ -323,7 +318,7 @@ public class ZoneDivision extends Workflow{
 	 * with the {@link fr.ign.artiscales.pm.fields.GeneralFields#setZoneGenericNameField(String)} method. Name of a <i>generic zone</i> and a <i>precise Zone</i> can be provided
 	 * and can be null. If null, inputSFC is usually directly a ready-to-use zone and all given zone are marked. Also takes a bounding {@link SimpleFeatureCollection} to bound the
 	 * output.
-	 * 
+	 *
 	 * @param genericZone
 	 *            Name of the generic zone to be cut
 	 * @param preciseZone
@@ -337,27 +332,26 @@ public class ZoneDivision extends Workflow{
 	 * @return An extraction of the zoning collection
 	 * @throws IOException
 	 */
-	public static SimpleFeatureCollection createZoneToCut(String genericZone, String preciseZone, SimpleFeatureCollection inputSFC, File zoningFile,
-			SimpleFeatureCollection boundingSFC) throws IOException {
+	public static SimpleFeatureCollection createZoneToCut(String genericZone, String preciseZone, SimpleFeatureCollection inputSFC, File zoningFile, SimpleFeatureCollection boundingSFC) throws IOException {
 		// get the wanted zones from the zoning file
 		SimpleFeatureCollection finalZone;
-		if (genericZone != null && genericZone != "" && (preciseZone == null || preciseZone == ""))
-			finalZone = MarkParcelAttributeFromPosition.getOnlyMarkedParcels(MarkParcelAttributeFromPosition
-					.markParcelIntersectGenericZoningType(Collec.selectIntersection(inputSFC, Geom.unionSFC(boundingSFC)), genericZone, zoningFile));
-		else if (genericZone != null && genericZone != "" && preciseZone != null && preciseZone != "")
-			finalZone = MarkParcelAttributeFromPosition.getOnlyMarkedParcels(MarkParcelAttributeFromPosition.markParcelIntersectPreciseZoningType(
-					Collec.selectIntersection(inputSFC, Geom.unionSFC(boundingSFC)), genericZone, preciseZone, zoningFile));
+		if (genericZone != null && !genericZone.equals(""))
+			if (preciseZone == null || preciseZone.equals(""))
+				finalZone = MarkParcelAttributeFromPosition.getOnlyMarkedParcels(MarkParcelAttributeFromPosition
+						.markParcelIntersectGenericZoningType(Collec.selectIntersection(inputSFC, Geom.unionSFC(boundingSFC)), genericZone, zoningFile));
+			else
+				finalZone = MarkParcelAttributeFromPosition.getOnlyMarkedParcels(MarkParcelAttributeFromPosition.markParcelIntersectPreciseZoningType(
+						Collec.selectIntersection(inputSFC, Geom.unionSFC(boundingSFC)), genericZone, preciseZone, zoningFile));
 		else
 			finalZone = MarkParcelAttributeFromPosition
 					.getOnlyMarkedParcels(MarkParcelAttributeFromPosition.markAllParcel(Collec.selectIntersection(inputSFC, Geom.unionSFC(boundingSFC))));
-		if (finalZone.isEmpty())
-			System.out.println("createZoneToCut(): zone is empty");
+		if (finalZone != null && finalZone.isEmpty()) System.out.println("createZoneToCut(): zone is empty");
 		return finalZone;
 	}
 
 	/**
 	 * Create a new section name following a precise rule.
-	 * 
+	 *
 	 * @param numZone
 	 *            number of the nex zone
 	 * @return the section's name
@@ -368,7 +362,7 @@ public class ZoneDivision extends Workflow{
 
 	/**
 	 * Check if the input {@link SimpleFeature} has a section field that has been simulated with this present workflow.
-	 * 
+	 *
 	 * @param feat
 	 *            {@link SimpleFeature} to test.
 	 * @return true if the section field is marked with the {@link #makeNewSection(String)} method.

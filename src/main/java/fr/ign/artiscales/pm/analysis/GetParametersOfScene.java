@@ -3,6 +3,7 @@ package fr.ign.artiscales.pm.analysis;
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.stream.Collectors;
 
@@ -25,7 +26,7 @@ import fr.ign.artiscales.tools.geometryGeneration.CityGeneration;
 
 /**
  * This class generates values for the description of an urban fabric. It is aimed to help the setting of {@link fr.ign.artiscales.tools.parameter.ProfileUrbanFabric} parameters.
- * It can work on different scales, from the block or the {@link GeneralFields#zonePreciseNameField} of a zoning plan to a whole community.
+ * It can work on different scales, from the block or the zonePreciseNameField of a zoning plan to a whole community.
  * 
  * @author Maxime Colomb
  *
@@ -103,7 +104,7 @@ public class GetParametersOfScene {
 		// sdsRoad.setCharset(Charset.forName("UTF-8"));
 		SimpleFeatureCollection parcels = ds.getFeatureSource(ds.getTypeNames()[0]).getFeatures();
 		// collection of every input with its set of parcels
-		HashMap<String, SimpleFeatureCollection> listSFC = new HashMap<String, SimpleFeatureCollection>();
+		HashMap<String, SimpleFeatureCollection> listSFC = new HashMap<>();
 		DataStore sdsZone = Geopackages.getDataStore(zoningFile);
 		SimpleFeatureCollection zonings = DataUtilities
 				.collection(Collec.selectIntersection(sdsZone.getFeatureSource(sdsZone.getTypeNames()[0]).getFeatures(), parcels));
@@ -130,7 +131,7 @@ public class GetParametersOfScene {
 			try (SimpleFeatureIterator it = block.features()) {
 				while (it.hasNext())
 					listSFC.put(String.valueOf(i++), MarkParcelAttributeFromPosition.getOnlyMarkedParcels(MarkParcelAttributeFromPosition
-							.markParcelIntersectPolygonIntersection(parcels, Arrays.asList((Geometry) it.next().getDefaultGeometry()))));
+							.markParcelIntersectPolygonIntersection(parcels, Collections.singletonList((Geometry) it.next().getDefaultGeometry()))));
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
@@ -196,7 +197,7 @@ public class GetParametersOfScene {
 	public static void areaBuiltAndTotal(SimpleFeatureCollection collection, String scaleZone, String zone) throws IOException {
 		if (collection.isEmpty())
 			return;
-		HashMap<String, SimpleFeatureCollection> lSFC = new HashMap<String, SimpleFeatureCollection>();
+		HashMap<String, SimpleFeatureCollection> lSFC = new HashMap<>();
 		lSFC.put("total parcels", MarkParcelAttributeFromPosition.getOnlyMarkedParcels(collection));
 		lSFC.put("built parcels",
 				MarkParcelAttributeFromPosition.getOnlyMarkedParcels(MarkParcelAttributeFromPosition.markBuiltParcel(collection, buildingFile)));

@@ -86,7 +86,7 @@ public class ParcelState {
 	public static List<Geometry> getRoadPolygon(SimpleFeatureCollection roads) {
 		// List<Geometry> roadGeom = Arrays.stream(Collec.snapDatas(roads, poly.buffer(5)).toArray(new SimpleFeature[0]))
 		// .map(g -> ((Geometry) g.getDefaultGeometry()).buffer((double) g.getAttribute("LARGEUR"))).collect(Collectors.toList());
-		List<Geometry> roadGeom = new ArrayList<Geometry>();
+		List<Geometry> roadGeom = new ArrayList<>();
 		try (SimpleFeatureIterator roadSnapIt = roads.features()) {
 			while (roadSnapIt.hasNext()) {
 				SimpleFeature feat = roadSnapIt.next();
@@ -182,16 +182,9 @@ public class ParcelState {
 	 * @return true is the polygon has a road access
 	 */
 	public static boolean isParcelHasRoadAccess(Polygon poly, SimpleFeatureCollection roads, MultiLineString ext, Geometry disabledBuffer) {
-		// if (poly.intersects((((Polygon) ext).getExteriorRing()).buffer(0.5))) {
-		if (poly.intersects(ext.buffer(0.5))) {
-			if (disabledBuffer != null && poly.intersects(disabledBuffer.buffer(0.5)))
-				return false;
-			return true;
-		}
-		// System.out.println(Geom.unionGeom(getRoadPolygon(roads)));
-		if (roads != null && !roads.isEmpty() && poly.intersects(Geom.unionGeom(getRoadPolygon(roads))))
-			return true;
-		return false;
+		if (poly.intersects(ext.buffer(0.5)))
+			return disabledBuffer == null || !poly.intersects(disabledBuffer.buffer(0.5));
+		return roads != null && !roads.isEmpty() && poly.intersects(Geom.unionGeom(getRoadPolygon(roads)));
 	}
 
 	/**
@@ -206,7 +199,7 @@ public class ParcelState {
 	 * @throws IOException
 	 */
 	public static boolean isArt3AllowsIsolatedParcel(SimpleFeature feat, File predicateFile) throws IOException {
-		return isArt3AllowsIsolatedParcel(((String) feat.getAttribute("CODE_DEP")) + ((String) feat.getAttribute("CODE_COM")), predicateFile);
+		return isArt3AllowsIsolatedParcel(( feat.getAttribute("CODE_DEP")) + ((String) feat.getAttribute("CODE_COM")), predicateFile);
 	}
 
 	/**
@@ -248,9 +241,8 @@ public class ParcelState {
 	 * @param batiSFC
 	 * @param feature
 	 * @return True if a building is really intersecting the parcel
-	 * @throws IOException
 	 */
-	public static boolean isAlreadyBuilt(SimpleFeatureCollection batiSFC, SimpleFeature feature) throws IOException {
+	public static boolean isAlreadyBuilt(SimpleFeatureCollection batiSFC, SimpleFeature feature) {
 		return isAlreadyBuilt(batiSFC, feature, 0.0, 0.0);
 	}
 
@@ -295,15 +287,12 @@ public class ParcelState {
 	 * @param parcel
 	 * @param bufferBati
 	 * @return True if a building is really intersecting the parcel
-	 * @throws IOException
 	 */
-	public static boolean isAlreadyBuilt(SimpleFeatureCollection buildingSFC, SimpleFeature parcel, double bufferBati, double uncountedBuildingArea)
-			throws IOException {
+	public static boolean isAlreadyBuilt(SimpleFeatureCollection buildingSFC, SimpleFeature parcel, double bufferBati, double uncountedBuildingArea) {
 		return isAlreadyBuilt(buildingSFC, (Geometry) parcel.getDefaultGeometry(), bufferBati, uncountedBuildingArea);
 	}
 
-	public static boolean isAlreadyBuilt(SimpleFeatureCollection buildingSFC, Geometry parcelGeom, double bufferBati, double uncountedBuildingArea)
-			throws IOException {
+	public static boolean isAlreadyBuilt(SimpleFeatureCollection buildingSFC, Geometry parcelGeom, double bufferBati, double uncountedBuildingArea) {
 		try (SimpleFeatureIterator iterator = buildingSFC.features()) {
 			while (iterator.hasNext()) {
 				Geometry buildingGeom = (Geometry) iterator.next().getDefaultGeometry();
@@ -346,7 +335,7 @@ public class ParcelState {
 		FilterFactory2 ff = CommonFactoryFinder.getFilterFactory2(GeoTools.getDefaultHints());
 		SimpleFeatureCollection onlyCells = mupSFC.subCollection(
 				ff.intersects(ff.property(mupSFC.getSchema().getGeometryDescriptor().getLocalName()), ff.literal(parcel.getDefaultGeometry())));
-		Double bestEval = 0.0;
+		double bestEval = 0.0;
 		// put the best cell evaluation into the parcel
 		if (onlyCells.size() > 0) {
 			try (SimpleFeatureIterator onlyCellIt = onlyCells.features()) {

@@ -20,7 +20,7 @@ public class PMScenario {
 
 	private File zoningFile, buildingFile, roadFile, polygonIntersection, zone, predicateFile, parcelFile, profileFolder, outFolder;
 
-	private List<PMStep> stepList = new ArrayList<PMStep>();
+	private List<PMStep> stepList = new ArrayList<>();
 	private boolean fileSet = false;
 	/**
 	 * If true, the parcels simulated for each steps will be the input of the next step. If false, the simulation will operate on the input parcel for each steps
@@ -33,17 +33,16 @@ public class PMScenario {
 
 //	public static void main(String[] args) throws Exception {
 //		PMScenario pm = new PMScenario(
-//				new File("/home/thema/Documents/MC/workspace/ParcelManager/src/main/resources/testData/jsonEx.json"),
+//				new File("src/main/resources/testData/jsonEx.json"),
 //				new File("/tmp/"));
 //		pm.executeStep();
 //	}
 
-	public PMScenario(File jSON, File tmpfolder) throws IOException {
+	public PMScenario(File jSON) throws IOException {
 		PMStep.setSaveIntermediateResult(SAVEINTERMEDIATERESULT);
 		JsonFactory factory = new JsonFactory();
 		JsonParser parser = factory.createParser(jSON);
 		JsonToken token = parser.nextToken();
-		
 		while (!parser.isClosed()) {
 			token = parser.nextToken();
 //			shortcut if every data is in the same folder
@@ -62,7 +61,7 @@ public class PMScenario {
 					profileFolder = new File(rootFolder, "profileUrbanFabric");
 				}
 			}
-			//if the line is an array, it describes a PMSetp
+			//if the line is an array, it describes a PMStep
 			if (token == JsonToken.FIELD_NAME && "steps".equals(parser.getCurrentName())) {
 				token = parser.nextToken();
 				String workflow = "";

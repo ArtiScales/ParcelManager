@@ -41,7 +41,7 @@ public class DensificationStudy {
 		File rootFile = new File("src/main/resources/DensificationStudy/");
 		File outFolder = new File(rootFile, "out");
 		PMStep.setGENERATEATTRIBUTES(false);
-		PMScenario pmScen = new PMScenario(new File(rootFile, "scenario.json"), new File("/tmp"));
+		PMScenario pmScen = new PMScenario(new File(rootFile, "scenario.json"));
 		pmScen.executeStep();
 		for (int i = 1; i <= 4; i++)
 			Csv.calculateColumnsBasicStat(new File(outFolder, "densificationStudyResult.csv"), i, true);
@@ -133,7 +133,7 @@ public class DensificationStudy {
 		String[] firstline = { GeneralFields.getZoneCommunityCode(), "parcels in urbanizable zones", "number of vacant lots", "parcels simulated in vacant lots",
 				"parcels simulated by densification" };
 		Object[] line = { nbParcelsInUrbanizableZones, nbVacantLot, nbVacantLotParcels, vacantParcelU.size() };
-		HashMap<String, Object[]> l = new HashMap<String, Object[]>();
+		HashMap<String, Object[]> l = new HashMap<>();
 		l.put(ParcelAttribute.getCityCodeOfParcels(parcelsDensifCreated), line);
 		Csv.generateCsvFile(l, outFolder, "densificationStudyResult", firstline, true);
 		Csv.needFLine = false;

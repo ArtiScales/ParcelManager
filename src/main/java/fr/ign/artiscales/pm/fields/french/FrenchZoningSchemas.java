@@ -25,11 +25,7 @@ public class FrenchZoningSchemas {
 		if (zone == null)
 			return false;
 		String libelle = ((String) zone.getAttribute(GeneralFields.getZonePreciseNameField())).toLowerCase();
-		if (normalizeNameFrenchBigZone((String) zone.getAttribute(GeneralFields.getZoneGenericNameField())).equals("U") && libelle != null
-				&& (libelle.equals("u") || libelle.startsWith("ua") || libelle.startsWith("ub") || libelle.startsWith("uc")
-						|| libelle.startsWith("ud") || libelle.startsWith("c")))
-			return true;
-		return false;
+		return normalizeNameFrenchBigZone((String) zone.getAttribute(GeneralFields.getZoneGenericNameField())).equals("U") && (libelle.equals("u") || libelle.startsWith("ua") || libelle.startsWith("ub") || libelle.startsWith("uc") || libelle.startsWith("ud") || libelle.startsWith("c"));
 	}
 
 	/**
@@ -46,11 +42,9 @@ public class FrenchZoningSchemas {
 	 */
 	public static boolean isZoneUsuallyAdmitResidentialConstruction(SimpleFeature zone) {
 		String libelle = ((String) zone.getAttribute(GeneralFields.getZonePreciseNameField())).toLowerCase();
-		if (isUrbanZoneUsuallyAdmitResidentialConstruction(zone)
+		return isUrbanZoneUsuallyAdmitResidentialConstruction(zone)
 				&& normalizeNameFrenchBigZone((String) zone.getAttribute(GeneralFields.getZoneGenericNameField())).equals("AU")
-				&& (libelle.startsWith("1") || libelle.startsWith("au1")))
-			return true;
-		return false;
+				&& (libelle.startsWith("1") || libelle.startsWith("au1"));
 	}
 
 	/**

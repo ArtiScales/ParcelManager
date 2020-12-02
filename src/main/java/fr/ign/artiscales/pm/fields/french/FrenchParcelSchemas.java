@@ -70,7 +70,7 @@ public class FrenchParcelSchemas {
 
 	public static SimpleFeatureBuilder setSFBFrenchParcelWithFeat(SimpleFeature feat, SimpleFeatureType schema) {
 		SimpleFeatureBuilder parcelBuilder = new SimpleFeatureBuilder(schema);
-		parcelBuilder.set(schema.getGeometryDescriptor().getName().toString(), (Geometry) feat.getDefaultGeometry());
+		parcelBuilder.set(schema.getGeometryDescriptor().getName().toString(), feat.getDefaultGeometry());
 		parcelBuilder.set("NUMERO", feat.getAttribute("NUMERO"));
 		parcelBuilder.set("FEUILLE", feat.getAttribute("FEUILLE"));
 		parcelBuilder.set("SECTION", feat.getAttribute("SECTION"));

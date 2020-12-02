@@ -7,6 +7,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 import org.geotools.data.DataStore;
@@ -51,28 +52,27 @@ public class CompareSimulatedParcelsWithEvolution {
 		File scenarioFile = new File(rootFolder, "scenario.json");
 		compareSimulatedParcelsWithEvolutionWorkflow(rootFolder, parcelRefFile, parcelCompFile, roadFile, scenarioFile, outFolder);
 		System.out.println(Duration.between(start, Instant.now()));
-
 	}
 
 	public static void compareSimulatedParcelsWithEvolutionWorkflow(File rootFolder, File parcelRefFile, File parcelCompFile, File roadFile,
 			File scenarioFile, File outFolder) throws IOException {
 		// Mark and export the parcels that have changed between the two set of time
 		ParcelCollection.sortDifferentParcel(parcelRefFile, parcelCompFile, outFolder);
-		// create ilots for parcel densification in case they haven't been generated before
+		// create blocks for parcel densification in case they haven't been generated before
 		CityGeneration.createUrbanBlock(parcelRefFile, rootFolder);
 
 		PMScenario.setSaveIntermediateResult(true);
-//		PMStep.setDEBUG(true);
+		PMStep.setDEBUG(true);
 		PMStep.setGENERATEATTRIBUTES(false);
-		PMScenario pm = new PMScenario(scenarioFile, outFolder);
+		PMScenario pm = new PMScenario(scenarioFile);
 		pm.executeStep();
 		System.out.println("++++++++++ Done with PMscenario ++++++++++");
 		System.out.println();
 		
-		List<File> lF = new	ArrayList<File>();
+		List<File> lF = new	ArrayList<>();
 
 		//get the intermediate files resulting of the PM steps and merge them together
-		for (File f : outFolder.listFiles())
+		for (File f : Objects.requireNonNull(outFolder.listFiles()))
 			if ((f.getName().contains(("Only")) && f.getName().contains(".gpkg")))
 				lF.add(f);
 		File simulatedFile = new File(outFolder, "simulatedParcel.gpkg");

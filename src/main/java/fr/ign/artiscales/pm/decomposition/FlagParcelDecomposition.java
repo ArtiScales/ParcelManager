@@ -134,7 +134,7 @@ public class FlagParcelDecomposition {
 	}
   
 
-  private double maximalArea, maximalWidth, drivewayWidth;
+  final private double maximalArea, maximalWidth, drivewayWidth;
   Polygon polygonInit;
   SimpleFeatureCollection buildings;
   SimpleFeatureCollection roads;
@@ -276,7 +276,7 @@ public class FlagParcelDecomposition {
 
 	// If a parcel has no road access, there is a probability to make a flag split 
 	List<Polygon> result = new ArrayList<>();
-	if (splitPolygon.stream().filter(x -> !hasRoadAccess(x)).count() != 0) {
+	if (splitPolygon.stream().anyMatch(x -> !hasRoadAccess(x))) {
 		Pair<List<Polygon>, List<Polygon>> polGeneratedParcel = generateFlagParcel(splitPolygon);
 		// We check if both parcels have road access, if false we abort the decomposition (that may be useless here...)
 		for (Polygon pol1 : polGeneratedParcel.getLeft())
@@ -301,24 +301,24 @@ public class FlagParcelDecomposition {
    *  </ul>
    */
   private Pair<List<Polygon>, List<Polygon>> generateFlagParcel(List<Polygon> splittedPolygon) {
-    List<Polygon> left = new ArrayList<>();
-    List<Polygon> right = new ArrayList<>();
+	  List<Polygon> right = new ArrayList<>();
 
     // We get the two geometries with and without road access
-    List<Polygon> lPolygonWithRoadAccess = splittedPolygon.stream().filter(x -> hasRoadAccess(x)).collect(Collectors.toList());
+    List<Polygon> lPolygonWithRoadAccess = splittedPolygon.stream().filter(this::hasRoadAccess).collect(Collectors.toList());
     List<Polygon> lPolygonWithNoRoadAccess = splittedPolygon.stream().filter(x -> !hasRoadAccess(x)).collect(Collectors.toList());
 
     bouclepoly: for (Polygon currentPoly : lPolygonWithNoRoadAccess) {
       List<Pair<MultiLineString, Polygon>> listMap = generateCandidateForCreatingRoad(currentPoly, lPolygonWithRoadAccess);
       // We order the proposition according to the length (we will try at first to build the road on the shortest side
-      listMap.sort(new Comparator<Pair<MultiLineString, Polygon>>() {
-        @Override
-        public int compare(Pair<MultiLineString, Polygon> o1, Pair<MultiLineString, Polygon> o2) {
-          return Double.compare(o1.getKey().getLength(), o2.getKey().getLength());
-        }
-      });
+		listMap.sort(Comparator.comparingDouble(o -> o.getKey().getLength()));
+//      listMap.sort(new Comparator<Pair<MultiLineString, Polygon>>() {
+//        @Override
+//        public int compare(Pair<MultiLineString, Polygon> o1, Pair<MultiLineString, Polygon> o2) {
+//          return Double.compare(o1.getKey().getLength(), o2.getKey().getLength());
+//        }
+//      });
 
-      boucleside: for (Pair<MultiLineString, Polygon> side : listMap) {
+      loopSide: for (Pair<MultiLineString, Polygon> side : listMap) {
         // The geometry road
         Geometry road = side.getKey().buffer(this.drivewayWidth);
         Polygon polygon = side.getValue();
@@ -339,10 +339,10 @@ public class FlagParcelDecomposition {
 			// We check if there is a road acces for all, if not we abort
 			for (Polygon pol : lPolygonsOut1)
 				if (!hasRoadAccess(pol))
-					continue boucleside;
+					continue loopSide;
 			for (Polygon pol : lPolygonsOut2)
 				if (!hasRoadAccess(pol))
-					continue boucleside;
+					continue loopSide;
 			
 			// We directly add the result from polygon 2 to the results
 			right.addAll(lPolygonsOut2);
@@ -361,8 +361,7 @@ public class FlagParcelDecomposition {
       right.add(currentPoly);
     }
     // We add the polygon with road access
-    left.addAll(lPolygonWithRoadAccess);
-    return new ImmutablePair<List<Polygon>, List<Polygon>>(left, right);
+    return new ImmutablePair<>(new ArrayList<>(lPolygonWithRoadAccess), right);
   }
 
   //TODO move those functions to ArtiScales-Tools? 
@@ -370,7 +369,7 @@ public class FlagParcelDecomposition {
     PrecisionModel pm = new PrecisionModel(100);
     Geometry jtsGeomA = GeometryPrecisionReducer.reduce(a, pm);
     Geometry jtsGeomB = GeometryPrecisionReducer.reduce(b, pm);
-    return FeaturePolygonizer.getDifference(new ArrayList<Geometry>(Arrays.asList(jtsGeomA)), new ArrayList<Geometry>(Arrays.asList(jtsGeomB)));
+    return FeaturePolygonizer.getDifference(new ArrayList<>(Collections.singletonList(jtsGeomA)), new ArrayList<>(Collections.singletonList(jtsGeomB)));
   }
 
   @SuppressWarnings("unused")
@@ -378,14 +377,14 @@ private Pair<Geometry,Geometry> getIntersectionDifference(Geometry a, Geometry b
     PrecisionModel pm = new PrecisionModel(100);
     Geometry jtsGeomA = GeometryPrecisionReducer.reduce(a, pm);
     Geometry jtsGeomB = GeometryPrecisionReducer.reduce(b, pm);
-    return FeaturePolygonizer.getIntersectionDifference(new ArrayList<Geometry>(Arrays.asList(jtsGeomA)), new ArrayList<Geometry>(Arrays.asList(jtsGeomB)));
+    return FeaturePolygonizer.getIntersectionDifference(new ArrayList<>(Collections.singletonList(jtsGeomA)), new ArrayList<>(Collections.singletonList(jtsGeomB)));
   }
 
   private Geometry getUnion(Geometry a, Geometry b) {
     PrecisionModel pm = new PrecisionModel(100);
     Geometry jtsGeomA = GeometryPrecisionReducer.reduce(a, pm);
     Geometry jtsGeomB = GeometryPrecisionReducer.reduce(b, pm);
-    return new CascadedPolygonUnion(new ArrayList<Geometry>(Arrays.asList(jtsGeomA, jtsGeomB))).union();
+    return new CascadedPolygonUnion(new ArrayList<>(Arrays.asList(jtsGeomA, jtsGeomB))).union();
   }
 
   private Geometry getIntersection(Geometry a, Geometry b) {
@@ -395,14 +394,14 @@ private Pair<Geometry,Geometry> getIntersectionDifference(Geometry a, Geometry b
       PrecisionModel pm = new PrecisionModel(100);
       Geometry jtsGeomA = GeometryPrecisionReducer.reduce(a, pm);
       Geometry jtsGeomB = GeometryPrecisionReducer.reduce(b, pm);
-      return FeaturePolygonizer.getIntersection(new ArrayList<Geometry>(Arrays.asList(jtsGeomA, jtsGeomB)));
+      return FeaturePolygonizer.getIntersection(new ArrayList<>(Arrays.asList(jtsGeomA, jtsGeomB)));
     }
   }
 
   private List<MultiLineString> regroupLineStrings(List<LineString> lineStrings) {
 	    List<MultiLineString> curvesOutput = new ArrayList<>();
 	    while (!lineStrings.isEmpty()) {
-	      LineString currentLineString = (LineString) lineStrings.remove(0);
+	      LineString currentLineString = lineStrings.remove(0);
 	      List<LineString> currentMultiCurve = new ArrayList<>();
 	      currentMultiCurve.add(currentLineString);
 	      Geometry buffer = currentLineString.buffer(0.1);
