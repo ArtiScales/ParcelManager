@@ -1,9 +1,15 @@
 package fr.ign.artiscales.pm.workflow;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.List;
-
+import fr.ign.artiscales.pm.decomposition.FlagParcelDecomposition;
+import fr.ign.artiscales.pm.decomposition.OBBBlockDecomposition;
+import fr.ign.artiscales.pm.fields.GeneralFields;
+import fr.ign.artiscales.pm.parcelFunction.MarkParcelAttributeFromPosition;
+import fr.ign.artiscales.pm.parcelFunction.ParcelSchema;
+import fr.ign.artiscales.pm.parcelFunction.ParcelState;
+import fr.ign.artiscales.tools.geoToolsFunctions.Attribute;
+import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Collec;
+import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Geopackages;
+import fr.ign.artiscales.tools.parameter.ProfileUrbanFabric;
 import org.geotools.data.DataStore;
 import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.data.simple.SimpleFeatureIterator;
@@ -15,16 +21,9 @@ import org.locationtech.jts.geom.LineString;
 import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.filter.FilterFactory2;
 
-import fr.ign.artiscales.pm.decomposition.FlagParcelDecomposition;
-import fr.ign.artiscales.pm.decomposition.OBBBlockDecomposition;
-import fr.ign.artiscales.pm.fields.GeneralFields;
-import fr.ign.artiscales.pm.parcelFunction.MarkParcelAttributeFromPosition;
-import fr.ign.artiscales.pm.parcelFunction.ParcelSchema;
-import fr.ign.artiscales.pm.parcelFunction.ParcelState;
-import fr.ign.artiscales.tools.geoToolsFunctions.Attribute;
-import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Collec;
-import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Geopackages;
-import fr.ign.artiscales.tools.parameter.ProfileUrbanFabric;
+import java.io.File;
+import java.io.IOException;
+import java.util.List;
 
 /**
  * Simulation following that workflow divides parcels to ensure that they could be densified. The
@@ -40,18 +39,18 @@ public class Densification extends Workflow {
 
 	static double uncountedBuildingArea = 20;
 
-	// public static void main(String[] args) throws Exception {
-	// File parcelFile = new File("/home/ubuntu/parcel.gpkg");
-	// File buildingFile = new File("src/main/resources/GeneralTest/building.gpkg");
-	// File roadFile = new File("src/main/resources/GeneralTest/road.gpkg");
-	// File outFolder = new File("/tmp/out");
-	// outFolder.mkdirs();
-	// DataStore pDS = Geopackages.getDataStore(parcelFile);
-	// SimpleFeatureCollection parcels = pDS.getFeatureSource(pDS.getTypeNames()[0]).getFeatures();
-	// Collec.exportSFC((new Densification()).densification(parcels, CityGeneration.createUrbanIslet(parcels), outFolder, buildingFile, roadFile,
-	// ProfileUrbanFabric.convertJSONtoProfile(new File("src/main/resources/GeneralTest/profileUrbanFabric/smallHouse.json")), false),
-	// new File(outFolder, "result"));
-	// }
+//	 public static void main(String[] args) throws Exception {
+//	 File parcelFile = new File("/tmp/ex/parcel.gpkg");
+//	 File buildingFile = new File("/tmp/ex/building.gpkg");
+//	 File roadFile = new File("/tmp/ex/road.gpkg");
+//	 File outFolder = new File("/tmp/ex");
+//	 outFolder.mkdirs();
+//	 DataStore pDS = Geopackages.getDataStore(parcelFile);
+//	 SimpleFeatureCollection parcels = pDS.getFeatureSource(pDS.getTypeNames()[0]).getFeatures();
+//	 Collec.exportSFC((new Densification()).densificationOrNeighborhood(parcels, CityGeneration.createUrbanBlock(parcels), outFolder, buildingFile, roadFile,
+//	 ProfileUrbanFabric.convertJSONtoProfile(new File("src/main/resources/GeneralTest/profileUrbanFabric/smallHouse.json")), false, null,4),
+//	 new File(outFolder, "result"));
+//	 }
 
 	public Densification() {
 	}
@@ -131,7 +130,7 @@ public class Densification extends Workflow {
 						System.out.println("problem" + problem + "for " + feat + " feature densification");
 						problem.printStackTrace();
 					}
-					// We check existing buildings are constructed across two cuted parcels. If true, me merge those parcels together
+					// We check existing buildings are constructed across two cut parcels. If true, me merge those parcels together
 					if (add) {
 						DefaultFeatureCollection toMerge = new DefaultFeatureCollection();
 						try (SimpleFeatureIterator parcelIt = unsortedFlagParcel.features()) {

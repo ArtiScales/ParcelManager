@@ -73,7 +73,7 @@ public class CompareSimulatedParcelsWithEvolution {
 
 		//get the intermediate files resulting of the PM steps and merge them together
 		for (File f : Objects.requireNonNull(outFolder.listFiles()))
-			if ((f.getName().contains(("Only")) && f.getName().contains(".gpkg")))
+			if ((f.getName().contains(("Only")) && f.getName().endsWith(".gpkg")))
 				lF.add(f);
 		File simulatedFile = new File(outFolder, "simulatedParcel.gpkg");
 		Geopackages.mergeGpkgFiles(lF, simulatedFile);

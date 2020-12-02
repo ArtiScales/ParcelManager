@@ -1,28 +1,5 @@
 package fr.ign.artiscales.pm.decomposition;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
-import java.util.stream.Collectors;
-
-import org.apache.commons.lang3.tuple.ImmutablePair;
-import org.apache.commons.lang3.tuple.Pair;
-import org.geotools.data.DataStore;
-import org.geotools.data.DataUtilities;
-import org.geotools.data.simple.SimpleFeatureCollection;
-import org.locationtech.jts.geom.Geometry;
-import org.locationtech.jts.geom.LineString;
-import org.locationtech.jts.geom.MultiLineString;
-import org.locationtech.jts.geom.Polygon;
-import org.locationtech.jts.geom.PrecisionModel;
-import org.locationtech.jts.operation.union.CascadedPolygonUnion;
-import org.locationtech.jts.precision.GeometryPrecisionReducer;
-import org.opengis.feature.simple.SimpleFeature;
-
 import fr.ign.artiscales.pm.parcelFunction.ParcelState;
 import fr.ign.artiscales.tools.FeaturePolygonizer;
 import fr.ign.artiscales.tools.geoToolsFunctions.Schemas;
@@ -31,6 +8,20 @@ import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Geom;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Geopackages;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.geom.Lines;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.geom.Polygons;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
+import org.geotools.data.DataStore;
+import org.geotools.data.DataUtilities;
+import org.geotools.data.simple.SimpleFeatureCollection;
+import org.locationtech.jts.geom.*;
+import org.locationtech.jts.operation.union.CascadedPolygonUnion;
+import org.locationtech.jts.precision.GeometryPrecisionReducer;
+import org.opengis.feature.simple.SimpleFeature;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Re-implementation of block decomposition into parcels with flag shape. The algorithm is an adaptation from :
@@ -56,37 +47,42 @@ public class FlagParcelDecomposition {
 //	 //////// try the generateFlagSplitedParcels method
 //		/////////////////////////
 //		long start = System.currentTimeMillis();
-//		File rootFolder = new File("src/main/resources/GeneralTest/");
+//		File rootFolder = new File("/tmp/ex");
 //
 //		// Input 1/ the input parcels to split
-//		File inputShapeFile = new File(rootFolder, "parcel.gpkg");
-//		// Input 2 : the buildings that mustnt intersects the allowed roads (facultatif)
+//		File parcelFile = new File(rootFolder, "parcel.gpkg");
+//		// Input 2 : the buildings that mustn't intersects the allowed roads (facultatif)
 //		File inputBuildingFile = new File(rootFolder, "building.gpkg");
 //		// Input 4 (facultative) : a road Geopacakge (it can be used to check road access
 //		// if this is better than characerizing road as an absence of parcel)
 //		File inputRoad = new File(rootFolder, "road.gpkg");
-//		File zoningFile = new File(rootFolder, "zoning.gpkg");
-//
+////		 File zoningFile = new File(rootFolder, "zoning.gpkg");
 //		FilterFactory2 ff = CommonFactoryFinder.getFilterFactory2();
-//		ShapefileDataStore sds = new ShapefileDataStore(inputShapeFile.toURI().toURL());
-//		SimpleFeatureCollection parcels = MarkParcelAttributeFromPosition.markParcelIntersectGenericZoningType(sds.getFeatureSource().getFeatures(),"U",zoningFile);
-//		SimpleFeatureCollection block = CityGeneration.createUrbanBlock(parcels);
-//		try (SimpleFeatureIterator it = parcels.features()) {
+//
+//		DataStore ds = Collec.getDataStore(parcelFile);
+////		SimpleFeatureCollection parcels = MarkParcelAttributeFromPosition.markParcelIntersectGenericZoningType(sds.getFeatureSource().getFeatures(),"U",zoningFile);
+//		SimpleFeatureCollection block = CityGeneration.createUrbanBlock(ds.getFeatureSource(ds.getTypeNames()[0]).getFeatures());
+//		 DefaultFeatureCollection result = new DefaultFeatureCollection();
+//
+//		try (SimpleFeatureIterator it = ds.getFeatureSource(ds.getTypeNames()[0]).getFeatures().features()) {
 //			while (it.hasNext()) {
 //				SimpleFeature feat = it.next();
 //				if (feat.getAttribute(MarkParcelAttributeFromPosition.getMarkFieldName()) != null
 //						&& (int) feat.getAttribute(MarkParcelAttributeFromPosition.getMarkFieldName()) == 1) {
-//					generateFlagSplitedParcels(feat, Collec.fromPolygonSFCtoListRingLines(block.subCollection(ff.bbox(
-//							ff.property(feat.getFeatureType().getGeometryDescriptor().getLocalName()), feat.getBounds()))), 0, tmpFolder, inputBuildingFile, inputRoad, 400.0, 15.0, 3.0, false, null);
-//				}
+//					result.addAll(generateFlagSplitedParcels(feat, Collec.fromPolygonSFCtoListRingLines(block.subCollection(ff.bbox(
+//							ff.property(feat.getFeatureType().getGeometryDescriptor().getLocalName()), feat.getBounds()))), 0.5, 0, inputBuildingFile, inputRoad, 400.0, 15.0, 3.0, null));
+//					System.out.println("feat = " + feat);
+//				}else
+//					result.add(feat);
 //			}
 //		} catch (Exception problem) {
 //			problem.printStackTrace();
 //		}
-//		sds.dispose();
+//		ds.dispose();
+//		Collec.exportSFC(result, new File(rootFolder, "out.gpkg"));
 //		System.out.println("time : " + (System.currentTimeMillis() - start));
 //	}
-
+//
 	public static SimpleFeatureCollection generateFlagSplitedParcels(SimpleFeature feat, List<LineString> extLines, double harmonyCoeff, double noise,
 			File buildingFile, Double maximalAreaSplitParcel, Double maximalWidthSplitParcel, Double lenDriveway) throws IOException {
 		return generateFlagSplitedParcels(feat, extLines, harmonyCoeff, noise, buildingFile, null, maximalAreaSplitParcel, maximalWidthSplitParcel,
