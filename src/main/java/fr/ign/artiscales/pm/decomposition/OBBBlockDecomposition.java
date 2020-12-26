@@ -1,14 +1,19 @@
 package fr.ign.artiscales.pm.decomposition;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import fr.ign.artiscales.tools.geometryGeneration.CityGeneration;
+import fr.ign.artiscales.tools.parameter.ProfileUrbanFabric;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
+import org.geotools.data.DataStore;
 import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.data.simple.SimpleFeatureIterator;
 import org.geotools.feature.DefaultFeatureCollection;
@@ -107,6 +112,31 @@ public class OBBBlockDecomposition {
 	/**
 	 * Split the parcels into sub parcels. The parcel that are going to be cut must have a field matching the {@link MarkParcelAttributeFromPosition#getMarkFieldName()} field or
 	 * "SPLIT" by default with the value of 1.
+	 *
+	 * @param toSplit
+	 *            {@link SimpleFeatureCollection} of parcels
+	 * @param roadFile
+	 *            road file layer (can be null)
+	 * @param profile
+	 *            chosen {@link ProfileUrbanFabric}
+	 * @param forceStreetAccess
+	 *            Is the polygon should be turned in order to assure the connection with the road ? Also regarding the <i>harmony coeff</i>. Most of cases, it's yes
+	 * @return a collection of subdivised parcels
+	 * @throws IOException
+	 */
+	public static SimpleFeatureCollection splitParcels(SimpleFeatureCollection toSplit, File roadFile, ProfileUrbanFabric profile, boolean forceStreetAccess) throws IOException {
+		DataStore roadDS = Collec.getDataStore(roadFile);
+		SimpleFeatureCollection result = splitParcels(toSplit, roadDS.getFeatureSource(roadDS.getTypeNames()[0]).getFeatures(),
+		profile.getMaximalArea(), profile.getMinimalWidthContactRoad(), profile.getHarmonyCoeff(), profile.getNoise(),Collec.fromPolygonSFCtoListRingLines(CityGeneration.createUrbanBlock(toSplit)),
+			profile.getStreetWidth(), profile.getLargeStreetLevel(), profile.getLargeStreetWidth(), forceStreetAccess,
+			profile.getDecompositionLevelWithoutStreet());
+		roadDS.dispose();
+		return result;
+	}
+
+	/**
+	 * Split the parcels into sub parcels. The parcel that are going to be cut must have a field matching the {@link MarkParcelAttributeFromPosition#getMarkFieldName()} field or
+	 * "SPLIT" by default with the value of 1.
 	 * 
 	 * @param toSplit
 	 *            {@link SimpleFeatureCollection} of parcels
@@ -133,12 +163,12 @@ public class OBBBlockDecomposition {
 	 * @param decompositionLevelWithoutStreet
 	 *            Number of last iteration row for which no street network is generated
 	 * @return a collection of subdivised parcels
-	 * @throws Exception
+	 * @throws IOException
 	 */
 	public static SimpleFeatureCollection splitParcels(SimpleFeatureCollection toSplit, SimpleFeatureCollection roads,
 			double maximalArea, double maximalWidth, double harmonyCoeff, double noise, List<LineString> extBlock,
 			double smallStreetWidth, int largeStreetLevel, double largeStreetWidth, boolean forceStreetAccess,
-			int decompositionLevelWithoutStreet) throws Exception {
+			int decompositionLevelWithoutStreet) throws IOException {
 		DefaultFeatureCollection result = new DefaultFeatureCollection();
 		try (SimpleFeatureIterator featIt = toSplit.features()) {
 			while (featIt.hasNext()) {

@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 import org.geotools.data.DataStore;
@@ -48,24 +49,24 @@ public class DensificationStudy {
 		// make a (nice) map out of it
 		DataStore ds = Geopackages.getDataStore(new File(rootFile, "parcel.gpkg"));
 		JoinCSVToGeoFile.joinCSVToGeoFile(
-				MergeByAttribute.mergeByAttribute(GeneralFields.addCommunityCode(ds.getFeatureSource(ds.getTypeNames()[0]).getFeatures()),
+				MergeByAttribute.mergeByAttribute(Objects.requireNonNull(GeneralFields.addCommunityCode(ds.getFeatureSource(ds.getTypeNames()[0]).getFeatures())),
 						GeneralFields.getZoneCommunityCode()),
 				GeneralFields.getZoneCommunityCode(), new File(outFolder, "densificationStudyResult.csv"), GeneralFields.getZoneCommunityCode(),
-				new File(outFolder, "CityStat"), null);
+				new File(outFolder, "CityStat"), null, null);
 		ds.dispose();
 	}
 
 	/**
 	 * Densification study. Can be used as a workflows in scenarios.
 	 * 
-	 * @param parcels
-	 * @param buildingFile
-	 * @param roadFile
-	 * @param zoningFile
-	 * @param outFolder
-	 * @param isParcelWithoutStreetAllowed
-	 * @param profile
-	 * @throws IOException 
+	 * @param parcels input parcels
+	 * @param buildingFile building geofile of the studied zone
+	 * @param roadFile road geofile of the studied zone
+	 * @param zoningFile zoning geofile of the studied zone
+	 * @param outFolder folder where output are exported
+	 * @param isParcelWithoutStreetAllowed Is it possible to create flag or porch parcel without contact with the road?
+	 * @param profile profile of the wanted urban fabric
+	 * @throws IOException many reasons
 	 */
 	public static void runDensificationStudy(SimpleFeatureCollection parcels, File buildingFile, File roadFile, File zoningFile,
 			File outFolder, boolean isParcelWithoutStreetAllowed, ProfileUrbanFabric profile) throws IOException {

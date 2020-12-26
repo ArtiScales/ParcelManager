@@ -62,7 +62,7 @@ public class CompareSimulatedParcelsWithEvolution {
 		CityGeneration.createUrbanBlock(parcelRefFile, rootFolder);
 
 		PMScenario.setSaveIntermediateResult(true);
-		PMStep.setDEBUG(true);
+//		PMStep.setDEBUG(true);
 		PMStep.setGENERATEATTRIBUTES(false);
 		PMScenario pm = new PMScenario(scenarioFile);
 		pm.executeStep();

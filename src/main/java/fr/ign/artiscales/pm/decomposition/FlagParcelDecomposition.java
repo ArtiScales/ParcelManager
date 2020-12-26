@@ -1,5 +1,6 @@
 package fr.ign.artiscales.pm.decomposition;
 
+import fr.ign.artiscales.pm.parcelFunction.MarkParcelAttributeFromPosition;
 import fr.ign.artiscales.pm.parcelFunction.ParcelState;
 import fr.ign.artiscales.tools.FeaturePolygonizer;
 import fr.ign.artiscales.tools.geoToolsFunctions.Schemas;
@@ -8,15 +9,21 @@ import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Geom;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Geopackages;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.geom.Lines;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.geom.Polygons;
+import fr.ign.artiscales.tools.geometryGeneration.CityGeneration;
+import fr.ign.artiscales.tools.parameter.ProfileUrbanFabric;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.geotools.data.DataStore;
 import org.geotools.data.DataUtilities;
 import org.geotools.data.simple.SimpleFeatureCollection;
+import org.geotools.data.simple.SimpleFeatureIterator;
+import org.geotools.factory.CommonFactoryFinder;
+import org.geotools.feature.DefaultFeatureCollection;
 import org.locationtech.jts.geom.*;
 import org.locationtech.jts.operation.union.CascadedPolygonUnion;
 import org.locationtech.jts.precision.GeometryPrecisionReducer;
 import org.opengis.feature.simple.SimpleFeature;
+import org.opengis.filter.FilterFactory2;
 
 import java.io.File;
 import java.io.IOException;
@@ -83,6 +90,28 @@ public class FlagParcelDecomposition {
 //		System.out.println("time : " + (System.currentTimeMillis() - start));
 //	}
 //
+
+	public static SimpleFeatureCollection generateFlagSplitedParcels(SimpleFeatureCollection parcelSFC, File buildingFile, File roadFile, ProfileUrbanFabric profile) throws IOException {
+		FilterFactory2 ff = CommonFactoryFinder.getFilterFactory2();
+		SimpleFeatureCollection block = CityGeneration.createUrbanBlock(parcelSFC);
+		DefaultFeatureCollection result = new DefaultFeatureCollection();
+		try (SimpleFeatureIterator it = parcelSFC.features()) {
+			while (it.hasNext()) {
+				SimpleFeature feat = it.next();
+				if (feat.getAttribute(MarkParcelAttributeFromPosition.getMarkFieldName()) != null
+						&& (int) feat.getAttribute(MarkParcelAttributeFromPosition.getMarkFieldName()) == 1) {
+					result.addAll(generateFlagSplitedParcels(feat, Collec.fromPolygonSFCtoListRingLines(block.subCollection(ff.bbox(
+							ff.property(feat.getFeatureType().getGeometryDescriptor().getLocalName()), feat.getBounds()))), profile.getHarmonyCoeff(),
+							0, buildingFile, roadFile, profile.getMaximalArea(), profile.getMinimalWidthContactRoad(), profile.getLenDriveway(), null));
+				} else
+					result.add(feat);
+			}
+		} catch (Exception problem) {
+			problem.printStackTrace();
+		}
+		return result;
+	}
+
 	public static SimpleFeatureCollection generateFlagSplitedParcels(SimpleFeature feat, List<LineString> extLines, double harmonyCoeff, double noise,
 			File buildingFile, Double maximalAreaSplitParcel, Double maximalWidthSplitParcel, Double lenDriveway) throws IOException {
 		return generateFlagSplitedParcels(feat, extLines, harmonyCoeff, noise, buildingFile, null, maximalAreaSplitParcel, maximalWidthSplitParcel,

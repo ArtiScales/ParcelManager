@@ -1,5 +1,6 @@
 package fr.ign.artiscales.pm.decomposition;
 
+import fr.ign.artiscales.pm.parcelFunction.MarkParcelAttributeFromPosition;
 import fr.ign.artiscales.tools.FeaturePolygonizer;
 import fr.ign.artiscales.tools.geoToolsFunctions.Attribute;
 import fr.ign.artiscales.tools.geoToolsFunctions.Schemas;
@@ -46,11 +47,11 @@ import java.util.stream.Stream;
 
 /**
  * Re-implementation of block decomposition into parcels from :
- * 
+ *
  * Vanegas, C. A., Kelly, T., Weber, B., Halatsch, J., Aliaga, D. G., Müller, P., May 2012. Procedural generation of parcels in urban modeling. Comp. Graph. Forum 31 (2pt3).
- * 
+ *
  * Decomposition method by using straight skeleton
- * 
+ *
  * @author Mickael Brasebin
  *
  */
@@ -105,8 +106,8 @@ public class TopologicalStraightSkeletonParcelDecomposition {
 			throws StraightSkeletonException, EdgeException {
 		this(p, roads, roadNameAttribute, roadImportanceAttribute, offsetDistance, maxDistanceForNearestRoad, minimalArea, 2, false,0);
 	}
-	
-	
+
+
 	public TopologicalStraightSkeletonParcelDecomposition(Polygon p, SimpleFeatureCollection roads, String roadNameAttribute,
 			String roadImportanceAttribute, double offsetDistance, double maxDistanceForNearestRoad, double minimalArea,boolean generatePeriphericalRoad, double widthRoad)
 			throws StraightSkeletonException, EdgeException {
@@ -131,7 +132,7 @@ public class TopologicalStraightSkeletonParcelDecomposition {
 		// this.maxDistanceForNearestRoad = maxDistanceForNearestRoad;
 		// this.minimalArea = minimalArea;
 		// Partial skeleton
-	
+
 		try {
 			this.straightSkeleton = new StraightSkeleton(this.initialPolygon, offsetDistance);
 		} catch (Exception e) {
@@ -278,7 +279,7 @@ public class TopologicalStraightSkeletonParcelDecomposition {
 
 	/**
 	 * Create alpha strips by merging faces.
-	 * 
+	 *
 	 * @return a topological graph whose faces are the alpha strips
 	 */
 	private TopologicalGraph mergeOnLogicalStreets() {
@@ -792,9 +793,9 @@ public class TopologicalStraightSkeletonParcelDecomposition {
 	/**
 	 * The α-strips computed from the skeleton faces suffer from diagonal edges at the intersection of logical streets [...]. To correct these edges, we modify LS (B) [...] to
 	 * transfer a near-triangular region from the strip on one side of an offending edge to the strip on the other side. We refer to these corrected strips as β-strips.
-	 * 
+	 *
 	 * TODO support multiple supporting vertex classification schemes
-	 * 
+	 *
 	 * @param alphaStrips
 	 *            α-strips
 	 * @param attributes
@@ -1115,7 +1116,7 @@ public class TopologicalStraightSkeletonParcelDecomposition {
 
 	/**
 	 * Get the part of the line between the first and the second point on the border of the polygon (should be snapped before).
-	 * 
+	 *
 	 * @param poly
 	 * @param line
 	 * @return
@@ -1268,24 +1269,32 @@ public class TopologicalStraightSkeletonParcelDecomposition {
 		folderOut.mkdirs();
 		// Reading collection
 		DataStore parcelDS = Geopackages.getDataStore(zoningFile);
-		DataStore roadDS = Geopackages.getDataStore(roadFile);
-		SimpleFeatureCollection roads = roadDS.getFeatureSource(roadDS.getTypeNames()[0]).getFeatures();
-
-		try (SimpleFeatureIterator parcelIt = parcelDS.getFeatureSource(parcelDS.getTypeNames()[0]).getFeatures().features()) {
-			while (parcelIt.hasNext()) {
-				SimpleFeature sf = parcelIt.next();
-				if (sf.getAttribute("LIBELLE").toString().startsWith("AU"))
-					runTopologicalStraightSkeletonParcelDecomposition(sf, roads, NAME_ATT_ROAD, NAME_ATT_IMPORTANCE, folderOut, maxDepth,
-							maxDistanceForNearestRoad, minimalArea, minWidth, maxWidth, omega, rng, true, 15);
-			}
-		} catch (Exception problem) {
-			problem.printStackTrace();
-		}
-		roadDS.dispose();
+		runTopologicalStraightSkeletonParcelDecomposition(MarkParcelAttributeFromPosition.markSFCWithAttributeField(parcelDS.getFeatureSource(parcelDS.getTypeNames()[0]).getFeatures(),"TYPEZONE","AU"), roadFile, NAME_ATT_ROAD, NAME_ATT_IMPORTANCE, folderOut, maxDepth,
+				maxDistanceForNearestRoad, minimalArea, minWidth, maxWidth, omega, rng, true, 15);
 		parcelDS.dispose();
-	}
-	
-	public Polygon generatePeriphericalRoad(Polygon p, double roadWidth, String roadNameAttribute, String roadImportanceAttribute) {
+
+    }
+
+    public static SimpleFeatureCollection runTopologicalStraightSkeletonParcelDecomposition(SimpleFeatureCollection sfc, File roadFile, String NAME_ATT_ROAD, String NAME_ATT_IMPORTANCE, File folderOut, double maxDepth,
+																							double maxDistanceForNearestRoad, double minimalArea, double minWidth, double maxWidth, double omega, RandomGenerator rng, boolean periphericalRoad, double streetWidth) throws IOException {
+        DataStore roadDS = Geopackages.getDataStore(roadFile);
+        SimpleFeatureCollection roads = roadDS.getFeatureSource(roadDS.getTypeNames()[0]).getFeatures();
+        DefaultFeatureCollection result = new DefaultFeatureCollection();
+        try (SimpleFeatureIterator parcelIt = sfc.features()) {
+            while (parcelIt.hasNext()) {
+                SimpleFeature sf = parcelIt.next();
+                if (sf.getAttribute(MarkParcelAttributeFromPosition.getMarkFieldName()).equals(1))
+                    result.addAll(runTopologicalStraightSkeletonParcelDecomposition(sf, roads, NAME_ATT_ROAD, NAME_ATT_IMPORTANCE, folderOut, maxDepth,
+                            maxDistanceForNearestRoad, minimalArea, minWidth, maxWidth, omega, rng, periphericalRoad, streetWidth));
+            }
+        } catch (Exception problem) {
+            problem.printStackTrace();
+        }
+        roadDS.dispose();
+        return result;
+    }
+
+    public Polygon generatePeriphericalRoad(Polygon p, double roadWidth, String roadNameAttribute, String roadImportanceAttribute) {
 		Polygon newGeom = Polygons.getPolygon(p.buffer(-roadWidth));
 		if (newGeom == null || newGeom.isEmpty())
 			return p;
@@ -1379,7 +1388,7 @@ public class TopologicalStraightSkeletonParcelDecomposition {
 
 class EdgeException extends Exception {
 	/**
-	 * 
+	 *
 	 */
 	private static final long serialVersionUID = -8778686157065646491L;
 }
@@ -1387,7 +1396,7 @@ class EdgeException extends Exception {
 class StraightSkeletonException extends Exception {
 
 	/**
-	 * 
+	 *
 	 */
 	private static final long serialVersionUID = -6217346421144071706L;
 
