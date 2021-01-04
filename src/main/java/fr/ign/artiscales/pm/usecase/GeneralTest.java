@@ -31,7 +31,7 @@ import fr.ign.artiscales.tools.parameter.ProfileUrbanFabric;
  * @author Maxime Colomb
  *
  */
-public class GeneralTest {
+public class GeneralTest extends UseCase{
 
 	// /////////////////////////
 	// //////// try the parcelGenMotif method
@@ -40,14 +40,18 @@ public class GeneralTest {
 		// org.geotools.util.logging.Logging.getLogger("org.hsqldb.persist.Logger").setLevel(Level.OFF);
 		org.geotools.util.logging.Logging.getLogger("org.geotools.jdbc.JDBCDataStore").setLevel(Level.OFF);
 		long start = System.currentTimeMillis();
-
 		File rootFolder = new File("src/main/resources/GeneralTest/");
+		File outFolder = new File(rootFolder, "out");
+		GeneralTest(outFolder, rootFolder);
+		System.out.println(System.currentTimeMillis() - start);
+	}
+
+	public static void GeneralTest(File outFolder, File rootFolder) throws Exception {
 		File roadFile = new File(rootFolder, "road.gpkg");
 		File zoningFile = new File(rootFolder, "zoning.gpkg");
 		File buildingFile = new File(rootFolder, "building.gpkg");
 		File parcelFile = new File(rootFolder, "parcel.gpkg");
 		File profileFolder = new File(rootFolder, "profileUrbanFabric");
-		File outFolder = new File(rootFolder, "out");
 		boolean allowIsolatedParcel = false;
 		DataStore gpkgDSParcel = Geopackages.getDataStore(parcelFile);
 		SimpleFeatureCollection parcel = DataUtilities
@@ -56,7 +60,7 @@ public class GeneralTest {
 		ProfileUrbanFabric profileDetached = ProfileUrbanFabric.convertJSONtoProfile(new File(profileFolder, "detachedHouse.json"));
 		ProfileUrbanFabric profileSmallHouse = ProfileUrbanFabric.convertJSONtoProfile(new File(profileFolder, "smallHouse.json"));
 		ProfileUrbanFabric profileLargeCollective = ProfileUrbanFabric.convertJSONtoProfile(new File(profileFolder, "largeCollective.json"));
-		Workflow.DEBUG = true;
+		Workflow.DEBUG = DEBUG;
 		Workflow.PROCESS = "OBB";
 		Workflow.SAVEINTERMEDIATERESULT = true;
 
@@ -140,7 +144,6 @@ public class GeneralTest {
 					"Densification - small houses simulation");
 			SingleParcelStat.writeStatSingleParcel(MarkParcelAttributeFromPosition.markSimulatedParcel(finaux3), roadFile,
 					new File(statFolder, "statParcel.csv"));
-			System.out.println(System.currentTimeMillis() - start);
 		}
 	}
 }

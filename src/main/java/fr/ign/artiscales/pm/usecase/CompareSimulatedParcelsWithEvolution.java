@@ -1,5 +1,22 @@
 package fr.ign.artiscales.pm.usecase;
 
+import fr.ign.artiscales.pm.analysis.SingleParcelStat;
+import fr.ign.artiscales.pm.parcelFunction.MarkParcelAttributeFromPosition;
+import fr.ign.artiscales.pm.parcelFunction.ParcelCollection;
+import fr.ign.artiscales.pm.scenario.PMScenario;
+import fr.ign.artiscales.pm.scenario.PMStep;
+import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Collec;
+import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Geom;
+import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Geopackages;
+import fr.ign.artiscales.tools.geometryGeneration.CityGeneration;
+import org.geotools.data.DataStore;
+import org.geotools.data.simple.SimpleFeatureCollection;
+import org.geotools.factory.CommonFactoryFinder;
+import org.geotools.util.factory.GeoTools;
+import org.locationtech.jts.geom.Geometry;
+import org.opengis.feature.simple.SimpleFeature;
+import org.opengis.filter.FilterFactory2;
+
 import java.io.File;
 import java.io.IOException;
 import java.time.Duration;
@@ -10,24 +27,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
-import org.geotools.data.DataStore;
-import org.geotools.data.simple.SimpleFeatureCollection;
-import org.geotools.factory.CommonFactoryFinder;
-import org.geotools.util.factory.GeoTools;
-import org.locationtech.jts.geom.Geometry;
-import org.opengis.feature.simple.SimpleFeature;
-import org.opengis.filter.FilterFactory2;
-
-import fr.ign.artiscales.pm.analysis.SingleParcelStat;
-import fr.ign.artiscales.pm.parcelFunction.MarkParcelAttributeFromPosition;
-import fr.ign.artiscales.pm.parcelFunction.ParcelCollection;
-import fr.ign.artiscales.pm.scenario.PMScenario;
-import fr.ign.artiscales.pm.scenario.PMStep;
-import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Collec;
-import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Geom;
-import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Geopackages;
-import fr.ign.artiscales.tools.geometryGeneration.CityGeneration;
-
 
 /**
  * This process compares the evolution of a parcel plan at two different versions (file1 and file2) with the simulation on the zone.
@@ -36,7 +35,7 @@ import fr.ign.artiscales.tools.geometryGeneration.CityGeneration;
  * @author Maxime Colomb
  *
  */
-public class CompareSimulatedParcelsWithEvolution {
+public class CompareSimulatedParcelsWithEvolution extends UseCase{
 
 	public static void main(String[] args) throws IOException {
 		Instant start = Instant.now();
@@ -44,6 +43,11 @@ public class CompareSimulatedParcelsWithEvolution {
 		File rootFolder = new File("src/main/resources/ParcelComparison/");
 		File outFolder = new File(rootFolder, "out");
 		outFolder.mkdirs();
+		compareSimulatedParcelsWithEvolutionWorkflow(rootFolder, outFolder);
+		System.out.println(Duration.between(start, Instant.now()));
+	}
+
+	public static void compareSimulatedParcelsWithEvolutionWorkflow(File rootFolder, File outFolder) throws IOException {
 		File parcelRefFile = new File(rootFolder, "parcel2003.gpkg");
 		File parcelCompFile = new File(rootFolder, "parcel2018.gpkg");
 		File roadFile = new File(rootFolder, "road.gpkg");
@@ -51,7 +55,6 @@ public class CompareSimulatedParcelsWithEvolution {
 		// definition of a parameter file
 		File scenarioFile = new File(rootFolder, "scenario.json");
 		compareSimulatedParcelsWithEvolutionWorkflow(rootFolder, parcelRefFile, parcelCompFile, roadFile, scenarioFile, outFolder);
-		System.out.println(Duration.between(start, Instant.now()));
 	}
 
 	public static void compareSimulatedParcelsWithEvolutionWorkflow(File rootFolder, File parcelRefFile, File parcelCompFile, File roadFile,
@@ -62,13 +65,13 @@ public class CompareSimulatedParcelsWithEvolution {
 		CityGeneration.createUrbanBlock(parcelRefFile, rootFolder);
 
 		PMScenario.setSaveIntermediateResult(true);
-//		PMStep.setDEBUG(true);
+		PMStep.setDEBUG(DEBUG);
 		PMStep.setGENERATEATTRIBUTES(false);
 		PMScenario pm = new PMScenario(scenarioFile);
 		pm.executeStep();
 		System.out.println("++++++++++ Done with PMscenario ++++++++++");
 		System.out.println();
-		
+
 		List<File> lF = new	ArrayList<>();
 
 		//get the intermediate files resulting of the PM steps and merge them together
@@ -86,7 +89,7 @@ public class CompareSimulatedParcelsWithEvolution {
 		// for every workflows
 		System.out.println("++++++++++ Analysis by zones ++++++++++");
 		System.out.println("steps"+ pm.getStepList());
-		
+
 		PMStep.setParcel(parcelRefFile);
 		PMStep.setPOLYGONINTERSECTION(null);
 		// we proceed with an analysis made for each steps
@@ -106,12 +109,12 @@ public class CompareSimulatedParcelsWithEvolution {
 					.subCollection(ff.intersects(ff.property(sdsSimulatedParcel.getFeatureSource(sdsSimulatedParcel.getTypeNames()[0]).getFeatures()
 							.getSchema().getGeometryDescriptor().getLocalName()), ff.literal(geomUnion)));
 			Collec.exportSFC(sfcSimulatedParcel, new File(zoneOutFolder, "SimulatedParcel.gpkg"));
-			
+
 			// evolved parcel crop
 			DataStore sdsEvolvedParcel = Geopackages.getDataStore(evolvedParcelFile);
 			SimpleFeatureCollection sfcEvolvedParcel = Collec.selectIntersection(sdsEvolvedParcel.getFeatureSource(sdsEvolvedParcel.getTypeNames()[0]).getFeatures(), geomUnion);
 			Collec.exportSFC(sfcEvolvedParcel, new File(zoneOutFolder, "EvolvedParcel.gpkg"));
-			
+
 			DataStore sdsGoalParcel = Geopackages.getDataStore(step.getLastOutput() != null ? step.getLastOutput() : step.makeFileName());
 			SingleParcelStat.writeStatSingleParcel(
 					MarkParcelAttributeFromPosition.markSimulatedParcel(MarkParcelAttributeFromPosition.markParcelIntersectPolygonIntersection(
