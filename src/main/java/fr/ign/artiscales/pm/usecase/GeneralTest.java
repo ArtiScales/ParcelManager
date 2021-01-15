@@ -65,7 +65,7 @@ public class GeneralTest extends UseCase{
 		Workflow.SAVEINTERMEDIATERESULT = true;
 
 		// for (int i = 0; i <= 2; i++) {
-		for (int i = 0; i <= 0; i++) {
+		for (int i = 1; i <= 1; i++) {
 			// multiple process calculation
 			String ext = "offset";
 			if (i == 1) {
@@ -78,7 +78,7 @@ public class GeneralTest extends UseCase{
 				profileLargeCollective.setMaxDepth(0);
 				ext = "SS";
 			}
-			outFolder = new File(rootFolder, "/out/" + ext);
+			outFolder = new File(outFolder, "/out/" + ext);
 			outFolder.mkdirs();
 			File statFolder = new File(outFolder, "stat");
 			statFolder.mkdirs();
