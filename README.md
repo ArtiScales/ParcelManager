@@ -10,7 +10,8 @@ Based</li>
 </ul>
 Library based on the function from the library <a href = "https://github.com/ArtiScales/ArtiScales-tools">ArtiScales-tools</a> (no stable version yet) and on the GeoTools 23.0 library.
 JavaDoc is available <a href="https://artiscales.github.io/javadoc/ParcelManager/">here</a> and more can be found on a coming article and on the <a href = "https://www.theses.fr/2019PESC2070">PhD thesis of Maxime Colomb</a>.
-.
+
+A graphical user interface is available in <a href="https://framagit.org/artiscales/parcelmanagergui">this repository</a> 
 
 Still under developpement.
 
