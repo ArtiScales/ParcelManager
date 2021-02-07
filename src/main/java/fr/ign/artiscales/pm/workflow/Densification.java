@@ -7,10 +7,12 @@ import fr.ign.artiscales.pm.parcelFunction.MarkParcelAttributeFromPosition;
 import fr.ign.artiscales.pm.parcelFunction.ParcelSchema;
 import fr.ign.artiscales.pm.parcelFunction.ParcelState;
 import fr.ign.artiscales.tools.geoToolsFunctions.Attribute;
-import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Collec;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Geopackages;
+import fr.ign.artiscales.tools.geoToolsFunctions.vectors.collec.CollecMgmt;
+import fr.ign.artiscales.tools.geoToolsFunctions.vectors.collec.CollecTransform;
 import fr.ign.artiscales.tools.parameter.ProfileUrbanFabric;
 import org.geotools.data.DataStore;
+import org.geotools.data.DataUtilities;
 import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.data.simple.SimpleFeatureIterator;
 import org.geotools.factory.CommonFactoryFinder;
@@ -27,7 +29,7 @@ import java.util.List;
 
 /**
  * Simulation following that workflow divides parcels to ensure that they could be densified. The
- * {@link FlagParcelDecomposition#generateFlagSplitedParcels(SimpleFeature, List, double, double, File, File, Double, Double, Double, Geometry)} method is applied on the selected
+ * {@link FlagParcelDecomposition#generateFlagSplitedParcels(SimpleFeature, List, double, double, SimpleFeatureCollection, SimpleFeatureCollection, Double, Double, Double, Geometry)} method is applied on the selected
  * parcels. If the creation of a flag parcel is impossible and the local rules allows parcel to be disconnected from the road network, the
  * {@link OBBBlockDecomposition#splitParcels(SimpleFeature, double, double, double, double, List, double, boolean, int)} is applied. Other behavior can be set relatively to the
  * parcel's sizes.
@@ -94,6 +96,21 @@ public class Densification extends Workflow {
 			System.out.println("Densification : unmarked parcels");
 			return GeneralFields.transformSFCToMinParcel(parcelCollection);
 		}
+
+		// preparation of optional datas
+		boolean hasBuilding = false;
+		boolean hasRoad = false;
+		DataStore buildingDS = null;
+		if (buildingFile != null) {
+			hasBuilding = true;
+			buildingDS = CollecMgmt.getDataStore(buildingFile);
+		}
+		DataStore roadDS = null;
+		if (roadFile != null) {
+			hasRoad = true;
+			roadDS = CollecMgmt.getDataStore(roadFile);
+		}
+
 		// preparation of the builder and empty collections
 		final String geomName = parcelCollection.getSchema().getGeometryDescriptor().getLocalName();
 		FilterFactory2 ff = CommonFactoryFinder.getFilterFactory2();
@@ -108,11 +125,23 @@ public class Densification extends Workflow {
 						&& feat.getAttribute(MarkParcelAttributeFromPosition.getMarkFieldName()).equals(1)
 						&& ((Geometry) feat.getDefaultGeometry()).getArea() > maximalAreaSplitParcel) {
 					// we get the needed block lines
-					List<LineString> lines = Collec.fromPolygonSFCtoListRingLines(blockCollection
+					List<LineString> lines = CollecTransform.fromPolygonSFCtoListRingLines(blockCollection
 							.subCollection(ff.bbox(ff.property(feat.getFeatureType().getGeometryDescriptor().getLocalName()), feat.getBounds())));
-					// we flag cut the parcel
-					SimpleFeatureCollection unsortedFlagParcel = FlagParcelDecomposition.generateFlagSplitedParcels(feat, lines, harmonyCoeff, noise,
-							buildingFile, roadFile, maximalAreaSplitParcel, maximalWidthSplitParcel, lenDriveway, exclusionZone);
+					// we flag cut the parcel (differently regarding whether they have optional data or not)
+					SimpleFeatureCollection unsortedFlagParcel;
+					if (hasBuilding && hasRoad)
+					unsortedFlagParcel = FlagParcelDecomposition.generateFlagSplitedParcels(feat, lines, harmonyCoeff, noise,
+							DataUtilities.collection(CollecTransform.selectIntersection(buildingDS.getFeatureSource(buildingDS.getTypeNames()[0]).getFeatures(),((Geometry) feat.getDefaultGeometry()).buffer(10))),
+							DataUtilities.collection(CollecTransform.selectIntersection(roadDS.getFeatureSource(roadDS.getTypeNames()[0]).getFeatures(), ((Geometry) feat.getDefaultGeometry()).buffer(10))),
+							maximalAreaSplitParcel, maximalWidthSplitParcel, lenDriveway, exclusionZone);
+					else if (hasBuilding)
+						unsortedFlagParcel = FlagParcelDecomposition.generateFlagSplitedParcels(feat, lines, harmonyCoeff, noise,
+								DataUtilities.collection(CollecTransform.selectIntersection(buildingDS.getFeatureSource(buildingDS.getTypeNames()[0]).getFeatures(),((Geometry) feat.getDefaultGeometry()).buffer(10))),
+								maximalAreaSplitParcel, maximalWidthSplitParcel, lenDriveway, exclusionZone);
+					else
+						unsortedFlagParcel = FlagParcelDecomposition.generateFlagSplitedParcels(feat, lines, harmonyCoeff, noise,
+							maximalAreaSplitParcel, maximalWidthSplitParcel, lenDriveway, exclusionZone);
+
 					// If it returned a collection of 1, it was impossible to flag split the parcel. If allowed, we cut the parcel with regular OBB
 					if (unsortedFlagParcel.size() == 1 && allowIsolatedParcel)
 						unsortedFlagParcel = OBBBlockDecomposition.splitParcels(feat, maximalAreaSplitParcel, maximalWidthSplitParcel, 0.5, noise,
@@ -153,7 +182,7 @@ public class Densification extends Workflow {
 							tmpUnsortedFlagParcel.addAll(unsortedFlagParcel);
 							unsortedFlagParcel = new DefaultFeatureCollection();
 							// we add the merged parcels
-							((DefaultFeatureCollection) unsortedFlagParcel).add(Collec.unionSFC(toMerge));
+							((DefaultFeatureCollection) unsortedFlagParcel).add(CollecTransform.unionSFC(toMerge));
 							// we check if the flag cut parcels have been merged or if they need to be put on the new collection
 							try (SimpleFeatureIterator parcelIt = tmpUnsortedFlagParcel.features()) {
 								while (parcelIt.hasNext()) {
@@ -218,7 +247,7 @@ public class Densification extends Workflow {
 			e.printStackTrace();
 		}
 		if (SAVEINTERMEDIATERESULT) {
-			Collec.exportSFC(onlyCutedParcels, new File(outFolder, "parcelDensificationOnly"), OVERWRITEGEOPACKAGE);
+			CollecMgmt.exportSFC(onlyCutedParcels, new File(outFolder, "parcelDensificationOnly"), OVERWRITEGEOPACKAGE);
 			OVERWRITEGEOPACKAGE = false;
 		}
 		return resultParcels.collection();
@@ -228,7 +257,7 @@ public class Densification extends Workflow {
 	 * Apply the densification workflow on a set of marked parcels.
 	 *
 	 * overload of the {@link #densification(SimpleFeatureCollection, SimpleFeatureCollection, File, File, File, double, double, double, double, double, double, boolean, Geometry)}
-	 * method if we choose to not use a road Geopackage and no geometry of exclusion
+	 * method if we choose to not use a geometry of exclusion
 	 * 
 	 * @param parcelCollection
 	 *            SimpleFeatureCollection of marked parcels.
@@ -239,6 +268,7 @@ public class Densification extends Workflow {
 	 *            folder to store created files
 	 * @param buildingFile
 	 *            Geopackage representing the buildings
+	 * @param roadFile Geopackage representing the roads
 	 * @param maximalAreaSplitParcel
 	 *            threshold of parcel area above which the OBB algorithm stops to decompose parcels
 	 * @param minimalAreaSplitParcel
@@ -391,7 +421,7 @@ public class Densification extends Workflow {
 		// TODO stupid hack but I can't figure out how those SimpleFeatuceCollection's attributes are changed if not wrote in hard
 		File tmp = new File(outFolder, "tmp");
 		tmp.mkdirs();
-		File tmpDens = Collec.exportSFC(parcelCollection, new File(tmp, "Dens"));
+		File tmpDens = CollecMgmt.exportSFC(parcelCollection, new File(tmp, "Dens"));
 		// We flagcut the parcels which size is inferior to 4x the max parcel size
 		SimpleFeatureCollection parcelDensified = densification(
 				MarkParcelAttributeFromPosition.markParcelsInf(parcelCollection, profile.getMaximalArea() * factorOflargeZoneCreation),

@@ -5,6 +5,10 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Arrays;
 
+import fr.ign.artiscales.tools.geoToolsFunctions.Schemas;
+import fr.ign.artiscales.tools.geoToolsFunctions.vectors.collec.CollecMgmt;
+import fr.ign.artiscales.tools.geoToolsFunctions.vectors.collec.CollecTransform;
+import fr.ign.artiscales.tools.geoToolsFunctions.vectors.collec.OpOnCollec;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.geotools.data.DataStore;
 import org.geotools.data.simple.SimpleFeatureCollection;
@@ -29,7 +33,6 @@ import fr.ign.artiscales.pm.parcelFunction.MarkParcelAttributeFromPosition;
 import fr.ign.artiscales.pm.parcelFunction.ParcelSchema;
 import fr.ign.artiscales.pm.parcelFunction.ParcelState;
 import fr.ign.artiscales.tools.geoToolsFunctions.Attribute;
-import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Collec;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Geopackages;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.geom.Lines;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.geom.Polygons;
@@ -103,7 +106,7 @@ public class SingleParcelStat {
 	public static void writeStatSingleParcel(SimpleFeatureCollection parcels, SimpleFeatureCollection roads, SimpleFeatureCollection parcelToCompare,
 			File parcelStatCsv) throws IOException {
 		// look if there's mark field. If not, every parcels are marked
-		if (!Collec.isCollecContainsAttribute(parcels, MarkParcelAttributeFromPosition.getMarkFieldName())) {
+		if (!CollecMgmt.isCollecContainsAttribute(parcels, MarkParcelAttributeFromPosition.getMarkFieldName())) {
 			System.out.println(
 					"+++ writeStatSingleParcel: unmarked parcels. Try to mark them with the MarkParcelAttributeFromPosition.markAllParcel() method. Return null ");
 			return;
@@ -118,8 +121,8 @@ public class SingleParcelStat {
 					// if parcel is marked to be analyzed
 					Geometry parcelGeom = (Geometry) parcel.getDefaultGeometry();
 					double widthRoadContact = ParcelState.getParcelFrontSideWidth(Polygons.getPolygon(parcelGeom),
-							Collec.selectIntersection(roads, parcelGeom.buffer(7)), Lines.fromMultiToLineString(
-									Collec.fromPolygonSFCtoRingMultiLines(Collec.selectIntersection(block, parcelGeom.buffer(7)))));
+							CollecTransform.selectIntersection(roads, parcelGeom.buffer(7)), Lines.fromMultiToLineString(
+									CollecTransform.fromPolygonSFCtoRingMultiLines(CollecTransform.selectIntersection(block, parcelGeom.buffer(7)))));
 					boolean contactWithRoad = false;
 					if (widthRoadContact != 0)
 						contactWithRoad = true;
@@ -130,13 +133,13 @@ public class SingleParcelStat {
 					// Setting of Hausdorf distance
 					if (parcelToCompare != null) {
 						HausdorffSimilarityMeasure hausDis = new HausdorffSimilarityMeasure();
-						SimpleFeature parcelCompare = Collec.getIntersectingSimpleFeatureFromSFC(parcelGeom, parcelToCompare);
+						SimpleFeature parcelCompare = CollecTransform.getIntersectingSimpleFeatureFromSFC(parcelGeom, parcelToCompare);
 						if (parcelCompare != null) {
 							Geometry parcelCompareGeom = (Geometry) parcelCompare.getDefaultGeometry();
 							DiscreteHausdorffDistance dhd = new DiscreteHausdorffDistance(parcelGeom, parcelCompareGeom);
 							HausDist = String.valueOf(hausDis.measure(parcelGeom, parcelCompareGeom));
 							DisHausDst = String.valueOf(dhd.distance());
-							if (!Collec.isSchemaContainsAttribute(parcelCompare.getFeatureType(), "CODE")
+							if (!Schemas.isSchemaContainsAttribute(parcelCompare.getFeatureType(), "CODE")
 									&& GeneralFields.getParcelFieldType().equals("french"))
 								CodeAppar = FrenchParcelFields.makeDEPCOMCode(parcelCompare);
 							else
@@ -152,7 +155,7 @@ public class SingleParcelStat {
 									+ parcel.getAttribute(ParcelSchema.getMinParcelNumberField()),
 							String.valueOf(parcelGeom.getArea()), String.valueOf(parcelGeom.getLength()), String.valueOf(contactWithRoad),
 							String.valueOf(widthRoadContact),
-							String.valueOf(ParcelState.countParcelNeighborhood(parcelGeom, Collec.selectIntersection(parcels, parcelGeom.buffer(2)))),
+							String.valueOf(ParcelState.countParcelNeighborhood(parcelGeom, CollecTransform.selectIntersection(parcels, parcelGeom.buffer(2)))),
 							parcelGeom.toString(), HausDist, DisHausDst, CodeAppar,
 							String.valueOf(mic.getRadiusLine().getLength() * 2 / mbc.getDiameter().getLength()) };
 					csv.writeNext(line);
@@ -199,8 +202,8 @@ public class SingleParcelStat {
 	public static double diffAreaAverage(File parcelInFile, File parcelToCompareFile) throws IOException {
 		DataStore sdsParcelIn = Geopackages.getDataStore(parcelInFile);
 		DataStore sdsParcelToCompareFile = Geopackages.getDataStore(parcelToCompareFile);
-		double result = Collec.area(sdsParcelIn.getFeatureSource(sdsParcelIn.getTypeNames()[0]).getFeatures())
-				- Collec.area(sdsParcelToCompareFile.getFeatureSource(sdsParcelToCompareFile.getTypeNames()[0]).getFeatures());
+		double result = OpOnCollec.area(sdsParcelIn.getFeatureSource(sdsParcelIn.getTypeNames()[0]).getFeatures())
+				- OpOnCollec.area(sdsParcelToCompareFile.getFeatureSource(sdsParcelToCompareFile.getTypeNames()[0]).getFeatures());
 		sdsParcelIn.dispose();
 		sdsParcelToCompareFile.dispose();
 		return Math.abs(result);
@@ -213,7 +216,7 @@ public class SingleParcelStat {
 			while (parcelIt.hasNext()) {
 				SimpleFeature parcel = parcelIt.next();
 				Geometry parcelGeom = (Geometry) parcel.getDefaultGeometry();
-				SimpleFeature parcelCompare = Collec.getIntersectingSimpleFeatureFromSFC(parcelGeom, parcelToCompare);
+				SimpleFeature parcelCompare = CollecTransform.getIntersectingSimpleFeatureFromSFC(parcelGeom, parcelToCompare);
 				if (parcelCompare != null)
 					stat.addValue(hausDis.measure(parcelGeom, (Geometry) parcelCompare.getDefaultGeometry()));
 			}
@@ -225,9 +228,9 @@ public class SingleParcelStat {
 
 	public static SimpleFeatureCollection makeHausdorfDistanceMaps(SimpleFeatureCollection parcelIn, SimpleFeatureCollection parcelToCompare)
 			throws IOException {
-		if (!Collec.isCollecContainsAttribute(parcelIn, "CODE"))
+		if (!CollecMgmt.isCollecContainsAttribute(parcelIn, "CODE"))
 			GeneralFields.addParcelCode(parcelIn);
-		if (!Collec.isCollecContainsAttribute(parcelToCompare, "CODE"))
+		if (!CollecMgmt.isCollecContainsAttribute(parcelToCompare, "CODE"))
 			GeneralFields.addParcelCode(parcelToCompare);
 		SimpleFeatureType schema = parcelIn.getSchema();
 		DefaultFeatureCollection result = new DefaultFeatureCollection();
@@ -246,7 +249,7 @@ public class SingleParcelStat {
 			while (parcelIt.hasNext()) {
 				SimpleFeature parcel = parcelIt.next();
 				Geometry parcelGeom = (Geometry) parcel.getDefaultGeometry();
-				SimpleFeature parcelCompare = Collec.getIntersectingSimpleFeatureFromSFC(parcelGeom, parcelToCompare);
+				SimpleFeature parcelCompare = CollecTransform.getIntersectingSimpleFeatureFromSFC(parcelGeom, parcelToCompare);
 				if (parcelCompare != null) {
 					Geometry parcelCompareGeom = (Geometry) parcelCompare.getDefaultGeometry();
 					DiscreteHausdorffDistance dhd = new DiscreteHausdorffDistance(parcelGeom, parcelCompareGeom);

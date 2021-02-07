@@ -8,9 +8,11 @@ import fr.ign.artiscales.pm.parcelFunction.ParcelCollection;
 import fr.ign.artiscales.pm.parcelFunction.ParcelSchema;
 import fr.ign.artiscales.tools.FeaturePolygonizer;
 import fr.ign.artiscales.tools.geoToolsFunctions.Attribute;
-import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Collec;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Geom;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Geopackages;
+import fr.ign.artiscales.tools.geoToolsFunctions.vectors.collec.CollecMgmt;
+import fr.ign.artiscales.tools.geoToolsFunctions.vectors.collec.CollecTransform;
+import fr.ign.artiscales.tools.geoToolsFunctions.vectors.collec.OpOnCollec;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.geom.Polygons;
 import fr.ign.artiscales.tools.geometryGeneration.CityGeneration;
 import fr.ign.artiscales.tools.parameter.ProfileUrbanFabric;
@@ -99,13 +101,13 @@ public class ZoneDivision extends Workflow {
         if (genericZone != null && !genericZone.equals(""))
             if (preciseZone == null || preciseZone.equals(""))
                 finalZone = MarkParcelAttributeFromPosition.getOnlyMarkedParcels(MarkParcelAttributeFromPosition
-                        .markParcelIntersectGenericZoningType(Collec.selectIntersection(inputSFC, Geom.unionSFC(boundingSFC)), genericZone, zoningFile));
+                        .markParcelIntersectGenericZoningType(CollecTransform.selectIntersection(inputSFC, Geom.unionSFC(boundingSFC)), genericZone, zoningFile));
             else
                 finalZone = MarkParcelAttributeFromPosition.getOnlyMarkedParcels(MarkParcelAttributeFromPosition.markParcelIntersectPreciseZoningType(
-                        Collec.selectIntersection(inputSFC, Geom.unionSFC(boundingSFC)), genericZone, preciseZone, zoningFile));
+                        CollecTransform.selectIntersection(inputSFC, Geom.unionSFC(boundingSFC)), genericZone, preciseZone, zoningFile));
         else
             finalZone = MarkParcelAttributeFromPosition
-                    .getOnlyMarkedParcels(MarkParcelAttributeFromPosition.markAllParcel(Collec.selectIntersection(inputSFC, Geom.unionSFC(boundingSFC))));
+                    .getOnlyMarkedParcels(MarkParcelAttributeFromPosition.markAllParcel(CollecTransform.selectIntersection(inputSFC, Geom.unionSFC(boundingSFC))));
         if (finalZone != null && finalZone.isEmpty()) System.out.println("createZoneToCut(): zone is empty");
         return finalZone;
     }
@@ -145,7 +147,7 @@ public class ZoneDivision extends Workflow {
         SAVEINTERMEDIATERESULT = true;
         OVERWRITEGEOPACKAGE = true;
         zoneDivision(zone, parcel, outFolder, profile);
-        return new File(outFolder, "parcelZoneDivisionOnly" + Collec.getDefaultGISFileType());
+        return new File(outFolder, "parcelZoneDivisionOnly" + CollecMgmt.getDefaultGISFileType());
     }
 
     public SimpleFeatureCollection zoneDivision(SimpleFeatureCollection initialZone, SimpleFeatureCollection parcels,
@@ -200,8 +202,8 @@ public class ZoneDivision extends Workflow {
         SimpleFeatureBuilder sfBuilder = ParcelSchema.getSFBMinParcelSplit();
         SimpleFeatureBuilder originalSFB = new SimpleFeatureBuilder(parcelsInZone.getSchema());
         if (DEBUG) {
-            Collec.exportSFC(parcelsInZone, new File(tmpFolder, "parcelsInZone"));
-            Collec.exportSFC(savedParcels, new File(tmpFolder, "parcelsSaved"));
+            CollecMgmt.exportSFC(parcelsInZone, new File(tmpFolder, "parcelsInZone"));
+            CollecMgmt.exportSFC(savedParcels, new File(tmpFolder, "parcelsSaved"));
             System.out.println("parcels in zone exported");
         }
         int numZone = 0;
@@ -231,7 +233,7 @@ public class ZoneDivision extends Workflow {
             problem.printStackTrace();
         }
         // zone verification
-        if (goOdZone.isEmpty() || Collec.area(goOdZone) < minimalArea) {
+        if (goOdZone.isEmpty() || OpOnCollec.area(goOdZone) < minimalArea) {
             System.out.println("ZoneDivision: no zones to cut or zone is too small to be taken into consideration");
             return parcels;
         }
@@ -282,8 +284,8 @@ public class ZoneDivision extends Workflow {
                     case "OBB":
                         ((DefaultFeatureCollection) splitedParcels)
                                 .addAll(OBBBlockDecomposition.splitParcels(tmpZoneToCut, null, maximalArea, minimalWidthContactRoad, harmonyCoeff, noise,
-                                        Collec.fromPolygonSFCtoListRingLines(
-                                                Collec.selectIntersection(blockCollection, (Geometry) zone.getDefaultGeometry())),
+                                        CollecTransform.fromPolygonSFCtoListRingLines(
+                                                CollecTransform.selectIntersection(blockCollection, (Geometry) zone.getDefaultGeometry())),
                                         streetWidth, largeStreetLevel, largeStreetWidth, true, decompositionLevelWithoutStreet));
                         break;
                     case "SS":
@@ -301,7 +303,7 @@ public class ZoneDivision extends Workflow {
             problem.printStackTrace();
         }
         if (DEBUG) {
-            Collec.exportSFC(splitedParcels, new File(tmpFolder, "freshSplitedParcels"));
+            CollecMgmt.exportSFC(splitedParcels, new File(tmpFolder, "freshSplitedParcels"));
             System.out.println("fresh cuted parcels exported");
         }
         // merge the small parcels to bigger ones
@@ -336,9 +338,9 @@ public class ZoneDivision extends Workflow {
             problem.printStackTrace();
         }
         if (DEBUG)
-            Collec.exportSFC(result, new File(tmpFolder, "parcelZoneDivisionOnly"), false);
+            CollecMgmt.exportSFC(result, new File(tmpFolder, "parcelZoneDivisionOnly"), false);
         if (SAVEINTERMEDIATERESULT) {
-            Collec.exportSFC(result, new File(outFolder, "parcelZoneDivisionOnly"), OVERWRITEGEOPACKAGE);
+            CollecMgmt.exportSFC(result, new File(outFolder, "parcelZoneDivisionOnly"), OVERWRITEGEOPACKAGE);
             OVERWRITEGEOPACKAGE = false;
         }
         // add the saved parcels

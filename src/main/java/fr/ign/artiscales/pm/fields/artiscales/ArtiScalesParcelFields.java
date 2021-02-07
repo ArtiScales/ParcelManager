@@ -3,6 +3,8 @@ package fr.ign.artiscales.pm.fields.artiscales;
 import java.io.File;
 import java.io.IOException;
 
+import fr.ign.artiscales.tools.geoToolsFunctions.vectors.collec.CollecMgmt;
+import fr.ign.artiscales.tools.geoToolsFunctions.vectors.collec.OpOnCollec;
 import org.geotools.data.DataStore;
 import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.data.simple.SimpleFeatureIterator;
@@ -13,7 +15,6 @@ import org.opengis.feature.simple.SimpleFeature;
 
 import fr.ign.artiscales.pm.fields.french.FrenchParcelFields;
 import fr.ign.artiscales.pm.parcelFunction.ParcelState;
-import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Collec;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Geopackages;
 
 public class ArtiScalesParcelFields {
@@ -42,7 +43,7 @@ public class ArtiScalesParcelFields {
 				boolean newlyGenerate = true;
 				i++;
 				SimpleFeature parcel = parcelIt.next();
-				featureBuilder.set(Collec.getDefaultGeomName(), parcel.getDefaultGeometry());
+				featureBuilder.set(CollecMgmt.getDefaultGeomName(), parcel.getDefaultGeometry());
 
 				String section = (String) parcel.getAttribute("SECTION");
 				featureBuilder.set("INSEE", FrenchParcelFields.makeDEPCOMCode(parcel));
@@ -88,7 +89,7 @@ public class ArtiScalesParcelFields {
 				if (!newlyGenerate && parcel.getAttribute("DoWeSimul") != null) {
 					featureBuilder.set("DoWeSimul", parcel.getAttribute("DoWeSimul"));
 					featureBuilder.set("eval", parcel.getAttribute("eval"));
-				} else if ((allOrCell && newlyGenerate) || (Collec.isFeatIntersectsSFC(parcel, cellsSFS) && !iPB)) {
+				} else if ((allOrCell && newlyGenerate) || (OpOnCollec.isFeatIntersectsSFC(parcel, cellsSFS) && !iPB)) {
 					featureBuilder.set("DoWeSimul", "true");
 					featureBuilder.set("eval", ParcelState.getEvalInParcel(parcel, polygonIntersectionFile));
 				} else {

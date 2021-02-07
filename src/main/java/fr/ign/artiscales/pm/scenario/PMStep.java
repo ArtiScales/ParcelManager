@@ -8,8 +8,8 @@ import fr.ign.artiscales.pm.workflow.ConsolidationDivision;
 import fr.ign.artiscales.pm.workflow.Densification;
 import fr.ign.artiscales.pm.workflow.Workflow;
 import fr.ign.artiscales.pm.workflow.ZoneDivision;
-import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Collec;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Geopackages;
+import fr.ign.artiscales.tools.geoToolsFunctions.vectors.collec.CollecMgmt;
 import fr.ign.artiscales.tools.geometryGeneration.CityGeneration;
 import fr.ign.artiscales.tools.parameter.ProfileUrbanFabric;
 import org.geotools.data.DataStore;
@@ -120,7 +120,7 @@ public class PMStep {
 			System.out.println("parcels marked");
 			File tmpFolder = new File(OUTFOLDER, "tmp");
 			tmpFolder.mkdirs();
-			Collec.exportSFC(parcelMarked, new File(tmpFolder, "parcelMarked" + this.workflow + "-" + this.parcelProcess + this.preciseZone), false);
+			CollecMgmt.exportSFC(parcelMarked, new File(tmpFolder, "parcelMarked" + this.workflow + "-" + this.parcelProcess + this.preciseZone), false);
 		}
 		SimpleFeatureCollection parcelCut = new DefaultFeatureCollection(null, ParcelSchema.getSFBMinParcel().getFeatureType());
 		// get the wanted building profile
@@ -183,7 +183,7 @@ public class PMStep {
 					break;
 			}
 		}
-		Collec.exportSFC(parcelCut, lastOutput);
+		CollecMgmt.exportSFC(parcelCut, lastOutput);
 		//if the step produces no output, we return the input parcels
 		if(!lastOutput.exists()) {
 			System.out.println("PMstep "+this.toString() +" returns nothing");
@@ -244,7 +244,7 @@ public class PMStep {
 			parcel = parcelIn;
 		}
 		if (DEBUG)
-			Collec.exportSFC(parcel, new File(OUTFOLDER, "selectedParcels"));
+			CollecMgmt.exportSFC(parcel, new File(OUTFOLDER, "selectedParcels"));
 		// parcels have been selected - now is time to mark them
 		// parcel marking with input polygons (disabled if we use a specific zone)
 		if (POLYGONINTERSECTION != null && POLYGONINTERSECTION.exists() && !workflow.equals("zoneDivision"))
@@ -480,6 +480,6 @@ public class PMStep {
 	}
 
 	public File makeFileName() {
-		return new File(OUTFOLDER, "parcelCuted-" + workflow + "-"+ urbanFabricType + "-" + genericZone +"_" + preciseZone + Collec.getDefaultGISFileType());
+		return new File(OUTFOLDER, "parcelCuted-" + workflow + "-"+ urbanFabricType + "-" + genericZone +"_" + preciseZone + CollecMgmt.getDefaultGISFileType());
 	}
 }

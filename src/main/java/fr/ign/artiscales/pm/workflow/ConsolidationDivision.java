@@ -4,6 +4,8 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 
+import fr.ign.artiscales.tools.geoToolsFunctions.vectors.collec.CollecMgmt;
+import fr.ign.artiscales.tools.geoToolsFunctions.vectors.collec.CollecTransform;
 import org.apache.commons.math3.random.MersenneTwister;
 import org.geotools.data.DataStore;
 import org.geotools.data.DataUtilities;
@@ -23,7 +25,6 @@ import fr.ign.artiscales.pm.parcelFunction.MarkParcelAttributeFromPosition;
 import fr.ign.artiscales.pm.parcelFunction.ParcelCollection;
 import fr.ign.artiscales.pm.parcelFunction.ParcelSchema;
 import fr.ign.artiscales.tools.geoToolsFunctions.Attribute;
-import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Collec;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Geom;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Geopackages;
 import fr.ign.artiscales.tools.geometryGeneration.CityGeneration;
@@ -83,7 +84,7 @@ public class ConsolidationDivision extends Workflow{
 		parcelSaved.addAll(parcels);
 		DefaultFeatureCollection parcelToMerge = new DefaultFeatureCollection();
 		if (DEBUG) {
-			Collec.exportSFC(parcels, new File(tmpFolder, "step0"));
+			CollecMgmt.exportSFC(parcels, new File(tmpFolder, "step0"));
 			System.out.println("done step 0");
 		}
 		////////////////
@@ -97,7 +98,7 @@ public class ConsolidationDivision extends Workflow{
 			}
 		});
 		if (DEBUG) {
-			Collec.exportSFC(parcelToMerge.collection(), new File(tmpFolder, "step1"));
+			CollecMgmt.exportSFC(parcelToMerge.collection(), new File(tmpFolder, "step1"));
 			System.out.println("done step 1");
 		}
 		////////////////
@@ -110,11 +111,11 @@ public class ConsolidationDivision extends Workflow{
 			sfBuilder.add(multiGeom.getGeometryN(i));
 			sfBuilder.set(ParcelSchema.getMinParcelSectionField(), Integer.toString(i));
 			sfBuilder.set(ParcelSchema.getMinParcelCommunityField(),
-					Collec.getIntersectingFieldFromSFC(multiGeom.getGeometryN(i), parcels, ParcelSchema.getMinParcelCommunityField()));
+					CollecTransform.getIntersectingFieldFromSFC(multiGeom.getGeometryN(i), parcels, ParcelSchema.getMinParcelCommunityField()));
 			mergedParcels.add(sfBuilder.buildFeature(Attribute.makeUniqueId()));
 		}
 		if (DEBUG) {
-			Collec.exportSFC(mergedParcels.collection(), new File(tmpFolder, "step2"));
+			CollecMgmt.exportSFC(mergedParcels.collection(), new File(tmpFolder, "step2"));
 			System.out.println("done step 2");
 		}
 		////////////////
@@ -123,7 +124,7 @@ public class ConsolidationDivision extends Workflow{
 		SimpleFeatureCollection roads;
 		if (roadFile != null && roadFile.exists()) {
 			DataStore sdsRoad = Geopackages.getDataStore(roadFile);
-			roads = DataUtilities.collection(Collec.selectIntersection(sdsRoad.getFeatureSource(sdsRoad.getTypeNames()[0]).getFeatures(), mergedParcels));
+			roads = DataUtilities.collection(CollecTransform.selectIntersection(sdsRoad.getFeatureSource(sdsRoad.getTypeNames()[0]).getFeatures(), mergedParcels));
 			sdsRoad.dispose();
 		} else
 			roads = null;
@@ -140,9 +141,9 @@ public class ConsolidationDivision extends Workflow{
 					switch (PROCESS) {
 					case "OBB":
 						freshCutParcel = OBBBlockDecomposition.splitParcel(feat,
-								(roads != null && !roads.isEmpty()) ? Collec.selectIntersection(roads, (Geometry) feat.getDefaultGeometry()) : null,
+								(roads != null && !roads.isEmpty()) ? CollecTransform.selectIntersection(roads, (Geometry) feat.getDefaultGeometry()) : null,
 								profile.getMaximalArea(), profile.getMinimalWidthContactRoad(), profile.getHarmonyCoeff(), profile.getNoise(),
-								Collec.fromPolygonSFCtoListRingLines(blockCollection.subCollection(
+								CollecTransform.fromPolygonSFCtoListRingLines(blockCollection.subCollection(
 										ff.bbox(ff.property(feat.getFeatureType().getGeometryDescriptor().getLocalName()), feat.getBounds()))),
 								profile.getStreetWidth(), profile.getLargeStreetLevel(), profile.getLargeStreetWidth(), true,
 								profile.getDecompositionLevelWithoutStreet());
@@ -172,7 +173,7 @@ public class ConsolidationDivision extends Workflow{
 							} catch (Exception problem) {
 								problem.printStackTrace();
 							}
-							sfBuilderFinalParcel.set(Collec.getDefaultGeomName(), freshCut.getDefaultGeometry());
+							sfBuilderFinalParcel.set(CollecMgmt.getDefaultGeomName(), freshCut.getDefaultGeometry());
 							sfBuilderFinalParcel.set(ParcelSchema.getMinParcelSectionField(), makeNewSection(sec));
 							sfBuilderFinalParcel.set(ParcelSchema.getMinParcelNumberField(), String.valueOf(i++));
 							sfBuilderFinalParcel.set(ParcelSchema.getMinParcelCommunityField(),
@@ -191,7 +192,7 @@ public class ConsolidationDivision extends Workflow{
 		});
 		DefaultFeatureCollection result = new DefaultFeatureCollection();
 		if (DEBUG) {
-			Collec.exportSFC(cutParcels, new File(tmpFolder, "step3"));
+			CollecMgmt.exportSFC(cutParcels, new File(tmpFolder, "step3"));
 			System.out.println("done step 3");
 		}
 		// merge small parcels
@@ -202,7 +203,7 @@ public class ConsolidationDivision extends Workflow{
 			result.add(SFBParcel.buildFeature(Attribute.makeUniqueId()));
 		});
 		if (SAVEINTERMEDIATERESULT) {
-			Collec.exportSFC(result, new File(outFolder, "parcelConsolidationOnly"), OVERWRITEGEOPACKAGE);
+			CollecMgmt.exportSFC(result, new File(outFolder, "parcelConsolidationOnly"), OVERWRITEGEOPACKAGE);
 			OVERWRITEGEOPACKAGE = false;
 		}
 		// add initial non cut parcel to final parcels
@@ -211,7 +212,7 @@ public class ConsolidationDivision extends Workflow{
 			result.add(SFBParcel.buildFeature(Attribute.makeUniqueId()));
 		});
 		if (DEBUG) {
-			Collec.exportSFC(result, new File(tmpFolder, "step4"));
+			CollecMgmt.exportSFC(result, new File(tmpFolder, "step4"));
 			System.out.println("done step 4");
 		}
 		// //If the selection of parcel was based on a polygon intersection file, we keep only the intersection parcels

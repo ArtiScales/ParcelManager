@@ -5,6 +5,8 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 
+import fr.ign.artiscales.tools.geoToolsFunctions.vectors.collec.CollecMgmt;
+import fr.ign.artiscales.tools.geoToolsFunctions.vectors.collec.CollecTransform;
 import org.geotools.data.DataStore;
 import org.geotools.data.collection.SpatialIndexFeatureCollection;
 import org.geotools.data.simple.SimpleFeatureCollection;
@@ -21,7 +23,6 @@ import org.opengis.filter.FilterFactory2;
 
 import fr.ign.artiscales.pm.fields.GeneralFields;
 import fr.ign.artiscales.pm.fields.french.FrenchZoningSchemas;
-import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Collec;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Geom;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Geopackages;
 
@@ -45,7 +46,7 @@ public class ParcelGetter {
 	public static SimpleFeatureCollection getParcelByFrenchZoningType(String zone, SimpleFeatureCollection parcelles, File zoningFile)
 			throws IOException {
 		DataStore zonesSDS = Geopackages.getDataStore(zoningFile);
-		SimpleFeatureCollection zonesSFC = Collec.selectIntersection(zonesSDS.getFeatureSource(zonesSDS.getTypeNames()[0]).getFeatures(), parcelles);
+		SimpleFeatureCollection zonesSFC = CollecTransform.selectIntersection(zonesSDS.getFeatureSource(zonesSDS.getTypeNames()[0]).getFeatures(), parcelles);
 		List<String> listZones = FrenchZoningSchemas.getUsualNames(zone);
 		DefaultFeatureCollection zoneSelected = new DefaultFeatureCollection();
 		try (SimpleFeatureIterator itZonez = zonesSFC.features()) {
@@ -98,7 +99,7 @@ public class ParcelGetter {
 	 */
 	public static SimpleFeatureCollection getParcelByTypo(String typo, SimpleFeatureCollection parcels, File zoningFile) throws IOException {
 		DataStore zoningDS = Geopackages.getDataStore(zoningFile);
-		SimpleFeatureCollection zoningSFC = Collec.selectIntersection(new SpatialIndexFeatureCollection(zoningDS.getFeatureSource(zoningDS.getTypeNames()[0]).getFeatures()), parcels);
+		SimpleFeatureCollection zoningSFC = CollecTransform.selectIntersection(new SpatialIndexFeatureCollection(zoningDS.getFeatureSource(zoningDS.getTypeNames()[0]).getFeatures()), parcels);
 		FilterFactory2 ff = CommonFactoryFinder.getFilterFactory2(GeoTools.getDefaultHints());
 		Filter filter = ff.like(ff.property(typologyField), typo);
 		DefaultFeatureCollection result = new DefaultFeatureCollection();
@@ -136,7 +137,7 @@ public class ParcelGetter {
 		DataStore ds = Geopackages.getDataStore(parcelIn);
 		SimpleFeatureCollection result = getFrenchParcelByZip(ds.getFeatureSource(ds.getTypeNames()[0]).getFeatures(), vals);
 		ds.dispose();
-		return Collec.exportSFC(result, fileOut);
+		return CollecMgmt.exportSFC(result, fileOut);
 	}
 
 	/**
@@ -223,7 +224,7 @@ public class ParcelGetter {
 		// we check if the field for zipcodes is present, otherwise we try national types of parcels
 		if (parcelIn == null || parcelIn.isEmpty())
 			return null;
-		if (!Collec.isCollecContainsAttribute(parcelIn, ParcelSchema.getMinParcelCommunityField())) {
+		if (!CollecMgmt.isCollecContainsAttribute(parcelIn, ParcelSchema.getMinParcelCommunityField())) {
 			switch (GeneralFields.getParcelFieldType()) {
 			case "french":
 				return getFrenchParcelByZip(parcelIn, val);
@@ -231,7 +232,7 @@ public class ParcelGetter {
 		}
 		DefaultFeatureCollection result = new DefaultFeatureCollection();
 		Arrays.stream(parcelIn.toArray(new SimpleFeature[0])).forEach(feat -> {
-			if (Collec.isSimpleFeatureContainsAttribute(feat, ParcelSchema.getMinParcelCommunityField())
+			if (CollecMgmt.isSimpleFeatureContainsAttribute(feat, ParcelSchema.getMinParcelCommunityField())
 					&& feat.getAttribute(ParcelSchema.getMinParcelCommunityField()) != null
 					&& feat.getAttribute(ParcelSchema.getMinParcelCommunityField()).equals(val))
 				result.add(feat);

@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import fr.ign.artiscales.tools.geoToolsFunctions.vectors.collec.CollecMgmt;
 import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.data.simple.SimpleFeatureIterator;
 import org.geotools.feature.DefaultFeatureCollection;
@@ -19,7 +20,6 @@ import fr.ign.artiscales.pm.parcelFunction.ParcelAttribute;
 import fr.ign.artiscales.pm.parcelFunction.ParcelSchema;
 import fr.ign.artiscales.tools.geoToolsFunctions.Attribute;
 import fr.ign.artiscales.tools.geoToolsFunctions.Schemas;
-import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Collec;
 
 public class GeneralFields {
 
@@ -292,7 +292,7 @@ public class GeneralFields {
 	 */
 	public static SimpleFeatureCollection transformSFCToMinParcel(SimpleFeatureCollection parcels, boolean hasMark) {
 		DefaultFeatureCollection result = new DefaultFeatureCollection();
-		boolean split = Collec.isCollecContainsAttribute(parcels, MarkParcelAttributeFromPosition.getMarkFieldName()) && hasMark;
+		boolean split = CollecMgmt.isCollecContainsAttribute(parcels, MarkParcelAttributeFromPosition.getMarkFieldName()) && hasMark;
 		Arrays.stream(parcels.toArray(new SimpleFeature[0])).forEach(feat -> {
 			SimpleFeatureBuilder sfb;
 			if (split)

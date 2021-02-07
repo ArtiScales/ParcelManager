@@ -9,8 +9,9 @@ import fr.ign.artiscales.pm.scenario.PMStep;
 import fr.ign.artiscales.pm.workflow.Densification;
 import fr.ign.artiscales.tools.carto.JoinCSVToGeoFile;
 import fr.ign.artiscales.tools.carto.MergeByAttribute;
-import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Collec;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Geopackages;
+import fr.ign.artiscales.tools.geoToolsFunctions.vectors.collec.CollecMgmt;
+import fr.ign.artiscales.tools.geoToolsFunctions.vectors.collec.CollecTransform;
 import fr.ign.artiscales.tools.geometryGeneration.CityGeneration;
 import fr.ign.artiscales.tools.io.Csv;
 import fr.ign.artiscales.tools.parameter.ProfileUrbanFabric;
@@ -81,22 +82,22 @@ public class DensificationStudy extends UseCase {
         SimpleFeatureCollection parcelsVacantLot = MarkParcelAttributeFromPosition.markParcelIntersectFrenchConstructibleZoningType(
                 MarkParcelAttributeFromPosition.markUnBuiltParcel(parcels, buildingFile), zoningFile);
         if (DEBUG)
-            Collec.exportSFC(parcelsVacantLot, new File(outFolder, "/parcelsVacantLot"));
+            CollecMgmt.exportSFC(parcelsVacantLot, new File(outFolder, "/parcelsVacantLot"));
         SimpleFeatureCollection parcelsVacantLotCreated = (new Densification()).densificationOrNeighborhood(parcelsVacantLot, block, outFolder, buildingFile,
                 roadFile, profile, isParcelWithoutStreetAllowed, buffer, 5);
         if (DEBUG)
-            Collec.exportSFC(parcelsVacantLotCreated, new File(outFolder, "/parcelsVacantLotCreated"));
+            CollecMgmt.exportSFC(parcelsVacantLotCreated, new File(outFolder, "/parcelsVacantLotCreated"));
 
         // simulate the densification of built parcels in the given zone
         SimpleFeatureCollection parcelsDensifZone = MarkParcelAttributeFromPosition
                 .markParcelIntersectFrenchConstructibleZoningType(MarkParcelAttributeFromPosition.markBuiltParcel(parcels, buildingFile), zoningFile);
         if (DEBUG)
-            Collec.exportSFC(parcelsDensifZone, new File(outFolder, "/parcelsDensifZone"));
+            CollecMgmt.exportSFC(parcelsDensifZone, new File(outFolder, "/parcelsDensifZone"));
 
         SimpleFeatureCollection parcelsDensifCreated = (new Densification()).densification(parcelsDensifZone, block, outFolder, buildingFile,
                 roadFile, profile, isParcelWithoutStreetAllowed, buffer);
         if (DEBUG)
-            Collec.exportSFC(parcelsDensifCreated, new File(outFolder, "/parcelsDensifCreated"));
+            CollecMgmt.exportSFC(parcelsDensifCreated, new File(outFolder, "/parcelsDensifCreated"));
 
         // change split name to show if they can be built and start postprocessing
         String firstMarkFieldName = MarkParcelAttributeFromPosition.getMarkFieldName();
@@ -116,9 +117,9 @@ public class DensificationStudy extends UseCase {
         // exporting output geopackages and countings
         List<SimpleFeature> vacantParcelU = Arrays.stream(parcelsDensifCreated.toArray(new SimpleFeature[0]))
                 .filter(feat -> feat.getAttribute(MarkParcelAttributeFromPosition.getMarkFieldName()).equals(1)).collect(Collectors.toList());
-        Collec.exportSFC(parcelsVacantLot, new File(outFolder, "parcelVacantLot"), false);
-        Collec.exportSFC(parcelsVacantLotCreated, new File(outFolder, "parcelVacantLotDensified"), false);
-        Collec.exportSFC(vacantParcelU, new File(outFolder, "parcelPossiblyDensified"), false);
+        CollecMgmt.exportSFC(parcelsVacantLot, new File(outFolder, "parcelVacantLot"), false);
+        CollecMgmt.exportSFC(parcelsVacantLotCreated, new File(outFolder, "parcelVacantLotDensified"), false);
+        CollecMgmt.exportSFC(vacantParcelU, new File(outFolder, "parcelPossiblyDensified"), false);
 
         long nbVacantLot = Arrays.stream(parcelsVacantLot.toArray(new SimpleFeature[0])).filter(feat -> feat.getAttribute(splitField).equals(1))
                 .count();
@@ -133,7 +134,7 @@ public class DensificationStudy extends UseCase {
         SimpleFeatureCollection zoning = sds.getFeatureSource(sds.getTypeNames()[0]).getFeatures();
         long nbParcelsInUrbanizableZones = Arrays.stream(parcels.toArray(new SimpleFeature[0]))
                 .filter(feat -> FrenchZoningSchemas
-                        .isUrbanZoneUsuallyAdmitResidentialConstruction(Collec.getIntersectingSimpleFeatureFromSFC((Geometry) feat.getDefaultGeometry(), zoning)))
+                        .isUrbanZoneUsuallyAdmitResidentialConstruction(CollecTransform.getIntersectingSimpleFeatureFromSFC((Geometry) feat.getDefaultGeometry(), zoning)))
                 .count();
         sds.dispose();
 

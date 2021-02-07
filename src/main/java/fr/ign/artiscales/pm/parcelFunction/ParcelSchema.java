@@ -1,5 +1,6 @@
 package fr.ign.artiscales.pm.parcelFunction;
 
+import fr.ign.artiscales.tools.geoToolsFunctions.vectors.collec.CollecMgmt;
 import org.geotools.feature.simple.SimpleFeatureBuilder;
 import org.geotools.feature.simple.SimpleFeatureTypeBuilder;
 import org.geotools.referencing.CRS;
@@ -9,8 +10,6 @@ import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.feature.simple.SimpleFeatureType;
 import org.opengis.feature.type.AttributeDescriptor;
 import org.opengis.referencing.FactoryException;
-
-import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Collec;
 
 public class ParcelSchema {
 
@@ -34,8 +33,8 @@ public class ParcelSchema {
 		} catch (FactoryException e) {
 			e.printStackTrace();
 		}
-		sfTypeBuilder.add(Collec.getDefaultGeomName(), Polygon.class);
-		sfTypeBuilder.setDefaultGeometry(Collec.getDefaultGeomName());
+		sfTypeBuilder.add(CollecMgmt.getDefaultGeomName(), Polygon.class);
+		sfTypeBuilder.setDefaultGeometry(CollecMgmt.getDefaultGeomName());
 		sfTypeBuilder.add(minParcelSectionField, String.class);
 		sfTypeBuilder.add(minParcelNumberField, String.class);
 		sfTypeBuilder.add(minParcelCommunityField, String.class);
@@ -50,8 +49,8 @@ public class ParcelSchema {
 		} catch (FactoryException e) {
 			e.printStackTrace();
 		}
-		sfTypeBuilder.add(Collec.getDefaultGeomName(), MultiPolygon.class);
-		sfTypeBuilder.setDefaultGeometry(Collec.getDefaultGeomName());
+		sfTypeBuilder.add(CollecMgmt.getDefaultGeomName(), MultiPolygon.class);
+		sfTypeBuilder.setDefaultGeometry(CollecMgmt.getDefaultGeomName());
 		sfTypeBuilder.add(minParcelSectionField, String.class);
 		sfTypeBuilder.add(minParcelNumberField, String.class);
 		sfTypeBuilder.add(minParcelCommunityField, String.class);
@@ -69,10 +68,10 @@ public class ParcelSchema {
 		builder.set(minParcelNumberField, feat.getAttribute(minParcelNumberField));
 
 		// setting zipcode
-		if (Collec.isSimpleFeatureContainsAttribute(feat, minParcelCommunityField))
+		if (CollecMgmt.isSimpleFeatureContainsAttribute(feat, minParcelCommunityField))
 			builder.set(minParcelCommunityField, feat.getAttribute(minParcelCommunityField));
 		// if looks like French parcel
-		else if (Collec.isSimpleFeatureContainsAttribute(feat, "CODE_DEP"))
+		else if (CollecMgmt.isSimpleFeatureContainsAttribute(feat, "CODE_DEP"))
 			builder.set(ParcelSchema.getMinParcelCommunityField(),
 					((String) feat.getAttribute("CODE_DEP")).concat((String) feat.getAttribute("CODE_COM")));
 		return builder;
@@ -86,8 +85,8 @@ public class ParcelSchema {
 		} catch (FactoryException e) {
 			e.printStackTrace();
 		}
-		sfTypeBuilder.add(Collec.getDefaultGeomName(), Polygon.class);
-		sfTypeBuilder.setDefaultGeometry(Collec.getDefaultGeomName());
+		sfTypeBuilder.add(CollecMgmt.getDefaultGeomName(), Polygon.class);
+		sfTypeBuilder.setDefaultGeometry(CollecMgmt.getDefaultGeomName());
 		sfTypeBuilder.add(minParcelSectionField, String.class);
 		sfTypeBuilder.add(minParcelCommunityField, String.class);
 		sfTypeBuilder.add(minParcelNumberField, String.class);
@@ -111,10 +110,10 @@ public class ParcelSchema {
 		builder.set(minParcelNumberField, feat.getAttribute(minParcelNumberField));
 
 		// setting zipcode
-		if (Collec.isSimpleFeatureContainsAttribute(feat, minParcelCommunityField))
+		if (CollecMgmt.isSimpleFeatureContainsAttribute(feat, minParcelCommunityField))
 			builder.set(minParcelCommunityField, feat.getAttribute(minParcelCommunityField));
 		// if looks like french parcel
-		else if (Collec.isSimpleFeatureContainsAttribute(feat, "CODE_DEP"))
+		else if (CollecMgmt.isSimpleFeatureContainsAttribute(feat, "CODE_DEP"))
 			builder.set(ParcelSchema.getMinParcelCommunityField(),
 					((String) feat.getAttribute("CODE_DEP")).concat((String) feat.getAttribute("CODE_COM")));
 		return builder;

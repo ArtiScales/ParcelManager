@@ -5,9 +5,10 @@ import fr.ign.artiscales.pm.parcelFunction.MarkParcelAttributeFromPosition;
 import fr.ign.artiscales.pm.parcelFunction.ParcelCollection;
 import fr.ign.artiscales.pm.scenario.PMScenario;
 import fr.ign.artiscales.pm.scenario.PMStep;
-import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Collec;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Geom;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Geopackages;
+import fr.ign.artiscales.tools.geoToolsFunctions.vectors.collec.CollecMgmt;
+import fr.ign.artiscales.tools.geoToolsFunctions.vectors.collec.CollecTransform;
 import fr.ign.artiscales.tools.geometryGeneration.CityGeneration;
 import org.geotools.data.DataStore;
 import org.geotools.data.simple.SimpleFeatureCollection;
@@ -108,18 +109,18 @@ public class CompareSimulatedParcelsWithEvolution extends UseCase{
 			SimpleFeatureCollection sfcSimulatedParcel = sdsSimulatedParcel.getFeatureSource(sdsSimulatedParcel.getTypeNames()[0]).getFeatures()
 					.subCollection(ff.intersects(ff.property(sdsSimulatedParcel.getFeatureSource(sdsSimulatedParcel.getTypeNames()[0]).getFeatures()
 							.getSchema().getGeometryDescriptor().getLocalName()), ff.literal(geomUnion)));
-			Collec.exportSFC(sfcSimulatedParcel, new File(zoneOutFolder, "SimulatedParcel.gpkg"));
+			CollecMgmt.exportSFC(sfcSimulatedParcel, new File(zoneOutFolder, "SimulatedParcel.gpkg"));
 
 			// evolved parcel crop
 			DataStore sdsEvolvedParcel = Geopackages.getDataStore(evolvedParcelFile);
-			SimpleFeatureCollection sfcEvolvedParcel = Collec.selectIntersection(sdsEvolvedParcel.getFeatureSource(sdsEvolvedParcel.getTypeNames()[0]).getFeatures(), geomUnion);
-			Collec.exportSFC(sfcEvolvedParcel, new File(zoneOutFolder, "EvolvedParcel.gpkg"));
+			SimpleFeatureCollection sfcEvolvedParcel = CollecTransform.selectIntersection(sdsEvolvedParcel.getFeatureSource(sdsEvolvedParcel.getTypeNames()[0]).getFeatures(), geomUnion);
+			CollecMgmt.exportSFC(sfcEvolvedParcel, new File(zoneOutFolder, "EvolvedParcel.gpkg"));
 
 			DataStore sdsGoalParcel = Geopackages.getDataStore(step.getLastOutput() != null ? step.getLastOutput() : step.makeFileName());
 			SingleParcelStat.writeStatSingleParcel(
 					MarkParcelAttributeFromPosition.markSimulatedParcel(MarkParcelAttributeFromPosition.markParcelIntersectPolygonIntersection(
 							sdsGoalParcel.getFeatureSource(sdsGoalParcel.getTypeNames()[0]).getFeatures(), geoms.stream().map(g -> g.buffer(-2)).collect(Collectors.toList()))),
-					sfcEvolvedParcel, Collec.selectIntersection(dsRoad.getFeatureSource(dsRoad.getTypeNames()[0]).getFeatures(), geomUnion),
+					sfcEvolvedParcel, CollecTransform.selectIntersection(dsRoad.getFeatureSource(dsRoad.getTypeNames()[0]).getFeatures(), geomUnion),
 					new File(zoneOutFolder, "SimulatedParcelStats.csv"));
 			sdsSimulatedParcel.dispose();
 			sdsGoalParcel.dispose();
@@ -130,7 +131,7 @@ public class CompareSimulatedParcelsWithEvolution extends UseCase{
 			SingleParcelStat.writeStatSingleParcel(
 					MarkParcelAttributeFromPosition.markParcelIntersectPolygonIntersection(sdsEvolvedAndAllParcels.getFeatureSource(sdsEvolvedAndAllParcels.getTypeNames()[0]).getFeatures(),
 							Arrays.stream(sfcEvolvedParcel.toArray(new SimpleFeature[0])).map(g -> ((Geometry) g.getDefaultGeometry()).buffer(-1)).collect(Collectors.toList())),
-					Collec.selectIntersection(dsRoad.getFeatureSource(dsRoad.getTypeNames()[0]).getFeatures(), geomUnion), new File(zoneOutFolder, "EvolvedParcelStats.csv"));
+					CollecTransform.selectIntersection(dsRoad.getFeatureSource(dsRoad.getTypeNames()[0]).getFeatures(), geomUnion), new File(zoneOutFolder, "EvolvedParcelStats.csv"));
 			sdsEvolvedParcel.dispose();
 		}
 		dsRoad.dispose();

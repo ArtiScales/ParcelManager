@@ -8,6 +8,8 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
 
+import fr.ign.artiscales.tools.geoToolsFunctions.vectors.collec.CollecMgmt;
+import fr.ign.artiscales.tools.geoToolsFunctions.vectors.collec.CollecTransform;
 import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.data.simple.SimpleFeatureIterator;
 import org.locationtech.jts.geom.Geometry;
@@ -15,7 +17,6 @@ import org.opengis.feature.simple.SimpleFeature;
 
 import fr.ign.artiscales.pm.fields.GeneralFields;
 import fr.ign.artiscales.pm.fields.french.FrenchParcelFields;
-import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Collec;
 
 public class ParcelAttribute {
 	
@@ -44,15 +45,15 @@ public class ParcelAttribute {
 	 * @return the most represented city code from the SimpleFeatureCollection 
 	 */
 	public static String getCommunityCodeFromSFC(SimpleFeatureCollection sFCWithCommunityCode, SimpleFeature feat) {
-		if (!Collec.isCollecContainsAttribute(sFCWithCommunityCode, ParcelSchema.getMinParcelCommunityField())) {
+		if (!CollecMgmt.isCollecContainsAttribute(sFCWithCommunityCode, ParcelSchema.getMinParcelCommunityField())) {
 			switch (GeneralFields.getParcelFieldType()) {
 			case ("french"):
-				return FrenchParcelFields.makeDEPCOMCode(Collec.getIntersectingSimpleFeatureFromSFC((Geometry) feat.getDefaultGeometry(), sFCWithCommunityCode));
+				return FrenchParcelFields.makeDEPCOMCode(CollecTransform.getIntersectingSimpleFeatureFromSFC((Geometry) feat.getDefaultGeometry(), sFCWithCommunityCode));
 			default:
 				return "";
 			}
 		} else {
-			return Collec.getIntersectingFieldFromSFC((Geometry) feat.getDefaultGeometry(), sFCWithCommunityCode, ParcelSchema.getMinParcelCommunityField());
+			return CollecTransform.getIntersectingFieldFromSFC((Geometry) feat.getDefaultGeometry(), sFCWithCommunityCode, ParcelSchema.getMinParcelCommunityField());
 		}
 	}
 	
@@ -66,7 +67,7 @@ public class ParcelAttribute {
 	 * @return the most represented city code from the SimpleFeatureCollection 
 	 */
 	public static String getSectionCodeFromSFC(SimpleFeatureCollection sFCWithCommunityCode, SimpleFeature feat) {
-		return Collec.getIntersectingFieldFromSFC((Geometry) feat.getDefaultGeometry(), sFCWithCommunityCode, ParcelSchema.getMinParcelSectionField());
+		return CollecTransform.getIntersectingFieldFromSFC((Geometry) feat.getDefaultGeometry(), sFCWithCommunityCode, ParcelSchema.getMinParcelSectionField());
 	}
 	
 	/**
@@ -79,7 +80,7 @@ public class ParcelAttribute {
 	 * @return the most represented city code from the SimpleFeatureCollection 
 	 */
 	public static String getNumberCodeFromSFC(SimpleFeatureCollection sFCWithCommunityCode, SimpleFeature feat) {
-		return Collec.getIntersectingFieldFromSFC((Geometry) feat.getDefaultGeometry(), sFCWithCommunityCode, ParcelSchema.getMinParcelNumberField());
+		return CollecTransform.getIntersectingFieldFromSFC((Geometry) feat.getDefaultGeometry(), sFCWithCommunityCode, ParcelSchema.getMinParcelNumberField());
 	}
 
 	/**
@@ -93,7 +94,7 @@ public class ParcelAttribute {
 	 * @return the type of community in which is the feature.
 	 */
 	public static String getCommunityTypeFromSFC(SimpleFeatureCollection sfc, SimpleFeature feat) {
-		return Collec.getIntersectingFieldFromSFC((Geometry) feat.getDefaultGeometry(), sfc, communityTypeFieldName);
+		return CollecTransform.getIntersectingFieldFromSFC((Geometry) feat.getDefaultGeometry(), sfc, communityTypeFieldName);
 	}
 
 	/**

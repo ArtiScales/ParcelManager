@@ -1,5 +1,6 @@
 package fr.ign.artiscales.pm.fields.artiscales;
 
+import fr.ign.artiscales.tools.geoToolsFunctions.vectors.collec.CollecMgmt;
 import org.geotools.feature.simple.SimpleFeatureBuilder;
 import org.geotools.feature.simple.SimpleFeatureTypeBuilder;
 import org.geotools.referencing.CRS;
@@ -10,7 +11,6 @@ import org.opengis.feature.simple.SimpleFeatureType;
 import org.opengis.referencing.FactoryException;
 
 import fr.ign.artiscales.pm.fields.french.FrenchParcelFields;
-import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Collec;
 
 public class ArtiScalesSchemas {
 	/////////////////////
@@ -26,8 +26,8 @@ public class ArtiScalesSchemas {
 		} catch (FactoryException e) {
 			e.printStackTrace();
 		}
-		sfTypeBuilder.add(Collec.getDefaultGeomName(), Polygon.class);
-		sfTypeBuilder.setDefaultGeometry(Collec.getDefaultGeomName());
+		sfTypeBuilder.add(CollecMgmt.getDefaultGeomName(), Polygon.class);
+		sfTypeBuilder.setDefaultGeometry(CollecMgmt.getDefaultGeomName());
 		sfTypeBuilder.add("CODE", String.class);
 		sfTypeBuilder.add("CODE_DEP", String.class);
 		sfTypeBuilder.add("CODE_COM", String.class);
@@ -112,8 +112,8 @@ public class ArtiScalesSchemas {
 		} catch (FactoryException e) {
 			e.printStackTrace();
 		}
-		sfTypeBuilder.add(Collec.getDefaultGeomName(), Polygon.class);
-		sfTypeBuilder.setDefaultGeometry(Collec.getDefaultGeomName());
+		sfTypeBuilder.add(CollecMgmt.getDefaultGeomName(), Polygon.class);
+		sfTypeBuilder.setDefaultGeometry(CollecMgmt.getDefaultGeomName());
 		sfTypeBuilder.add("CODE", String.class);
 		sfTypeBuilder.add("CODE_DEP", String.class);
 		sfTypeBuilder.add("CODE_COM", String.class);

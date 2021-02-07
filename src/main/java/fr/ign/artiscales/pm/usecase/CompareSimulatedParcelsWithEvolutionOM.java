@@ -7,6 +7,8 @@ import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
 
+import fr.ign.artiscales.tools.geoToolsFunctions.vectors.collec.CollecMgmt;
+import fr.ign.artiscales.tools.geoToolsFunctions.vectors.collec.CollecTransform;
 import org.geotools.data.DataStore;
 import org.geotools.data.DataUtilities;
 import org.geotools.data.simple.SimpleFeatureCollection;
@@ -19,7 +21,6 @@ import fr.ign.artiscales.pm.parcelFunction.ParcelSchema;
 import fr.ign.artiscales.pm.scenario.PMScenario;
 import fr.ign.artiscales.pm.scenario.PMStep;
 import fr.ign.artiscales.pm.workflow.ZoneDivision;
-import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Collec;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Geopackages;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Shp;
 import fr.ign.artiscales.tools.geometryGeneration.CityGeneration;
@@ -113,11 +114,11 @@ public class CompareSimulatedParcelsWithEvolutionOM {
 		SimpleFeatureCollection zoning = DataUtilities.collection(dsZoning.getFeatureSource(dsZoning.getTypeNames()[0]).getFeatures());
 		SimpleFeatureCollection toSort = DataUtilities.collection(dsToSort.getFeatureSource(dsToSort.getTypeNames()[0]).getFeatures());
 		String[] vals = {ParcelSchema.getMinParcelCommunityField(), GeneralFields.getZonePreciseNameField()};
-		for (String uniquePreciseName : Collec.getEachUniqueFieldFromSFC(zoning, vals)) {
-			SimpleFeatureCollection eachZoning = Collec.getSFCfromSFCIntersection(toSort, Collec.getSFCPart(zoning, vals, uniquePreciseName.split("-")));
+		for (String uniquePreciseName : CollecMgmt.getEachUniqueFieldFromSFC(zoning, vals)) {
+			SimpleFeatureCollection eachZoning = CollecTransform.getSFCfromSFCIntersection(toSort, CollecTransform.getSFCPart(zoning, vals, uniquePreciseName.split("-")));
 			if (eachZoning == null || eachZoning.isEmpty())
 				continue;
-			Collec.exportSFC(eachZoning, new File(outFolder, uniquePreciseName));
+			CollecMgmt.exportSFC(eachZoning, new File(outFolder, uniquePreciseName));
 		}
 		dsToSort.dispose();
 		dsZoning.dispose();

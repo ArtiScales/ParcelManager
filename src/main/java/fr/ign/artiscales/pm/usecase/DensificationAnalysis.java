@@ -2,12 +2,12 @@ package fr.ign.artiscales.pm.usecase;
 
 import java.io.File;
 
+import fr.ign.artiscales.tools.geoToolsFunctions.vectors.collec.CollecMgmt;
 import org.geotools.data.DataStore;
 import org.geotools.data.simple.SimpleFeatureCollection;
 
 import fr.ign.artiscales.pm.analysis.SingleParcelStat;
 import fr.ign.artiscales.pm.parcelFunction.MarkParcelAttributeFromPosition;
-import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Collec;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Geopackages;
 import fr.ign.artiscales.tools.geometryGeneration.CityGeneration;
 
@@ -34,7 +34,7 @@ public class DensificationAnalysis {
 										MarkParcelAttributeFromPosition.markSimulatedParcel(parcelDensifiedOnly),
 										CityGeneration.createUrbanBlock(parcelDensified), roadFile, CityGeneration.createBufferBorder(parcelDensified)),
 								buildingFile));
-		Collec.exportSFC(SingleParcelStat.makeHausdorfDistanceMaps(parcelsDensifCreated, parcelSelec), new File("/tmp/HausdorfDensification"));
+		CollecMgmt.exportSFC(SingleParcelStat.makeHausdorfDistanceMaps(parcelsDensifCreated, parcelSelec), new File("/tmp/HausdorfDensification"));
 		DataStore dsRoad = Geopackages.getDataStore(
 				new File("/home/ubuntu/workspace/ParcelManager/src/main/resources/ParcelComparison/out/evolvedParcel.gpkg"));
 		SimpleFeatureCollection roads = dsRoad.getFeatureSource(dsRoad.getTypeNames()[0]).getFeatures();

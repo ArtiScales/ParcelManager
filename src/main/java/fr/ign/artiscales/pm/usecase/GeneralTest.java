@@ -5,6 +5,7 @@ import java.util.Arrays;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
 
+import fr.ign.artiscales.tools.geoToolsFunctions.vectors.collec.CollecMgmt;
 import org.geotools.data.DataStore;
 import org.geotools.data.DataUtilities;
 import org.geotools.data.simple.SimpleFeatureCollection;
@@ -20,7 +21,6 @@ import fr.ign.artiscales.pm.workflow.ConsolidationDivision;
 import fr.ign.artiscales.pm.workflow.Densification;
 import fr.ign.artiscales.pm.workflow.Workflow;
 import fr.ign.artiscales.pm.workflow.ZoneDivision;
-import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Collec;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Geopackages;
 import fr.ign.artiscales.tools.geometryGeneration.CityGeneration;
 import fr.ign.artiscales.tools.parameter.ProfileUrbanFabric;
@@ -103,8 +103,8 @@ public class GeneralTest extends UseCase{
 					rDS.getFeatureSource(rDS.getTypeNames()[0]).getFeatures(), outFolder, profileLargeCollective);
 			rDS.dispose();
 			SimpleFeatureCollection finaux = FrenchParcelFields.setOriginalFrenchParcelAttributes(parcelCuted, parcel);
-			Collec.exportSFC(finaux, new File(outFolder, "parcelTotZone.gpkg"));
-			Collec.exportSFC(zone, new File(outFolder, "zone.gpkg"));
+			CollecMgmt.exportSFC(finaux, new File(outFolder, "parcelTotZone.gpkg"));
+			CollecMgmt.exportSFC(zone, new File(outFolder, "zone.gpkg"));
 			RoadRatioParcels.roadRatioZone(zone, finaux, profileLargeCollective.getNameBuildingType(), statFolder, roadFile);
 			MakeStatisticGraphs.makeAreaGraph(Arrays.stream(finaux.toArray(new SimpleFeature[0])).filter(sf -> (new ZoneDivision()).isNewSection(sf))
 					.collect(Collectors.toList()), statFolder, "Zone division - large collective building simulation");
@@ -120,7 +120,7 @@ public class GeneralTest extends UseCase{
 			SimpleFeatureCollection cutedNormalZone = (new ConsolidationDivision()).consolidationDivision(markedZone, roadFile, outFolder,
 					profileDetached);
 			SimpleFeatureCollection finalNormalZone = FrenchParcelFields.setOriginalFrenchParcelAttributes(cutedNormalZone, parcel);
-			Collec.exportSFC(finalNormalZone, new File(outFolder, "ParcelConsolidRecomp.gpkg"));
+			CollecMgmt.exportSFC(finalNormalZone, new File(outFolder, "ParcelConsolidRecomp.gpkg"));
 			RoadRatioParcels.roadRatioParcels(markedZone, finalNormalZone, profileDetached.getNameBuildingType(), statFolder, roadFile);
 			MakeStatisticGraphs.makeAreaGraph(Arrays.stream(finalNormalZone.toArray(new SimpleFeature[0]))
 					.filter(sf -> (new ConsolidationDivision()).isNewSection(sf)).collect(Collectors.toList()), statFolder,
@@ -138,7 +138,7 @@ public class GeneralTest extends UseCase{
 					profileSmallHouse.getNoise(), profileSmallHouse.getMaximalArea(), profileSmallHouse.getMinimalArea(),
 					profileSmallHouse.getMinimalWidthContactRoad(), profileSmallHouse.getLenDriveway(), allowIsolatedParcel);
 			SimpleFeatureCollection finaux3 = FrenchParcelFields.setOriginalFrenchParcelAttributes(parcelDensified, parcel);
-			Collec.exportSFC(finaux3, new File(outFolder, "parcelDensification.gpkg"));
+			CollecMgmt.exportSFC(finaux3, new File(outFolder, "parcelDensification.gpkg"));
 			MakeStatisticGraphs.makeAreaGraph(Arrays.stream(parcelDensified.toArray(new SimpleFeature[0]))
 					.filter(sf -> (new Densification()).isNewSection(sf)).collect(Collectors.toList()), statFolder,
 					"Densification - small houses simulation");

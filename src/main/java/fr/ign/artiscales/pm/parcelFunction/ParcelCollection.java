@@ -4,9 +4,10 @@ import fr.ign.artiscales.pm.fields.artiscales.ArtiScalesSchemas;
 import fr.ign.artiscales.tools.FeaturePolygonizer;
 import fr.ign.artiscales.tools.geoToolsFunctions.Attribute;
 import fr.ign.artiscales.tools.geoToolsFunctions.Schemas;
-import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Collec;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Geom;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Geopackages;
+import fr.ign.artiscales.tools.geoToolsFunctions.vectors.collec.CollecMgmt;
+import fr.ign.artiscales.tools.geoToolsFunctions.vectors.collec.CollecTransform;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.geom.Polygons;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
@@ -97,11 +98,11 @@ public class ParcelCollection {
 	 */
 	public static void sortDifferentParcel(File parcelRefFile, File parcelToCompareFile, File parcelOutFolder, double minParcelSimulatedSize,
 			double maxParcelSimulatedSize) throws IOException {
-		File fSame = new File(parcelOutFolder, "same"+Collec.getDefaultGISFileType());
-		File fEvolved = new File(parcelOutFolder, "evolvedParcel"+Collec.getDefaultGISFileType());
-		File fNotSame = new File(parcelOutFolder, "notSame"+Collec.getDefaultGISFileType());
-		File fInter = new File(parcelOutFolder, "place"+Collec.getDefaultGISFileType());
-		File fZone = new File(parcelOutFolder, "zone"+Collec.getDefaultGISFileType());
+		File fSame = new File(parcelOutFolder, "same"+ CollecMgmt.getDefaultGISFileType());
+		File fEvolved = new File(parcelOutFolder, "evolvedParcel"+CollecMgmt.getDefaultGISFileType());
+		File fNotSame = new File(parcelOutFolder, "notSame"+CollecMgmt.getDefaultGISFileType());
+		File fInter = new File(parcelOutFolder, "place"+CollecMgmt.getDefaultGISFileType());
+		File fZone = new File(parcelOutFolder, "zone"+CollecMgmt.getDefaultGISFileType());
 		if (fSame.exists() && fEvolved.exists() && fNotSame.exists() && fInter.exists() && fZone.exists()) {
 			System.out.println("markDiffParcel(...) already calculated");
 			return ;
@@ -209,8 +210,8 @@ public class ParcelCollection {
 //		} catch (Exception problem) {
 //			problem.printStackTrace();
 //		} 
-		Collec.exportSFC(same, fSame);
-		Collec.exportSFC(notSame, fNotSame);
+		CollecMgmt.exportSFC(same, fSame);
+		CollecMgmt.exportSFC(notSame, fNotSame);
 		
 		// isolate the compared parcels that have changed
 		SimpleFeatureCollection evolvedParcel = parcelToSort.subCollection(ff.intersects(pName, ff.literal(Geom.unionSFC(polygonIntersection))));
@@ -221,7 +222,7 @@ public class ParcelCollection {
 		List<Geometry> zones = new ArrayList<>();
 		List<Geometry> intersectionGeoms = new ArrayList<>();
 		for (Geometry firstZone : notSameMerged) {
-			SimpleFeatureCollection parcelsEvolved = Collec.selectIntersection(evolvedParcel, firstZone);
+			SimpleFeatureCollection parcelsEvolved = CollecTransform.selectIntersection(evolvedParcel, firstZone);
 			// If the area of the tested zone is 10x higher than the maximal simulated parcels (by default, 450m), it could be a 'zone'
 			if (firstZone.getArea() > 10 * maxParcelSimulatedSize) {
 				DescriptiveStatistics stat = new DescriptiveStatistics();
@@ -256,8 +257,8 @@ public class ParcelCollection {
 		Geom.exportGeom(listGeom, fInter);
 		listGeom.addAll(zones);
 		DefaultFeatureCollection finalEvolvedParcels = new DefaultFeatureCollection();
-		listGeom.stream().forEach(g -> finalEvolvedParcels.addAll(Collec.selectIntersection(evolvedParcel, g.buffer(-1))));
-		Collec.exportSFC(finalEvolvedParcels, fEvolved);
+		listGeom.stream().forEach(g -> finalEvolvedParcels.addAll(CollecTransform.selectIntersection(evolvedParcel, g.buffer(-1))));
+		CollecMgmt.exportSFC(finalEvolvedParcels, fEvolved);
 		ds.dispose();
 		dsRef.dispose();
 	}
@@ -350,7 +351,7 @@ public class ParcelCollection {
 					Arrays.stream(intersect.toArray(new SimpleFeature[0])).forEach(thaParcel -> {
 						if (thaParcel.getID().equals(idToMerge)) {
 							for (AttributeDescriptor attr : thaParcel.getFeatureType().getAttributeDescriptors()) {
-								if (attr.getLocalName().equals(Collec.getDefaultGeomName()))
+								if (attr.getLocalName().equals(CollecMgmt.getDefaultGeomName()))
 									continue;
 								build.set(attr.getName(),thaParcel.getAttribute(attr.getName()) );
 							}
@@ -364,7 +365,7 @@ public class ParcelCollection {
 						System.out.println("problem with +"+lG);
 						g = Geom.scaledGeometryReductionIntersection(lG);
 					}
-					build.set(Collec.getDefaultGeomName(), g);
+					build.set(CollecMgmt.getDefaultGeomName(), g);
 					SimpleFeature f = build.buildFeature(idToMerge);
 					result.add(f);
 				}

@@ -4,9 +4,9 @@ import fr.ign.artiscales.pm.parcelFunction.MarkParcelAttributeFromPosition;
 import fr.ign.artiscales.pm.parcelFunction.ParcelState;
 import fr.ign.artiscales.tools.FeaturePolygonizer;
 import fr.ign.artiscales.tools.geoToolsFunctions.Schemas;
-import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Collec;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Geom;
-import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Geopackages;
+import fr.ign.artiscales.tools.geoToolsFunctions.vectors.collec.CollecMgmt;
+import fr.ign.artiscales.tools.geoToolsFunctions.vectors.collec.CollecTransform;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.geom.Lines;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.geom.Polygons;
 import fr.ign.artiscales.tools.geometryGeneration.CityGeneration;
@@ -48,114 +48,149 @@ public class FlagParcelDecomposition {
 
   // We remove some parts that may have a too small area < 25 
   public static double TOO_SMALL_PARCEL_AREA = 25;
-  
-//	 public static void main(String[] args) throws Exception {
-//	 /////////////////////////
-//	 //////// try the generateFlagSplitedParcels method
-//		/////////////////////////
-//		long start = System.currentTimeMillis();
-//		File rootFolder = new File("/tmp/ex");
-//
-//		// Input 1/ the input parcels to split
-//		File parcelFile = new File(rootFolder, "parcel.gpkg");
-//		// Input 2 : the buildings that mustn't intersects the allowed roads (facultatif)
-//		File inputBuildingFile = new File(rootFolder, "building.gpkg");
-//		// Input 4 (facultative) : a road Geopacakge (it can be used to check road access
-//		// if this is better than characerizing road as an absence of parcel)
-//		File inputRoad = new File(rootFolder, "road.gpkg");
-////		 File zoningFile = new File(rootFolder, "zoning.gpkg");
-//		FilterFactory2 ff = CommonFactoryFinder.getFilterFactory2();
-//
-//		DataStore ds = Collec.getDataStore(parcelFile);
-////		SimpleFeatureCollection parcels = MarkParcelAttributeFromPosition.markParcelIntersectGenericZoningType(sds.getFeatureSource().getFeatures(),"U",zoningFile);
-//		SimpleFeatureCollection block = CityGeneration.createUrbanBlock(ds.getFeatureSource(ds.getTypeNames()[0]).getFeatures());
-//		 DefaultFeatureCollection result = new DefaultFeatureCollection();
-//
-//		try (SimpleFeatureIterator it = ds.getFeatureSource(ds.getTypeNames()[0]).getFeatures().features()) {
-//			while (it.hasNext()) {
-//				SimpleFeature feat = it.next();
-//				if (feat.getAttribute(MarkParcelAttributeFromPosition.getMarkFieldName()) != null
-//						&& (int) feat.getAttribute(MarkParcelAttributeFromPosition.getMarkFieldName()) == 1) {
-//					result.addAll(generateFlagSplitedParcels(feat, Collec.fromPolygonSFCtoListRingLines(block.subCollection(ff.bbox(
-//							ff.property(feat.getFeatureType().getGeometryDescriptor().getLocalName()), feat.getBounds()))), 0.5, 0, inputBuildingFile, inputRoad, 400.0, 15.0, 3.0, null));
-//					System.out.println("feat = " + feat);
-//				}else
-//					result.add(feat);
-//			}
-//		} catch (Exception problem) {
-//			problem.printStackTrace();
-//		}
-//		ds.dispose();
-//		Collec.exportSFC(result, new File(rootFolder, "out.gpkg"));
-//		System.out.println("time : " + (System.currentTimeMillis() - start));
-//	}
-//
 
+/*	 public static void main(String[] args) throws Exception {
+	 /////////////////////////
+	 //////// try the generateFlagSplitedParcels method
+		/////////////////////////
+		long start = System.currentTimeMillis();
+		File rootFolder = new File("src/main/resources/GeneralTest/");
+
+		// Input 1/ the input parcels to split
+		File parcelFile = new File(rootFolder, "parcel.gpkg");
+		// Input 2 : the buildings that mustn't intersects the allowed roads (facultatif)
+		 File inputBuildingFile = new File(rootFolder, "building.gpkg");
+		 // Input 4 (facultative) : a road Geopacakge (it can be used to check road access
+		 // if this is better than characerizing road as an absence of parcel)
+		 File inputRoad = new File(rootFolder, "road.gpkg");
+//		 File zoningFile = new File(rootFolder, "zoning.gpkg");
+		 ProfileUrbanFabric profile = ProfileUrbanFabric.convertJSONtoProfile(new File(rootFolder, "profileUrbanFabric/detachedHouse.json"));
+		 DefaultFeatureCollection result = new DefaultFeatureCollection();
+		 DataStore ds = CollecMgmt.getDataStore(parcelFile);
+		 generateFlagSplitedParcels(ds.getFeatureSource(ds.getTypeNames()[0]).getFeatures(), inputBuildingFile, inputRoad, profile);
+		 generateFlagSplitedParcels(ds.getFeatureSource(ds.getTypeNames()[0]).getFeatures(), inputBuildingFile, null, profile);
+		 generateFlagSplitedParcels(ds.getFeatureSource(ds.getTypeNames()[0]).getFeatures(), null, null, profile);
+		 ds.dispose();
+		 CollecMgmt.exportSFC(result, new File(rootFolder, "out.gpkg"));
+		 System.out.println("time : " + (System.currentTimeMillis() - start));
+	 }*/
+
+	/**
+	 * Main way to access to the flag parcel split algorithm.
+	 * @param parcelSFC parcels to cut
+	 * @param buildingFile building that could stop the creation of a driveway
+	 * @param roadFile complementary roads (as line and not as parcel void)
+	 * @param profile type of {@link ProfileUrbanFabric} to simulate
+	 * @throws IOException geomsToCollec() creation
+	 */
 	public static SimpleFeatureCollection generateFlagSplitedParcels(SimpleFeatureCollection parcelSFC, File buildingFile, File roadFile, ProfileUrbanFabric profile) throws IOException {
 		FilterFactory2 ff = CommonFactoryFinder.getFilterFactory2();
 		SimpleFeatureCollection block = CityGeneration.createUrbanBlock(parcelSFC);
 		DefaultFeatureCollection result = new DefaultFeatureCollection();
+
+		// import related collections (if they exists)
+		boolean hasBuilding = false;
+		boolean hasRoad = false;
+		DataStore buildingDS = null;
+		if (buildingFile != null) {
+			hasBuilding = true;
+			buildingDS = CollecMgmt.getDataStore(buildingFile);
+		}
+		DataStore roadDS = null;
+		if (roadFile != null) {
+			hasRoad = true;
+			roadDS = CollecMgmt.getDataStore(roadFile);
+		}
+
 		try (SimpleFeatureIterator it = parcelSFC.features()) {
 			while (it.hasNext()) {
 				SimpleFeature feat = it.next();
 				if (feat.getAttribute(MarkParcelAttributeFromPosition.getMarkFieldName()) != null
 						&& (int) feat.getAttribute(MarkParcelAttributeFromPosition.getMarkFieldName()) == 1) {
-					result.addAll(generateFlagSplitedParcels(feat, Collec.fromPolygonSFCtoListRingLines(block.subCollection(ff.bbox(
-							ff.property(feat.getFeatureType().getGeometryDescriptor().getLocalName()), feat.getBounds()))), profile.getHarmonyCoeff(),
-							0, buildingFile, roadFile, profile.getMaximalArea(), profile.getMinimalWidthContactRoad(), profile.getLenDriveway(), null));
+					if (hasBuilding && hasRoad)
+						result.addAll(generateFlagSplitedParcels(feat, CollecTransform.fromPolygonSFCtoListRingLines(block.subCollection(ff.bbox(
+								ff.property(feat.getFeatureType().getGeometryDescriptor().getLocalName()), feat.getBounds()))), profile.getHarmonyCoeff(), profile.getNoise(),
+								DataUtilities.collection(CollecTransform.selectIntersection(buildingDS.getFeatureSource(buildingDS.getTypeNames()[0]).getFeatures(),((Geometry) feat.getDefaultGeometry()).buffer(10))),
+								DataUtilities.collection(CollecTransform.selectIntersection(roadDS.getFeatureSource(roadDS.getTypeNames()[0]).getFeatures(), ((Geometry) feat.getDefaultGeometry()).buffer(10))),
+								profile.getMaximalArea(), profile.getMinimalWidthContactRoad(), profile.getLenDriveway(), null));
+					else if (hasBuilding)
+						result.addAll(generateFlagSplitedParcels(feat, CollecTransform.fromPolygonSFCtoListRingLines(block.subCollection(ff.bbox(
+								ff.property(feat.getFeatureType().getGeometryDescriptor().getLocalName()), feat.getBounds()))), profile.getHarmonyCoeff(), profile.getNoise(),
+								DataUtilities.collection(CollecTransform.selectIntersection(buildingDS.getFeatureSource(buildingDS.getTypeNames()[0]).getFeatures(), ((Geometry) feat.getDefaultGeometry()).buffer(10))),
+								profile.getMaximalArea(), profile.getMinimalWidthContactRoad(), profile.getLenDriveway(), null));
+					else
+						result.addAll(generateFlagSplitedParcels(feat, CollecTransform.fromPolygonSFCtoListRingLines(block.subCollection(ff.bbox(
+								ff.property(feat.getFeatureType().getGeometryDescriptor().getLocalName()), feat.getBounds()))), profile.getHarmonyCoeff(),
+								profile.getNoise(), profile.getMaximalArea(), profile.getMinimalWidthContactRoad(), profile.getLenDriveway(), null));
 				} else
 					result.add(feat);
 			}
 		} catch (Exception problem) {
 			problem.printStackTrace();
 		}
+		if (hasBuilding)
+			buildingDS.dispose();
+		if (hasRoad)
+			roadDS.dispose();
 		return result;
 	}
 
+	/**
+	 * Flag parcel split with no buildings and no road.
+	 * @param feat parcel to cut
+	 * @param extLines block contour
+	 * @param harmonyCoeff possibility for parcel to be elongated or not
+	 * @param noise randomness in the parcel creation process
+	 * @param maximalAreaSplitParcel area under which a parcel won't be cut anymore
+	 * @param maximalWidthSplitParcel with between road and parcel under which parcel won't be cut anymore
+	 * @param lenDriveway length of the driveway to simulate
+	 * @param exclusionZone Zone to consider as not existing
+	 * @throws IOException geomsToCollec() creation
+	 */
 	public static SimpleFeatureCollection generateFlagSplitedParcels(SimpleFeature feat, List<LineString> extLines, double harmonyCoeff, double noise,
-			File buildingFile, Double maximalAreaSplitParcel, Double maximalWidthSplitParcel, Double lenDriveway) throws IOException {
-		return generateFlagSplitedParcels(feat, extLines, harmonyCoeff, noise, buildingFile, null, maximalAreaSplitParcel, maximalWidthSplitParcel,
-				lenDriveway, null);
+																	 Double maximalAreaSplitParcel, Double maximalWidthSplitParcel, Double lenDriveway, Geometry exclusionZone) throws IOException {
+		return Geom.geomsToCollec((new FlagParcelDecomposition(Polygons.getPolygon((Geometry) feat.getDefaultGeometry()),
+				maximalAreaSplitParcel, maximalWidthSplitParcel, lenDriveway, extLines, exclusionZone)).decompParcel(harmonyCoeff, noise), Schemas.getBasicSchemaMultiPolygon("geom"));
 	}
 
 	/**
-	 * Main way to access to the flag parcel split algorithm. 
-	 * @param feat
-	 * @param extLines
-	 * @param harmonyCoeff
-	 * @param noise
-	 * @param buildingFile
-	 * @param roadFile
-	 * @param maximalAreaSplitParcel
-	 * @param maximalWidthSplitParcel
-	 * @param lenDriveway
-	 * @param exclusionZone
-	 * @throws IOException
+	 * Flag parcel split version with buildings and without road.
+	 * @param feat parcel to cut
+	 * @param extLines block contour
+	 * @param harmonyCoeff possibility for parcel to be elongated or not
+	 * @param noise randomness in the parcel creation process
+	 * @param buildingSFC building that could stop the creation of a driveway
+	 * @param maximalAreaSplitParcel area under which a parcel won't be cut anymore
+	 * @param maximalWidthSplitParcel with between road and parcel under which parcel won't be cut anymore
+	 * @param lenDriveway length of the driveway to simulate
+	 * @param exclusionZone Zone to consider as not existing
+	 * @throws IOException geomsToCollec() creation
 	 */
 	public static SimpleFeatureCollection generateFlagSplitedParcels(SimpleFeature feat, List<LineString> extLines, double harmonyCoeff, double noise,
-			File buildingFile, File roadFile, Double maximalAreaSplitParcel, Double maximalWidthSplitParcel, Double lenDriveway,
+			SimpleFeatureCollection buildingSFC, Double maximalAreaSplitParcel, Double maximalWidthSplitParcel, Double lenDriveway, Geometry exclusionZone) throws IOException {
+		return Geom.geomsToCollec((new FlagParcelDecomposition(Polygons.getPolygon((Geometry) feat.getDefaultGeometry()),buildingSFC,
+				maximalAreaSplitParcel, maximalWidthSplitParcel, lenDriveway, extLines, exclusionZone)).decompParcel(harmonyCoeff, noise), Schemas.getBasicSchemaMultiPolygon("geom"));
+	}
+
+	/**
+	 * Flag parcel split version with buildings and road.
+	 * @param feat parcel to cut
+	 * @param extLines block contour
+	 * @param harmonyCoeff possibility for parcel to be elongated or not
+	 * @param noise randomness in the parcel creation process
+	 * @param buildingSFC building that could stop the creation of a driveway
+	 * @param roadSFC complementary roads (as line and not as parcel void)
+	 * @param maximalAreaSplitParcel area under which a parcel won't be cut anymore
+	 * @param maximalWidthSplitParcel with between road and parcel under which parcel won't be cut anymore
+	 * @param lenDriveway length of the driveway to simulate
+	 * @param exclusionZone Zone to consider as not existing
+	 * @throws IOException geomsToCollec() creation
+	 */
+	public static SimpleFeatureCollection generateFlagSplitedParcels(SimpleFeature feat, List<LineString> extLines, double harmonyCoeff, double noise,
+			SimpleFeatureCollection buildingSFC, SimpleFeatureCollection roadSFC, Double maximalAreaSplitParcel, Double maximalWidthSplitParcel, Double lenDriveway,
 			Geometry exclusionZone) throws IOException {
-		DataStore buildingDS = Geopackages.getDataStore(buildingFile);
-		Polygon parcelGeom = Polygons.getPolygon((Geometry) feat.getDefaultGeometry());
-		// as the road Geopacakge can be left as null, we differ the FlagParcelDecomposition constructor
-		FlagParcelDecomposition fpd;
-		if (roadFile != null && roadFile.exists()) {
-			DataStore roadSDS = Geopackages.getDataStore(roadFile);
-			Geometry selectionBuffer = parcelGeom.buffer(10);
-			fpd = new FlagParcelDecomposition(parcelGeom,
-					Collec.selectIntersection(buildingDS.getFeatureSource(buildingDS.getTypeNames()[0]).getFeatures(), selectionBuffer),
-					DataUtilities.collection(
-							Collec.selectIntersection(roadSDS.getFeatureSource(roadSDS.getTypeNames()[0]).getFeatures(), selectionBuffer)),
-					maximalAreaSplitParcel, maximalWidthSplitParcel, lenDriveway, extLines, exclusionZone);
-			roadSDS.dispose();
-		} else
-			fpd = new FlagParcelDecomposition(parcelGeom,
-					Collec.selectIntersection(buildingDS.getFeatureSource(buildingDS.getTypeNames()[0]).getFeatures(),
-							((Geometry) feat.getDefaultGeometry()).buffer(10)),
-					maximalAreaSplitParcel, maximalWidthSplitParcel, lenDriveway, extLines, exclusionZone);
-		List<Polygon> decomp = fpd.decompParcel(harmonyCoeff, noise);
-		buildingDS.dispose();
-		return Geom.geomsToCollec(decomp, Schemas.getBasicSchemaMultiPolygon("geom"));
+		return Geom.geomsToCollec((new FlagParcelDecomposition(Polygons.getPolygon((Geometry) feat.getDefaultGeometry()),buildingSFC,roadSFC,
+				maximalAreaSplitParcel, maximalWidthSplitParcel, lenDriveway, extLines, exclusionZone)).decompParcel(harmonyCoeff, noise), Schemas.getBasicSchemaMultiPolygon("geom"));
 	}
   
 
@@ -167,7 +202,9 @@ public class FlagParcelDecomposition {
   // if a parcel has road access)
   private List<LineString> ext = null;
   private Geometry exclusionZone = null;
-  
+
+
+
   /**
    * Flag decomposition algorithm
    * 
@@ -179,18 +216,35 @@ public class FlagParcelDecomposition {
    *          the maximalArea for a parcel
    * @param maximalWidth
    *          the maximal width
-   * @param roadWidth
-   *          the road width
+   * @param drivewayWidth
+   *          the width of the created driveway
    */
-  public FlagParcelDecomposition(Polygon p, SimpleFeatureCollection buildings, double maximalArea, double maximalWidth, double roadWidth) {
+  public FlagParcelDecomposition(Polygon p, SimpleFeatureCollection buildings, double maximalArea, double maximalWidth, double drivewayWidth) {
     super();
     this.maximalArea = maximalArea;
     this.maximalWidth = maximalWidth;
     this.polygonInit = p;
     this.buildings = buildings;
-    this.drivewayWidth = roadWidth;
+    this.drivewayWidth = drivewayWidth;
   }
 
+	/**
+	 * Constructor of a FlagParcelDecomposition method without buildings and roads
+	 * @param parcelGeom
+	 * @param maximalArea
+	 * @param maximalWidth
+	 * @param drivewayWidth
+	 * @param extLines
+	 * @param exclusionZone
+	 */
+	public FlagParcelDecomposition(Polygon parcelGeom, Double maximalArea, Double maximalWidth, Double drivewayWidth, List<LineString> extLines, Geometry exclusionZone) {
+		this.maximalArea = maximalArea;
+		this.maximalWidth = maximalWidth;
+		this.polygonInit = parcelGeom;
+		this.drivewayWidth = drivewayWidth;
+		this.ext = extLines;
+		this.exclusionZone = exclusionZone;
+	}
   /**
    * Flag decomposition algorithm
    * 
@@ -348,7 +402,7 @@ public class FlagParcelDecomposition {
         Geometry road = side.getKey().buffer(this.drivewayWidth);
         Polygon polygon = side.getValue();
         // The road intersects a building on the property, we do not keep it
-        if (!Collec.selectIntersection(Collec.selectIntersection(this.buildings,this.polygonInit.buffer(-0.5)), road).isEmpty()) 
+        if (this.buildings != null && !this.buildings.isEmpty() && !CollecTransform.selectIntersection(CollecTransform.selectIntersection(this.buildings,this.polygonInit.buffer(-0.5)), road).isEmpty())
           continue;
 		try {
 			// The first geometry is the polygon with road access and a remove of the geometry

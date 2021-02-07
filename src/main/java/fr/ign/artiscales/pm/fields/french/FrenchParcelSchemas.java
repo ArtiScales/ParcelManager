@@ -1,5 +1,6 @@
 package fr.ign.artiscales.pm.fields.french;
 
+import fr.ign.artiscales.tools.geoToolsFunctions.vectors.collec.CollecMgmt;
 import org.geotools.feature.simple.SimpleFeatureBuilder;
 import org.geotools.feature.simple.SimpleFeatureTypeBuilder;
 import org.geotools.referencing.CRS;
@@ -10,7 +11,6 @@ import org.opengis.feature.simple.SimpleFeatureType;
 import org.opengis.referencing.FactoryException;
 
 import fr.ign.artiscales.pm.parcelFunction.MarkParcelAttributeFromPosition;
-import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Collec;
 
 public class FrenchParcelSchemas {
 	/////////////////////
@@ -27,8 +27,8 @@ public class FrenchParcelSchemas {
 		} catch (FactoryException e) {
 			e.printStackTrace();
 		}
-		sfTypeBuilder.add(Collec.getDefaultGeomName(), Polygon.class);
-		sfTypeBuilder.setDefaultGeometry(Collec.getDefaultGeomName());
+		sfTypeBuilder.add(CollecMgmt.getDefaultGeomName(), Polygon.class);
+		sfTypeBuilder.setDefaultGeometry(CollecMgmt.getDefaultGeomName());
 		sfTypeBuilder.add("LIBELLE", String.class);
 		sfTypeBuilder.add("TYPEZONE", String.class);
 		sfTypeBuilder.add("TYPEPLAN", String.class);
@@ -50,8 +50,8 @@ public class FrenchParcelSchemas {
 		} catch (FactoryException e) {
 			e.printStackTrace();
 		}
-		sfTypeBuilder.add(Collec.getDefaultGeomName(), Polygon.class);
-		sfTypeBuilder.setDefaultGeometry(Collec.getDefaultGeomName());
+		sfTypeBuilder.add(CollecMgmt.getDefaultGeomName(), Polygon.class);
+		sfTypeBuilder.setDefaultGeometry(CollecMgmt.getDefaultGeomName());
 		sfTypeBuilder.add("NUMERO", String.class);
 		sfTypeBuilder.add("FEUILLE", String.class);
 		sfTypeBuilder.add("SECTION", String.class);
@@ -91,8 +91,8 @@ public class FrenchParcelSchemas {
 		} catch (FactoryException e) {
 			e.printStackTrace();
 		}
-		sfTypeBuilder.add(Collec.getDefaultGeomName(), Polygon.class);
-		sfTypeBuilder.setDefaultGeometry(Collec.getDefaultGeomName());
+		sfTypeBuilder.add(CollecMgmt.getDefaultGeomName(), Polygon.class);
+		sfTypeBuilder.setDefaultGeometry(CollecMgmt.getDefaultGeomName());
 		sfTypeBuilder.add("NUMERO", String.class);
 		sfTypeBuilder.add("FEUILLE", String.class);
 		sfTypeBuilder.add("SECTION", String.class);

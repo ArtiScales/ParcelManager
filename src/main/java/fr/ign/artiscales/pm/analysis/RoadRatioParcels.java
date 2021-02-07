@@ -6,9 +6,10 @@ import fr.ign.artiscales.pm.parcelFunction.MarkParcelAttributeFromPosition;
 import fr.ign.artiscales.pm.parcelFunction.ParcelSchema;
 import fr.ign.artiscales.pm.parcelFunction.ParcelState;
 import fr.ign.artiscales.tools.geoToolsFunctions.Attribute;
-import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Collec;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Geom;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Geopackages;
+import fr.ign.artiscales.tools.geoToolsFunctions.vectors.collec.CollecMgmt;
+import fr.ign.artiscales.tools.geoToolsFunctions.vectors.collec.CollecTransform;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.geom.Polygons;
 import fr.ign.artiscales.tools.geometryGeneration.CityGeneration;
 import fr.ign.artiscales.tools.io.Csv;
@@ -77,7 +78,7 @@ public class RoadRatioParcels {
 		DefaultFeatureCollection zone = new DefaultFeatureCollection();
 		FilterFactory2 ff = CommonFactoryFinder.getFilterFactory2(GeoTools.getDefaultHints());
 		Geometry multiGeom;
-		if (Collec.isCollecContainsAttribute(initialMarkedParcel, MarkParcelAttributeFromPosition.getMarkFieldName()))
+		if (CollecMgmt.isCollecContainsAttribute(initialMarkedParcel, MarkParcelAttributeFromPosition.getMarkFieldName()))
 			multiGeom = Geom
 					.unionSFC(initialMarkedParcel.subCollection(ff.like(ff.property(MarkParcelAttributeFromPosition.getMarkFieldName()), "1")));
 		else {
@@ -126,7 +127,7 @@ public class RoadRatioParcels {
 		HashMap<String, String[]> stat = new HashMap<>();
 
 		DataStore sdsRoad = Geopackages.getDataStore(roadFile);
-		SimpleFeatureCollection roads = Collec.selectIntersection(sdsRoad.getFeatureSource(sdsRoad.getTypeNames()[0]).getFeatures(), zone);
+		SimpleFeatureCollection roads = CollecTransform.selectIntersection(sdsRoad.getFeatureSource(sdsRoad.getTypeNames()[0]).getFeatures(), zone);
 		SimpleFeatureCollection blocks = CityGeneration.createUrbanBlock(cutParcel);
 
 		String[] firstLine = { "CODE", "Urban fabric type", ParcelSchema.getMinParcelCommunityField(), GeneralFields.getZonePreciseNameField(),
@@ -162,8 +163,8 @@ public class RoadRatioParcels {
 				// get the ratio of parcels having a connection to the road
 				tab[6] = String.valueOf(((double) Arrays.stream(df.toArray(new SimpleFeature[0]))
 						.filter(feat -> ParcelState.isParcelHasRoadAccess(Polygons.getPolygon((Geometry) feat.getDefaultGeometry()),
-								Collec.selectIntersection(roads, ((Geometry) feat.getDefaultGeometry())),
-								Collec.fromPolygonSFCtoRingMultiLines(Collec.selectIntersection(blocks, (Geometry) z.getDefaultGeometry()))))
+								CollecTransform.selectIntersection(roads, ((Geometry) feat.getDefaultGeometry())),
+								CollecTransform.fromPolygonSFCtoRingMultiLines(CollecTransform.selectIntersection(blocks, (Geometry) z.getDefaultGeometry()))))
 						.count() / (double) df.size()));
 				stat.put(count++ + "-" + tab[1] + "-" + tab[2], tab);
 			}

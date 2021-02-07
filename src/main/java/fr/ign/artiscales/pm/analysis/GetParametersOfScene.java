@@ -7,6 +7,8 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.stream.Collectors;
 
+import fr.ign.artiscales.tools.geoToolsFunctions.vectors.collec.CollecMgmt;
+import fr.ign.artiscales.tools.geoToolsFunctions.vectors.collec.CollecTransform;
 import org.apache.commons.math3.exception.NullArgumentException;
 import org.geotools.data.DataStore;
 import org.geotools.data.DataUtilities;
@@ -19,7 +21,6 @@ import fr.ign.artiscales.pm.fields.GeneralFields;
 import fr.ign.artiscales.pm.parcelFunction.MarkParcelAttributeFromPosition;
 import fr.ign.artiscales.pm.parcelFunction.ParcelAttribute;
 import fr.ign.artiscales.pm.parcelFunction.ParcelGetter;
-import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Collec;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Geom;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Geopackages;
 import fr.ign.artiscales.tools.geometryGeneration.CityGeneration;
@@ -60,16 +61,16 @@ public class GetParametersOfScene {
 	 *            root folder containing the geographic layers.
 	 */
 	public static void setFiles(File mainFolder) {
-		parcelFile = new File(mainFolder, "parcel" + Collec.getDefaultGISFileType());
+		parcelFile = new File(mainFolder, "parcel" + CollecMgmt.getDefaultGISFileType());
 		if (!parcelFile.exists())
 			System.out.println(parcelFile + " doesn't exist");
-		buildingFile = new File(mainFolder, "building" + Collec.getDefaultGISFileType());
+		buildingFile = new File(mainFolder, "building" + CollecMgmt.getDefaultGISFileType());
 		if (!buildingFile.exists())
 			System.out.println(buildingFile + " doesn't exist");
-		zoningFile = new File(mainFolder, "zoning" + Collec.getDefaultGISFileType());
+		zoningFile = new File(mainFolder, "zoning" + CollecMgmt.getDefaultGISFileType());
 		if (!zoningFile.exists())
 			System.out.println(zoningFile + " doesn't exist");
-		roadFile = new File(mainFolder, "road" + Collec.getDefaultGISFileType());
+		roadFile = new File(mainFolder, "road" + CollecMgmt.getDefaultGISFileType());
 		if (!roadFile.exists())
 			System.out.println(roadFile + " doesn't exist");
 		outFolder.mkdirs();
@@ -107,7 +108,7 @@ public class GetParametersOfScene {
 		HashMap<String, SimpleFeatureCollection> listSFC = new HashMap<>();
 		DataStore sdsZone = Geopackages.getDataStore(zoningFile);
 		SimpleFeatureCollection zonings = DataUtilities
-				.collection(Collec.selectIntersection(sdsZone.getFeatureSource(sdsZone.getTypeNames()[0]).getFeatures(), parcels));
+				.collection(CollecTransform.selectIntersection(sdsZone.getFeatureSource(sdsZone.getTypeNames()[0]).getFeatures(), parcels));
 		sdsZone.dispose();
 		// get the concerned features
 		switch (scaleZone) {
@@ -151,7 +152,7 @@ public class GetParametersOfScene {
 	}
 
 	/**
-	 * Generate the road information in the give zones
+	 * Generate the road information in the give zones.
 	 * 
 	 * @param zoneCollection
 	 * @param road
@@ -174,12 +175,12 @@ public class GetParametersOfScene {
 			break;
 		}
 		Geometry zoneGeom = Geom.unionSFC(zoneCollection).buffer(buffer).buffer(-buffer);
-		SimpleFeatureCollection roadsSelected = Collec.selectIntersection(road, zoneGeom);
+		SimpleFeatureCollection roadsSelected = CollecTransform.selectIntersection(road, zoneGeom);
 		if (roadsSelected.size() > 1)
 			MakeStatisticGraphs.roadGraph(roadsSelected, "Characteristics of the " + getZoneEnglishName(scaleZone, zoneName) + " roads ",
 					"Type of road", "Total lenght of road", outFolder);
 
-		DataStore parcelDS = Collec.getDataStore(parcelFile);
+		DataStore parcelDS = CollecMgmt.getDataStore(parcelFile);
 		RoadRatioParcels.roadRatioZone(zoneCollection, parcelDS.getFeatureSource(parcelDS.getTypeNames()[0]).getFeatures(), zoneName, outFolder,
 				roadFile);
 		RoadRatioParcels.setFirstLine(true);

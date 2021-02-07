@@ -5,6 +5,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
+import fr.ign.artiscales.tools.geoToolsFunctions.vectors.collec.CollecMgmt;
+import fr.ign.artiscales.tools.geoToolsFunctions.vectors.collec.CollecTransform;
 import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.data.simple.SimpleFeatureIterator;
 import org.geotools.feature.DefaultFeatureCollection;
@@ -19,7 +21,6 @@ import fr.ign.artiscales.pm.fields.GeneralFields;
 import fr.ign.artiscales.pm.parcelFunction.MarkParcelAttributeFromPosition;
 import fr.ign.artiscales.pm.parcelFunction.ParcelSchema;
 import fr.ign.artiscales.tools.geoToolsFunctions.Attribute;
-import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Collec;
 
 public class FrenchParcelFields {
 
@@ -34,7 +35,7 @@ public class FrenchParcelFields {
 	 */
 	public static SimpleFeatureCollection frenchParcelToMinParcel(SimpleFeatureCollection parcels) throws IOException {
 		DefaultFeatureCollection result = new DefaultFeatureCollection();
-		if (Collec.isCollecContainsAttribute(parcels, MarkParcelAttributeFromPosition.getMarkFieldName())) {
+		if (CollecMgmt.isCollecContainsAttribute(parcels, MarkParcelAttributeFromPosition.getMarkFieldName())) {
 			SimpleFeatureBuilder builder = ParcelSchema.getSFBMinParcelSplit();
 			try (SimpleFeatureIterator parcelIt = parcels.features()){
 				while (parcelIt.hasNext()) {
@@ -80,7 +81,7 @@ public class FrenchParcelFields {
 					insee = (String) iniParcel.getAttribute(ParcelSchema.getMinParcelCommunityField());
 				} 
 				else {
-					iniParcel = Collec.getIntersectingSimpleFeatureFromSFC((Geometry) parcel.getDefaultGeometry(), initialParcels);
+					iniParcel = CollecTransform.getIntersectingSimpleFeatureFromSFC((Geometry) parcel.getDefaultGeometry(), initialParcels);
 					try {
 						insee = makeDEPCOMCode(iniParcel);
 					} catch (Exception c) {
@@ -89,7 +90,7 @@ public class FrenchParcelFields {
 						System.out.println("rr " + iniParcel);
 					}
 				}
-				featureBuilder.set(Collec.getDefaultGeomName(), parcel.getDefaultGeometry());
+				featureBuilder.set(CollecMgmt.getDefaultGeomName(), parcel.getDefaultGeometry());
 				String section = (String) iniParcel.getAttribute(ParcelSchema.getMinParcelSectionField());
 				featureBuilder.set("SECTION", section);
 				String numero = (String) iniParcel.getAttribute(ParcelSchema.getMinParcelNumberField());
@@ -235,7 +236,7 @@ public class FrenchParcelFields {
 	 * @return the INSEE number
 	 */
 	public static String makeDEPCOMCode(SimpleFeature parcel) {
-		if (Collec.isSimpleFeatureContainsAttribute(parcel, "CODE_DEP") && Collec.isSimpleFeatureContainsAttribute(parcel, "CODE_COM")) {
+		if (CollecMgmt.isSimpleFeatureContainsAttribute(parcel, "CODE_DEP") && CollecMgmt.isSimpleFeatureContainsAttribute(parcel, "CODE_COM")) {
 			return parcel.getAttribute("CODE_DEP") + ((String) parcel.getAttribute("CODE_COM"));
 		} else {
 			return null;

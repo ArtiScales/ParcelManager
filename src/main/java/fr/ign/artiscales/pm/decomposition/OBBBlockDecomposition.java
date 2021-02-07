@@ -3,10 +3,11 @@ package fr.ign.artiscales.pm.decomposition;
 import fr.ign.artiscales.pm.parcelFunction.MarkParcelAttributeFromPosition;
 import fr.ign.artiscales.pm.parcelFunction.ParcelState;
 import fr.ign.artiscales.tools.geoToolsFunctions.Attribute;
-import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Collec;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Geom;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.MinimalBoundingRectangle;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Tree;
+import fr.ign.artiscales.tools.geoToolsFunctions.vectors.collec.CollecMgmt;
+import fr.ign.artiscales.tools.geoToolsFunctions.vectors.collec.CollecTransform;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.geom.Lines;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.geom.Polygons;
 import fr.ign.artiscales.tools.geometryGeneration.CityGeneration;
@@ -87,13 +88,13 @@ public class OBBBlockDecomposition {
 	          Polygon polygon = Polygons.getPolygon((Geometry) featToSplit.getDefaultGeometry());
 	          DescriptiveStatistics dS = new DescriptiveStatistics();
 				OBBBlockDecomposition.decompose(polygon, extBlock,
-						(roads != null && !roads.isEmpty()) ? Collec.selectIntersection(roads, (Geometry) featToSplit.getDefaultGeometry()) : null,
+						(roads != null && !roads.isEmpty()) ? CollecTransform.selectIntersection(roads, (Geometry) featToSplit.getDefaultGeometry()) : null,
 						maximalArea, maximalWidth, noise, harmonyCoeff, smallStreetWidth, largeStreetLevel, largeStreetWidth, forceStreetAccess, 0,
 						decompositionLevelWithoutStreet).stream().forEach(c -> dS.addValue(c.getValue()));
 				int decompositionLevelWithRoad = (int) dS.getPercentile(50) - decompositionLevelWithoutStreet;
 				int decompositionLevelWithLargeRoad = (int) dS.getPercentile(50) - largeStreetLevel;
 				OBBBlockDecomposition.decompose(polygon, extBlock,
-						(roads != null && !roads.isEmpty()) ? Collec.selectIntersection(roads, (Geometry) featToSplit.getDefaultGeometry()) : null,
+						(roads != null && !roads.isEmpty()) ? CollecTransform.selectIntersection(roads, (Geometry) featToSplit.getDefaultGeometry()) : null,
 						maximalArea, maximalWidth, noise, harmonyCoeff, smallStreetWidth, decompositionLevelWithLargeRoad, largeStreetWidth,
 						forceStreetAccess, decompositionLevelWithRoad, decompositionLevelWithoutStreet).childrenStream().forEach(p -> {
 							SimpleFeature newFeature = builder.buildFeature(Attribute.makeUniqueId());
@@ -123,13 +124,13 @@ public class OBBBlockDecomposition {
         SimpleFeatureCollection result;
         if (roadFile == null) {
             result = splitParcels(toSplit, null,
-                    profile.getMaximalArea(), profile.getMinimalWidthContactRoad(), profile.getHarmonyCoeff(), profile.getNoise(), Collec.fromPolygonSFCtoListRingLines(CityGeneration.createUrbanBlock(toSplit)),
+                    profile.getMaximalArea(), profile.getMinimalWidthContactRoad(), profile.getHarmonyCoeff(), profile.getNoise(), CollecTransform.fromPolygonSFCtoListRingLines(CityGeneration.createUrbanBlock(toSplit)),
                     profile.getStreetWidth(), profile.getLargeStreetLevel(), profile.getLargeStreetWidth(), forceStreetAccess,
                     profile.getDecompositionLevelWithoutStreet());
 		} else {
-            DataStore roadDS = Collec.getDataStore(roadFile);
+            DataStore roadDS = CollecMgmt.getDataStore(roadFile);
             result = splitParcels(toSplit, roadDS.getFeatureSource(roadDS.getTypeNames()[0]).getFeatures(),
-                    profile.getMaximalArea(), profile.getMinimalWidthContactRoad(), profile.getHarmonyCoeff(), profile.getNoise(), Collec.fromPolygonSFCtoListRingLines(CityGeneration.createUrbanBlock(toSplit)),
+                    profile.getMaximalArea(), profile.getMinimalWidthContactRoad(), profile.getHarmonyCoeff(), profile.getNoise(), CollecTransform.fromPolygonSFCtoListRingLines(CityGeneration.createUrbanBlock(toSplit)),
                     profile.getStreetWidth(), profile.getLargeStreetLevel(), profile.getLargeStreetWidth(), forceStreetAccess,
                     profile.getDecompositionLevelWithoutStreet());
             roadDS.dispose();
