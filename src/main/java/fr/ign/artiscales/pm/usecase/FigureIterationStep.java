@@ -1,17 +1,17 @@
 package fr.ign.artiscales.pm.usecase;
 
-import java.io.File;
-
 import fr.ign.artiscales.pm.scenario.PMScenario;
 import fr.ign.artiscales.pm.scenario.PMStep;
 
+import java.io.File;
+
 public class FigureIterationStep {
-	public static void main(String[] args) throws Exception {
-		long start = System.currentTimeMillis();
-		PMStep.setGENERATEATTRIBUTES(false);
-		PMScenario.setReuseSimulatedParcels(false);
-		PMScenario pm = new PMScenario(new File("src/main/resources/FigureIterationStep/scenario.json"));
-		pm.executeStep();
-		System.out.println(System.currentTimeMillis() - start);
-	}
+    public static void main(String[] args) throws Exception {
+        long start = System.currentTimeMillis();
+        PMStep.setGENERATEATTRIBUTES(false);
+        PMScenario.setReuseSimulatedParcels(false);
+        PMScenario pm = new PMScenario(new File("src/main/resources/FigureIterationStep/scenario.json"));
+        pm.executeStep();
+        System.out.println(System.currentTimeMillis() - start);
+    }
 }
