@@ -55,7 +55,7 @@ deploy:jdk8:
   only:
     variables:
       - $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
-env:
+environment:
   - maven.wagon.http.ssl.insecure=true maven.wagon.http.ssl.allowall=true maven.wagon.http.ssl.ignore.validity.dates=true
 
 script: 
