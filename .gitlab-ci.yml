@@ -1,0 +1,15 @@
+---
+image: alpine:latest
+
+job1:
+    stage: build
+    script:
+    - echo "foo"
+job2:
+    stage: test
+    script:
+    - echo "bar"
+job3:
+    15stage: deploy
+    script:
+    - echo "foobar"
