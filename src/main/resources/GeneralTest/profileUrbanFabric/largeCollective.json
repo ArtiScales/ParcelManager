@@ -8,8 +8,7 @@
 	"minimalWidthContactRoad": "15",
 	"nameBuildingType":"large collective",
 	"lenDriveway":"12",
-	"maxDepth":"60",
-	"maxDistanceForNearestRoad":"300",
-	"minWidth":"15",
-	"maxWidth":"60"
+	"maxDepth":"200",
+	"maxDistanceForNearestRoad":"50",
+	"maxWidth":"100"
 }

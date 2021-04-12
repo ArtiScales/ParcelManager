@@ -40,11 +40,13 @@ public class GeneralTest extends UseCase {
         long start = System.currentTimeMillis();
         File rootFolder = new File("src/main/resources/GeneralTest/");
         File outFolder = new File(rootFolder, "out");
+        setDEBUG(false);
+        Workflow.setSAVEINTERMEDIATERESULT(false);
         GeneralTest(outFolder, rootFolder);
         System.out.println(System.currentTimeMillis() - start);
     }
 
-    public static void GeneralTest(File outFolder, File rootFolder) throws Exception {
+    public static void GeneralTest(File outRootFolder, File rootFolder) throws Exception {
         File roadFile = new File(rootFolder, "road.gpkg");
         File zoningFile = new File(rootFolder, "zoning.gpkg");
         File buildingFile = new File(rootFolder, "building.gpkg");
@@ -58,12 +60,9 @@ public class GeneralTest extends UseCase {
         ProfileUrbanFabric profileDetached = ProfileUrbanFabric.convertJSONtoProfile(new File(profileFolder, "detachedHouse.json"));
         ProfileUrbanFabric profileSmallHouse = ProfileUrbanFabric.convertJSONtoProfile(new File(profileFolder, "smallHouse.json"));
         ProfileUrbanFabric profileLargeCollective = ProfileUrbanFabric.convertJSONtoProfile(new File(profileFolder, "largeCollective.json"));
-        Workflow.DEBUG = DEBUG;
-        Workflow.PROCESS = "OBB";
-        Workflow.SAVEINTERMEDIATERESULT = true;
-
-        // for (int i = 0; i <= 2; i++) {
-        for (int i = 1; i <= 1; i++) {
+        Workflow.PROCESS = "SS";
+        for (int i = 0; i <= 2; i++) {
+//        for (int i = 2; i <= 2; i++) {
             // multiple process calculation
             String ext = "offset";
             if (i == 1) {
@@ -76,7 +75,8 @@ public class GeneralTest extends UseCase {
                 profileLargeCollective.setMaxDepth(0);
                 ext = "SS";
             }
-            outFolder = new File(outFolder, "/out/" + ext);
+            System.out.println("PROCESS: "+ext);
+            File outFolder = new File(outRootFolder, "/out/" + ext);
             outFolder.mkdirs();
             File statFolder = new File(outFolder, "stat");
             statFolder.mkdirs();
@@ -84,9 +84,9 @@ public class GeneralTest extends UseCase {
             /////////////////////////
             // zoneTotRecomp
             /////////////////////////
-            System.out.println("/////////////////////////");
+            System.out.println("*-*-*-*-*-*-*-*-*-*");
             System.out.println("zoneTotRecomp");
-            System.out.println("/////////////////////////");
+            System.out.println("*-*-*-*-*-*-*-*-*-*");
             DataStore gpkgDSZoning = Geopackages.getDataStore(zoningFile);
             SimpleFeatureCollection zoning = DataUtilities.collection((gpkgDSZoning.getFeatureSource(gpkgDSZoning.getTypeNames()[0]).getFeatures()));
             gpkgDSZoning.dispose();
@@ -97,8 +97,7 @@ public class GeneralTest extends UseCase {
                 System.exit(1);
             }
             DataStore rDS = Geopackages.getDataStore(roadFile);
-            SimpleFeatureCollection parcelCuted = (new ZoneDivision()).zoneDivision(zone, parcel,
-                    rDS.getFeatureSource(rDS.getTypeNames()[0]).getFeatures(), outFolder, profileLargeCollective);
+            SimpleFeatureCollection parcelCuted = (new ZoneDivision()).zoneDivision(zone, parcel, rDS.getFeatureSource(rDS.getTypeNames()[0]).getFeatures(), outFolder, profileLargeCollective);
             rDS.dispose();
             SimpleFeatureCollection finaux = FrenchParcelFields.setOriginalFrenchParcelAttributes(parcelCuted, parcel);
             CollecMgmt.exportSFC(finaux, new File(outFolder, "parcelTotZone.gpkg"));
@@ -110,13 +109,11 @@ public class GeneralTest extends UseCase {
             /////////////////////////
             //////// try the consolidRecomp method
             /////////////////////////
-            System.out.println("/////////////////////////");
+            System.out.println("*-*-*-*-*-*-*-*-*-*");
             System.out.println("consolidRecomp");
-            System.out.println("/////////////////////////");
-            SimpleFeatureCollection markedZone = MarkParcelAttributeFromPosition.markParcelIntersectPreciseZoningType(finaux, "AU", "AUb",
-                    zoningFile);
-            SimpleFeatureCollection cutedNormalZone = (new ConsolidationDivision()).consolidationDivision(markedZone, roadFile, outFolder,
-                    profileDetached);
+            System.out.println("*-*-*-*-*-*-*-*-*-*");
+            SimpleFeatureCollection markedZone = MarkParcelAttributeFromPosition.markParcelIntersectPreciseZoningType(finaux, "AU", "AUb", zoningFile);
+            SimpleFeatureCollection cutedNormalZone = (new ConsolidationDivision()).consolidationDivision(markedZone, roadFile, outFolder, profileDetached);
             SimpleFeatureCollection finalNormalZone = FrenchParcelFields.setOriginalFrenchParcelAttributes(cutedNormalZone, parcel);
             CollecMgmt.exportSFC(finalNormalZone, new File(outFolder, "ParcelConsolidRecomp.gpkg"));
             RoadRatioParcels.roadRatioParcels(markedZone, finalNormalZone, profileDetached.getNameBuildingType(), statFolder, roadFile);
@@ -127,9 +124,9 @@ public class GeneralTest extends UseCase {
             /////////////////////////
             //////// try the parcelDensification method
             /////////////////////////
-            System.out.println("/////////////////////////");
+            System.out.println("*-*-*-*-*-*-*-*-*-*");
             System.out.println("parcelDensification");
-            System.out.println("/////////////////////////");
+            System.out.println("*-*-*-*-*-*-*-*-*-*");
             SimpleFeatureCollection parcelDensified = (new Densification()).densification(
                     MarkParcelAttributeFromPosition.markParcelIntersectPreciseZoningType(finalNormalZone, "U", "UB", zoningFile),
                     CityGeneration.createUrbanBlock(finalNormalZone), outFolder, buildingFile, roadFile, profileSmallHouse.getHarmonyCoeff(),

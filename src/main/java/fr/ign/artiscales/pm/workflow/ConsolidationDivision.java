@@ -68,12 +68,12 @@ public class ConsolidationDivision extends Workflow {
     public SimpleFeatureCollection consolidationDivision(SimpleFeatureCollection parcels, File roadFile, File outFolder, ProfileUrbanFabric profile,
                                                          File polygonIntersection) throws IOException {
         File tmpFolder = new File(outFolder, "tmp");
-        if (DEBUG)
+        if (isDEBUG())
             tmpFolder.mkdirs();
         DefaultFeatureCollection parcelSaved = new DefaultFeatureCollection();
         parcelSaved.addAll(parcels);
         DefaultFeatureCollection parcelToMerge = new DefaultFeatureCollection();
-        if (DEBUG) {
+        if (isDEBUG()) {
             CollecMgmt.exportSFC(parcels, new File(tmpFolder, "step0"));
             System.out.println("done step 0");
         }
@@ -87,7 +87,7 @@ public class ConsolidationDivision extends Workflow {
                 parcelSaved.remove(parcel);
             }
         });
-        if (DEBUG) {
+        if (isDEBUG()) {
             CollecMgmt.exportSFC(parcelToMerge.collection(), new File(tmpFolder, "step1"));
             System.out.println("done step 1");
         }
@@ -104,7 +104,7 @@ public class ConsolidationDivision extends Workflow {
                     CollecTransform.getIntersectingFieldFromSFC(multiGeom.getGeometryN(i), parcels, ParcelSchema.getMinParcelCommunityField()));
             mergedParcels.add(sfBuilder.buildFeature(Attribute.makeUniqueId()));
         }
-        if (DEBUG) {
+        if (isDEBUG()) {
             CollecMgmt.exportSFC(mergedParcels.collection(), new File(tmpFolder, "step2"));
             System.out.println("done step 2");
         }
@@ -114,7 +114,9 @@ public class ConsolidationDivision extends Workflow {
         SimpleFeatureCollection roads;
         if (roadFile != null && roadFile.exists()) {
             DataStore sdsRoad = Geopackages.getDataStore(roadFile);
-            roads = DataUtilities.collection(CollecTransform.selectIntersection(sdsRoad.getFeatureSource(sdsRoad.getTypeNames()[0]).getFeatures(), mergedParcels));
+            roads = DataUtilities.collection(CollecTransform.selectIntersection(sdsRoad.getFeatureSource(sdsRoad.getTypeNames()[0]).getFeatures(), Geom.unionSFC(mergedParcels).buffer(30)));
+            if (isDEBUG())
+                CollecMgmt.exportSFC(roads, new File(tmpFolder, "roads"));
             sdsRoad.dispose();
         } else
             roads = null;
@@ -131,7 +133,7 @@ public class ConsolidationDivision extends Workflow {
                     switch (PROCESS) {
                         case "OBB":
                             freshCutParcel = OBBBlockDecomposition.splitParcel(feat,
-                                    (roads != null && !roads.isEmpty()) ? CollecTransform.selectIntersection(roads, (Geometry) feat.getDefaultGeometry()) : null,
+                                    roads == null || roads.isEmpty() ? null : CollecTransform.selectIntersection(roads, ((Geometry) feat.getDefaultGeometry()).buffer(30)),
                                     profile.getMaximalArea(), profile.getMinimalWidthContactRoad(), profile.getHarmonyCoeff(), profile.getNoise(),
                                     CollecTransform.fromPolygonSFCtoListRingLines(blockCollection.subCollection(
                                             ff.bbox(ff.property(feat.getFeatureType().getGeometryDescriptor().getLocalName()), feat.getBounds()))),
@@ -139,8 +141,8 @@ public class ConsolidationDivision extends Workflow {
                                     profile.getDecompositionLevelWithoutStreet());
                             break;
                         case "SS":
-                            freshCutParcel = TopologicalStraightSkeletonParcelDecomposition.runTopologicalStraightSkeletonParcelDecomposition(feat, roads, "NOM_VOIE_G", "IMPORTANCE", outFolder, profile.getMaxDepth(),
-                                    profile.getMaxDistanceForNearestRoad(), profile.getMinimalArea(), profile.getMinWidth(), profile.getMaxWidth(),
+                            freshCutParcel = TopologicalStraightSkeletonParcelDecomposition.runTopologicalStraightSkeletonParcelDecomposition(feat, roads, "NOM_VOIE_G", "IMPORTANCE", profile.getMaxDepth(),
+                                    profile.getMaxDistanceForNearestRoad(), profile.getMinimalArea(), profile.getMinimalWidthContactRoad(), profile.getMaxWidth(),
                                     (profile.getNoise() == 0) ? 0.1 : profile.getNoise(), new MersenneTwister(42), true, profile.getStreetWidth());
                             break;
                     }
@@ -181,18 +183,18 @@ public class ConsolidationDivision extends Workflow {
             }
         });
         DefaultFeatureCollection result = new DefaultFeatureCollection();
-        if (DEBUG) {
+        if (isDEBUG()) {
             CollecMgmt.exportSFC(cutParcels, new File(tmpFolder, "step3"));
             System.out.println("done step 3");
         }
         // merge small parcels
-        SimpleFeatureCollection cutBigParcels = ParcelCollection.mergeTooSmallParcels(cutParcels, (int) profile.getMinimalArea());
+        SimpleFeatureCollection cutBigParcels = ParcelCollection.mergeTooSmallParcels(cutParcels, (int) profile.getMinimalArea(), PROCESS.equals("SS"));
         SimpleFeatureType schema = ParcelSchema.getSFBMinParcel().getFeatureType();
         Arrays.stream(cutBigParcels.toArray(new SimpleFeature[0])).forEach(feat -> {
             SimpleFeatureBuilder SFBParcel = ParcelSchema.setSFBMinParcelWithFeat(feat, schema);
             result.add(SFBParcel.buildFeature(Attribute.makeUniqueId()));
         });
-        if (SAVEINTERMEDIATERESULT) {
+        if (isSAVEINTERMEDIATERESULT()) {
             CollecMgmt.exportSFC(result, new File(outFolder, "parcelConsolidationOnly"), OVERWRITEGEOPACKAGE);
             OVERWRITEGEOPACKAGE = false;
         }
@@ -201,7 +203,7 @@ public class ConsolidationDivision extends Workflow {
             SimpleFeatureBuilder SFBParcel = ParcelSchema.setSFBMinParcelWithFeat(feat, schema);
             result.add(SFBParcel.buildFeature(Attribute.makeUniqueId()));
         });
-        if (DEBUG) {
+        if (isDEBUG()) {
             CollecMgmt.exportSFC(result, new File(tmpFolder, "step4"));
             System.out.println("done step 4");
         }

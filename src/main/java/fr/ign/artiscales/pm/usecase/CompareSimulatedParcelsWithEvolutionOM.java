@@ -86,7 +86,7 @@ public class CompareSimulatedParcelsWithEvolutionOM {
     public static void simulateZoneDivisionFromCSV(File csvIn, File zoneFile, File parcelFile, File outFolder) throws IOException {
         CSVReader r = new CSVReader(new FileReader(csvIn));
         outFolder.mkdir();
-        ZoneDivision.DEBUG = false;
+        ZoneDivision.setDEBUG(false);
         String[] firstLine = r.readNext();
         List<Integer> listId = new ArrayList<>();
         for (int i = 0; i < firstLine.length; i++)

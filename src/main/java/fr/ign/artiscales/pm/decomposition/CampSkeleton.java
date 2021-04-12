@@ -40,9 +40,9 @@ public class CampSkeleton {
   private final Polygon p;
 
   /**
-   * Calcul du squelette droit, le résultat est obtenu par le getCarteTopo() Le même poids est appliqué à tous les arcs
+   * Calcul du squelette droit, le résultat est obtenu par le getCarteTopo(). Le même poids est appliqué à tous les arcs.
    * 
-   * @param p
+   * @param p initial polygon
    */
   public CampSkeleton(Polygon p) {
     this(p, null, 0);
@@ -63,12 +63,10 @@ public class CampSkeleton {
   }
 
   /**
-   * Calcul du squelette droit, le résultat est obtenu par le getCarteTopo() Une pondération est appliquée
+   * Calcul du squelette droit, le résultat est obtenu par le getCarteTopo(). Une pondération est appliquée.
    * 
-   * @param inputPolygon
-   * @param angles
-   *          la pondération appliquée pour le calcul de squelette droit. Le nombre d'élément du tableaux doit être au moins égal au nombre de côté (intérieurs inclus du
-   *          polygone)
+   * @param inputPolygon initial polygon
+   * @param angles la pondération appliquée pour le calcul de squelette droit. Le nombre d'élément du tableaux doit être au moins égal au nombre de côté (intérieurs inclus du polygone)
    */
   public CampSkeleton(Polygon inputPolygon, double[] angles, double cap) {
     this.p = inputPolygon;// (Polygon) TopologyPreservingSimplifier.simplify(inputPolygon, 0.1);

@@ -43,6 +43,7 @@ public class CompareSimulatedParcelsWithEvolution extends UseCase {
         File rootFolder = new File("src/main/resources/ParcelComparison/");
         File outFolder = new File(rootFolder, "out");
         outFolder.mkdirs();
+        setDEBUG(false);
         compareSimulatedParcelsWithEvolutionWorkflow(rootFolder, outFolder);
         System.out.println(Duration.between(start, Instant.now()));
     }
@@ -65,7 +66,6 @@ public class CompareSimulatedParcelsWithEvolution extends UseCase {
         CityGeneration.createUrbanBlock(parcelRefFile, rootFolder);
 
         PMScenario.setSaveIntermediateResult(true);
-        PMStep.setDEBUG(DEBUG);
         PMStep.setGENERATEATTRIBUTES(false);
         PMScenario pm = new PMScenario(scenarioFile);
         pm.executeStep();

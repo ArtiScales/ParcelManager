@@ -280,20 +280,32 @@ public class ParcelCollection {
      * @return The input {@link SimpleFeatureCollection} with small parcels merged or removed
      */
     public static SimpleFeatureCollection mergeTooSmallParcels(SimpleFeatureCollection parcelsUnsorted, double minimalParcelSize) {
+        return mergeTooSmallParcels(parcelsUnsorted, minimalParcelSize, false);
+    }
+
+    /**
+     * This algorithm merges parcels when they are under an area threshold. It seek the surrounding parcel that share the largest side with the small parcel and merge their
+     * geometries. Parcel must touch at least. If no surrounding parcels are found touching (or intersecting) the small parcel, the parcel is deleted and left as a public space.
+     * Attributes from the large parcel are kept.
+     *
+     * @param parcelsUnsorted   {@link SimpleFeatureCollection} to check every parcels
+     * @param minimalParcelSize Threshold which parcels are under to be merged
+     * @param bufferGeom        when we merge two gemoetries, do we buffer them with 1m and -1m ? Yes for geometries that could have a geometry precision reduction and can suffer from irregular edges. Angles and topology with other parcels could then be more or less blurry.
+     * @return The input {@link SimpleFeatureCollection} with small parcels merged or removed
+     */
+    public static SimpleFeatureCollection mergeTooSmallParcels(SimpleFeatureCollection parcelsUnsorted, double minimalParcelSize, boolean bufferGeom) {
         List<Integer> sizeResults = new ArrayList<>();
-        SimpleFeatureCollection result = recursiveMergeTooSmallParcel(parcelsUnsorted, minimalParcelSize);
+        SimpleFeatureCollection result = recursiveMergeTooSmallParcel(parcelsUnsorted, minimalParcelSize, bufferGeom);
         sizeResults.add(result.size());
-        do {
-            // recursive application of the merge algorithm to merge little parcels to big ones one-by-one
-            result = recursiveMergeTooSmallParcel(result, minimalParcelSize);
+        do { // recursive application of the merge algorithm to merge little parcels to big ones one-by-one
+            result = recursiveMergeTooSmallParcel(result, minimalParcelSize, bufferGeom);
             sizeResults.add(result.size());
-        }
-        // while parcels are still getting merged, we run the recursive algorithm
+        } // while parcels are still getting merged, we run the recursive algorithm
         while (!sizeResults.get(sizeResults.size() - 1).equals(sizeResults.get(sizeResults.size() - 2)));
         return result;
     }
 
-    private static SimpleFeatureCollection recursiveMergeTooSmallParcel(SimpleFeatureCollection parcelsUnsorted, double minimalParcelSize) {
+    private static SimpleFeatureCollection recursiveMergeTooSmallParcel(SimpleFeatureCollection parcelsUnsorted, double minimalParcelSize, boolean bufferGeom) {
         DefaultFeatureCollection result = new DefaultFeatureCollection();
         // we sort the parcel collection to process the smallest parcels in first
         List<String> ids = new ArrayList<>();
@@ -311,9 +323,8 @@ public class ParcelCollection {
         for (Entry<Double, SimpleFeature> entry : index.entrySet()) {
             SimpleFeature feat = entry.getValue();
             // if the parcel has already been merged with a smaller one, we skip (and we made the hypotheses that a merged parcel will always be bigger than the threshold)
-            if (ids.contains(feat.getID())) {
+            if (ids.contains(feat.getID()))
                 continue;
-            }
             Geometry geom = Polygons.getMultiPolygonGeom((Geometry) feat.getDefaultGeometry());
             if (geom.getArea() < minimalParcelSize) {
                 // System.out.println(feat.getID() + " is too small");
@@ -357,6 +368,8 @@ public class ParcelCollection {
                     Geometry g;
                     try {
                         g = Geom.unionGeom(lG);
+                        if (bufferGeom)
+                            g = g.buffer(1).buffer(-1);
                     } catch (TopologyException tp) {
                         System.out.println("problem with +" + lG);
                         g = Geom.scaledGeometryReductionIntersection(lG);

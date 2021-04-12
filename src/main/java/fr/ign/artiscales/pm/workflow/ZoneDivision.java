@@ -144,7 +144,7 @@ public class ZoneDivision extends Workflow {
         SimpleFeatureCollection parcel = DataUtilities.collection(sdsParcel.getFeatureSource(sdsParcel.getTypeNames()[0]).getFeatures());
         sdsZone.dispose();
         sdsParcel.dispose();
-        SAVEINTERMEDIATERESULT = true;
+        setSAVEINTERMEDIATERESULT(true);
         OVERWRITEGEOPACKAGE = true;
         zoneDivision(zone, parcel, outFolder, profile);
         return new File(outFolder, "parcelZoneDivisionOnly" + CollecMgmt.getDefaultGISFileType());
@@ -172,15 +172,15 @@ public class ZoneDivision extends Workflow {
         return zoneDivision(initialZone, parcels, roads, outFolder, profile.getMaximalArea(), profile.getMinimalArea(),
                 profile.getMinimalWidthContactRoad(), profile.getHarmonyCoeff(), profile.getNoise(), profile.getStreetWidth(),
                 profile.getLargeStreetLevel(), profile.getLargeStreetWidth(), profile.getDecompositionLevelWithoutStreet(), profile.getMaxDepth(),
-                profile.getMaxDistanceForNearestRoad(), profile.getMaxWidth(), profile.getMinWidth());
+                profile.getMaxDistanceForNearestRoad(), profile.getMaxWidth());
     }
 
     public SimpleFeatureCollection zoneDivision(SimpleFeatureCollection initialZone, SimpleFeatureCollection parcels, SimpleFeatureCollection roads,
                                                 File outFolder, double maximalArea, double minimalArea, double minimalWidthContactRoad, double harmonyCoeff, double noise,
                                                 double streetWidth, int largeStreetLevel, double largeStreetWidth, int decompositionLevelWithoutStreet, double maxDepth,
-                                                double maxDistanceForNearestRoad, double maxWidth, double minWidth) throws IOException {
+                                                double maxDistanceForNearestRoad, double maxWidth) throws IOException {
         File tmpFolder = new File(outFolder, "tmp");
-        if (DEBUG)
+        if (isDEBUG())
             tmpFolder.mkdirs();
         // parcel geometry name for all
         String geomName = parcels.getSchema().getGeometryDescriptor().getLocalName();
@@ -201,7 +201,7 @@ public class ZoneDivision extends Workflow {
         // complete the void left by the existing roads from the zones. Also assess a section number
         SimpleFeatureBuilder sfBuilder = ParcelSchema.getSFBMinParcelSplit();
         SimpleFeatureBuilder originalSFB = new SimpleFeatureBuilder(parcelsInZone.getSchema());
-        if (DEBUG) {
+        if (isDEBUG()) {
             CollecMgmt.exportSFC(parcelsInZone, new File(tmpFolder, "parcelsInZone"));
             CollecMgmt.exportSFC(savedParcels, new File(tmpFolder, "parcelsSaved"));
             System.out.println("parcels in zone exported");
@@ -243,7 +243,7 @@ public class ZoneDivision extends Workflow {
         geomList.addAll(Arrays.stream(goOdZone.toArray(new SimpleFeature[0])).map(x -> (Geometry) x.getDefaultGeometry()).collect(Collectors.toList()));
         List<Polygon> polygons = FeaturePolygonizer.getPolygons(geomList);
         Geometry geomSelectedZone = Geom.unionSFC(goOdZone);
-        if (DEBUG) {
+        if (isDEBUG()) {
             Geom.exportGeom(geomSelectedZone, new File(tmpFolder, "geomSelectedZone"));
             Geom.exportGeom(polygons, new File(tmpFolder, "polygons"));
             System.out.println("geomz and polygonz exported");
@@ -291,7 +291,7 @@ public class ZoneDivision extends Workflow {
                     case "SS":
                         ((DefaultFeatureCollection) splitedParcels)
                                 .addAll(TopologicalStraightSkeletonParcelDecomposition.runTopologicalStraightSkeletonParcelDecomposition(zone, roads,
-                                        "NOM_VOIE_G", "IMPORTANCE", outFolder, maxDepth, maxDistanceForNearestRoad, minimalArea, minWidth, maxWidth,
+                                        "NOM_VOIE_G", "IMPORTANCE", maxDepth, maxDistanceForNearestRoad, minimalArea, minimalWidthContactRoad, maxWidth,
                                         noise == 0 ? 0.1 : noise, new MersenneTwister(42), true, streetWidth));
                         break;
                     case "MS":
@@ -302,12 +302,12 @@ public class ZoneDivision extends Workflow {
         } catch (Exception problem) {
             problem.printStackTrace();
         }
-        if (DEBUG) {
+        if (isDEBUG()) {
             CollecMgmt.exportSFC(splitedParcels, new File(tmpFolder, "freshSplitedParcels"));
             System.out.println("fresh cuted parcels exported");
         }
         // merge the small parcels to bigger ones
-        splitedParcels = ParcelCollection.mergeTooSmallParcels(splitedParcels, minimalArea);
+        splitedParcels = ParcelCollection.mergeTooSmallParcels(splitedParcels, minimalArea, PROCESS.equals("SS"));
         DefaultFeatureCollection result = new DefaultFeatureCollection();
         int num = 0;
         // fix attribute for the simulated parcels
@@ -337,9 +337,9 @@ public class ZoneDivision extends Workflow {
         } catch (Exception problem) {
             problem.printStackTrace();
         }
-        if (DEBUG)
+        if (isDEBUG())
             CollecMgmt.exportSFC(result, new File(tmpFolder, "parcelZoneDivisionOnly"), false);
-        if (SAVEINTERMEDIATERESULT) {
+        if (isSAVEINTERMEDIATERESULT()) {
             CollecMgmt.exportSFC(result, new File(outFolder, "parcelZoneDivisionOnly"), OVERWRITEGEOPACKAGE);
             OVERWRITEGEOPACKAGE = false;
         }

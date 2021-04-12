@@ -213,7 +213,7 @@ public class Densification extends Workflow {
                                             feat.getAttribute(ParcelSchema.getMinParcelCommunityField()));
                                     SimpleFeature cutedParcel = sFBMinParcel.buildFeature(Attribute.makeUniqueId());
                                     resultParcels.add(cutedParcel);
-                                    if (SAVEINTERMEDIATERESULT)
+                                    if (isSAVEINTERMEDIATERESULT())
                                         onlyCutedParcels.add(cutedParcel);
                                 }
                             }
@@ -234,7 +234,7 @@ public class Densification extends Workflow {
         } catch (Exception e) {
             e.printStackTrace();
         }
-        if (SAVEINTERMEDIATERESULT) {
+        if (isSAVEINTERMEDIATERESULT()) {
             CollecMgmt.exportSFC(onlyCutedParcels, new File(outFolder, "parcelDensificationOnly"), OVERWRITEGEOPACKAGE);
             OVERWRITEGEOPACKAGE = false;
         }

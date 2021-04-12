@@ -1,5 +1,6 @@
 package fr.ign.artiscales.pm.scenario;
 
+import fr.ign.artiscales.pm.decomposition.TopologicalStraightSkeletonParcelDecomposition;
 import fr.ign.artiscales.pm.fields.GeneralFields;
 import fr.ign.artiscales.pm.fields.french.FrenchParcelFields;
 import fr.ign.artiscales.pm.parcelFunction.MarkParcelAttributeFromPosition;
@@ -70,8 +71,8 @@ public class PMStep {
         this.communityNumber = communityNumber;
         this.communityType = communityType;
         this.urbanFabricType = urbanFabricType;
-        Workflow.SAVEINTERMEDIATERESULT = SAVEINTERMEDIATERESULT;
-        Workflow.DEBUG = DEBUG;
+        setSaveIntermediateResult(SAVEINTERMEDIATERESULT);
+        setDEBUG(DEBUG);
     }
 
     /**
@@ -115,6 +116,7 @@ public class PMStep {
      * @param sAVEINTERMEDIATERESULT
      */
     public static void setSaveIntermediateResult(boolean sAVEINTERMEDIATERESULT) {
+        Workflow.setSAVEINTERMEDIATERESULT(sAVEINTERMEDIATERESULT);
         SAVEINTERMEDIATERESULT = sAVEINTERMEDIATERESULT;
     }
 
@@ -169,6 +171,7 @@ public class PMStep {
      * @param dEBUG
      */
     public static void setDEBUG(boolean dEBUG) {
+        Workflow.setDEBUG(dEBUG);
         DEBUG = dEBUG;
     }
 

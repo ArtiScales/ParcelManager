@@ -60,10 +60,10 @@ public class StraightSkeleton {
   }
 
   /**
-   * Straight skelton calculation with cap parameters that defines a perpendicular distance from the block contours
+   * Straight skelton calculation with cap parameters that defines a perpendicular distance from the block contours that won't be taken into the creation of a skeleton
    * 
-   * @param p
-   * @param cap
+   * @param p initial polygon
+   * @param cap distance from border to ignore
    */
   public StraightSkeleton(Polygon p, double cap) {
     this(p, null, cap);
@@ -83,7 +83,6 @@ public class StraightSkeleton {
    */
   public StraightSkeleton(Polygon p, double[] angles, double cap) {
     this.inputPolygon = p;// (Polygon) TopologyPreservingSimplifier.simplify(inputPolygon, 0.1);
-    System.out.println("StraightSkeleton with " + cap + "\n" + p);
     Skeleton s = buildSkeleton(this.inputPolygon, angles);
     if (cap != 0) {
       s.capAt(cap);

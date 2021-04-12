@@ -12,6 +12,8 @@ public class FigureIterationStep {
         PMScenario.setReuseSimulatedParcels(false);
         PMScenario pm = new PMScenario(new File("src/main/resources/FigureIterationStep/scenario.json"));
         pm.executeStep();
+        PMScenario pmSS = new PMScenario(new File("src/main/resources/FigureIterationStep/scenarioSS.json"));
+        pmSS.executeStep();
         System.out.println(System.currentTimeMillis() - start);
     }
 }

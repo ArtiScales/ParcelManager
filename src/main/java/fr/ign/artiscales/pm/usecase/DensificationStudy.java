@@ -81,22 +81,22 @@ public class DensificationStudy extends UseCase {
         // get total unbuilt parcels from the urbanized zones
         SimpleFeatureCollection parcelsVacantLot = MarkParcelAttributeFromPosition.markParcelIntersectFrenchConstructibleZoningType(
                 MarkParcelAttributeFromPosition.markUnBuiltParcel(parcels, buildingFile), zoningFile);
-        if (DEBUG)
+        if (isDEBUG())
             CollecMgmt.exportSFC(parcelsVacantLot, new File(outFolder, "/parcelsVacantLot"));
         SimpleFeatureCollection parcelsVacantLotCreated = (new Densification()).densificationOrNeighborhood(parcelsVacantLot, block, outFolder, buildingFile,
                 roadFile, profile, isParcelWithoutStreetAllowed, buffer, 5);
-        if (DEBUG)
+        if (isDEBUG())
             CollecMgmt.exportSFC(parcelsVacantLotCreated, new File(outFolder, "/parcelsVacantLotCreated"));
 
         // simulate the densification of built parcels in the given zone
         SimpleFeatureCollection parcelsDensifZone = MarkParcelAttributeFromPosition
                 .markParcelIntersectFrenchConstructibleZoningType(MarkParcelAttributeFromPosition.markBuiltParcel(parcels, buildingFile), zoningFile);
-        if (DEBUG)
+        if (isDEBUG())
             CollecMgmt.exportSFC(parcelsDensifZone, new File(outFolder, "/parcelsDensifZone"));
 
         SimpleFeatureCollection parcelsDensifCreated = (new Densification()).densification(parcelsDensifZone, block, outFolder, buildingFile,
                 roadFile, profile, isParcelWithoutStreetAllowed, buffer);
-        if (DEBUG)
+        if (isDEBUG())
             CollecMgmt.exportSFC(parcelsDensifCreated, new File(outFolder, "/parcelsDensifCreated"));
 
         // change split name to show if they can be built and start postprocessing
