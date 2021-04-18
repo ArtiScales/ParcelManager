@@ -41,7 +41,7 @@ public class MakeStatisticGraphs {
      * @param parcelFile Shapefile of the parcel plan
      * @param outFolder  Folder where the graph have to be exported
      * @param name       Title of the graph
-     * @throws IOException
+     * @throws IOException Reading parcelFile
      */
     public static void makeAreaGraph(File parcelFile, File outFolder, String name) throws IOException {
         DataStore sds = Geopackages.getDataStore(parcelFile);
@@ -56,9 +56,8 @@ public class MakeStatisticGraphs {
      * @param markedParcelFile {@link List} of parcels.
      * @param outFolder        Folder where the graph have to be exported
      * @param name             Title of the graph
-     * @throws IOException
      */
-    public static void makeAreaGraph(List<SimpleFeature> markedParcelFile, File outFolder, String name) throws IOException {
+    public static void makeAreaGraph(List<SimpleFeature> markedParcelFile, File outFolder, String name) {
         makeGraphHisto(sortValuesAndCategorize(markedParcelFile, "area", false), outFolder, name, "parcels area (m2)", "Number of parcels", 10);
     }
 
@@ -120,16 +119,12 @@ public class MakeStatisticGraphs {
      * @param xTitle           title of the x dimention
      * @param yTitle           title of the y dimention
      * @param range            number of categories
-     * @throws IOException
      */
-    public static void makeGraphHisto(AreaGraph graph, File graphDepotFolder, String title, String xTitle, String yTitle, int range)
-            throws IOException {
+    public static void makeGraphHisto(AreaGraph graph, File graphDepotFolder, String title, String xTitle, String yTitle, int range) {
         makeGraphHisto(Collections.singletonList(graph), graphDepotFolder, title, xTitle, yTitle, range);
     }
 
-    public static void makeGraphHisto(List<AreaGraph> graphs, File graphDepotFolder, String title, String xTitle, String yTitle, int range)
-            throws IOException {
-
+    public static void makeGraphHisto(List<AreaGraph> graphs, File graphDepotFolder, String title, String xTitle, String yTitle, int range) {
         // general settings
         CategoryChart chart = new CategoryChartBuilder().width(450).height(400).title(title).xAxisTitle(xTitle).yAxisTitle(yTitle).build();
         // TODO FIXME l'échelle en x n'est pas respécté pour le second graph..
@@ -145,7 +140,11 @@ public class MakeStatisticGraphs {
         chart.getStyler().setXAxisDecimalPattern("####");
         chart.getStyler().setXAxisLogarithmicDecadeOnly(true);
         chart.getStyler().setYAxisLogarithmicDecadeOnly(true);
-        BitmapEncoder.saveBitmap(chart, graphDepotFolder + "/" + title, BitmapFormat.PNG);
+        try {
+            BitmapEncoder.saveBitmap(chart, graphDepotFolder + "/" + title, BitmapFormat.PNG);
+        } catch (IOException ioe) {
+            ioe.printStackTrace();
+        }
     }
 
     /**
@@ -158,8 +157,7 @@ public class MakeStatisticGraphs {
      * @param yTitle           title of the y dimention
      * @throws IOException
      */
-    public static void roadGraph(SimpleFeatureCollection roads, String title, String xTitle, String yTitle, File graphDepotFolder)
-            throws IOException {
+    public static void roadGraph(SimpleFeatureCollection roads, String title, String xTitle, String yTitle, File graphDepotFolder) throws IOException {
         HashMap<String, Double> vals = new HashMap<>();
         try (SimpleFeatureIterator it = roads.features()) {
             while (it.hasNext()) {

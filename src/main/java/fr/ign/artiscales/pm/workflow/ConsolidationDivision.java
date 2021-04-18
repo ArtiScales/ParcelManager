@@ -143,7 +143,7 @@ public class ConsolidationDivision extends Workflow {
                         case "SS":
                             freshCutParcel = TopologicalStraightSkeletonParcelDecomposition.runTopologicalStraightSkeletonParcelDecomposition(feat, roads, "NOM_VOIE_G", "IMPORTANCE", profile.getMaxDepth(),
                                     profile.getMaxDistanceForNearestRoad(), profile.getMinimalArea(), profile.getMinimalWidthContactRoad(), profile.getMaxWidth(),
-                                    (profile.getNoise() == 0) ? 0.1 : profile.getNoise(), new MersenneTwister(42), true, profile.getStreetWidth());
+                                    (profile.getNoise() == 0) ? 0.1 : profile.getNoise(), new MersenneTwister(1), true, profile.getStreetWidth());
                             break;
                     }
                     if (freshCutParcel != null && !freshCutParcel.isEmpty() && freshCutParcel.size() > 0) {

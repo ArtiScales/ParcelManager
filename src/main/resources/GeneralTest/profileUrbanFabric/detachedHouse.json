@@ -2,13 +2,13 @@
 	"largeStreetLevel": "5",
 	"decompositionLevelWithoutStreet": "3",
 	"largeStreetWidth": "15",
-	"streetWidth": "7",	
+	"streetWidth": "8",	
 	"maximalArea": "1000",
 	"minimalArea": "300",
 	"minimalWidthContactRoad": "7",
 	"nameBuildingType": "detached house",
 	"lenDriveway": "3",
-	"maxDepth":"70",
-	"maxDistanceForNearestRoad":"10",
-	"maxWidth":"50"
+	"maxDepth":"40",
+	"maxDistanceForNearestRoad":"20",
+	"maxWidth":"30"
 }

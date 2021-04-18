@@ -48,16 +48,15 @@ public class GeneralFields {
      *
      * @param sfc Parcel {@link SimpleFeatureCollection} to sort
      * @return The parcel {@link SimpleFeatureCollection} with only the simulated parcels
-     * @throws IOException
      */
-    public static SimpleFeatureCollection getParcelWithSimulatedFileds(SimpleFeatureCollection sfc) throws IOException {
+    public static SimpleFeatureCollection getParcelWithSimulatedFileds(SimpleFeatureCollection sfc) {
         DefaultFeatureCollection result = new DefaultFeatureCollection();
         Arrays.stream(sfc.toArray(new SimpleFeature[0])).forEach(parcel -> {
             if (parcelFieldType.equals("french"))
                 if (isParcelLikeFrenchHasSimulatedFileds(parcel))
                     result.add(parcel);
         });
-        return result.collection();
+        return result;
     }
 
     /**

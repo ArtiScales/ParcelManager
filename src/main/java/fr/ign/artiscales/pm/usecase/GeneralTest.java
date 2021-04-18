@@ -41,7 +41,7 @@ public class GeneralTest extends UseCase {
         File rootFolder = new File("src/main/resources/GeneralTest/");
         File outFolder = new File(rootFolder, "out");
         setDEBUG(false);
-        Workflow.setSAVEINTERMEDIATERESULT(false);
+        Workflow.setSAVEINTERMEDIATERESULT(true);
         GeneralTest(outFolder, rootFolder);
         System.out.println(System.currentTimeMillis() - start);
     }
@@ -62,21 +62,20 @@ public class GeneralTest extends UseCase {
         ProfileUrbanFabric profileLargeCollective = ProfileUrbanFabric.convertJSONtoProfile(new File(profileFolder, "largeCollective.json"));
         Workflow.PROCESS = "SS";
         for (int i = 0; i <= 2; i++) {
-//        for (int i = 2; i <= 2; i++) {
             // multiple process calculation
             String ext = "offset";
             if (i == 1) {
-                Workflow.PROCESS = "OBB";
-                ext = "OBB";
-            } else if (i == 2) {
-                Workflow.PROCESS = "SS";
                 profileDetached.setMaxDepth(0);
                 profileSmallHouse.setMaxDepth(0);
                 profileLargeCollective.setMaxDepth(0);
                 ext = "SS";
             }
+            else if (i == 2) {
+                Workflow.PROCESS = "OBB";
+                ext = "OBB";
+            }
             System.out.println("PROCESS: "+ext);
-            File outFolder = new File(outRootFolder, "/out/" + ext);
+            File outFolder = new File(outRootFolder, ext);
             outFolder.mkdirs();
             File statFolder = new File(outFolder, "stat");
             statFolder.mkdirs();
