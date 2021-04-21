@@ -91,7 +91,6 @@ public class MakeStatisticGraphs {
         roadDS.dispose();
         Graph graph = sortValuesAndCategorize(parcelMesure, false, "Length of contact between road and parcel");
         makeGraphHisto(graph, outFolder, name,"Length (m)", "Number of parcels",10 );
-
     }
 
     /**
@@ -186,6 +185,8 @@ public class MakeStatisticGraphs {
         chart.getStyler().setXAxisDecimalPattern("####");
         chart.getStyler().setXAxisLogarithmicDecadeOnly(true);
         chart.getStyler().setYAxisLogarithmicDecadeOnly(true);
+        if (!graphDepotFolder.exists())
+            graphDepotFolder.mkdirs();
         try {
             BitmapEncoder.saveBitmap(chart, graphDepotFolder + "/" + title, BitmapFormat.PNG);
         } catch (IOException ioe) {

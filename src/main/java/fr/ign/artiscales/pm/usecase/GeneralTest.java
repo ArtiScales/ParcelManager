@@ -103,8 +103,8 @@ public class GeneralTest extends UseCase {
             CollecMgmt.exportSFC(zone, new File(outFolder, "zone.gpkg"));
             RoadRatioParcels.roadRatioZone(zone, finaux, profileLargeCollective.getNameBuildingType().replace(" ", "_"), statFolder, roadFile);
             List<SimpleFeature> parcelSimulatedZone = Arrays.stream(finaux.toArray(new SimpleFeature[0])).filter(sf -> (new ZoneDivision()).isNewSection(sf)).collect(Collectors.toList());
-            MakeStatisticGraphs.makeAreaGraph(parcelSimulatedZone, statFolder, "Area - Zone division - medium-sized blocks of flats");
-            MakeStatisticGraphs.makeWidthContactRoadGraph(parcelSimulatedZone,CityGeneration.createUrbanBlock(finaux, true),roadFile,statFolder, "Contact parcel_road - Zone division - medium-sized blocks of flats");
+            MakeStatisticGraphs.makeAreaGraph(parcelSimulatedZone, statFolder, "Zone division - medium-sized blocks of flats");
+            MakeStatisticGraphs.makeWidthContactRoadGraph(parcelSimulatedZone,CityGeneration.createUrbanBlock(finaux, true),roadFile,new File(statFolder, "contact"), "Zone division - medium-sized blocks of flats");
 
             /////////////////////////
             //////// try the consolidRecomp method
@@ -119,8 +119,8 @@ public class GeneralTest extends UseCase {
             RoadRatioParcels.roadRatioParcels(markedZone, finalNormalZone, profileDetached.getNameBuildingType().replace(" ", "_"), statFolder, roadFile);
             List<SimpleFeature> parcelSimulatedConsolid = Arrays.stream(finalNormalZone.toArray(new SimpleFeature[0]))
                     .filter(sf -> (new ConsolidationDivision()).isNewSection(sf)).collect(Collectors.toList());
-            MakeStatisticGraphs.makeAreaGraph(parcelSimulatedConsolid, statFolder,"Area - Zone consolidation - medium-sized houses");
-            MakeStatisticGraphs.makeWidthContactRoadGraph(parcelSimulatedConsolid,CityGeneration.createUrbanBlock(finalNormalZone), roadFile, statFolder,"Contact parcel_road - Zone consolidation - medium-sized houses");
+            MakeStatisticGraphs.makeAreaGraph(parcelSimulatedConsolid, statFolder,"Zone consolidation - medium-sized houses");
+            MakeStatisticGraphs.makeWidthContactRoadGraph(parcelSimulatedConsolid,CityGeneration.createUrbanBlock(finalNormalZone, true), roadFile, new File(statFolder, "contact"),"Zone consolidation - medium-sized houses");
 
             /////////////////////////
             //////// try the parcelDensification method
@@ -132,14 +132,14 @@ public class GeneralTest extends UseCase {
                     MarkParcelAttributeFromPosition.markParcelIntersectPreciseZoningType(finalNormalZone, "U", "UB", zoningFile),
                     CityGeneration.createUrbanBlock(finalNormalZone), outFolder, buildingFile, roadFile, profileSmallHouse.getHarmonyCoeff(),
                     profileSmallHouse.getNoise(), profileSmallHouse.getMaximalArea(), profileSmallHouse.getMinimalArea(),
-                    profileSmallHouse.getMinimalWidthContactRoad(), profileSmallHouse.getLenDriveway(), allowIsolatedParcel);
+                    profileSmallHouse.getLenDriveway(), profileSmallHouse.getLenDriveway(), allowIsolatedParcel);
             SimpleFeatureCollection finaux3 = FrenchParcelFields.setOriginalFrenchParcelAttributes(parcelDensified, parcel);
             CollecMgmt.exportSFC(finaux3, new File(outFolder, "parcelDensification.gpkg"));
-            MakeStatisticGraphs.makeAreaGraph(Arrays.stream(parcelDensified.toArray(new SimpleFeature[0]))
-                            .filter(sf -> (new Densification()).isNewSection(sf)).collect(Collectors.toList()), statFolder,
-                    "Densification - small houses simulation");
-            SingleParcelStat.writeStatSingleParcel(MarkParcelAttributeFromPosition.markSimulatedParcel(finaux3), roadFile,
-                    new File(statFolder, "statParcel.csv"));
+            List<SimpleFeature> densifiedParcels = Arrays.stream(parcelDensified.toArray(new SimpleFeature[0])).filter(sf -> (new Densification()).isNewSection(sf)).collect(Collectors.toList());
+            MakeStatisticGraphs.makeAreaGraph(densifiedParcels, statFolder, "Densification - small-sized houses simulation");
+            MakeStatisticGraphs.makeWidthContactRoadGraph(densifiedParcels,CityGeneration.createUrbanBlock(finalNormalZone, true), roadFile, new File(statFolder, "contact"),"Densification - small-sized houses");
+
+            SingleParcelStat.writeStatSingleParcel(MarkParcelAttributeFromPosition.markSimulatedParcel(finaux3), roadFile, new File(statFolder, "statParcel.csv"));
         }
     }
 }
