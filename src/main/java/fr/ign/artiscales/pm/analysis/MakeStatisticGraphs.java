@@ -1,7 +1,11 @@
 package fr.ign.artiscales.pm.analysis;
 
 import fr.ign.artiscales.pm.fields.GeneralFields;
-import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Geopackages;
+import fr.ign.artiscales.pm.parcelFunction.ParcelState;
+import fr.ign.artiscales.tools.geoToolsFunctions.vectors.collec.CollecMgmt;
+import fr.ign.artiscales.tools.geoToolsFunctions.vectors.collec.CollecTransform;
+import fr.ign.artiscales.tools.geoToolsFunctions.vectors.geom.Lines;
+import fr.ign.artiscales.tools.geoToolsFunctions.vectors.geom.Polygons;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.geotools.data.DataStore;
 import org.geotools.data.simple.SimpleFeatureCollection;
@@ -44,10 +48,10 @@ public class MakeStatisticGraphs {
      * @throws IOException Reading parcelFile
      */
     public static void makeAreaGraph(File parcelFile, File outFolder, String name) throws IOException {
-        DataStore sds = Geopackages.getDataStore(parcelFile);
-        makeGraphHisto(sortValuesAndCategorize(GeneralFields.getParcelWithSimulatedFileds(sds.getFeatureSource(sds.getTypeNames()[0]).getFeatures()), "area"), outFolder,
+        DataStore ds = CollecMgmt.getDataStore(parcelFile);
+        makeGraphHisto(sortValuesAreaAndCategorize(GeneralFields.getParcelWithSimulatedFileds(ds.getFeatureSource(ds.getTypeNames()[0]).getFeatures()), "area"), outFolder,
                 name, "parcels area (m2)", "Number of parcels", 10);
-        sds.dispose();
+        ds.dispose();
     }
 
     /**
@@ -58,7 +62,36 @@ public class MakeStatisticGraphs {
      * @param name             Title of the graph
      */
     public static void makeAreaGraph(List<SimpleFeature> markedParcelFile, File outFolder, String name) {
-        makeGraphHisto(sortValuesAndCategorize(markedParcelFile, "area", false), outFolder, name, "parcels area (m2)", "Number of parcels", 10);
+        makeGraphHisto(sortValuesAreaAndCategorize(markedParcelFile, "area", false), outFolder, name, "Parcels area (m2)", "Number of parcels", 10);
+    }
+
+    /**
+     * Automate the generation of graphs about the contact length on road of fresh parcel cuts.
+     *
+     * @param markedParcelFile {@link List} of parcels.
+     * @param outFolder        Folder where the graph have to be exported
+     * @param name             Title of the graph
+     */
+    public static void makeWidthContactRoadGraph(List<SimpleFeature> markedParcelFile, SimpleFeatureCollection block, File roadFile, File outFolder, String name) throws IOException {
+        DataStore roadDS = CollecMgmt.getDataStore(roadFile);
+        List<Double> parcelMesure = new ArrayList<>();
+        markedParcelFile.stream().forEach(parcel -> {
+            // if parcel is marked to be analyzed
+            Geometry parcelGeom = (Geometry) parcel.getDefaultGeometry();
+            double widthRoadContact = 0;
+            try {
+                widthRoadContact = ParcelState.getParcelFrontSideWidth(Polygons.getPolygon(parcelGeom),
+                        CollecTransform.selectIntersection(roadDS.getFeatureSource(roadDS.getTypeNames()[0]).getFeatures(), parcelGeom.buffer(7)), Lines.fromMultiToLineString(
+                                CollecTransform.fromPolygonSFCtoRingMultiLines(CollecTransform.selectIntersection(block, parcelGeom.buffer(7)))));
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            parcelMesure.add(widthRoadContact);
+        });
+        roadDS.dispose();
+        Graph graph = sortValuesAndCategorize(parcelMesure, false, "Length of contact between road and parcel");
+        makeGraphHisto(graph, outFolder, name,"Length (m)", "Number of parcels",10 );
+
     }
 
     /**
@@ -67,10 +100,10 @@ public class MakeStatisticGraphs {
      *
      * @param parcelOut   The parcel to sort and plot
      * @param nameDistrib The name of the distribution
-     * @return An {@link AreaGraph} object
+     * @return An {@link Graph} object
      */
-    public static AreaGraph sortValuesAndCategorize(SimpleFeatureCollection parcelOut, String nameDistrib) {
-        return sortValuesAndCategorize(Arrays.stream(parcelOut.toArray(new SimpleFeature[0])).collect(Collectors.toList()), nameDistrib, false);
+    public static Graph sortValuesAreaAndCategorize(SimpleFeatureCollection parcelOut, String nameDistrib) {
+        return sortValuesAreaAndCategorize(Arrays.stream(parcelOut.toArray(new SimpleFeature[0])).collect(Collectors.toList()), nameDistrib, false);
     }
 
     /**
@@ -82,15 +115,27 @@ public class MakeStatisticGraphs {
      * @param cutCrest    Cut the top and low 10% values
      * @return a Graph object
      */
-    public static AreaGraph sortValuesAndCategorize(List<SimpleFeature> parcelOut, String nameDistrib, boolean cutCrest) {
+    public static Graph sortValuesAreaAndCategorize(List<SimpleFeature> parcelOut, String nameDistrib, boolean cutCrest) {
         List<Double> areaParcel = new ArrayList<>();
-        DescriptiveStatistics stat = new DescriptiveStatistics();
-        for (SimpleFeature sf : parcelOut) {
-            double area = ((Geometry) sf.getDefaultGeometry()).getArea();
-            stat.addValue(area);
-            areaParcel.add(area);
-        }
 
+        for (SimpleFeature sf : parcelOut)
+            areaParcel.add(((Geometry) sf.getDefaultGeometry()).getArea());
+        return sortValuesAndCategorize(areaParcel, cutCrest, nameDistrib);
+    }
+
+    /**
+     * Process to sort which parcels have been cut, and get the bounds of the distribution. WARNING - Developed for French Parcels - section is always a two character. Can spare
+     * the crest values (the top and low 10%)
+     *
+     * @param parcelMesure Mesures of the parcel to sort and plot
+     * @param nameDistrib  the name of the distribution
+     * @param cutCrest     Cut the top and low 10% values
+     * @return a Graph object
+     */
+    public static Graph sortValuesAndCategorize(List<Double> parcelMesure, boolean cutCrest, String nameDistrib) {
+        DescriptiveStatistics stat = new DescriptiveStatistics();
+        for (double m : parcelMesure)
+            stat.addValue(m);
         // get the bounds
         double aMax = 0;
         double aMin = 100000000;
@@ -98,16 +143,17 @@ public class MakeStatisticGraphs {
         List<Double> areaParcelWithoutCrest = new ArrayList<>();
         double infThres = stat.getPercentile(10);
         double supThres = stat.getPercentile(90);
-        for (double a : areaParcel)
-            if (cutCrest && (a >= infThres || a <= supThres)) {
-                areaParcelWithoutCrest.add(a);
-                if (a < aMin)
-                    aMin = a;
-                if (a > aMax)
-                    aMax = a;
-            }
+        for (double a : parcelMesure) {
+            if (cutCrest && (a <= infThres || a >= supThres))
+                continue;
+            if (a < aMin)
+                aMin = a;
+            if (a > aMax)
+                aMax = a;
+            areaParcelWithoutCrest.add(a);
+        }
         Collections.sort(areaParcelWithoutCrest);
-        return new AreaGraph(areaParcelWithoutCrest, aMin, aMax, nameDistrib);
+        return new Graph(areaParcelWithoutCrest, aMin, aMax, nameDistrib);
     }
 
     /**
@@ -120,15 +166,15 @@ public class MakeStatisticGraphs {
      * @param yTitle           title of the y dimention
      * @param range            number of categories
      */
-    public static void makeGraphHisto(AreaGraph graph, File graphDepotFolder, String title, String xTitle, String yTitle, int range) {
+    public static void makeGraphHisto(Graph graph, File graphDepotFolder, String title, String xTitle, String yTitle, int range) {
         makeGraphHisto(Collections.singletonList(graph), graphDepotFolder, title, xTitle, yTitle, range);
     }
 
-    public static void makeGraphHisto(List<AreaGraph> graphs, File graphDepotFolder, String title, String xTitle, String yTitle, int range) {
+    public static void makeGraphHisto(List<Graph> graphs, File graphDepotFolder, String title, String xTitle, String yTitle, int range) {
         // general settings
         CategoryChart chart = new CategoryChartBuilder().width(450).height(400).title(title).xAxisTitle(xTitle).yAxisTitle(yTitle).build();
         // TODO FIXME l'échelle en x n'est pas respécté pour le second graph..
-        for (AreaGraph ag : graphs) {
+        for (Graph ag : graphs) {
             Histogram histo = new Histogram(ag.getSortedDistribution(), range, ag.getBoundMin(), ag.getBoundMax());
             chart.addSeries(ag.getNameDistrib(), histo.getxAxisData(), histo.getyAxisData());
         }

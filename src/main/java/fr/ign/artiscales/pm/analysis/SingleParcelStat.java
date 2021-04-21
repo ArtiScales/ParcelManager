@@ -103,19 +103,17 @@ public class SingleParcelStat {
 		writeStatSingleParcel(parcels, roads, null, parcelStatCsv);
 	}
 
-	public static void writeStatSingleParcel(SimpleFeatureCollection parcels, SimpleFeatureCollection roads, SimpleFeatureCollection parcelToCompare,
-			File parcelStatCsv) throws IOException {
+	public static void writeStatSingleParcel(SimpleFeatureCollection parcels, SimpleFeatureCollection roads, SimpleFeatureCollection parcelToCompare, File parcelStatCsv) throws IOException {
 		// look if there's mark field. If not, every parcels are marked
 		if (!CollecMgmt.isCollecContainsAttribute(parcels, MarkParcelAttributeFromPosition.getMarkFieldName())) {
-			System.out.println(
-					"+++ writeStatSingleParcel: unmarked parcels. Try to mark them with the MarkParcelAttributeFromPosition.markAllParcel() method. Return null ");
+			System.out.println("+++ writeStatSingleParcel: unmarked parcels. Try to mark them with the MarkParcelAttributeFromPosition.markAllParcel() method. Return null ");
 			return;
 		}
 		CSVWriter csv = new CSVWriter(new FileWriter(parcelStatCsv, false));
 		String[] firstLine = { "code", "area", "perimeter", "contactWithRoad", "widthContactWithRoad", "numberOfNeighborhood", "Geometry", "HausDist",
 				"DisHausDst", "CodeAppar", "AspctRatio" };
 		csv.writeNext(firstLine);
-		SimpleFeatureCollection block = CityGeneration.createUrbanBlock(parcels);
+		SimpleFeatureCollection block = CityGeneration.createUrbanBlock(parcels, true);
 		Arrays.stream(parcels.toArray(new SimpleFeature[0]))
 				.filter(p -> (int) p.getAttribute(MarkParcelAttributeFromPosition.getMarkFieldName()) == 1).forEach(parcel -> {
 					// if parcel is marked to be analyzed

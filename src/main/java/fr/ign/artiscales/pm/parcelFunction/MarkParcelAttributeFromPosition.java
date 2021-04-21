@@ -620,8 +620,7 @@ public class MarkParcelAttributeFromPosition {
      * @return {@link SimpleFeatureCollection} of the input parcels with marked parcels on the {@link #markFieldName} field.
      * @throws IOException
      */
-    public static SimpleFeatureCollection markParcelIntersectPreciseZoningType(SimpleFeatureCollection parcels, String genericZone,
-                                                                               String preciseZone, File zoningFile) throws IOException {
+    public static SimpleFeatureCollection markParcelIntersectPreciseZoningType(SimpleFeatureCollection parcels, String genericZone, String preciseZone, File zoningFile) throws IOException {
         final SimpleFeatureType featureSchema = ParcelSchema.getSFBMinParcelSplit().getFeatureType();
         // Get the zoning usual names
         List<String> genericZoneUsualNames = GeneralFields.getGenericZoneUsualNames(genericZone);

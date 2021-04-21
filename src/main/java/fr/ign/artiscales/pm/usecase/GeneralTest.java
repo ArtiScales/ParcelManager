@@ -21,6 +21,7 @@ import org.opengis.feature.simple.SimpleFeature;
 
 import java.io.File;
 import java.util.Arrays;
+import java.util.List;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
 
@@ -54,8 +55,7 @@ public class GeneralTest extends UseCase {
         File profileFolder = new File(rootFolder, "profileUrbanFabric");
         boolean allowIsolatedParcel = false;
         DataStore gpkgDSParcel = Geopackages.getDataStore(parcelFile);
-        SimpleFeatureCollection parcel = DataUtilities
-                .collection(ParcelGetter.getFrenchParcelByZip(gpkgDSParcel.getFeatureSource(gpkgDSParcel.getTypeNames()[0]).getFeatures(), "25267"));
+        SimpleFeatureCollection parcel = DataUtilities.collection(ParcelGetter.getParcelByZip(gpkgDSParcel.getFeatureSource(gpkgDSParcel.getTypeNames()[0]).getFeatures(), "25267,25395"));
         gpkgDSParcel.dispose();
         ProfileUrbanFabric profileDetached = ProfileUrbanFabric.convertJSONtoProfile(new File(profileFolder, "detachedHouse.json"));
         ProfileUrbanFabric profileSmallHouse = ProfileUrbanFabric.convertJSONtoProfile(new File(profileFolder, "smallHouse.json"));
@@ -101,9 +101,10 @@ public class GeneralTest extends UseCase {
             SimpleFeatureCollection finaux = FrenchParcelFields.setOriginalFrenchParcelAttributes(parcelCuted, parcel);
             CollecMgmt.exportSFC(finaux, new File(outFolder, "parcelTotZone.gpkg"));
             CollecMgmt.exportSFC(zone, new File(outFolder, "zone.gpkg"));
-            RoadRatioParcels.roadRatioZone(zone, finaux, profileLargeCollective.getNameBuildingType(), statFolder, roadFile);
-            MakeStatisticGraphs.makeAreaGraph(Arrays.stream(finaux.toArray(new SimpleFeature[0])).filter(sf -> (new ZoneDivision()).isNewSection(sf))
-                    .collect(Collectors.toList()), statFolder, "Zone division - large collective building simulation");
+            RoadRatioParcels.roadRatioZone(zone, finaux, profileLargeCollective.getNameBuildingType().replace(" ", "_"), statFolder, roadFile);
+            List<SimpleFeature> parcelSimulatedZone = Arrays.stream(finaux.toArray(new SimpleFeature[0])).filter(sf -> (new ZoneDivision()).isNewSection(sf)).collect(Collectors.toList());
+            MakeStatisticGraphs.makeAreaGraph(parcelSimulatedZone, statFolder, "Area - Zone division - medium-sized blocks of flats");
+            MakeStatisticGraphs.makeWidthContactRoadGraph(parcelSimulatedZone,CityGeneration.createUrbanBlock(finaux, true),roadFile,statFolder, "Contact parcel_road - Zone division - medium-sized blocks of flats");
 
             /////////////////////////
             //////// try the consolidRecomp method
@@ -115,10 +116,11 @@ public class GeneralTest extends UseCase {
             SimpleFeatureCollection cutedNormalZone = (new ConsolidationDivision()).consolidationDivision(markedZone, roadFile, outFolder, profileDetached);
             SimpleFeatureCollection finalNormalZone = FrenchParcelFields.setOriginalFrenchParcelAttributes(cutedNormalZone, parcel);
             CollecMgmt.exportSFC(finalNormalZone, new File(outFolder, "ParcelConsolidRecomp.gpkg"));
-            RoadRatioParcels.roadRatioParcels(markedZone, finalNormalZone, profileDetached.getNameBuildingType(), statFolder, roadFile);
-            MakeStatisticGraphs.makeAreaGraph(Arrays.stream(finalNormalZone.toArray(new SimpleFeature[0]))
-                            .filter(sf -> (new ConsolidationDivision()).isNewSection(sf)).collect(Collectors.toList()), statFolder,
-                    "Consolidation-division - detached houses simulation");
+            RoadRatioParcels.roadRatioParcels(markedZone, finalNormalZone, profileDetached.getNameBuildingType().replace(" ", "_"), statFolder, roadFile);
+            List<SimpleFeature> parcelSimulatedConsolid = Arrays.stream(finalNormalZone.toArray(new SimpleFeature[0]))
+                    .filter(sf -> (new ConsolidationDivision()).isNewSection(sf)).collect(Collectors.toList());
+            MakeStatisticGraphs.makeAreaGraph(parcelSimulatedConsolid, statFolder,"Area - Zone consolidation - medium-sized houses");
+            MakeStatisticGraphs.makeWidthContactRoadGraph(parcelSimulatedConsolid,CityGeneration.createUrbanBlock(finalNormalZone), roadFile, statFolder,"Contact parcel_road - Zone consolidation - medium-sized houses");
 
             /////////////////////////
             //////// try the parcelDensification method

@@ -65,8 +65,7 @@ public class ConsolidationDivision extends Workflow {
      * @return the set of parcel with decomposition
      * @throws IOException
      */
-    public SimpleFeatureCollection consolidationDivision(SimpleFeatureCollection parcels, File roadFile, File outFolder, ProfileUrbanFabric profile,
-                                                         File polygonIntersection) throws IOException {
+    public SimpleFeatureCollection consolidationDivision(SimpleFeatureCollection parcels, File roadFile, File outFolder, ProfileUrbanFabric profile, File polygonIntersection) throws IOException {
         File tmpFolder = new File(outFolder, "tmp");
         if (isDEBUG())
             tmpFolder.mkdirs();

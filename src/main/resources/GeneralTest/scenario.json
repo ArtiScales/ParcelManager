@@ -9,7 +9,6 @@
 			"genericZone": "AU",
 			"preciseZone":"AU1",
 			"communityNumber": "25267",
-			"communityType": "periUrbain",
 			"urbanFabricType": "largeCollective"
 		},
 		{
@@ -18,14 +17,12 @@
 			"genericZone": "AU",
 			"preciseZone":"AUb",
 			"communityNumber": "25267",
-			"communityType": "periUrbain",
 			"urbanFabricType": "detachedHouse"
 		},
 		{
 			"workflow": "densification",
 			"genericZone": "U",
 			"communityNumber": "25267",
-			"communityType": "periUrbain",
 			"urbanFabricType": "smallHouse"
 		}]
 }

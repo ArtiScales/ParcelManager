@@ -109,7 +109,7 @@ public class GetParametersOfScene {
         switch (scaleZone) {
             case "community":
                 for (String cityCodes : ParcelAttribute.getCityCodesOfParcels(parcels))
-                    listSFC.put(cityCodes, ParcelGetter.getFrenchParcelByZip(parcels, cityCodes));
+                    listSFC.put(cityCodes, ParcelGetter.getParcelByZip(parcels, cityCodes));
                 break;
             case "genericZone":
                 for (String genericZone : GeneralFields.getGenericZoningTypes(zonings))
@@ -176,9 +176,7 @@ public class GetParametersOfScene {
                     "Type of road", "Total lenght of road", outFolder);
 
         DataStore parcelDS = CollecMgmt.getDataStore(parcelFile);
-        RoadRatioParcels.roadRatioZone(zoneCollection, parcelDS.getFeatureSource(parcelDS.getTypeNames()[0]).getFeatures(), zoneName, outFolder,
-                roadFile);
-        RoadRatioParcels.setFirstLine(true);
+        RoadRatioParcels.roadRatioZone(zoneCollection, parcelDS.getFeatureSource(parcelDS.getTypeNames()[0]).getFeatures(), zoneName, outFolder, roadFile);
         parcelDS.dispose();
     }
 
@@ -200,7 +198,7 @@ public class GetParametersOfScene {
         for (String nameSfc : lSFC.keySet()) {
             SimpleFeatureCollection sfc = lSFC.get(nameSfc);
             if (sfc != null && sfc.size() > 2) {
-                AreaGraph vals = MakeStatisticGraphs.sortValuesAndCategorize(
+                Graph vals = MakeStatisticGraphs.sortValuesAreaAndCategorize(
                         Arrays.stream(sfc.toArray(new SimpleFeature[0])).collect(Collectors.toList()), scaleZone + zone, true);
                 vals.toCSV(outFolder);
                 MakeStatisticGraphs.makeGraphHisto(vals, outFolder, "area of the" + nameSfc + "of the " + getZoneEnglishName(scaleZone, zone),

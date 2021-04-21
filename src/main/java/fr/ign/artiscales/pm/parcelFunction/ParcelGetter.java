@@ -130,9 +130,9 @@ public class ParcelGetter {
         return result.collection();
     }
 
-    public static File getFrenchParcelByZip(File parcelIn, List<String> vals, File fileOut) throws IOException {
+    public static File getParcelByZip(File parcelIn, List<String> vals, File fileOut) throws IOException {
         DataStore ds = Geopackages.getDataStore(parcelIn);
-        SimpleFeatureCollection result = getFrenchParcelByZip(ds.getFeatureSource(ds.getTypeNames()[0]).getFeatures(), vals);
+        SimpleFeatureCollection result = getParcelByZip(ds.getFeatureSource(ds.getTypeNames()[0]).getFeatures(), vals);
         ds.dispose();
         return CollecMgmt.exportSFC(result, fileOut);
     }
@@ -146,10 +146,10 @@ public class ParcelGetter {
      * @return a simple feature collection of parcels having the values contained in <i>vals</i>.
      * * @throws IOException
      */
-    public static SimpleFeatureCollection getFrenchParcelByZip(SimpleFeatureCollection parcelIn, List<String> vals) throws IOException {
+    public static SimpleFeatureCollection getParcelByZip(SimpleFeatureCollection parcelIn, List<String> vals) throws IOException {
         DefaultFeatureCollection result = new DefaultFeatureCollection();
         for (String val : vals) {
-            result.addAll(getFrenchParcelByZip(parcelIn, val));
+            result.addAll(getParcelByZip(parcelIn, val));
         }
         return result.collection();
     }
@@ -159,11 +159,13 @@ public class ParcelGetter {
      * Their values are set by default but it's possible to change them with the methods {@link #setCodeComFiled(String)} and {@link #setCodeDepFiled(String)}
      *
      * @param parcelIn Input parcel collection
-     * @param val      Value of the zipcode
+     * @param val      Value of the zipcode. Can contain comma separated values
      * @return A simple feature collection of parcels having the <i>val</i> value. * @throws IOException
      * @throws IOException
      */
-    public static SimpleFeatureCollection getFrenchParcelByZip(SimpleFeatureCollection parcelIn, String val) throws IOException {
+    public static SimpleFeatureCollection getParcelByZip(SimpleFeatureCollection parcelIn, String val) throws IOException {
+        if (val.contains(","))
+            return getParcelByZip(parcelIn, Arrays.asList(val.split(",")));
         return getParcelByZip(parcelIn, val, codeDepFiled, codeComFiled);
     }
 
@@ -218,7 +220,7 @@ public class ParcelGetter {
         if (!CollecMgmt.isCollecContainsAttribute(parcelIn, ParcelSchema.getMinParcelCommunityField())) {
             switch (GeneralFields.getParcelFieldType()) {
                 case "french":
-                    return getFrenchParcelByZip(parcelIn, val);
+                    return getParcelByZip(parcelIn, val);
             }
         }
         DefaultFeatureCollection result = new DefaultFeatureCollection();

@@ -7,11 +7,11 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 
-public class AreaGraph {
+public class Graph {
     List<Double> sortedDistribution;
     double boundMin, boundMax;
     String nameDistrib;
-    public AreaGraph(List<Double> sortedDistribution, double boundMin, double boundMax, String nameDistribution) {
+    public Graph(List<Double> sortedDistribution, double boundMin, double boundMax, String nameDistribution) {
         this.sortedDistribution = sortedDistribution;
         this.boundMin = boundMin;
         this.boundMax = boundMax;
@@ -52,7 +52,7 @@ public class AreaGraph {
 
     @Override
     public String toString() {
-        return "AreaGraph [sortedDistribution=" + sortedDistribution + ", boundMin=" + boundMin + ", boundMax=" + boundMax + ", nameDistrib="
+        return "Graph [sortedDistribution=" + sortedDistribution + ", boundMin=" + boundMin + ", boundMax=" + boundMax + ", nameDistrib="
                 + nameDistrib + "]";
     }
 

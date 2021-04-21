@@ -7,7 +7,6 @@ import fr.ign.artiscales.pm.parcelFunction.ParcelSchema;
 import fr.ign.artiscales.pm.parcelFunction.ParcelState;
 import fr.ign.artiscales.tools.geoToolsFunctions.Attribute;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Geom;
-import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Geopackages;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.collec.CollecMgmt;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.collec.CollecTransform;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.geom.Polygons;
@@ -30,14 +29,13 @@ import java.util.Arrays;
 import java.util.HashMap;
 
 /**
- * Street/generated surface ratio. Only developped for french parcels.
+ * Street/generated surface ratio. Only developed for french parcels.
  *
  * @author Maxime Colomb
  */
 public class RoadRatioParcels {
 
     private static boolean overwrite = true;
-    private static boolean firstLine = true;
 
     // public static void main(String[] args) throws IOException {
     // long start = System.currentTimeMillis();
@@ -66,16 +64,13 @@ public class RoadRatioParcels {
      * @param roadFile            the road Shapefile
      * @throws IOException
      */
-    public static void roadRatioParcels(SimpleFeatureCollection initialMarkedParcel, SimpleFeatureCollection cutParcel, String legend,
-                                        File folderOutStat, File roadFile) throws IOException {
-
+    public static void roadRatioParcels(SimpleFeatureCollection initialMarkedParcel, SimpleFeatureCollection cutParcel, String legend, File folderOutStat, File roadFile) throws IOException {
         // We construct zones to analyze the street ratio for each operations.
         DefaultFeatureCollection zone = new DefaultFeatureCollection();
         FilterFactory2 ff = CommonFactoryFinder.getFilterFactory2(GeoTools.getDefaultHints());
         Geometry multiGeom;
         if (CollecMgmt.isCollecContainsAttribute(initialMarkedParcel, MarkParcelAttributeFromPosition.getMarkFieldName()))
-            multiGeom = Geom
-                    .unionSFC(initialMarkedParcel.subCollection(ff.like(ff.property(MarkParcelAttributeFromPosition.getMarkFieldName()), "1")));
+            multiGeom = Geom.unionSFC(initialMarkedParcel.subCollection(ff.like(ff.property(MarkParcelAttributeFromPosition.getMarkFieldName()), "1")));
         else {
             System.out.println("Parcels haven't been previously marked : stop StatParcelStreetRatio");
             return;
@@ -112,13 +107,12 @@ public class RoadRatioParcels {
      * @param roadFile      the road Shapefile
      * @throws IOException
      */
-    public static void roadRatioZone(SimpleFeatureCollection zone, SimpleFeatureCollection cutParcel, String legend, File folderOutStat,
-                                     File roadFile) throws IOException {
+    public static void roadRatioZone(SimpleFeatureCollection zone, SimpleFeatureCollection cutParcel, String legend, File folderOutStat, File roadFile) throws IOException {
         System.out.println("++++++++++Road Ratios++++++++++");
         HashMap<String, String[]> stat = new HashMap<>();
 
-        DataStore sdsRoad = Geopackages.getDataStore(roadFile);
-        SimpleFeatureCollection roads = CollecTransform.selectIntersection(sdsRoad.getFeatureSource(sdsRoad.getTypeNames()[0]).getFeatures(), zone);
+        DataStore dsRoad = CollecMgmt.getDataStore(roadFile);
+        SimpleFeatureCollection roads = CollecTransform.selectIntersection(dsRoad.getFeatureSource(dsRoad.getTypeNames()[0]).getFeatures(), zone);
         SimpleFeatureCollection blocks = CityGeneration.createUrbanBlock(cutParcel);
 
         String[] firstLine = {"CODE", "Urban fabric type", ParcelSchema.getMinParcelCommunityField(), GeneralFields.getZonePreciseNameField(),
@@ -162,14 +156,10 @@ public class RoadRatioParcels {
         } catch (Exception problem) {
             problem.printStackTrace();
         }
-        sdsRoad.dispose();
-        if (RoadRatioParcels.firstLine) {
-            Csv.needFLine = true;
-            RoadRatioParcels.setFirstLine(false);
-        } else
-            Csv.needFLine = false;
-        Csv.generateCsvFile(stat, folderOutStat, "streetRatioParcelZone" + legend, !overwrite, firstLine);
+        dsRoad.dispose();
+        Csv.generateCsvFile(stat, folderOutStat, "streetRatioParcelZone", !overwrite, firstLine);
         overwrite = false;
+        Csv.needFLine = true;
     }
 
     /**
@@ -190,9 +180,5 @@ public class RoadRatioParcels {
             problem.printStackTrace();
         }
         return totArea;
-    }
-
-    public static void setFirstLine(boolean firstLine) {
-        RoadRatioParcels.firstLine = firstLine;
     }
 }
