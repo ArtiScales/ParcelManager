@@ -2,7 +2,6 @@ package fr.ign.artiscales.pm.usecase;
 
 import fr.ign.artiscales.pm.analysis.SingleParcelStat;
 import fr.ign.artiscales.pm.parcelFunction.MarkParcelAttributeFromPosition;
-import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Geopackages;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.collec.CollecMgmt;
 import fr.ign.artiscales.tools.geometryGeneration.CityGeneration;
 import org.geotools.data.DataStore;
@@ -12,14 +11,14 @@ import java.io.File;
 
 public class DensificationAnalysis {
     public static void main(String[] args) throws Exception {
-        DataStore ds = Geopackages.getDataStore(
+        DataStore ds = CollecMgmt.getDataStore(
                 new File("src/main/resources/ParcelComparison/out/parcelDensificationOnly.gpkg"));
         SimpleFeatureCollection parcelDensifiedOnly = ds.getFeatureSource(ds.getTypeNames()[0]).getFeatures();
-        DataStore sdsFin = Geopackages.getDataStore(
+        DataStore sdsFin = CollecMgmt.getDataStore(
                 new File("src/main/resources/ParcelComparison/out/parcelCuted-consolidationDivision-smallHouse-NC_.gpkg"));
         SimpleFeatureCollection parcelDensified = sdsFin.getFeatureSource(sdsFin.getTypeNames()[0]).getFeatures();
 
-        DataStore dsSelec = Geopackages.getDataStore(
+        DataStore dsSelec = CollecMgmt.getDataStore(
                 new File("/home/ubuntu/workspace/ParcelManager/src/main/resources/ParcelComparison/out/evolvedParcel.gpkg"));
         SimpleFeatureCollection parcelSelec = dsSelec.getFeatureSource(dsSelec.getTypeNames()[0]).getFeatures();
 
@@ -34,7 +33,7 @@ public class DensificationAnalysis {
                                         CityGeneration.createUrbanBlock(parcelDensified), roadFile, CityGeneration.createBufferBorder(parcelDensified)),
                                 buildingFile));
         CollecMgmt.exportSFC(SingleParcelStat.makeHausdorfDistanceMaps(parcelsDensifCreated, parcelSelec), new File("/tmp/HausdorfDensification"));
-        DataStore dsRoad = Geopackages.getDataStore(
+        DataStore dsRoad = CollecMgmt.getDataStore(
                 new File("/home/ubuntu/workspace/ParcelManager/src/main/resources/ParcelComparison/out/evolvedParcel.gpkg"));
         SimpleFeatureCollection roads = dsRoad.getFeatureSource(dsRoad.getTypeNames()[0]).getFeatures();
         SingleParcelStat.writeStatSingleParcel(parcelsDensifCreated, roads, parcelSelec, new File("/tmp/stat"));

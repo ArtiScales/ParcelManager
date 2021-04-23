@@ -9,12 +9,11 @@ import java.util.List;
 public class FrenchZoningSchemas {
 
     /**
-     * Decide the possibility of urbanization of an urban zoning feature according to the French urban planning habits. The <i>zoneNameField<i> field must be <b>U</b> or alike and
-     * the <i>zonePreciseNameField<i> field must be a variation of the <b>UA</b>, <b>UB</b>, <b>UC</b>, <b>UD</b> zones. It also allows the types <b>U</b>, <b>C</b> and <b>ZC</b>
+     * Decide the possibility of urbanization of an urban zoning feature according to the French urban planning habits. The <i>zoneNameField</i> field must be <b>U</b> or alike and
+     * the <i>zonePreciseNameField</i> field must be a variation of the <b>UA</b>, <b>UB</b>, <b>UC</b>, <b>UD</b> zones. It also allows the types <b>U</b>, <b>C</b> and <b>ZC</b>
      * that could provide from Cartes Communales.
      *
-     * <i>ZoneGenericNameField<i> and <i>zonePreciseNameField<i> are <i>TYPEZONE</i> and <i>LIBELLE</i> can be changed with the setters from the
-     * {@link fr.ign.artiscales.pm.fields.GeneralFields} class.
+     * <i>ZoneGenericNameField</i> and <i>zonePreciseNameField</i> are <i>TYPEZONE</i> and <i>LIBELLE</i> can be changed with the setters from the {@link fr.ign.artiscales.pm.fields.GeneralFields} class.
      *
      * @param zone Simple Feature of the input zone
      * @return true if the urban zone is urbanizable, wrong otherwise.
@@ -27,11 +26,11 @@ public class FrenchZoningSchemas {
     }
 
     /**
-     * Decide the possibility of urbanization of an urban zoning feature according to the French urban planning habits. The <i>ZoneGenericNameField<i> field must be <b>U</b> or
-     * alike and the <i>zonePreciseNameField<i> field must be a variation of the <b>UA</b>, <b>UB</b>, <b>UC</b>, <b>UD</b> zones. It also allows the types <b>U</b>, <b>C</b> and
+     * Decide the possibility of urbanization of an urban zoning feature according to the French urban planning habits. The <i>ZoneGenericNameField</i> field must be <b>U</b> or
+     * alike and the <i>zonePreciseNameField</i> field must be a variation of the <b>UA</b>, <b>UB</b>, <b>UC</b>, <b>UD</b> zones. It also allows the types <b>U</b>, <b>C</b> and
      * <b>ZC</b> that could provide from Cartes Communales.
      *
-     * <i>ZoneGenericNameField<i> and <i>zonePreciseNameField<i> are <i>TYPEZONE</i> and <i>LIBELLE</i> can be changed with the setters from the
+     * <i>ZoneGenericNameField</i> and <i>zonePreciseNameField</i> are <i>TYPEZONE</i> and <i>LIBELLE</i> can be changed with the setters from the
      * {@link fr.ign.artiscales.pm.fields.GeneralFields} class.
      *
      * @param zone Simple Feature of the input zone

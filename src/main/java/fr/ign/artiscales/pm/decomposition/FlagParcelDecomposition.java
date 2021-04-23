@@ -377,8 +377,7 @@ public class FlagParcelDecomposition {
         List<Polygon> lPolygonWithRoadAccess = splittedPolygon.stream().filter(this::hasRoadAccess).collect(Collectors.toList());
         List<Polygon> lPolygonWithNoRoadAccess = splittedPolygon.stream().filter(x -> !hasRoadAccess(x)).collect(Collectors.toList());
 
-        bouclepoly:
-        for (Polygon currentPoly : lPolygonWithNoRoadAccess) {
+        bouclepoly:for (Polygon currentPoly : lPolygonWithNoRoadAccess) {
             List<Pair<MultiLineString, Polygon>> listMap = generateCandidateForCreatingRoad(currentPoly, lPolygonWithRoadAccess);
             // We order the proposition according to the length (we will try at first to build the road on the shortest side
             listMap.sort(Comparator.comparingDouble(o -> o.getKey().getLength()));
@@ -516,13 +515,16 @@ public class FlagParcelDecomposition {
     }
 
     /**
-     * End condition : either the area is below a threshold or width to road (which is ultimately allowed to be 0). Goes to the {@link OBBBlockDecomposition} class
+     * End condition : either the area or the contact width to road is below a threshold (0 value is not allowed for contact width to road, as opposite to straight OBB).
+     * Goes to the {@link OBBBlockDecomposition} class.
      *
      * @param area           Area of the current parcel
      * @param frontSideWidth width of contact between road and parcel
      * @return true if the algorithm must stop
      */
     private boolean endCondition(double area, double frontSideWidth) {
+        if (frontSideWidth == 0.0)
+            return true;
         return OBBBlockDecomposition.endCondition(area, frontSideWidth, maximalArea, maximalWidth);
     }
 

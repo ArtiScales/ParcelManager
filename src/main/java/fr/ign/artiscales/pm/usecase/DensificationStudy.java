@@ -9,13 +9,15 @@ import fr.ign.artiscales.pm.scenario.PMStep;
 import fr.ign.artiscales.pm.workflow.Densification;
 import fr.ign.artiscales.tools.carto.JoinCSVToGeoFile;
 import fr.ign.artiscales.tools.carto.MergeByAttribute;
-import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Geopackages;
+import fr.ign.artiscales.tools.geoToolsFunctions.StatisticOperation;
+import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Geom;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.collec.CollecMgmt;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.collec.CollecTransform;
 import fr.ign.artiscales.tools.geometryGeneration.CityGeneration;
 import fr.ign.artiscales.tools.io.Csv;
 import fr.ign.artiscales.tools.parameter.ProfileUrbanFabric;
 import org.geotools.data.DataStore;
+import org.geotools.data.DataUtilities;
 import org.geotools.data.simple.SimpleFeatureCollection;
 import org.locationtech.jts.geom.Geometry;
 import org.opengis.feature.simple.SimpleFeature;
@@ -25,7 +27,6 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
@@ -51,13 +52,13 @@ public class DensificationStudy extends UseCase {
         for (int i = 1; i <= 4; i++)
             Csv.calculateColumnsBasicStat(new File(outFolder, "densificationStudyResult.csv"), i, true);
         // make a (nice) map out of it
-        DataStore ds = Geopackages.getDataStore(new File(rootFile, "parcel.gpkg"));
-        JoinCSVToGeoFile.joinCSVToGeoFile(
-                MergeByAttribute.mergeByAttribute(Objects.requireNonNull(GeneralFields.addCommunityCode(ds.getFeatureSource(ds.getTypeNames()[0]).getFeatures())),
-                        GeneralFields.getZoneCommunityCode()),
-                GeneralFields.getZoneCommunityCode(), new File(outFolder, "densificationStudyResult.csv"), GeneralFields.getZoneCommunityCode(),
-                new File(outFolder, "CityStat"), null, null);
-        ds.dispose();
+//        DataStore ds = Geopackages.getDataStore(new File(rootFile, "parcel.gpkg"));
+//        JoinCSVToGeoFile.joinCSVToGeoFile(
+//                MergeByAttribute.mergeByAttribute(Objects.requireNonNull(GeneralFields.addCommunityCode(ds.getFeatureSource(ds.getTypeNames()[0]).getFeatures())),
+//                        GeneralFields.getZoneCommunityCode()),
+//                GeneralFields.getZoneCommunityCode(), new File(outFolder, "densificationStudyResult.csv"), GeneralFields.getZoneCommunityCode(),
+//                new File(outFolder, "CityStat"), null, Arrays.asList(StatisticOperation.SUM));
+//        ds.dispose();
     }
 
     /**
@@ -75,27 +76,50 @@ public class DensificationStudy extends UseCase {
     public static void runDensificationStudy(SimpleFeatureCollection parcels, File buildingFile, File roadFile, File zoningFile,
                                              File outFolder, boolean isParcelWithoutStreetAllowed, ProfileUrbanFabric profile) throws IOException {
         outFolder.mkdir();
-        SimpleFeatureCollection block = CityGeneration.createUrbanBlock(parcels);
+        parcels = DataUtilities.collection(parcels);
+        SimpleFeatureCollection block = CityGeneration.createUrbanBlock(parcels,true);
         Geometry buffer = CityGeneration.createBufferBorder(parcels);
-        String splitField = MarkParcelAttributeFromPosition.getMarkFieldName();
-        // get total unbuilt parcels from the urbanized zones
-        SimpleFeatureCollection parcelsVacantLot = MarkParcelAttributeFromPosition.markParcelIntersectFrenchConstructibleZoningType(
-                MarkParcelAttributeFromPosition.markUnBuiltParcel(parcels, buildingFile), zoningFile);
-        if (isDEBUG())
-            CollecMgmt.exportSFC(parcelsVacantLot, new File(outFolder, "/parcelsVacantLot"));
-        SimpleFeatureCollection parcelsVacantLotCreated = (new Densification()).densificationOrNeighborhood(parcelsVacantLot, block, outFolder, buildingFile,
-                roadFile, profile, isParcelWithoutStreetAllowed, buffer, 5);
-        if (isDEBUG())
-            CollecMgmt.exportSFC(parcelsVacantLotCreated, new File(outFolder, "/parcelsVacantLotCreated"));
+        Geometry maskZone = Geom.unionSFC(block);
+        // building crop and export
+        DataStore buildingDS = CollecMgmt.getDataStore(buildingFile);
+        SimpleFeatureCollection building = DataUtilities.collection(CollecTransform.selectIntersection(buildingDS.getFeatureSource(buildingDS.getTypeNames()[0]).getFeatures(),maskZone)) ;
+        File buildingFileExported = CollecMgmt.exportSFC(building, new File(outFolder, "building"));
+        buildingDS.dispose();
+        // road crop and export
+        DataStore roadDS = CollecMgmt.getDataStore(roadFile);
+        SimpleFeatureCollection road = DataUtilities.collection(CollecTransform.selectIntersection(roadDS.getFeatureSource(roadDS.getTypeNames()[0]).getFeatures(),maskZone) );
+        File roadFileExported = CollecMgmt.exportSFC(road, new File(outFolder, "road"));
+        roadDS.dispose();
+        // zoning crop and export
+        DataStore zoningDS = CollecMgmt.getDataStore(zoningFile);
+        SimpleFeatureCollection zoning = DataUtilities.collection(CollecTransform.selectIntersection(zoningDS.getFeatureSource(zoningDS.getTypeNames()[0]).getFeatures(),maskZone));
+        zoningDS.dispose();
 
+        String splitField = MarkParcelAttributeFromPosition.getMarkFieldName();
+
+        // get total unbuilt parcels from the urbanized zones
+        SimpleFeatureCollection parcelsVacantLot = MarkParcelAttributeFromPosition.
+                markParcelIntersectFrenchConstructibleZoningType(MarkParcelAttributeFromPosition.markUnBuiltParcel(parcels, building), zoning);
+        if (isDEBUG()) {
+            CollecMgmt.exportSFC(parcelsVacantLot, new File(outFolder, "/parcelsVacantLot"));
+            System.out.println("export total unbuilt parcels from the urbanized zones");
+        }
+
+        SimpleFeatureCollection parcelsVacantLotCreated = (new Densification()).densificationOrNeighborhood(parcelsVacantLot, block, outFolder, buildingFileExported,
+                roadFileExported, profile, isParcelWithoutStreetAllowed, buffer, 5);
+        if (isDEBUG()) {
+            CollecMgmt.exportSFC(parcelsVacantLotCreated, new File(outFolder, "/parcelsVacantLotCreated"));
+            System.out.println("parcel vacant lot created");
+        }
         // simulate the densification of built parcels in the given zone
         SimpleFeatureCollection parcelsDensifZone = MarkParcelAttributeFromPosition
-                .markParcelIntersectFrenchConstructibleZoningType(MarkParcelAttributeFromPosition.markBuiltParcel(parcels, buildingFile), zoningFile);
-        if (isDEBUG())
+                .markParcelIntersectFrenchConstructibleZoningType(MarkParcelAttributeFromPosition.markBuiltParcel(parcels, building), zoning);
+        if (isDEBUG()) {
             CollecMgmt.exportSFC(parcelsDensifZone, new File(outFolder, "/parcelsDensifZone"));
-
-        SimpleFeatureCollection parcelsDensifCreated = (new Densification()).densification(parcelsDensifZone, block, outFolder, buildingFile,
-                roadFile, profile, isParcelWithoutStreetAllowed, buffer);
+            System.out.println("parcel densif zone created");
+        }
+        SimpleFeatureCollection parcelsDensifCreated = (new Densification()).densification(parcelsDensifZone, block, outFolder, buildingFileExported,
+                roadFileExported, profile, isParcelWithoutStreetAllowed, buffer);
         if (isDEBUG())
             CollecMgmt.exportSFC(parcelsDensifCreated, new File(outFolder, "/parcelsDensifCreated"));
 
@@ -105,14 +129,15 @@ public class DensificationStudy extends UseCase {
         MarkParcelAttributeFromPosition.setPostMark(true);
         // Mark the simulated parcels that doesn't contains buildings (and therefore can be build)
         parcelsVacantLotCreated = MarkParcelAttributeFromPosition
-                .markUnBuiltParcel(MarkParcelAttributeFromPosition.markSimulatedParcel(parcelsVacantLotCreated), buildingFile);
+                .markUnBuiltParcel(MarkParcelAttributeFromPosition.markSimulatedParcel(parcelsVacantLotCreated), building);
 
         parcelsDensifCreated = MarkParcelAttributeFromPosition
-                .markUnBuiltParcel(MarkParcelAttributeFromPosition.markSimulatedParcel(parcelsDensifCreated), buildingFile);
+                .markUnBuiltParcel(MarkParcelAttributeFromPosition.markSimulatedParcel(parcelsDensifCreated), building);
+
         // If the parcels have to be connected to the road, we mark them
         if (!isParcelWithoutStreetAllowed) {
-            parcelsVacantLotCreated = MarkParcelAttributeFromPosition.markParcelsConnectedToRoad(parcelsVacantLotCreated, CityGeneration.createUrbanBlock(parcelsVacantLotCreated), roadFile, buffer);
-            parcelsDensifCreated = MarkParcelAttributeFromPosition.markParcelsConnectedToRoad(parcelsDensifCreated, block, roadFile, buffer);
+            parcelsVacantLotCreated = MarkParcelAttributeFromPosition.markParcelsConnectedToRoad(parcelsVacantLotCreated, CityGeneration.createUrbanBlock(parcelsVacantLotCreated), road, buffer);
+            parcelsDensifCreated = MarkParcelAttributeFromPosition.markParcelsConnectedToRoad(parcelsDensifCreated, CityGeneration.createUrbanBlock(parcelsDensifCreated,true), road, buffer);
         }
         // exporting output geopackages and countings
         List<SimpleFeature> vacantParcelU = Arrays.stream(parcelsDensifCreated.toArray(new SimpleFeature[0]))
@@ -130,13 +155,10 @@ public class DensificationStudy extends UseCase {
         System.out.println();
         System.out.println("possible to have " + vacantParcelU.size() + " parcels with densification process");
 
-        DataStore sds = Geopackages.getDataStore(zoningFile);
-        SimpleFeatureCollection zoning = sds.getFeatureSource(sds.getTypeNames()[0]).getFeatures();
         long nbParcelsInUrbanizableZones = Arrays.stream(parcels.toArray(new SimpleFeature[0]))
                 .filter(feat -> FrenchZoningSchemas
                         .isUrbanZoneUsuallyAdmitResidentialConstruction(CollecTransform.getIntersectingSimpleFeatureFromSFC((Geometry) feat.getDefaultGeometry(), zoning)))
                 .count();
-        sds.dispose();
 
         // saving the stats in a .csv file
         String[] firstline = {GeneralFields.getZoneCommunityCode(), "parcels in urbanizable zones", "number of vacant lots", "parcels simulated in vacant lots",

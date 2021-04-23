@@ -5,7 +5,6 @@ import fr.ign.artiscales.tools.FeaturePolygonizer;
 import fr.ign.artiscales.tools.geoToolsFunctions.Attribute;
 import fr.ign.artiscales.tools.geoToolsFunctions.Schemas;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Geom;
-import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Geopackages;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.collec.CollecMgmt;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.collec.CollecTransform;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.geom.Polygons;
@@ -40,6 +39,9 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
 
+/**
+ * Methods to operate routine procedures on collections of parcels
+ */
 public class ParcelCollection {
 
 //	public static void main(String[] args) throws Exception {
@@ -52,13 +54,12 @@ public class ParcelCollection {
      * reference parcel to the ones that are intersected. If they are similar with a 3% error rate, we conclude that they are the same.
      * <p>
      * This method creates four geographic files (shapefile or geopackages, regarding the projects default format) in the parcelOutFolder:
+     * </p>
      * <ul>
      * <li><b>same</b> contains the reference parcels that have not evolved</li>
      * <li><b>notSame</b> contains the reference parcels that have evolved</li>
-     * <li><b>place</b> contains the <i>notSame</i> parcels with a reduction buffer, used for a precise intersection with other parcel in Parcel Manager scenarios. The large
-     * parcels that are selected for a zone simulation (see below) aren't present.</li>
-     * <li><b>zone</b> contains special zones to be simulated. They consist in a small evolved parts of large parcels that mostly haven't evolved. If we don't proceed to its
-     * calculation, the large parcel won't be selected.</li> urbanized. Can also be ignored</li> *
+     * <li><b>place</b> contains the <i>notSame</i> parcels with a reduction buffer, used for a precise intersection with other parcel in Parcel Manager scenarios. The large parcels that are selected for a zone simulation (see below) aren't present.</li>
+     * <li><b>zone</b> contains special zones to be simulated. They consist in a small evolved parts of large parcels that mostly haven't evolved. If we don't proceed to its calculation, the large parcel won't be urbanized. Can also be ignored</li>
      * <li><b>evolvedParcel</b> contains only the compared parcels that have evolved</li>
      * </ul>
      *
@@ -80,10 +81,8 @@ public class ParcelCollection {
      * <li><b>same</b> contains the reference parcels that have not evolved</li>
      * <li><b>notSame</b> contains the reference parcels that have evolved</li>
      * <li><b>evolvedParcel</b> contains the compared parcels that have evolved</li>
-     * <li><b>zone</b> contains special zones to be simulated. They consist in a small evolved parts of large parcels that mostly haven't evolved. If we don't proceed to its
-     * calculation, the large parcel won't be selected.</li> urbanized. Can also be ignored</li> *
-     * <li><b>place</b> contains reference parcels that evolved and aren't a <b>zone</b>. We apply a reduction buffer for a precise intersection with other parcel in Parcel Manager
-     * scenarios.</li>
+     * <li><b>zone</b> contains special zones to be simulated. They consist in a small evolved parts of large parcels that mostly haven't evolved. If we don't proceed to its calculation, the large parcel won't be urbanized. Can also be ignored</li>
+     * <li><b>place</b> contains reference parcels that evolved and aren't a <b>zone</b>. We apply a reduction buffer for a precise intersection with other parcel in Parcel Manager scenarios.</li>
      * </ul>
      *
      * @param parcelRefFile          The reference parcel plan
@@ -105,9 +104,9 @@ public class ParcelCollection {
             return;
         }
 
-        DataStore ds = Geopackages.getDataStore(parcelToCompareFile);
+        DataStore ds = CollecMgmt.getDataStore(parcelToCompareFile);
         SimpleFeatureCollection parcelToSort = new SpatialIndexFeatureCollection(ds.getFeatureSource(ds.getTypeNames()[0]).getFeatures());
-        DataStore dsRef = Geopackages.getDataStore(parcelRefFile);
+        DataStore dsRef = CollecMgmt.getDataStore(parcelRefFile);
         SimpleFeatureCollection parcelRef = dsRef.getFeatureSource(dsRef.getTypeNames()[0]).getFeatures();
         FilterFactory2 ff = CommonFactoryFinder.getFilterFactory2();
         PropertyName pName = ff.property(parcelRef.getSchema().getGeometryDescriptor().getLocalName());

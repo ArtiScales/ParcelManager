@@ -72,6 +72,7 @@ import java.util.stream.Stream;
  * Decomposition method by using straight skeleton
  *
  * @author Mickael Brasebin
+ * @author Julien Perret
  *
  */
 public class TopologicalStraightSkeletonParcelDecomposition {
@@ -196,7 +197,7 @@ public class TopologicalStraightSkeletonParcelDecomposition {
 		this.factory = p.getFactory();
 		this.NAME_ATT_ROAD = roadNameAttribute;
 		this.NAME_ATT_IMPORTANCE = roadImportanceAttribute;
-		if(generatePeriphericalRoad)
+		if (generatePeriphericalRoad)
 			p = this.generatePeripheralRoad(p, widthRoad);
 		try {
 			if (!FOLDER_OUT_DEBUG.exists())
@@ -230,8 +231,11 @@ public class TopologicalStraightSkeletonParcelDecomposition {
 			Optional<Pair<String, Double>> a = FindObjectInDirection.find(e.getGeometry(), this.initialPolygon, this.roads, maxDistanceForNearestRoad, this.NAME_ATT_IMPORTANCE).map(this::getAttributes);
 			attributes.put(e, a);
 		}
-		if (attributes.entrySet().stream().noneMatch(x -> x.getValue().isPresent()))
-			System.out.println("WARNING : no road found");
+		if (attributes.entrySet().stream().noneMatch(x -> x.getValue().isPresent())) {
+			System.out.println("WARNING : no road found - alpha and beta stripes ignored");
+			alphaStrips = betaStrips = null;
+			return;
+		}
 
 		// get alpha strips
 		this.alphaStrips = mergeOnLogicalStreets();
@@ -872,12 +876,11 @@ public class TopologicalStraightSkeletonParcelDecomposition {
 		return result;
 	}
 
-	private List<Polygon> createParcels(double minWidth, double maxWidth, double minArea, double omega, RandomGenerator rng) throws EdgeException {
+	private List<Polygon> createParcels(double minWidth, double maxWidth, double omega, RandomGenerator rng) throws EdgeException {
 		NormalDistribution nd = new NormalDistribution(rng, (minWidth + maxWidth) / 2, Math.sqrt(3 * omega));
 		List<Polygon> result = new ArrayList<>();
-		for (Face face : betaStrips.getFaces()) {
+		for (Face face : betaStrips.getFaces())
 			result.addAll(slice(minWidth, maxWidth, nd, rng, face));
-		}
 		return result;
 	}
 
@@ -1357,7 +1360,7 @@ public class TopologicalStraightSkeletonParcelDecomposition {
 
 	/**
 	 * Creates a road around the parcel. reduce the parcel polygon and add the newly created road to the road collection
-	 * @param p initpial polygon shape
+	 * @param p initial polygon shape
 	 * @param roadWidth width of the road to create
 	 * @return the new shape of the polygon
 	 */
@@ -1431,7 +1434,8 @@ public class TopologicalStraightSkeletonParcelDecomposition {
 			DefaultFeatureCollection tmp = new DefaultFeatureCollection();
 			try {
 				tmp.addAll(Geom.geomsToCollec(ls, Schemas.getBasicMLSSchema("PeripheralRoad")));
-				CollecMgmt.exportSFC(tmp, new File("/tmp/skeleton/peripheralRoads"), false);
+				FOLDER_OUT_DEBUG.mkdirs();
+				CollecMgmt.exportSFC(tmp, new File(FOLDER_OUT_DEBUG,"peripheralRoads"), false);
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
@@ -1454,7 +1458,10 @@ public class TopologicalStraightSkeletonParcelDecomposition {
 				TopologicalStraightSkeletonParcelDecomposition decomposition = new TopologicalStraightSkeletonParcelDecomposition(polygon, roads,
 						roadNameAttribute, roadImportanceAttribute, maxDepth, generatePeripheralRoad ? maxDistanceForNearestRoad + widthRoad : maxDistanceForNearestRoad, minimalArea, generatePeripheralRoad, widthRoad);
 				export(decomposition.straightSkeleton.getGraph(), new File(FOLDER_OUT_DEBUG, "after_fix"));
-				globalOutputParcels.addAll(decomposition.createParcels(minWidth, maxWidth, minimalArea, omega, rng));
+				if (decomposition.betaStrips != null)
+					globalOutputParcels.addAll(decomposition.createParcels(minWidth, maxWidth, omega, rng));
+				else
+					globalOutputParcels.add(decomposition.initialPolygon);
 				log("end with polygon " + count++);
 			} catch (Exception e) {
 				log("error with polygon " + count);

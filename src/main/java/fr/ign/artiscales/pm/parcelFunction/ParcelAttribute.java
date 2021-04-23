@@ -17,6 +17,9 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
 
+/**
+ * Methods to deal with parcel's specific attributes
+ */
 public class ParcelAttribute {
 
     /**
@@ -89,7 +92,7 @@ public class ParcelAttribute {
     }
 
     /**
-     * Get a list of all the <i>city code numbers</i> of the given collection. The city code field name is <i>DEPCOM<i> by default and can be changed with the method
+     * Get a list of all the <i>city code numbers</i> of the given collection. The city code field name is <i>DEPCOM</i> by default and can be changed with the method
      * {@link fr.ign.artiscales.pm.parcelFunction.ParcelSchema#setMinParcelCommunityField(String)}. If no code is found, we try to generate it (only for the French Parcels)
      *
      * @param parcels Input {@link SimpleFeatureCollection} of parcels
@@ -117,7 +120,7 @@ public class ParcelAttribute {
     }
 
     /**
-     * Get the most represented <i>city code numbers</i> of the given collection. The city code field name is <i>DEPCOM<i> by default and can be changed with the method
+     * Get the most represented <i>city code numbers</i> of the given collection. The city code field name is <i>DEPCOM</i> by default and can be changed with the method
      * {@link fr.ign.artiscales.pm.parcelFunction.ParcelSchema#setMinParcelCommunityField(String)}. If no code is found, we try to generate it (only for the French Parcels).
      *
      * @param parcels Input {@link SimpleFeatureCollection} of parcels

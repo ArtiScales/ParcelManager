@@ -7,8 +7,6 @@ import fr.ign.artiscales.pm.parcelFunction.ParcelSchema;
 import fr.ign.artiscales.pm.scenario.PMScenario;
 import fr.ign.artiscales.pm.scenario.PMStep;
 import fr.ign.artiscales.pm.workflow.ZoneDivision;
-import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Geopackages;
-import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Shp;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.collec.CollecMgmt;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.collec.CollecTransform;
 import fr.ign.artiscales.tools.geometryGeneration.CityGeneration;
@@ -75,7 +73,7 @@ public class CompareSimulatedParcelsWithEvolutionOM {
             if ((f.getName().contains(("Only")) && f.getName().contains(".gpkg")))
                 lF.add(f);
         File simulatedFile = new File(outFolder, "simulatedParcels.gpkg");
-        Shp.mergeVectFiles(lF, simulatedFile);
+// todo fix it         Shp.mergeVectFiles(lF, simulatedFile);
         PMStep.setParcel(fileParcelPast);
         PMStep.setPOLYGONINTERSECTION(null);
     }
@@ -108,8 +106,8 @@ public class CompareSimulatedParcelsWithEvolutionOM {
      * @throws IOException
      */
     public static File sortUniqueZoning(File toSortFile, File zoningFile, File outFolder) throws IOException {
-        DataStore dsToSort = Geopackages.getDataStore(toSortFile);
-        DataStore dsZoning = Geopackages.getDataStore(zoningFile);
+        DataStore dsToSort = CollecMgmt.getDataStore(toSortFile);
+        DataStore dsZoning = CollecMgmt.getDataStore(zoningFile);
         SimpleFeatureCollection zoning = DataUtilities.collection(dsZoning.getFeatureSource(dsZoning.getTypeNames()[0]).getFeatures());
         SimpleFeatureCollection toSort = DataUtilities.collection(dsToSort.getFeatureSource(dsToSort.getTypeNames()[0]).getFeatures());
         String[] vals = {ParcelSchema.getMinParcelCommunityField(), GeneralFields.getZonePreciseNameField()};

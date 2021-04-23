@@ -2,7 +2,6 @@ package fr.ign.artiscales.pm.fields.artiscales;
 
 import fr.ign.artiscales.pm.fields.french.FrenchParcelFields;
 import fr.ign.artiscales.pm.parcelFunction.ParcelState;
-import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Geopackages;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.collec.CollecMgmt;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.collec.OpOnCollec;
 import org.geotools.data.DataStore;
@@ -23,6 +22,9 @@ public class ArtiScalesParcelFields {
      * @param parcels                 Whole set of parcels
      * @param buildingFile            A Geopacakge containing the builings of the zone.
      * @param polygonIntersectionFile A Geopacakge containing outputs of MUP-City. Can be empty
+     * @param originalParcels
+     * @param zoningFile
+     * @param allOrCell
      * @return The parcel set with the right attributes
      * @throws IOException
      */
@@ -32,7 +34,7 @@ public class ArtiScalesParcelFields {
         DefaultFeatureCollection parcelFinal = new DefaultFeatureCollection();
         int i = 0;
         SimpleFeatureBuilder featureBuilder = ArtiScalesSchemas.getSFBParcelAsAS();
-        DataStore dsCells = Geopackages.getDataStore(polygonIntersectionFile);
+        DataStore dsCells = CollecMgmt.getDataStore(polygonIntersectionFile);
         SimpleFeatureCollection cellsSFS = dsCells.getFeatureSource(dsCells.getTypeNames()[0]).getFeatures();
         try (SimpleFeatureIterator parcelIt = parcelsFrenched.features()) {
             while (parcelIt.hasNext()) {

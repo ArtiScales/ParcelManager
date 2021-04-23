@@ -13,7 +13,6 @@ import fr.ign.artiscales.pm.workflow.ConsolidationDivision;
 import fr.ign.artiscales.pm.workflow.Densification;
 import fr.ign.artiscales.pm.workflow.Workflow;
 import fr.ign.artiscales.pm.workflow.ZoneDivision;
-import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Geopackages;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.collec.CollecMgmt;
 import fr.ign.artiscales.tools.geometryGeneration.CityGeneration;
 import fr.ign.artiscales.tools.parameter.ProfileUrbanFabric;
@@ -179,12 +178,12 @@ public class PMStep {
      * Execute the current PM Step.
      *
      * @return The ShapeFile containing the whole parcels of the given collection, where the simulated parcel have replaced the former parcels.
-     * @throws IOException
+     * @throws IOException tons of reading and writing
      */
     public File execute() throws IOException {
         OUTFOLDER.mkdirs();
         //convert the parcel to a common type
-        DataStore dSParcel = Geopackages.getDataStore(PARCELFILE);
+        DataStore dSParcel = CollecMgmt.getDataStore(PARCELFILE);
         SimpleFeatureCollection parcel = DataUtilities.collection(dSParcel.getFeatureSource(dSParcel.getTypeNames()[0]).getFeatures());
         dSParcel.dispose();
 
@@ -419,7 +418,7 @@ public class PMStep {
      * @throws IOException
      */
     public List<Geometry> getBoundsOfZone() throws IOException {
-        DataStore ds = Geopackages.getDataStore(PARCELFILE);
+        DataStore ds = CollecMgmt.getDataStore(PARCELFILE);
         List<Geometry> lG = new ArrayList<>();
         if (workflow.equals("zoneDivision")) {
             Arrays.stream(getZone(ds.getFeatureSource(ds.getTypeNames()[0]).getFeatures()).toArray(new SimpleFeature[0])).forEach(parcel -> lG.add((Geometry) parcel.getDefaultGeometry()));
@@ -445,13 +444,13 @@ public class PMStep {
         SimpleFeatureCollection zoneIn;
         // If a specific zone is an input, we take them directly. We also have to set attributes from pre-existing parcel field.
         if (ZONE != null && ZONE.exists()) {
-            DataStore dsZone = Geopackages.getDataStore(ZONE);
+            DataStore dsZone = CollecMgmt.getDataStore(ZONE);
             zoneIn = GeneralFields.transformSFCToMinParcel(dsZone.getFeatureSource(dsZone.getTypeNames()[0]).getFeatures(), parcel);
             dsZone.dispose();
         }
         // If no zone have been set, it means we have to use the zoning plan.
         else {
-            DataStore dsZoning = Geopackages.getDataStore(ZONINGFILE);
+            DataStore dsZoning = CollecMgmt.getDataStore(ZONINGFILE);
             SimpleFeatureCollection zoning = new SpatialIndexFeatureCollection(DataUtilities.collection((dsZoning.getFeatureSource(dsZoning.getTypeNames()[0]).getFeatures())));
             dsZoning.dispose();
             zoneIn = ZoneDivision.createZoneToCut(genericZone, preciseZone, zoning, ZONINGFILE, parcel);

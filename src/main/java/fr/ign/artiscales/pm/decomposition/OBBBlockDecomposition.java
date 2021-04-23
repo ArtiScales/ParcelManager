@@ -35,6 +35,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * Oriented Bounding Box algorithm implementation with methods to generate road network
+ */
 public class OBBBlockDecomposition {
 
 //	public static void main(String[] args) throws Exception {

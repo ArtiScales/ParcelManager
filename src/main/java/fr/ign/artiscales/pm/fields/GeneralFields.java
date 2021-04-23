@@ -60,7 +60,7 @@ public class GeneralFields {
     }
 
     /**
-     * Get a list of all the {@link #zonePreciseNameField} values of the given collection. The city code field name is <i>LIBELLE<i> by default and can be changed with the method
+     * Get a list of all the {@link #zonePreciseNameField} values of the given collection. The city code field name is <i>LIBELLE</i> by default and can be changed with the method
      * {@link #setZonePreciseNameField(String)}.
      *
      * @param zonings Input {@link SimpleFeatureCollection} of zoning plan
@@ -77,7 +77,7 @@ public class GeneralFields {
     }
 
     /**
-     * Get a list of all the {@link #zoneGenericNameField} values of the given collection. The city code field name is <i>TYPEZONE<i> by default and can be changed with the method
+     * Get a list of all the {@link #zoneGenericNameField} values of the given collection. The city code field name is <i>TYPEZONE</i> by default and can be changed with the method
      * {@link #setZoneGenericNameField(String)}.
      *
      * @param zonings Input {@link SimpleFeatureCollection} of zoning plan

@@ -122,7 +122,7 @@ public class CampSkeleton {
   /**
    * Convertit la sortie de l'algorithme de squelette droit.
    * 
-   * @TODO : il subsite un problème, parfois, 2 arrêtes de 2 faces sont équivalentes à 1 arrête d'une autre face.
+   * TODO : il subsite un problème, parfois, 2 arrêtes de 2 faces sont équivalentes à 1 arrête d'une autre face.
    * @param out
    * @return
    */

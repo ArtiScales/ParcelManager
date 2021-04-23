@@ -7,7 +7,6 @@ import fr.ign.artiscales.pm.parcelFunction.ParcelCollection;
 import fr.ign.artiscales.pm.parcelFunction.ParcelSchema;
 import fr.ign.artiscales.tools.geoToolsFunctions.Attribute;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Geom;
-import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Geopackages;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.collec.CollecMgmt;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.collec.CollecTransform;
 import fr.ign.artiscales.tools.geometryGeneration.CityGeneration;
@@ -112,7 +111,7 @@ public class ConsolidationDivision extends Workflow {
         ////////////////
         SimpleFeatureCollection roads;
         if (roadFile != null && roadFile.exists()) {
-            DataStore sdsRoad = Geopackages.getDataStore(roadFile);
+            DataStore sdsRoad = CollecMgmt.getDataStore(roadFile);
             roads = DataUtilities.collection(CollecTransform.selectIntersection(sdsRoad.getFeatureSource(sdsRoad.getTypeNames()[0]).getFeatures(), Geom.unionSFC(mergedParcels).buffer(30)));
             if (isDEBUG())
                 CollecMgmt.exportSFC(roads, new File(tmpFolder, "roads"));
@@ -142,7 +141,7 @@ public class ConsolidationDivision extends Workflow {
                         case "SS":
                             freshCutParcel = TopologicalStraightSkeletonParcelDecomposition.runTopologicalStraightSkeletonParcelDecomposition(feat, roads, "NOM_VOIE_G", "IMPORTANCE", profile.getMaxDepth(),
                                     profile.getMaxDistanceForNearestRoad(), profile.getMinimalArea(), profile.getMinimalWidthContactRoad(), profile.getMaxWidth(),
-                                    (profile.getNoise() == 0) ? 0.1 : profile.getNoise(), new MersenneTwister(1), true, profile.getStreetWidth());
+                                    (profile.getNoise() == 0) ? 0.1 : profile.getNoise(), new MersenneTwister(1), profile.isGeneratePeripheralRoad(), profile.getStreetWidth());
                             break;
                     }
                     if (freshCutParcel != null && !freshCutParcel.isEmpty() && freshCutParcel.size() > 0) {

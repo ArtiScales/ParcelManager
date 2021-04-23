@@ -7,6 +7,9 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 
+/**
+ * Class to export fast and automated graph created with Xchart library
+ */
 public class Graph {
     List<Double> sortedDistribution;
     double boundMin, boundMax;

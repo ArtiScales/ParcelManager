@@ -201,6 +201,10 @@ public class PMScenario {
         REUSESIMULATEDPARCELS = reuseSimulatedParcel;
     }
 
+    /**
+     * Run every step that are present in the stepList
+     * @throws IOException
+     */
     public void executeStep() throws IOException {
         for (PMStep pmstep : getStepList()) {
             System.out.println("try " + pmstep);

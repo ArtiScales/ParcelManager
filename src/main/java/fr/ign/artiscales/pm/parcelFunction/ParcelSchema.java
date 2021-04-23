@@ -11,6 +11,9 @@ import org.opengis.feature.simple.SimpleFeatureType;
 import org.opengis.feature.type.AttributeDescriptor;
 import org.opengis.referencing.FactoryException;
 
+/**
+ * Methods to deal with parcel's schemas
+ */
 public class ParcelSchema {
 
     static String minParcelNumberField = "NUMERO";
@@ -120,7 +123,7 @@ public class ParcelSchema {
     }
 
     /**
-     * Create a builder out of a SimpleFeatureCollection's schema and add a mark field of type <b>int</i>. The mark name can be set with the method
+     * Create a builder out of a SimpleFeatureCollection's schema and add a mark field of type <i>int</i>. The mark name can be set with the method
      * {@link fr.ign.artiscales.pm.parcelFunction.MarkParcelAttributeFromPosition#setMarkFieldName(String)}.
      *
      * @param schema input schema

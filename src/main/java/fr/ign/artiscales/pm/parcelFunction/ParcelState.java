@@ -4,7 +4,6 @@ import com.opencsv.CSVReader;
 import fr.ign.artiscales.pm.fields.GeneralFields;
 import fr.ign.artiscales.tools.geoToolsFunctions.Attribute;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Geom;
-import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Geopackages;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.collec.CollecMgmt;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.collec.CollecTransform;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.geom.Lines;
@@ -31,6 +30,9 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * Methods to get information about parcel about their geometry, position in the geographic environment, etc.
+ */
 public class ParcelState {
 
     // public static void main(String[] args) throws Exception {
@@ -56,7 +58,13 @@ public class ParcelState {
     // }
     // sds.dispose();
     // }
+    /**
+     * Attribute representing the width of the road
+     */
     private static String widthFieldAttribute = "LARGEUR";
+    /**
+     * Default width of the road
+     */
     private static double defaultWidthRoad = 7.5;
 
     public static int countParcelNeighborhood(Geometry parcelGeom, SimpleFeatureCollection parcels) {
@@ -89,8 +97,7 @@ public class ParcelState {
             while (roadSnapIt.hasNext()) {
                 SimpleFeature feat = roadSnapIt.next();
                 roadGeom.add(((Geometry) feat.getDefaultGeometry())
-                        .buffer((CollecMgmt.isCollecContainsAttribute(roads, widthFieldAttribute) ? (double) feat.getAttribute(widthFieldAttribute) + 2.5
-                                : defaultWidthRoad)));
+                        .buffer((CollecMgmt.isCollecContainsAttribute(roads, widthFieldAttribute) && feat.getAttribute(widthFieldAttribute) != null ? (double) feat.getAttribute(widthFieldAttribute) + 2.5 : defaultWidthRoad)));
             }
         } catch (Exception problem) {
             problem.printStackTrace();
@@ -245,7 +252,7 @@ public class ParcelState {
      * @throws IOException
      */
     public static boolean isAlreadyBuilt(File buildingFile, SimpleFeature parcel, Geometry emprise, double uncountedBuildingArea) throws IOException {
-        DataStore batiDS = Geopackages.getDataStore(buildingFile);
+        DataStore batiDS = CollecMgmt.getDataStore(buildingFile);
         boolean result = isAlreadyBuilt(CollecTransform.selectIntersection(batiDS.getFeatureSource(batiDS.getTypeNames()[0]).getFeatures(), emprise), parcel,
                 0.0, uncountedBuildingArea);
         batiDS.dispose();
@@ -254,7 +261,7 @@ public class ParcelState {
 
     public static boolean isAlreadyBuilt(File buildingFile, SimpleFeature parcel, double bufferBati, double uncountedBuildingArea)
             throws IOException {
-        DataStore batiDS = Geopackages.getDataStore(buildingFile);
+        DataStore batiDS = CollecMgmt.getDataStore(buildingFile);
         boolean result = isAlreadyBuilt(
                 CollecTransform.selectIntersection(batiDS.getFeatureSource(batiDS.getTypeNames()[0]).getFeatures(),
                         ((Geometry) parcel.getDefaultGeometry()).buffer(10)),
@@ -298,7 +305,7 @@ public class ParcelState {
      * @throws IOException
      */
     public static Double getEvalInParcel(SimpleFeature parcel, File outMup) throws IOException {
-        DataStore cellsSDS = Geopackages.getDataStore(outMup);
+        DataStore cellsSDS = CollecMgmt.getDataStore(outMup);
         Double result = getEvalInParcel(parcel, cellsSDS.getFeatureSource(cellsSDS.getTypeNames()[0]).getFeatures());
         cellsSDS.dispose();
         return result;
@@ -370,7 +377,7 @@ public class ParcelState {
      * @throws IOException
      */
     public static String parcelInGenericZone(File zoningFile, SimpleFeature parcelIn) throws IOException {
-        DataStore ds = Geopackages.getDataStore(zoningFile);
+        DataStore ds = CollecMgmt.getDataStore(zoningFile);
         String preciseZone = CollecTransform.getIntersectingFieldFromSFC((Geometry) parcelIn.getDefaultGeometry(),
                 ds.getFeatureSource(ds.getTypeNames()[0]).getFeatures(), GeneralFields.getZoneGenericNameField());
         ds.dispose();
@@ -387,7 +394,7 @@ public class ParcelState {
      * @throws IOException
      */
     public static String parcelInTypo(File communityFile, SimpleFeature parcelIn, String typoAttribute) throws IOException {
-        DataStore ds = Geopackages.getDataStore(communityFile);
+        DataStore ds = CollecMgmt.getDataStore(communityFile);
         String typo = CollecTransform.getIntersectingFieldFromSFC((Geometry) parcelIn.getDefaultGeometry(),
                 ds.getFeatureSource(ds.getTypeNames()[0]).getFeatures(), typoAttribute);
         ds.dispose();

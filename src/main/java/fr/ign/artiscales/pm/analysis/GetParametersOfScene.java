@@ -5,7 +5,6 @@ import fr.ign.artiscales.pm.parcelFunction.MarkParcelAttributeFromPosition;
 import fr.ign.artiscales.pm.parcelFunction.ParcelAttribute;
 import fr.ign.artiscales.pm.parcelFunction.ParcelGetter;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Geom;
-import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Geopackages;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.collec.CollecMgmt;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.collec.CollecTransform;
 import fr.ign.artiscales.tools.geometryGeneration.CityGeneration;
@@ -96,12 +95,12 @@ public class GetParametersOfScene {
      * @throws IOException
      */
     public static void generateAnalysisOfScene(String scaleZone) throws IOException {
-        DataStore ds = Geopackages.getDataStore(parcelFile);
+        DataStore ds = CollecMgmt.getDataStore(parcelFile);
         // sdsRoad.setCharset(Charset.forName("UTF-8"));
         SimpleFeatureCollection parcels = ds.getFeatureSource(ds.getTypeNames()[0]).getFeatures();
         // collection of every input with its set of parcels
         HashMap<String, SimpleFeatureCollection> listSFC = new HashMap<>();
-        DataStore sdsZone = Geopackages.getDataStore(zoningFile);
+        DataStore sdsZone = CollecMgmt.getDataStore(zoningFile);
         SimpleFeatureCollection zonings = DataUtilities
                 .collection(CollecTransform.selectIntersection(sdsZone.getFeatureSource(sdsZone.getTypeNames()[0]).getFeatures(), parcels));
         sdsZone.dispose();
@@ -133,7 +132,7 @@ public class GetParametersOfScene {
                 }
                 break;
         }
-        DataStore dsRoad = Geopackages.getDataStore(roadFile);
+        DataStore dsRoad = CollecMgmt.getDataStore(roadFile);
         for (String zone : listSFC.keySet()) {
             // Parcel's area
             areaBuiltAndTotal(listSFC.get(zone), scaleZone, zone);

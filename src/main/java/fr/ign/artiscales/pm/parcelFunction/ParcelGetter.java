@@ -3,7 +3,6 @@ package fr.ign.artiscales.pm.parcelFunction;
 import fr.ign.artiscales.pm.fields.GeneralFields;
 import fr.ign.artiscales.pm.fields.french.FrenchZoningSchemas;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Geom;
-import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Geopackages;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.collec.CollecMgmt;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.collec.CollecTransform;
 import org.geotools.data.DataStore;
@@ -25,6 +24,9 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 
+/**
+ * Methods to get parcels from collections regarding to specific criterion
+ */
 public class ParcelGetter {
 
     static String codeDepFiled = "CODE_DEP";
@@ -37,16 +39,16 @@ public class ParcelGetter {
     /**
      * Get a set of parcel depending to their zoning type.
      *
-     * @param zone
-     * @param parcelles
+     * @param zone zone to select parcels from
+     * @param parcels input parcels
      * @param zoningFile Shapefile containing the french zoning
      * @return a {@link SimpleFeatureCollection} of parcels that more of the half are contained into the zone
      * @throws IOException
      */
-    public static SimpleFeatureCollection getParcelByFrenchZoningType(String zone, SimpleFeatureCollection parcelles, File zoningFile)
+    public static SimpleFeatureCollection getParcelByFrenchZoningType(String zone, SimpleFeatureCollection parcels, File zoningFile)
             throws IOException {
-        DataStore zonesSDS = Geopackages.getDataStore(zoningFile);
-        SimpleFeatureCollection zonesSFC = CollecTransform.selectIntersection(zonesSDS.getFeatureSource(zonesSDS.getTypeNames()[0]).getFeatures(), parcelles);
+        DataStore zonesSDS = CollecMgmt.getDataStore(zoningFile);
+        SimpleFeatureCollection zonesSFC = CollecTransform.selectIntersection(zonesSDS.getFeatureSource(zonesSDS.getTypeNames()[0]).getFeatures(), parcels);
         List<String> listZones = FrenchZoningSchemas.getUsualNames(zone);
         DefaultFeatureCollection zoneSelected = new DefaultFeatureCollection();
         try (SimpleFeatureIterator itZonez = zonesSFC.features()) {
@@ -59,7 +61,7 @@ public class ParcelGetter {
             problem.printStackTrace();
         }
         DefaultFeatureCollection result = new DefaultFeatureCollection();
-        try (SimpleFeatureIterator it = parcelles.features()) {
+        try (SimpleFeatureIterator it = parcels.features()) {
             while (it.hasNext()) {
                 SimpleFeature parcelFeat = it.next();
                 Geometry parcelGeom = (Geometry) parcelFeat.getDefaultGeometry();
@@ -95,7 +97,7 @@ public class ParcelGetter {
      * @throws IOException
      */
     public static SimpleFeatureCollection getParcelByTypo(String typo, SimpleFeatureCollection parcels, File zoningFile) throws IOException {
-        DataStore zoningDS = Geopackages.getDataStore(zoningFile);
+        DataStore zoningDS = CollecMgmt.getDataStore(zoningFile);
         SimpleFeatureCollection zoningSFC = CollecTransform.selectIntersection(new SpatialIndexFeatureCollection(zoningDS.getFeatureSource(zoningDS.getTypeNames()[0]).getFeatures()), parcels);
         FilterFactory2 ff = CommonFactoryFinder.getFilterFactory2(GeoTools.getDefaultHints());
         Filter filter = ff.like(ff.property(typologyField), typo);
@@ -130,8 +132,18 @@ public class ParcelGetter {
         return result.collection();
     }
 
+    /**
+     * Get parcels out of a parcel collection corresponding to a list of zipcodes
+     * Zipcodes are not directly contained in a field of the collection but is composed of two fields. Their values are set by default but it's possible to change them with the methods {@link #setCodeComFiled(String) setCodeComFiled} and {@link #setCodeDepFiled(String) setCodeDepFiled}
+     *
+     * @param parcelIn input parcel collection
+     * @param vals     a list of zipcode values
+     * @param fileOut  file to export selected parcels
+     * @return a simple feature collection of parcels having the values contained in <i>vals</i>.
+     * @throws IOException
+     */
     public static File getParcelByZip(File parcelIn, List<String> vals, File fileOut) throws IOException {
-        DataStore ds = Geopackages.getDataStore(parcelIn);
+        DataStore ds = CollecMgmt.getDataStore(parcelIn);
         SimpleFeatureCollection result = getParcelByZip(ds.getFeatureSource(ds.getTypeNames()[0]).getFeatures(), vals);
         ds.dispose();
         return CollecMgmt.exportSFC(result, fileOut);
@@ -141,10 +153,10 @@ public class ParcelGetter {
      * Get parcels out of a parcel collection corresponding to a list of zipcodes
      * Zipcodes are not directly contained in a field of the collection but is composed of two fields. Their values are set by default but it's possible to change them with the methods {@link #setCodeComFiled(String) setCodeComFiled} and {@link #setCodeDepFiled(String) setCodeDepFiled}
      *
-     * @param parcelIn : input parcel collection
-     * @param vals     : a list of zipcode values
+     * @param parcelIn input parcel collection
+     * @param vals     a list of zipcode values
      * @return a simple feature collection of parcels having the values contained in <i>vals</i>.
-     * * @throws IOException
+     * @throws IOException
      */
     public static SimpleFeatureCollection getParcelByZip(SimpleFeatureCollection parcelIn, List<String> vals) throws IOException {
         DefaultFeatureCollection result = new DefaultFeatureCollection();

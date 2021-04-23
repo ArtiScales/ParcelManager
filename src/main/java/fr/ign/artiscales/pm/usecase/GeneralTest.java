@@ -10,7 +10,6 @@ import fr.ign.artiscales.pm.workflow.ConsolidationDivision;
 import fr.ign.artiscales.pm.workflow.Densification;
 import fr.ign.artiscales.pm.workflow.Workflow;
 import fr.ign.artiscales.pm.workflow.ZoneDivision;
-import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Geopackages;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.collec.CollecMgmt;
 import fr.ign.artiscales.tools.geometryGeneration.CityGeneration;
 import fr.ign.artiscales.tools.parameter.ProfileUrbanFabric;
@@ -26,7 +25,7 @@ import java.util.logging.Level;
 import java.util.stream.Collectors;
 
 /**
- * Class that tests principal workflows and analysis of Parcel Manager.
+ * Class that tests principal workflows and analysis of Parcel Manager. Scenario-less to clearly show every step of a Parcel Manager experiment.
  *
  * @author Maxime Colomb
  */
@@ -43,25 +42,25 @@ public class GeneralTest extends UseCase {
         File outFolder = new File(rootFolder, "out");
         setDEBUG(false);
         Workflow.setSAVEINTERMEDIATERESULT(true);
-        GeneralTest(outFolder, rootFolder);
+        doGeneralTest(outFolder, rootFolder);
         System.out.println(System.currentTimeMillis() - start);
     }
 
-    public static void GeneralTest(File outRootFolder, File rootFolder) throws Exception {
-        File roadFile = new File(rootFolder, "road.gpkg");
+    public static void doGeneralTest(File outRootFolder, File rootFolder) throws Exception {
+        File roadFile = new File(rootFolder, "roadSS.gpkg");
         File zoningFile = new File(rootFolder, "zoning.gpkg");
         File buildingFile = new File(rootFolder, "building.gpkg");
         File parcelFile = new File(rootFolder, "parcel.gpkg");
         File profileFolder = new File(rootFolder, "profileUrbanFabric");
         boolean allowIsolatedParcel = false;
-        DataStore gpkgDSParcel = Geopackages.getDataStore(parcelFile);
+        DataStore gpkgDSParcel = CollecMgmt.getDataStore(parcelFile);
         SimpleFeatureCollection parcel = DataUtilities.collection(ParcelGetter.getParcelByZip(gpkgDSParcel.getFeatureSource(gpkgDSParcel.getTypeNames()[0]).getFeatures(), "25267,25395"));
         gpkgDSParcel.dispose();
         ProfileUrbanFabric profileDetached = ProfileUrbanFabric.convertJSONtoProfile(new File(profileFolder, "detachedHouse.json"));
         ProfileUrbanFabric profileSmallHouse = ProfileUrbanFabric.convertJSONtoProfile(new File(profileFolder, "smallHouse.json"));
         ProfileUrbanFabric profileLargeCollective = ProfileUrbanFabric.convertJSONtoProfile(new File(profileFolder, "largeCollective.json"));
         Workflow.PROCESS = "SS";
-        for (int i = 0; i <= 2; i++) {
+        for (int i = 0; i <= 3; i++) {
             // multiple process calculation
             String ext = "offset";
             if (i == 1) {
@@ -71,6 +70,13 @@ public class GeneralTest extends UseCase {
                 ext = "SS";
             }
             else if (i == 2) {
+                Workflow.PROCESS = "SS";
+                ext = "SSwithoutRoad";
+                profileDetached.setGeneratePeripheralRoad(false);
+                profileSmallHouse.setGeneratePeripheralRoad(false);
+                profileLargeCollective.setGeneratePeripheralRoad(false);
+            }
+            else if (i == 3) {
                 Workflow.PROCESS = "OBB";
                 ext = "OBB";
             }
@@ -86,7 +92,7 @@ public class GeneralTest extends UseCase {
             System.out.println("*-*-*-*-*-*-*-*-*-*");
             System.out.println("zoneTotRecomp");
             System.out.println("*-*-*-*-*-*-*-*-*-*");
-            DataStore gpkgDSZoning = Geopackages.getDataStore(zoningFile);
+            DataStore gpkgDSZoning = CollecMgmt.getDataStore(zoningFile);
             SimpleFeatureCollection zoning = DataUtilities.collection((gpkgDSZoning.getFeatureSource(gpkgDSZoning.getTypeNames()[0]).getFeatures()));
             gpkgDSZoning.dispose();
             SimpleFeatureCollection zone = ZoneDivision.createZoneToCut("AU", "AU1", zoning, zoningFile, parcel);
@@ -95,7 +101,7 @@ public class GeneralTest extends UseCase {
                 System.out.println("parcelGenZone : no zones to be cut");
                 System.exit(1);
             }
-            DataStore rDS = Geopackages.getDataStore(roadFile);
+            DataStore rDS = CollecMgmt.getDataStore(roadFile);
             SimpleFeatureCollection parcelCuted = (new ZoneDivision()).zoneDivision(zone, parcel, rDS.getFeatureSource(rDS.getTypeNames()[0]).getFeatures(), outFolder, profileLargeCollective);
             rDS.dispose();
             SimpleFeatureCollection finaux = FrenchParcelFields.setOriginalFrenchParcelAttributes(parcelCuted, parcel);
@@ -130,7 +136,7 @@ public class GeneralTest extends UseCase {
             System.out.println("*-*-*-*-*-*-*-*-*-*");
             SimpleFeatureCollection parcelDensified = (new Densification()).densification(
                     MarkParcelAttributeFromPosition.markParcelIntersectPreciseZoningType(finalNormalZone, "U", "UB", zoningFile),
-                    CityGeneration.createUrbanBlock(finalNormalZone), outFolder, buildingFile, roadFile, profileSmallHouse.getHarmonyCoeff(),
+                    CityGeneration.createUrbanBlock(finalNormalZone, true), outFolder, buildingFile, roadFile, profileSmallHouse.getHarmonyCoeff(),
                     profileSmallHouse.getNoise(), profileSmallHouse.getMaximalArea(), profileSmallHouse.getMinimalArea(),
                     profileSmallHouse.getLenDriveway(), profileSmallHouse.getLenDriveway(), allowIsolatedParcel);
             SimpleFeatureCollection finaux3 = FrenchParcelFields.setOriginalFrenchParcelAttributes(parcelDensified, parcel);
