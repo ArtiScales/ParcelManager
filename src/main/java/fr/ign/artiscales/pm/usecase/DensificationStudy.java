@@ -7,14 +7,12 @@ import fr.ign.artiscales.pm.parcelFunction.ParcelAttribute;
 import fr.ign.artiscales.pm.scenario.PMScenario;
 import fr.ign.artiscales.pm.scenario.PMStep;
 import fr.ign.artiscales.pm.workflow.Densification;
-import fr.ign.artiscales.tools.carto.JoinCSVToGeoFile;
-import fr.ign.artiscales.tools.carto.MergeByAttribute;
-import fr.ign.artiscales.tools.geoToolsFunctions.StatisticOperation;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Geom;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.collec.CollecMgmt;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.collec.CollecTransform;
 import fr.ign.artiscales.tools.geometryGeneration.CityGeneration;
-import fr.ign.artiscales.tools.io.Csv;
+import fr.ign.artiscales.tools.io.csv.CsvExport;
+import fr.ign.artiscales.tools.io.csv.CsvOp;
 import fr.ign.artiscales.tools.parameter.ProfileUrbanFabric;
 import org.geotools.data.DataStore;
 import org.geotools.data.DataUtilities;
@@ -50,7 +48,7 @@ public class DensificationStudy extends UseCase {
         PMScenario pmScen = new PMScenario(new File(rootFile, "scenario.json"));
         pmScen.executeStep();
         for (int i = 1; i <= 4; i++)
-            Csv.calculateColumnsBasicStat(new File(outFolder, "densificationStudyResult.csv"), i, true);
+            CsvOp.calculateColumnsBasicStat(new File(outFolder, "densificationStudyResult.csv"), i, true);
         // make a (nice) map out of it
 //        DataStore ds = Geopackages.getDataStore(new File(rootFile, "parcel.gpkg"));
 //        JoinCSVToGeoFile.joinCSVToGeoFile(
@@ -166,8 +164,8 @@ public class DensificationStudy extends UseCase {
         Object[] line = {nbParcelsInUrbanizableZones, nbVacantLot, nbVacantLotParcels, vacantParcelU.size()};
         HashMap<String, Object[]> l = new HashMap<>();
         l.put(ParcelAttribute.getCityCodeOfParcels(parcelsDensifCreated), line);
-        Csv.generateCsvFile(l, outFolder, "densificationStudyResult", firstline, true);
-        Csv.needFLine = false;
+        CsvExport.generateCsvFile(l, outFolder, "densificationStudyResult", firstline, true);
+        CsvExport.needFLine = false;
         // redo normal mark name
         MarkParcelAttributeFromPosition.setMarkFieldName(firstMarkFieldName);
     }

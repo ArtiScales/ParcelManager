@@ -10,7 +10,7 @@ import fr.ign.artiscales.pm.workflow.ZoneDivision;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.collec.CollecMgmt;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.collec.CollecTransform;
 import fr.ign.artiscales.tools.geometryGeneration.CityGeneration;
-import fr.ign.artiscales.tools.io.Csv;
+import fr.ign.artiscales.tools.io.csv.CsvOp;
 import fr.ign.artiscales.tools.parameter.ProfileUrbanFabric;
 import org.geotools.data.DataStore;
 import org.geotools.data.DataUtilities;
@@ -92,7 +92,7 @@ public class CompareSimulatedParcelsWithEvolutionOM {
                 listId.add(i);
         int i = 0;
         for (String[] line : r.readAll())
-            Files.copy((new ZoneDivision()).zoneDivision(zoneFile, parcelFile, new ProfileUrbanFabric(firstLine, line), outFolder).toPath(), new File(outFolder, i++ + Csv.makeLine(listId, line)).toPath());
+            Files.copy((new ZoneDivision()).zoneDivision(zoneFile, parcelFile, new ProfileUrbanFabric(firstLine, line), outFolder).toPath(), new File(outFolder, i++ + CsvOp.makeLine(listId, line)).toPath());
         r.close();
     }
 

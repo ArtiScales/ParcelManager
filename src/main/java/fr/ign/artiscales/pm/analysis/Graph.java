@@ -1,6 +1,6 @@
 package fr.ign.artiscales.pm.analysis;
 
-import fr.ign.artiscales.tools.io.Csv;
+import fr.ign.artiscales.tools.io.csv.CsvExport;
 
 import java.io.File;
 import java.io.IOException;
@@ -62,7 +62,7 @@ public class Graph {
     public void toCSV(File folderOut) throws IOException {
         HashMap<String, Object[]> data = new HashMap<>();
         data.put("sortedDistribution", sortedDistribution.toArray());
-        Csv.generateCsvFileCol(data, folderOut, nameDistrib);
+        CsvExport.generateCsvFileCol(data, folderOut, nameDistrib);
 //		Csv.calculateColumnsBasicStat(new File(folderOut, nameDistrib + ".csv"), 0, true);
     }
 }

@@ -11,7 +11,7 @@ import fr.ign.artiscales.tools.geoToolsFunctions.vectors.collec.CollecMgmt;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.collec.CollecTransform;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.geom.Polygons;
 import fr.ign.artiscales.tools.geometryGeneration.CityGeneration;
-import fr.ign.artiscales.tools.io.Csv;
+import fr.ign.artiscales.tools.io.csv.CsvExport;
 import org.geotools.data.DataStore;
 import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.data.simple.SimpleFeatureIterator;
@@ -157,9 +157,9 @@ public class RoadRatioParcels {
             problem.printStackTrace();
         }
         dsRoad.dispose();
-        Csv.generateCsvFile(stat, folderOutStat, "streetRatioParcelZone", !overwrite, firstLine);
+        CsvExport.generateCsvFile(stat, folderOutStat, "streetRatioParcelZone", !overwrite, firstLine);
         overwrite = false;
-        Csv.needFLine = true;
+        CsvExport.needFLine = true;
     }
 
     /**
