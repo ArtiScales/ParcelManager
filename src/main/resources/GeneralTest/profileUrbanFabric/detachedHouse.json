@@ -10,5 +10,6 @@
 	"lenDriveway": "3",
 	"maxDepth":"40",
 	"maxDistanceForNearestRoad":"20",
-	"maxWidth":"30"
+	"maxWidth":"30",
+	"generatePeripheralRoad":"true"
 }

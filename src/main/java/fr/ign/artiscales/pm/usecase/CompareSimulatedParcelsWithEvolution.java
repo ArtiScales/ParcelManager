@@ -31,7 +31,7 @@ import java.util.stream.Collectors;
 /**
  * This process compares the evolution of a parcel plan at two different versions (file1 and file2) with the simulation on the zone.
  * The simulation must be defined with a scenario (see package {@link fr.ign.artiscales.pm.scenario}).
- *
+ *mergeGpkgFiles
  * @author Maxime Colomb
  */
 public class CompareSimulatedParcelsWithEvolution extends UseCase {
@@ -78,9 +78,7 @@ public class CompareSimulatedParcelsWithEvolution extends UseCase {
             if ((f.getName().contains(("Only")) && f.getName().endsWith(".gpkg")))
                 lF.add(f);
         File simulatedFile = new File(outFolder, "simulatedParcel.gpkg");
-        //todo fix that (geopackage =
-//        Geopackages.mergeGpkgFiles(lF, simulatedFile);
-
+        CollecMgmt.mergeFiles(lF, simulatedFile);
         // stat for the evolved parcels
         File evolvedParcelFile = new File(outFolder, "evolvedParcel.gpkg");
         SingleParcelStat.writeStatSingleParcel(evolvedParcelFile, roadFile, new File(outFolder, "EvolvedParcelStats.csv"), true);
