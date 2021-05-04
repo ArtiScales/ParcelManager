@@ -45,7 +45,7 @@ public class ParcelCollection {
 
     public static void main(String[] args) throws Exception {
         File rootFile = new File("src/main/resources/ParcelComparison/");
-        sortDifferentParcel(new File(rootFile, "parcel2003.gpkg"), new File(rootFile, "parcel2018.gpkg"), new File("/tmp/"));
+        sortDifferentParcel(new File(rootFile, "parcel2003.gpkg"), new File(rootFile, "parcel2018.gpkg"), new File("/tmp/"), 800, 150, true);
     }
 
     /**
@@ -68,7 +68,7 @@ public class ParcelCollection {
      * @throws IOException
      */
     public static void sortDifferentParcel(File parcelRefFile, File parcelToCompareFile, File parcelOutFolder) throws IOException {
-        sortDifferentParcel(parcelRefFile, parcelToCompareFile, parcelOutFolder, 100);
+        sortDifferentParcel(parcelRefFile, parcelToCompareFile, parcelOutFolder, 800, 150, false);
     }
 
     /**
@@ -90,12 +90,12 @@ public class ParcelCollection {
      * @param minParcelSimulatedSize The minimal size of parcels of the usual urban fabric profile. If the algorithm is used outside the simulation, default value of 100 square meters is used.
      * @throws IOException
      */
-    public static void sortDifferentParcel(File parcelRefFile, File parcelToCompareFile, File parcelOutFolder, double minParcelSimulatedSize) throws IOException {
+    public static void sortDifferentParcel(File parcelRefFile, File parcelToCompareFile, File parcelOutFolder, double maxParcelSimulatedSize, double minParcelSimulatedSize, boolean overwrite) throws IOException {
         File fSame = new File(parcelOutFolder, "same" + CollecMgmt.getDefaultGISFileType());
         File fNotSame = new File(parcelOutFolder, "notSame" + CollecMgmt.getDefaultGISFileType());
         File fReal = new File(parcelOutFolder, "realParcel" + CollecMgmt.getDefaultGISFileType());
         File fPlace = new File(parcelOutFolder, "place" + CollecMgmt.getDefaultGISFileType());
-        if (fSame.exists() && fReal.exists() && fNotSame.exists() && fPlace.exists()) {
+        if (!overwrite && fSame.exists() && fReal.exists() && fNotSame.exists() && fPlace.exists()) {
             System.out.println("markDiffParcel(...) already calculated");
             return;
         }
@@ -134,8 +134,7 @@ public class ParcelCollection {
                 }
                 //we check if the parcel has been intentionally deleted by generating new polygons (same technique of area comparison, but with a way smaller error bound)
                 // if it has been cleaned, we don't add it to no additional parcels
-                List<Geometry> geomList = Arrays.stream(parcelsIntersectRef.toArray(new SimpleFeature[0])).map(x -> (Geometry) x.getDefaultGeometry())
-                        .collect(Collectors.toList());
+                List<Geometry> geomList = Arrays.stream(parcelsIntersectRef.toArray(new SimpleFeature[0])).map(x -> (Geometry) x.getDefaultGeometry()).collect(Collectors.toList());
                 geomList.add(geomPRef);
                 for (Polygon polygon : FeaturePolygonizer.getPolygons(geomList))
                     if ((polygon.getArea() > geomArea * 0.9 && polygon.getArea() < geomArea * 1.1) && polygon.buffer(0.5).contains(geomPRef))
@@ -148,37 +147,34 @@ public class ParcelCollection {
         CollecMgmt.exportSFC(same, fSame);
         CollecMgmt.exportSFC(notSame, fNotSame);
 
-        // make a Collection of feature with an inner buffer
-        List<Geometry> lInter = Arrays.stream(notSame.toArray(new SimpleFeature[0])).map(sf -> ((Geometry) sf.getDefaultGeometry()).buffer(-1)).collect(Collectors.toList());
+        // make a Collection of not same parcels with an inner buffer to select others
+        List<Geometry> lInter = Arrays.stream(notSame.toArray(new SimpleFeature[0])).map(sf -> ((Geometry) sf.getDefaultGeometry())).collect(Collectors.toList());
 
         // isolate the compared parcels that have changed
         SimpleFeatureCollection realParcel = parcelToCompare.subCollection(ff.intersects(pName, ff.literal(Geom.unionGeom(lInter))));
 
-        // We now seek if a large part of the real parcel stays intact and small parts. We can keep them or leave them
-        List<Geometry> notSameMerged = Geom.unionTouchingGeometries(
-                Arrays.stream(notSame.toArray(new SimpleFeature[0])).map(x -> (Geometry) x.getDefaultGeometry()).collect(Collectors.toList()));
+//        // We now seek if a large part of the real parcel stays intact and small parts. We can keep them or leave them
+//        List<Geometry> notSameMerged = Geom.unionTouchingGeometries(
+//                Arrays.stream(notSame.toArray(new SimpleFeature[0])).map(x -> (Geometry) x.getDefaultGeometry()).collect(Collectors.toList()));
+//        List<Geometry> intersectionGeoms = new ArrayList<>();
+//        for (Geometry firstZone : notSameMerged) {
         List<Geometry> intersectionGeoms = new ArrayList<>();
-        for (Geometry firstZone : notSameMerged) {
-            SimpleFeatureCollection parcelsReal = CollecTransform.selectIntersection(realParcel, firstZone);
-            if (parcelsReal.isEmpty()){
-                System.out.println("empty");
-CollecMgmt.exportSFC(realParcel, new File("/tmp/ex.gpkg"));
-            }
-            // We skip parcels if the biggest "real" parcel represents 80% of the total zone area
-            if (((Geometry) Arrays.stream(CollecTransform.sortSFCWithArea(parcelsReal, true)
-                    .toArray(new SimpleFeature[0])).findFirst().get().getDefaultGeometry()).getArea()
-                    > 0.8 * firstZone.getArea()) {
-                System.out.println("skiped " + firstZone);
+        for (Geometry firstZone : Geom.importListGeom(notSame)) {
+            Geometry firstZoneB = firstZone.buffer(-1);
+            SimpleFeatureCollection parcelsReal = CollecTransform.selectIntersection(realParcel, firstZoneB);
+            DescriptiveStatistics ds = new DescriptiveStatistics();
+            Arrays.stream(parcelsReal.toArray(new SimpleFeature[0])).forEach(sf -> ds.addValue(((Geometry) sf.getDefaultGeometry()).getArea()));
+            if (parcelsReal.isEmpty() || ds.getPercentile(50) > maxParcelSimulatedSize * 1.5 || ds.getPercentile(50) < minParcelSimulatedSize * 0.5
+                    || (ds.getMean() > maxParcelSimulatedSize * 2 || ds.getMean() < minParcelSimulatedSize * 0.25)
+                    || (((Geometry) Arrays.stream(CollecTransform.sortSFCWithArea(parcelsReal, true).toArray(new SimpleFeature[0])).findFirst().get().getDefaultGeometry()).getArea() > 0.8 * firstZone.getArea())) // We skip parcels if the biggest "real" parcel represents 80% of the total zone area
                 continue;
-            }
-            for (Geometry g : Arrays.stream(notSame.toArray(new SimpleFeature[0])).map(x -> (Geometry) x.getDefaultGeometry()).collect(Collectors.toList()))
-                if (g.getArea() > minParcelSimulatedSize)
-                    intersectionGeoms.add(g);
+            for (Geometry g : Arrays.stream(notSame.toArray(new SimpleFeature[0])).map(x -> (Geometry) x.getDefaultGeometry())
+                    .filter(g -> g.intersects(firstZoneB)).collect(Collectors.toList()))
+                intersectionGeoms.add(g);
         }
-        List<Geometry> listGeom = Geom.unionTouchingGeometries(intersectionGeoms.stream().map(g -> g.buffer(-1)).collect(Collectors.toList()));
+        List<Geometry> listGeom = Geom.unionTouchingGeometries(intersectionGeoms).stream().map(g -> g.buffer(-1)).collect(Collectors.toList());
         Geom.exportGeom(listGeom, fPlace);
-        Geometry u = Geom.unionGeom(listGeom);
-        CollecMgmt.exportSFC(Arrays.stream(realParcel.toArray(new SimpleFeature[0])).filter(g -> ((Geometry) g.getDefaultGeometry()).intersects(u)).collect(Collectors.toCollection(DefaultFeatureCollection::new)).collection(), fReal);
+        CollecMgmt.exportSFC(CollecTransform.selectIntersection(realParcel, listGeom), fReal);
         dsParcelToCompare.dispose();
         dsRef.dispose();
     }

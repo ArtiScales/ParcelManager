@@ -31,7 +31,8 @@ import java.util.stream.Collectors;
 /**
  * This process compares the evolution of a parcel plan at two different versions (file1 and file2) with the simulation on the zone.
  * The simulation must be defined with a scenario (see package {@link fr.ign.artiscales.pm.scenario}).
- *mergeGpkgFiles
+ * mergeGpkgFiles
+ *
  * @author Maxime Colomb
  */
 public class CompareSimulatedParcelsWithEvolution extends UseCase {
@@ -63,9 +64,10 @@ public class CompareSimulatedParcelsWithEvolution extends UseCase {
         ParcelCollection.sortDifferentParcel(parcelRefFile, parcelCompFile, outFolder);
         // create blocks for parcel densification in case they haven't been generated before
         CityGeneration.createUrbanBlock(parcelRefFile, rootFolder);
-
         PMScenario.setSaveIntermediateResult(true);
         PMStep.setGENERATEATTRIBUTES(false);
+        PMStep.setDEBUG(false);
+        PMStep.setAdaptAreaOfUrbanFabric(true);
         PMScenario pm = new PMScenario(scenarioFile);
         pm.executeStep();
         System.out.println("++++++++++ Done with PMscenario ++++++++++");
@@ -79,11 +81,11 @@ public class CompareSimulatedParcelsWithEvolution extends UseCase {
                 lF.add(f);
         File simulatedFile = new File(outFolder, "simulatedParcel.gpkg");
         CollecMgmt.mergeFiles(lF, simulatedFile);
-        // stat for the evolved parcels
-        File evolvedParcelFile = new File(outFolder, "evolvedParcel.gpkg");
-        SingleParcelStat.writeStatSingleParcel(evolvedParcelFile, roadFile, new File(outFolder, "EvolvedParcelStats.csv"), true);
+        // stat for the real parcels
+        File realParcelFile = new File(outFolder, "realParcel.gpkg");
+        SingleParcelStat.writeStatSingleParcel(realParcelFile, roadFile, new File(outFolder, "RealParcelStats.csv"), true);
         // stat for the simulated parcels
-        SingleParcelStat.writeStatSingleParcel(simulatedFile, evolvedParcelFile, roadFile, new File(outFolder, "SimulatedParcelStats.csv"), true);
+        SingleParcelStat.writeStatSingleParcel(simulatedFile, realParcelFile, roadFile, new File(outFolder, "SimulatedParcelStats.csv"), true);
         // for every workflows
         System.out.println("++++++++++ Analysis by zones ++++++++++");
         System.out.println("steps" + pm.getStepList());
@@ -108,28 +110,29 @@ public class CompareSimulatedParcelsWithEvolution extends UseCase {
                             .getSchema().getGeometryDescriptor().getLocalName()), ff.literal(geomUnion)));
             CollecMgmt.exportSFC(sfcSimulatedParcel, new File(zoneOutFolder, "SimulatedParcel.gpkg"));
 
-            // evolved parcel crop
-            DataStore sdsEvolvedParcel = CollecMgmt.getDataStore(evolvedParcelFile);
-            SimpleFeatureCollection sfcEvolvedParcel = CollecTransform.selectIntersection(sdsEvolvedParcel.getFeatureSource(sdsEvolvedParcel.getTypeNames()[0]).getFeatures(), geomUnion);
-            CollecMgmt.exportSFC(sfcEvolvedParcel, new File(zoneOutFolder, "EvolvedParcel.gpkg"));
+            // real parcel crop
+            DataStore dsRealParcel = CollecMgmt.getDataStore(realParcelFile);
+            SimpleFeatureCollection sfcRealParcel = CollecTransform.selectIntersection(dsRealParcel.getFeatureSource(dsRealParcel.getTypeNames()[0]).getFeatures(), geomUnion);
+            CollecMgmt.exportSFC(sfcRealParcel, new File(zoneOutFolder, "RealParcel.gpkg"));
 
             DataStore sdsGoalParcel = CollecMgmt.getDataStore(step.getLastOutput() != null ? step.getLastOutput() : step.makeFileName());
             SingleParcelStat.writeStatSingleParcel(
                     MarkParcelAttributeFromPosition.markSimulatedParcel(MarkParcelAttributeFromPosition.markParcelIntersectPolygonIntersection(
                             sdsGoalParcel.getFeatureSource(sdsGoalParcel.getTypeNames()[0]).getFeatures(), geoms.stream().map(g -> g.buffer(-2)).collect(Collectors.toList()))),
-                    sfcEvolvedParcel, CollecTransform.selectIntersection(dsRoad.getFeatureSource(dsRoad.getTypeNames()[0]).getFeatures(), geomUnion),
+                    sfcRealParcel, CollecTransform.selectIntersection(dsRoad.getFeatureSource(dsRoad.getTypeNames()[0]).getFeatures(), geomUnion),
                     new File(zoneOutFolder, "SimulatedParcelStats.csv"));
             sdsSimulatedParcel.dispose();
             sdsGoalParcel.dispose();
 
-            //evolved parcel crop
-            System.out.println("evolved parcels");
-            DataStore sdsEvolvedAndAllParcels = CollecMgmt.getDataStore(parcelCompFile);
+            //real parcel crop
+            System.out.println("real parcels");
+            DataStore dsRealAndAllParcels = CollecMgmt.getDataStore(parcelCompFile);
             SingleParcelStat.writeStatSingleParcel(
-                    MarkParcelAttributeFromPosition.markParcelIntersectPolygonIntersection(sdsEvolvedAndAllParcels.getFeatureSource(sdsEvolvedAndAllParcels.getTypeNames()[0]).getFeatures(),
-                            Arrays.stream(sfcEvolvedParcel.toArray(new SimpleFeature[0])).map(g -> ((Geometry) g.getDefaultGeometry()).buffer(-1)).collect(Collectors.toList())),
-                    CollecTransform.selectIntersection(dsRoad.getFeatureSource(dsRoad.getTypeNames()[0]).getFeatures(), geomUnion), new File(zoneOutFolder, "EvolvedParcelStats.csv"));
-            sdsEvolvedParcel.dispose();
+                    MarkParcelAttributeFromPosition.markParcelIntersectPolygonIntersection(dsRealAndAllParcels.getFeatureSource(dsRealAndAllParcels.getTypeNames()[0]).getFeatures(),
+                            Arrays.stream(sfcRealParcel.toArray(new SimpleFeature[0])).map(g -> ((Geometry) g.getDefaultGeometry()).buffer(-1)).collect(Collectors.toList())),
+                    CollecTransform.selectIntersection(dsRoad.getFeatureSource(dsRoad.getTypeNames()[0]).getFeatures(), geomUnion), new File(zoneOutFolder, "RealParcelStats.csv"));
+            dsRealParcel.dispose();
+            dsRealAndAllParcels.dispose();
         }
         dsRoad.dispose();
     }

@@ -107,7 +107,7 @@ public class MarkParcelAttributeFromPosition {
      */
     public static SimpleFeatureCollection markParcelsConnectedToRoad(SimpleFeatureCollection parcels, SimpleFeatureCollection block, File roadFile, Geometry exclusionZone) throws IOException {
         DataStore ds = CollecMgmt.getDataStore(roadFile);
-        SimpleFeatureCollection result = markParcelsConnectedToRoad(parcels, block,ds.getFeatureSource(ds.getTypeNames()[0]).getFeatures(), exclusionZone);
+        SimpleFeatureCollection result = markParcelsConnectedToRoad(parcels, block, ds.getFeatureSource(ds.getTypeNames()[0]).getFeatures(), exclusionZone);
         ds.dispose();
         return result;
     }
@@ -313,7 +313,8 @@ public class MarkParcelAttributeFromPosition {
         ds.dispose();
         return result;
     }
-        public static SimpleFeatureCollection markUnBuiltParcel(SimpleFeatureCollection parcels, SimpleFeatureCollection  buildingSFC) throws IOException {
+
+    public static SimpleFeatureCollection markUnBuiltParcel(SimpleFeatureCollection parcels, SimpleFeatureCollection buildingSFC) throws IOException {
         SimpleFeatureCollection buildings = CollecTransform.selectIntersection(buildingSFC, parcels);
         final SimpleFeatureType featureSchema = ParcelSchema.getSFBMinParcelSplit().getFeatureType();
         DefaultFeatureCollection result = new DefaultFeatureCollection();
@@ -366,7 +367,7 @@ public class MarkParcelAttributeFromPosition {
         return result;
     }
 
-        public static SimpleFeatureCollection markBuiltParcel(SimpleFeatureCollection parcels, SimpleFeatureCollection building) throws IOException {
+    public static SimpleFeatureCollection markBuiltParcel(SimpleFeatureCollection parcels, SimpleFeatureCollection building) throws IOException {
         SimpleFeatureCollection buildings = CollecTransform.selectIntersection(DataUtilities.collection(building), parcels);
         final SimpleFeatureType featureSchema = ParcelSchema.getSFBMinParcelSplit().getFeatureType();
         DefaultFeatureCollection result = new DefaultFeatureCollection();
@@ -690,6 +691,7 @@ public class MarkParcelAttributeFromPosition {
         ds.dispose();
         return result;
     }
+
     public static SimpleFeatureCollection markParcelIntersectFrenchConstructibleZoningType(SimpleFeatureCollection parcels, SimpleFeatureCollection zoning) throws IOException {
         final SimpleFeatureType featureSchema = ParcelSchema.getSFBMinParcelSplit().getFeatureType();
         DefaultFeatureCollection result = new DefaultFeatureCollection();
@@ -784,7 +786,8 @@ public class MarkParcelAttributeFromPosition {
         FilterFactory2 ff = CommonFactoryFinder.getFilterFactory2();
         PropertyName geomName = ff.property(parcelsToMark.getSchema().getGeometryDescriptor().getLocalName());
         try (SimpleFeatureIterator parcelIt = parcelsToMark.features()) {
-            toMarkParcel: while (parcelIt.hasNext()) {
+            toMarkParcel:
+            while (parcelIt.hasNext()) {
                 SimpleFeature parcelToMark = parcelIt.next();
                 Geometry geomParcelToMark = (Geometry) parcelToMark.getDefaultGeometry();
                 // look for exact geometries
@@ -929,8 +932,19 @@ public class MarkParcelAttributeFromPosition {
         return result;
     }
 
+
+    public static SimpleFeatureCollection resetMarkingField(SimpleFeatureCollection sfc) {
+        DefaultFeatureCollection result = new DefaultFeatureCollection();
+        Arrays.stream(sfc.toArray(new SimpleFeature[0])).forEach(feat -> {
+            feat.setAttribute(markFieldName, null);
+            result.add(feat);
+        });
+        return result;
+    }
+
     /**
      * Marking parcels is made before (false) or after (true) the simulation process. It won't allow or will the marking of the already simulated parcels
+     *
      * @return value
      */
     public static boolean isPostMark() {

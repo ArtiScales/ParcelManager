@@ -226,8 +226,7 @@ public class PMScenario {
     @Override
     public String toString() {
         return "PMScenario [zoningFile=" + zoningFile + ", buildingFile=" + buildingFile + ", roadFile=" + roadFile + ", polygonIntersection="
-                + polygonIntersection + ", zone=" + zone + ", predicateFile=" + predicateFile + ", parcelFile=" + parcelFile + ", outFolder=" + outFolder + ", stepList=" + stepList + ", fileSet=" + fileSet + ", profileFolder=" + profileFolder
-                + "]";
+                + polygonIntersection + ", zone=" + zone + ", predicateFile=" + predicateFile + ", parcelFile=" + parcelFile + ", outFolder=" + outFolder + ", stepList=" + stepList + ", fileSet=" + fileSet + ", profileFolder=" + profileFolder + "]";
     }
 
 }

@@ -1,6 +1,6 @@
 package fr.ign.artiscales.pm.scenario;
 
-import fr.ign.artiscales.pm.decomposition.TopologicalStraightSkeletonParcelDecomposition;
+import fr.ign.artiscales.pm.analysis.RealUrbanFabricParameters;
 import fr.ign.artiscales.pm.fields.GeneralFields;
 import fr.ign.artiscales.pm.fields.french.FrenchParcelFields;
 import fr.ign.artiscales.pm.parcelFunction.MarkParcelAttributeFromPosition;
@@ -16,6 +16,7 @@ import fr.ign.artiscales.pm.workflow.ZoneDivision;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.collec.CollecMgmt;
 import fr.ign.artiscales.tools.geometryGeneration.CityGeneration;
 import fr.ign.artiscales.tools.parameter.ProfileUrbanFabric;
+import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.geotools.data.DataStore;
 import org.geotools.data.DataUtilities;
 import org.geotools.data.collection.SpatialIndexFeatureCollection;
@@ -37,7 +38,6 @@ import java.util.List;
  * @see <a href="https://github.com/ArtiScales/ParcelManager/blob/master/src/main/resources/doc/scenarioCreation.md">scenarioCreation.md</a>
  */
 public class PMStep {
-
     public static List<String> cachePlacesSimulates = new ArrayList<>();
     /**
      * Geographic files
@@ -56,12 +56,25 @@ public class PMStep {
      * If true, will save all the intermediate results in the temporary folder
      */
     private static boolean DEBUG = false;
+
+    public static boolean isAdaptAreaOfUrbanFabric() {
+        return adaptAreaOfUrbanFabric;
+    }
+    public static void setAdaptAreaOfUrbanFabric(boolean newAdaptAreaOfUrbanFabric) {
+        adaptAreaOfUrbanFabric = newAdaptAreaOfUrbanFabric;
+    }
+
+    /**
+     * If true, will look at the community buildt parcel's area to adapt the maximal and minimal area (set with the 1st and the 9th decile of the built area's distribution)
+     */
+    private static boolean adaptAreaOfUrbanFabric = false;
     final private String workflow, parcelProcess, communityNumber, communityType, urbanFabricType, genericZone, preciseZone;
     List<String> communityNumbers = new ArrayList<>();
     /**
      * The last generated parcel plan file. Could be useful for programs to get it directly
      */
     private File lastOutput;
+
     public PMStep(String workflow, String parcelProcess, String genericZone, String preciseZone, String communityNumber, String communityType, String urbanFabricType) {
         this.workflow = workflow;
         this.parcelProcess = parcelProcess;
@@ -177,7 +190,7 @@ public class PMStep {
     /**
      * Execute the current PM Step.
      *
-     * @return The ShapeFile containing the whole parcels of the given collection, where the simulated parcel have replaced the former parcels.
+     * @return The geo file containing the whole parcels of the given collection, where the simulated parcel have replaced the former parcels.
      * @throws IOException tons of reading and writing
      */
     public File execute() throws IOException {
@@ -195,9 +208,9 @@ public class PMStep {
         // mark (select) the parcels
         SimpleFeatureCollection parcelMarked;
         //if we work with zones, we put them as parcel input
-        if (workflow.equals("zoneDivision")) {
+        if (workflow.equals("zoneDivision"))
             parcelMarked = getSimulationParcels(getZone(parcel));
-        } else
+        else
             parcelMarked = getSimulationParcels(parcel);
         if (DEBUG) {
             System.out.println("parcels marked");
@@ -215,6 +228,19 @@ public class PMStep {
             if (parcelMarkedComm.size() == 0) {
                 System.out.println("No parcels for community " + communityNumber);
                 continue;
+            }
+            //if we adapt parcel's area to the community
+            if (adaptAreaOfUrbanFabric) {
+                RealUrbanFabricParameters rufp = new RealUrbanFabricParameters(parcelMarkedComm,BUILDINGFILE);
+                DescriptiveStatistics stat = rufp.getAreaBuilt();
+                double min = stat.getPercentile(20);
+                double max = stat.getPercentile(80);
+                if (max / 2 < min )
+                    min = max / 2.5;
+                System.out.println("new parcel MaximalArea: " + stat.getPercentile(80));
+                System.out.println("new parcel MinimalArea: " + stat.getPercentile(20));
+                profile.setMaximalArea(max);
+                profile.setMinimalArea(min);
             }
             // we choose one of the different workflows
             switch (workflow) {
@@ -246,7 +272,7 @@ public class PMStep {
                             ParcelState.isArt3AllowsIsolatedParcel(parcel.features().next(), PREDICATEFILE), profile);
                     break;
                 default:
-                    System.out.println(workflow + ": unrekognized workflow");
+                    System.out.println(workflow + ": unrecognized workflow");
             }
         }
         // we add the parcels from the communities that haven't been simulated
@@ -269,7 +295,7 @@ public class PMStep {
         CollecMgmt.exportSFC(parcelCut, lastOutput);
         //if the step produces no output, we return the input parcels
         if (!lastOutput.exists()) {
-            System.out.println("PMstep " + this.toString() + " returns nothing");
+            System.out.println("PMstep " + this + " returns nothing");
             return PARCELFILE;
         }
         return lastOutput;
