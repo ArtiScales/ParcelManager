@@ -68,6 +68,7 @@ public class CompareSimulatedParcelsWithEvolution extends UseCase {
         PMStep.setGENERATEATTRIBUTES(false);
         PMStep.setDEBUG(false);
         PMStep.setAdaptAreaOfUrbanFabric(true);
+        PMStep.setAllowIsolatedParcel(true);
         PMScenario pm = new PMScenario(scenarioFile);
         pm.executeStep();
         System.out.println("++++++++++ Done with PMscenario ++++++++++");

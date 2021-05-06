@@ -2,17 +2,8 @@
 	"rootfile": "src/main/resources/ParcelComparison/",
 	"parcelFile":"src/main/resources/ParcelComparison/parcel2003.gpkg",
 	"polygonIntersectionFile":"src/main/resources/ParcelComparison/out/place.gpkg",
-	"zoneFile":"src/main/resources/ParcelComparison/out/zone.gpkg",
 	"outFolder": "src/main/resources/ParcelComparison/out/",
 	"steps": [
-		{
-			"workflow": "densificationOrNeighborhood",
-			"parcelProcess": "OBB",
-			"genericZone": "U",
-			"preciseZone":"UD",
-			"communityNumber":"77470,77390,77243",
-			"urbanFabricType": "largeCollective"
-		},	
 		{
 			"workflow": "densificationOrNeighborhood",
 			"genericZone": "U",

@@ -71,8 +71,7 @@ public class ParcelState {
         int result = 0;
         try (SimpleFeatureIterator parcelIt = parcels.features()) {
             while (parcelIt.hasNext())
-                if (GeometryPrecisionReducer.reduce((Geometry) parcelIt.next().getDefaultGeometry(), new PrecisionModel(10)).buffer(1)
-                        .intersects(GeometryPrecisionReducer.reduce(parcelGeom, new PrecisionModel(10))))
+                if (Geom.safeIntersect(((Geometry) parcelIt.next().getDefaultGeometry()).buffer(1), parcelGeom))
                     result++;
         } catch (Exception e) {
             e.printStackTrace();

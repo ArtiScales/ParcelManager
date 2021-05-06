@@ -56,6 +56,7 @@ public class PMStep {
      * If true, will save all the intermediate results in the temporary folder
      */
     private static boolean DEBUG = false;
+    private static boolean allowIsolatedParcel = false;
 
     public static boolean isAdaptAreaOfUrbanFabric() {
         return adaptAreaOfUrbanFabric;
@@ -107,7 +108,7 @@ public class PMStep {
     /**
      * Put a parcel plan different from the on originally set
      *
-     * @param parcelFile
+     * @param parcelFile new geo file containing parcel plan
      */
     public static void setParcel(File parcelFile) {
         PARCELFILE = parcelFile;
@@ -125,7 +126,7 @@ public class PMStep {
     /**
      * If true, save a geopackage containing only the simulated parcels in the temporary folder for every workflow simulated.
      *
-     * @param sAVEINTERMEDIATERESULT
+     * @param sAVEINTERMEDIATERESULT true if we save, false otherwise
      */
     public static void setSaveIntermediateResult(boolean sAVEINTERMEDIATERESULT) {
         Workflow.setSAVEINTERMEDIATERESULT(sAVEINTERMEDIATERESULT);
@@ -144,7 +145,7 @@ public class PMStep {
     /**
      * Set the intersection polygon geographic file.
      *
-     * @param pOLYGONINTERSECTION
+     * @param pOLYGONINTERSECTION new geo file containing intersection
      */
     public static void setPOLYGONINTERSECTION(File pOLYGONINTERSECTION) {
         POLYGONINTERSECTION = pOLYGONINTERSECTION;
@@ -162,7 +163,7 @@ public class PMStep {
     /**
      * If true, run method to re-assign fields value.
      *
-     * @param gENERATEATTRIBUTES
+     * @param gENERATEATTRIBUTES true for attribute generation, false otherwise
      */
     public static void setGENERATEATTRIBUTES(boolean gENERATEATTRIBUTES) {
         GENERATEATTRIBUTES = gENERATEATTRIBUTES;
@@ -180,11 +181,19 @@ public class PMStep {
     /**
      * If true, will save all the intermediate results in the temporary folder
      *
-     * @param dEBUG
+     * @param dEBUG true for debug mode
      */
     public static void setDEBUG(boolean dEBUG) {
         Workflow.setDEBUG(dEBUG);
         DEBUG = dEBUG;
+    }
+
+    public static boolean isAllowIsolatedParcel() {
+        return allowIsolatedParcel;
+    }
+
+    public static void setAllowIsolatedParcel(boolean allowIsolatedParcel) {
+        PMStep.allowIsolatedParcel = allowIsolatedParcel;
     }
 
     /**
@@ -231,45 +240,44 @@ public class PMStep {
             }
             //if we adapt parcel's area to the community
             if (adaptAreaOfUrbanFabric) {
-                RealUrbanFabricParameters rufp = new RealUrbanFabricParameters(parcelMarkedComm,BUILDINGFILE);
+                RealUrbanFabricParameters rufp = new RealUrbanFabricParameters(parcelMarkedComm, BUILDINGFILE);
                 DescriptiveStatistics stat = rufp.getAreaBuilt();
-                double min = stat.getPercentile(20);
                 double max = stat.getPercentile(80);
-                if (max / 2 < min )
-                    min = max / 2.5;
-                System.out.println("new parcel MaximalArea: " + stat.getPercentile(80));
-                System.out.println("new parcel MinimalArea: " + stat.getPercentile(20));
+                double min = max / 2 < stat.getPercentile(10) ? max / 2.5 : stat.getPercentile(10);
+                System.out.println("new parcel MaximalArea: " + max);
+                System.out.println("new parcel MinimalArea: " + min);
                 profile.setMaximalArea(max);
                 profile.setMinimalArea(min);
             }
-            // we choose one of the different workflows
+            // If a predicate file has been set
+            if (PREDICATEFILE!= null && PREDICATEFILE.exists()) {
+                allowIsolatedParcel = ParcelState.isArt3AllowsIsolatedParcel(parcel.features().next(), PREDICATEFILE);
+                System.out.println("allowIsolatedParcel finally " + allowIsolatedParcel);
+            }
+                // we choose one of the different workflows
             switch (workflow) {
                 case "zoneDivision":
                     ZoneDivision.PROCESS = parcelProcess;
-                    ((DefaultFeatureCollection) parcelCut).addAll((new ZoneDivision()).zoneDivision(parcelMarkedComm, ParcelGetter.getParcelByCommunityCode(parcel, communityNumber),
-                            OUTFOLDER, profile));
+                    ((DefaultFeatureCollection) parcelCut).addAll((new ZoneDivision()).zoneDivision(parcelMarkedComm,
+                            ParcelGetter.getParcelByCommunityCode(parcel, communityNumber), OUTFOLDER, profile));
                     break;
                 case "densification":
                     ((DefaultFeatureCollection) parcelCut).addAll((new Densification()).densification(parcelMarkedComm,
                             CityGeneration.createUrbanBlock(parcelMarkedComm), OUTFOLDER, BUILDINGFILE, ROADFILE, profile.getHarmonyCoeff(),
                             profile.getNoise(), profile.getMaximalArea(), profile.getMinimalArea(), profile.getMinimalWidthContactRoad(),
-                            profile.getLenDriveway(),
-                            ParcelState.isArt3AllowsIsolatedParcel(parcel.features().next(), PREDICATEFILE), CityGeneration.createBufferBorder(parcelMarkedComm)));
+                            profile.getLenDriveway(), allowIsolatedParcel, CityGeneration.createBufferBorder(parcelMarkedComm)));
                     break;
                 case "densificationOrNeighborhood":
                     ((DefaultFeatureCollection) parcelCut).addAll(
                             (new Densification()).densificationOrNeighborhood(parcelMarkedComm, CityGeneration.createUrbanBlock(parcelMarkedComm), OUTFOLDER,
-                                    BUILDINGFILE, ROADFILE, profile, ParcelState.isArt3AllowsIsolatedParcel(parcel.features().next(), PREDICATEFILE),
-                                    CityGeneration.createBufferBorder(parcelMarkedComm), 5));
+                                    BUILDINGFILE, ROADFILE, profile, allowIsolatedParcel, CityGeneration.createBufferBorder(parcelMarkedComm), 5));
                     break;
                 case "consolidationDivision":
                     ConsolidationDivision.PROCESS = parcelProcess;
-                    ((DefaultFeatureCollection) parcelCut).addAll((new ConsolidationDivision()).consolidationDivision(parcelMarkedComm, ROADFILE, OUTFOLDER,
-                            profile));
+                    ((DefaultFeatureCollection) parcelCut).addAll((new ConsolidationDivision()).consolidationDivision(parcelMarkedComm, ROADFILE, OUTFOLDER, profile));
                     break;
                 case "densificationStudy":
-                    DensificationStudy.runDensificationStudy(parcelMarkedComm, BUILDINGFILE, ROADFILE, ZONINGFILE, OUTFOLDER,
-                            ParcelState.isArt3AllowsIsolatedParcel(parcel.features().next(), PREDICATEFILE), profile);
+                    DensificationStudy.runDensificationStudy(parcelMarkedComm, BUILDINGFILE, ROADFILE, ZONINGFILE, OUTFOLDER, allowIsolatedParcel, profile);
                     break;
                 default:
                     System.out.println(workflow + ": unrecognized workflow");

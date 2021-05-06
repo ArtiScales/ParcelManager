@@ -14,6 +14,7 @@ import org.geotools.data.DataStore;
 import org.geotools.data.DataUtilities;
 import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.data.simple.SimpleFeatureIterator;
+import org.geotools.feature.DefaultFeatureCollection;
 import org.locationtech.jts.geom.Geometry;
 import org.opengis.feature.simple.SimpleFeature;
 
@@ -239,8 +240,10 @@ public class RealUrbanFabricParameters {
         if (collection.isEmpty())
             return null;
         DataStore buildingDS = CollecMgmt.getDataStore(buildingFile);
-        SimpleFeatureCollection sfc = MarkParcelAttributeFromPosition.getOnlyMarkedParcels(MarkParcelAttributeFromPosition.markBuiltParcel(MarkParcelAttributeFromPosition.resetMarkingField(collection),
-                CollecTransform.selectIntersection(buildingDS.getFeatureSource(buildingDS.getTypeNames()[0]).getFeatures(), Geom.unionSFC(collection))));
+        DefaultFeatureCollection df = new DefaultFeatureCollection();
+        Arrays.stream(collection.toArray(new SimpleFeature[0])).forEach( sf -> df.add((SimpleFeature) DataUtilities.duplicate(sf)));
+        SimpleFeatureCollection sfc = MarkParcelAttributeFromPosition.getOnlyMarkedParcels(MarkParcelAttributeFromPosition.markBuiltParcel(MarkParcelAttributeFromPosition.resetMarkingField(df),
+                CollecTransform.selectIntersection(buildingDS.getFeatureSource(buildingDS.getTypeNames()[0]).getFeatures(), Geom.unionSFC(df))));
         buildingDS.dispose();
         DescriptiveStatistics ds = new DescriptiveStatistics();
         if (sfc != null && sfc.size() > 2) {

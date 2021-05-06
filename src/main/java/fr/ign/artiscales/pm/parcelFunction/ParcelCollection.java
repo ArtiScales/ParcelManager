@@ -248,7 +248,7 @@ public class ParcelCollection {
                 // System.out.println(feat.getID() + " is too small");
                 DefaultFeatureCollection intersect = new DefaultFeatureCollection();
                 Arrays.stream(parcelsUnsorted.toArray(new SimpleFeature[0])).forEach(interParcel -> {
-                    if (((Geometry) interParcel.getDefaultGeometry()).intersects(geom) && !interParcel.getID().equals(feat.getID()))
+                    if (Geom.safeIntersect((Geometry) interParcel.getDefaultGeometry(), geom) && !interParcel.getID().equals(feat.getID()))
                         intersect.add(interParcel);
                 });
                 // if the small parcel is intersecting others and will be merge to them
