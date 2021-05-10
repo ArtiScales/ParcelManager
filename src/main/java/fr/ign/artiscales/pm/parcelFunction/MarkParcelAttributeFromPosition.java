@@ -932,12 +932,41 @@ public class MarkParcelAttributeFromPosition {
         return result;
     }
 
-
     public static SimpleFeatureCollection resetMarkingField(SimpleFeatureCollection sfc) {
         DefaultFeatureCollection result = new DefaultFeatureCollection();
         Arrays.stream(sfc.toArray(new SimpleFeature[0])).forEach(feat -> {
             feat.setAttribute(markFieldName, null);
             result.add(feat);
+        });
+        return result;
+    }
+
+    /**
+     * Merge SimpleFeatures that are marked and touches each other and keep the attribute of the largest feature
+     * @param parcelCollection
+     * @return
+     */
+    public static SimpleFeatureCollection unionTouchingMarkedGeometries(SimpleFeatureCollection parcelCollection) throws IOException {
+        DefaultFeatureCollection result = new DefaultFeatureCollection();
+        SimpleFeatureBuilder sfb = new SimpleFeatureBuilder(parcelCollection.getSchema());
+        List<Geometry> lGmerged = Geom.unionTouchingGeometries(Arrays.stream(parcelCollection.toArray(new SimpleFeature[0])).filter(sf -> ((Integer) sf.getAttribute(getMarkFieldName()))== 1).map(sf -> (Geometry) sf.getDefaultGeometry()).collect(Collectors.toList()));
+        FilterFactory2 ff = CommonFactoryFinder.getFilterFactory2();
+        String geomName = parcelCollection.getSchema().getGeometryDescriptor().getLocalName();
+        for (Geometry g : lGmerged){
+            SimpleFeature s = CollecTransform.getBiggestSF(parcelCollection.subCollection(ff.within(ff.property(geomName), ff.literal(g.buffer(1)))));
+            for (AttributeDescriptor attr : parcelCollection.getSchema().getAttributeDescriptors()) {
+                if (attr.getLocalName().equals(geomName))
+                    continue;
+                sfb.set(attr.getLocalName(), s.getAttribute(attr.getLocalName()));
+            }
+            sfb.add(s);
+            sfb.set(geomName,g);
+            result.add(sfb.buildFeature(Attribute.makeUniqueId()));
+        }
+        Arrays.stream(parcelCollection.toArray(new SimpleFeature[0])).forEach(feat -> {
+            if ((int) feat.getAttribute(getMarkFieldName()) !=1 ){
+                result.add(feat);
+            }
         });
         return result;
     }

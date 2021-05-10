@@ -306,11 +306,9 @@ public class FlagParcelDecomposition {
      * @param maximalWidthSplitParcel with between road and parcel under which parcel won't be cut anymore
      * @param lenDriveway             length of the driveway to simulate
      * @param exclusionZone           Zone to consider as not existing
-     * @throws IOException geomsToCollec() creation
      */
-    public static SimpleFeatureCollection generateFlagSplitedParcels(SimpleFeature feat, List<LineString> extLines, double harmonyCoeff, double noise,
-                                                                     SimpleFeatureCollection buildingSFC, SimpleFeatureCollection roadSFC, Double maximalAreaSplitParcel, Double maximalWidthSplitParcel, Double lenDriveway,
-                                                                     Geometry exclusionZone) throws IOException {
+    public static SimpleFeatureCollection generateFlagSplitedParcels(SimpleFeature feat, List<LineString> extLines, double harmonyCoeff, double noise, SimpleFeatureCollection buildingSFC,
+                                                                     SimpleFeatureCollection roadSFC, Double maximalAreaSplitParcel, Double maximalWidthSplitParcel, Double lenDriveway, Geometry exclusionZone) {
         return Geom.geomsToCollec((new FlagParcelDecomposition(Polygons.getPolygon((Geometry) feat.getDefaultGeometry()), buildingSFC, roadSFC,
                 maximalAreaSplitParcel, maximalWidthSplitParcel, lenDriveway, extLines, exclusionZone)).decompParcel(harmonyCoeff, noise), Schemas.getBasicSchemaMultiPolygon("geom"));
     }

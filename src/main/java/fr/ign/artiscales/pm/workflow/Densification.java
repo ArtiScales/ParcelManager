@@ -72,8 +72,8 @@ public class Densification extends Workflow {
      * @param allowIsolatedParcel     true if the simulated parcels have the right to be isolated from the road, false otherwise.
      * @param exclusionZone           Exclude a zone that won't be considered as a potential road connection. Useful to represent border of the parcel plan. Can be null.
      * @return The input parcel {@link SimpleFeatureCollection} with the marked parcels replaced by the simulated parcels. All parcels have the
-     * {@link fr.ign.artiscales.pm.parcelFunction.ParcelSchema#getSFBMinParcel()} schema. * @throws Exception
-     * @throws IOException
+     * {@link fr.ign.artiscales.pm.parcelFunction.ParcelSchema#getSFBMinParcel()} schema.
+     * @throws IOException Reading and writing geo files
      */
     public SimpleFeatureCollection densification(SimpleFeatureCollection parcelCollection, SimpleFeatureCollection blockCollection, File outFolder,
                                                  File buildingFile, File roadFile, double harmonyCoeff, double noise, double maximalAreaSplitParcel, double minimalAreaSplitParcel,
@@ -83,17 +83,16 @@ public class Densification extends Workflow {
             System.out.println("Densification : unmarked parcels");
             return GeneralFields.transformSFCToMinParcel(parcelCollection);
         }
-
         // preparation of optional datas
         boolean hasBuilding = false;
         boolean hasRoad = false;
         DataStore buildingDS = null;
-        if (buildingFile != null) {
+        if (buildingFile != null && buildingFile.exists()) {
             hasBuilding = true;
             buildingDS = CollecMgmt.getDataStore(buildingFile);
         }
         DataStore roadDS = null;
-        if (roadFile != null) {
+        if (roadFile != null && roadFile.exists()) {
             hasRoad = true;
             roadDS = CollecMgmt.getDataStore(roadFile);
         }
@@ -232,9 +231,9 @@ public class Densification extends Workflow {
         } catch (Exception e) {
             e.printStackTrace();
         }
-        if (roadFile != null)
+        if (hasRoad)
             roadDS.dispose();
-        if (buildingFile != null)
+        if (hasBuilding)
             buildingDS.dispose();
         if (isSAVEINTERMEDIATERESULT()) {
             CollecMgmt.exportSFC(onlyCutedParcels, new File(outFolder, "parcelDensificationOnly"), OVERWRITEGEOPACKAGE);
@@ -367,11 +366,14 @@ public class Densification extends Workflow {
                                                                File outFolder, File buildingFile, File roadFile, ProfileUrbanFabric profile, boolean allowIsolatedParcel, Geometry exclusionZone,
                                                                int factorOflargeZoneCreation) throws IOException {
         // TODO stupid hack but I can't figure out how those SimpleFeatuceCollection's attributes are changed if not wrote in hard
+//        SimpleFeatureCollection parcelCollectionMerged = MarkParcelAttributeFromPosition.unionTouchingMarkedGeometries(parcelCollection);
         File tmp = new File(outFolder, "tmp");
         tmp.mkdirs();
+//        File tmpDens = CollecMgmt.exportSFC(parcelCollectionMerged, new File(tmp, "Dens"));
         File tmpDens = CollecMgmt.exportSFC(parcelCollection, new File(tmp, "Dens"));
         // We flagcut the parcels which size is inferior to 4x the max parcel size
         SimpleFeatureCollection parcelDensified = densification(
+//                MarkParcelAttributeFromPosition.markParcelsInf(parcelCollectionMerged, profile.getMaximalArea() * factorOflargeZoneCreation),
                 MarkParcelAttributeFromPosition.markParcelsInf(parcelCollection, profile.getMaximalArea() * factorOflargeZoneCreation),
                 blockCollection, outFolder, buildingFile, roadFile, profile.getHarmonyCoeff(), profile.getNoise(), profile.getMaximalArea(),
                 profile.getMinimalArea(), profile.getMinimalWidthContactRoad(), profile.getLenDriveway(), allowIsolatedParcel, exclusionZone);

@@ -42,8 +42,7 @@ public class PMStep {
     /**
      * Geographic files
      */
-    private static File PARCELFILE, ZONINGFILE, BUILDINGFILE, ROADFILE, PREDICATEFILE,
-            POLYGONINTERSECTION, ZONE, OUTFOLDER, PROFILEFOLDER;
+    private static File PARCELFILE, ZONINGFILE, BUILDINGFILE, ROADFILE, PREDICATEFILE, POLYGONINTERSECTION, ZONE, OUTFOLDER, PROFILEFOLDER;
     /**
      * If true, run method to re-assign fields value
      */
@@ -242,7 +241,7 @@ public class PMStep {
             if (adaptAreaOfUrbanFabric) {
                 RealUrbanFabricParameters rufp = new RealUrbanFabricParameters(parcelMarkedComm, BUILDINGFILE);
                 DescriptiveStatistics stat = rufp.getAreaBuilt();
-                double max = stat.getPercentile(80);
+                double max = stat.getPercentile(75);
                 double min = max / 2 < stat.getPercentile(10) ? max / 2.5 : stat.getPercentile(10);
                 System.out.println("new parcel MaximalArea: " + max);
                 System.out.println("new parcel MinimalArea: " + min);

@@ -166,7 +166,7 @@ public class ParcelCollection {
             Arrays.stream(parcelsReal.toArray(new SimpleFeature[0])).forEach(sf -> ds.addValue(((Geometry) sf.getDefaultGeometry()).getArea()));
             if (parcelsReal.isEmpty() || ds.getPercentile(50) > maxParcelSimulatedSize * 1.5 || ds.getPercentile(50) < minParcelSimulatedSize * 0.5
                     || (ds.getMean() > maxParcelSimulatedSize * 2 || ds.getMean() < minParcelSimulatedSize * 0.25)
-                    || (((Geometry) Arrays.stream(CollecTransform.sortSFCWithArea(parcelsReal, true).toArray(new SimpleFeature[0])).findFirst().get().getDefaultGeometry()).getArea() > 0.8 * firstZone.getArea())) // We skip parcels if the biggest "real" parcel represents 80% of the total zone area
+                    || ((((Geometry) CollecTransform.getBiggestSF(parcelsReal).getDefaultGeometry()).getArea() > 0.8 * firstZone.getArea()) && firstZone.getArea() > 5 * maxParcelSimulatedSize)) // We skip parcels if the biggest "real" parcel represents 80% of the total zone area and is higher than 5x the max parcel size
                 continue;
             for (Geometry g : Arrays.stream(notSame.toArray(new SimpleFeature[0])).map(x -> (Geometry) x.getDefaultGeometry())
                     .filter(g -> g.intersects(firstZoneB)).collect(Collectors.toList()))
