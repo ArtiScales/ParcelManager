@@ -21,6 +21,7 @@ import org.apache.commons.lang3.tuple.Triple;
 import org.apache.commons.math3.distribution.NormalDistribution;
 import org.apache.commons.math3.distribution.RealDistribution;
 import org.apache.commons.math3.random.RandomGenerator;
+import org.geotools.data.DataStore;
 import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.data.simple.SimpleFeatureIterator;
 import org.geotools.feature.DefaultFeatureCollection;
@@ -1338,6 +1339,14 @@ public class TopologicalStraightSkeletonParcelDecomposition {
 		Set<Coordinate> ca = new HashSet<>(Arrays.asList(snapped[0].getCoordinates()));
 		Set<Coordinate> cb = new HashSet<>(Arrays.asList(snapped[1].getCoordinates()));
 		return (int) ca.stream().filter(cb::contains).count();
+	}
+
+	public static SimpleFeatureCollection runTopologicalStraightSkeletonParcelDecomposition(SimpleFeatureCollection sfcParcelIn, File roadFile, String NAME_ATT_ROAD, String NAME_ATT_IMPORTANCE, double maxDepth, double maxDistanceForNearestRoad, double minimalArea, double minWidth, double maxWidth, double omega, RandomGenerator rng, boolean peripheralRoad, double streetWidth) throws IOException {
+		DataStore dsRoad = CollecMgmt.getDataStore(roadFile);
+		SimpleFeatureCollection p = runTopologicalStraightSkeletonParcelDecomposition(sfcParcelIn, dsRoad.getFeatureSource(dsRoad.getTypeNames()[0]).getFeatures(), NAME_ATT_ROAD, NAME_ATT_IMPORTANCE, maxDepth, maxDistanceForNearestRoad,
+				minimalArea, minWidth, maxWidth, omega, rng, peripheralRoad, streetWidth);
+		dsRoad.dispose();
+		return p;
 	}
 
 	/**

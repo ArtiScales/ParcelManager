@@ -39,7 +39,7 @@ public class RealUrbanFabricParameters {
      *           <li>genericZone</li>
      *           <li>preciseZone</li>
      *           <li>block</li>
-     *           </ul>
+     * </ul>
      */
     String scaleZone;
     // TODO program the possibility of mixing those scales - List<String> scaleZone = Arrays.asList("community");
@@ -64,37 +64,35 @@ public class RealUrbanFabricParameters {
      * Proceed to the analysis of parameters in every defined zones of the geographic files.
      */
     public static void main(String[] args) throws IOException {
-        RealUrbanFabricParameters rufp = new RealUrbanFabricParameters(new File("src/main/resources/ParcelComparison/"));
-        rufp.setParcelFile(new File("src/main/resources/ParcelComparison/parcel2003.gpkg"));
-        rufp.scaleZone = "community";
-        rufp.makeSplitParcelBetweenZone();
-        for (String zone : rufp.parcelPerZone.keySet()) {
-            System.out.println("for " + zone);
-            // Parcel's area
-            DescriptiveStatistics stat = rufp.getAreaBuilt(rufp.parcelPerZone.get(zone), zone);
-            System.out.println("10: " + stat.getPercentile(10));
-            System.out.println("20: " + stat.getPercentile(20));
-            System.out.println("80: " + stat.getPercentile(80));
-            System.out.println("90: " + stat.getPercentile(90));
-        }
-        // scaleZone = "preciseZone";
-        // generateAnalysisOfScene(scaleZone);
-        // scaleZone = "community";
-        // generateAnalysisOfScene(scaleZone);
-        // scaleZone = "block";
-        // generateAnalysisOfScene(scaleZone);
+        RealUrbanFabricParameters rufp = new RealUrbanFabricParameters(new File("src/main/resources/GeneralTest/"));
+        rufp.scaleZone = "genericZone";
+        rufp.generateEveryAnalysisOfScene();
+//        RealUrbanFabricParameters rufp = new RealUrbanFabricParameters(new File("src/main/resources/ParcelComparison/"));
+//        rufp.setParcelFile(new File("src/main/resources/ParcelComparison/parcel2003.gpkg"));
+//        rufp.scaleZone = "community";
+//        rufp.makeSplitParcelBetweenZone();
+//        for (String zone : rufp.parcelPerZone.keySet()) {
+//            System.out.println("for " + zone);
+//            // Parcel's area
+//            DescriptiveStatistics stat = rufp.getAreaBuilt(rufp.parcelPerZone.get(zone), zone);
+//            System.out.println("10: " + stat.getPercentile(10));
+//            System.out.println("20: " + stat.getPercentile(20));
+//            System.out.println("80: " + stat.getPercentile(80));
+//            System.out.println("90: " + stat.getPercentile(90));
+//        }
+
     }
 
     private static String getZoneEnglishName(String scaleZone, String zone) {
         switch (scaleZone) {
             case "genericZone":
-                return GeneralFields.getGenericZoneEnglishName(zone);
+                return GeneralFields.getGenericZoneEnglishName(zone) +" zone";
             case "preciseZone":
-                return "zone-" + zone;
+                return zone+" zone";
             case "block":
-                return "block-" + zone;
+                return zone+" block";
             case "community":
-                return "community-" + zone;
+                return zone+ " community";
         }
         throw new NullArgumentException();
     }
@@ -127,7 +125,7 @@ public class RealUrbanFabricParameters {
         roadFile = new File(mainFolder, "road" + CollecMgmt.getDefaultGISFileType());
         if (!roadFile.exists())
             System.out.println(roadFile + " doesn't exist");
-        outFolder = new File("/tmp/ParametersOfScene");
+        outFolder = new File(mainFolder,"/ParametersOfScene");
         outFolder.mkdirs();
     }
 
@@ -219,9 +217,8 @@ public class RealUrbanFabricParameters {
         Geometry zoneGeom = Geom.unionSFC(zoneCollection).buffer(buffer).buffer(-buffer);
         SimpleFeatureCollection roadsSelected = CollecTransform.selectIntersection(road, zoneGeom);
         if (roadsSelected.size() > 1)
-            MakeStatisticGraphs.roadGraph(roadsSelected, "Characteristics of the " + getZoneEnglishName(scaleZone, zoneName) + " roads ",
+            MakeStatisticGraphs.roadGraph(roadsSelected, "Characteristics of the roads from the "+getZoneEnglishName(scaleZone, zoneName),
                     "Type of road", "Total lenght of road", outFolder);
-
         DataStore parcelDS = CollecMgmt.getDataStore(parcelFile);
         RoadRatioParcels.roadRatioZone(zoneCollection, CollecTransform.selectIntersection(parcelDS.getFeatureSource(parcelDS.getTypeNames()[0]).getFeatures(), Geom.unionSFC(zoneCollection).buffer(buffer)), zoneName, outFolder, roadFile);
         parcelDS.dispose();
@@ -252,7 +249,7 @@ public class RealUrbanFabricParameters {
                 Graph vals = MakeStatisticGraphs.sortValuesAreaAndCategorize(
                         Arrays.stream(sfc.toArray(new SimpleFeature[0])).collect(Collectors.toList()), scaleZone + zoneName, true);
                 vals.toCSV(outFolder);
-                MakeStatisticGraphs.makeGraphHisto(vals, outFolder, "area of the built parcels of the " + getZoneEnglishName(scaleZone, zoneName),
+                MakeStatisticGraphs.makeGraphHisto(vals, outFolder, "built parcels of the " + getZoneEnglishName(scaleZone, zoneName),
                         "parcel area", "number of parcels", 15);
             }
         }
@@ -270,7 +267,7 @@ public class RealUrbanFabricParameters {
             Graph vals = MakeStatisticGraphs.sortValuesAreaAndCategorize(
                     Arrays.stream(sfc.toArray(new SimpleFeature[0])).collect(Collectors.toList()), scaleZone + zoneName, true);
             vals.toCSV(outFolder);
-            MakeStatisticGraphs.makeGraphHisto(vals, outFolder, "area of every parcels of the " + getZoneEnglishName(scaleZone, zoneName),
+            MakeStatisticGraphs.makeGraphHisto(vals, outFolder, "total parcels of the " + getZoneEnglishName(scaleZone, zoneName),
                     "parcel area", "number of parcels", 15);
             Arrays.stream(sfc.toArray(new SimpleFeature[0])).forEach(sf -> ds.addValue(((Geometry) sf.getDefaultGeometry()).getArea()));
         }

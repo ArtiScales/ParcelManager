@@ -43,10 +43,10 @@ import java.util.stream.Collectors;
  */
 public class ParcelCollection {
 
-    public static void main(String[] args) throws Exception {
-        File rootFile = new File("src/main/resources/ParcelComparison/");
-        sortDifferentParcel(new File(rootFile, "parcel2003.gpkg"), new File(rootFile, "parcel2018.gpkg"), new File("/tmp/"), 800, 150, true);
-    }
+//    public static void main(String[] args) throws IOException {
+//        File rootFile = new File("src/main/resources/ParcelComparison/");
+//        sortDifferentParcel(new File(rootFile, "parcel2003.gpkg"), new File(rootFile, "parcel2018.gpkg"), new File("/tmp/"), 800, 150, true);
+//    }
 
     /**
      * Method that compares two set of parcel plans and sort the reference parcel plan with the ones that changed and the ones that doesn't. We compare the parcels area of the
