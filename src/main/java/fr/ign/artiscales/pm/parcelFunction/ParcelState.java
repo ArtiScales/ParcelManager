@@ -17,8 +17,6 @@ import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.LineString;
 import org.locationtech.jts.geom.MultiLineString;
 import org.locationtech.jts.geom.Polygon;
-import org.locationtech.jts.geom.PrecisionModel;
-import org.locationtech.jts.precision.GeometryPrecisionReducer;
 import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.filter.FilterFactory2;
 
@@ -26,7 +24,6 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -105,51 +102,30 @@ public class ParcelState {
     }
 
     /**
-     * Determine the width of the parcel on road.
+     * Determine the width of the parcel on road. We first rely on the absance of parcel. If none found, we rely on the road features.
      *
      * @param p     input {@link Polygon}
-     * @param roads Road Geopackage (can be null)
-     * @param ext   lines
+     * @param roads Road collection (can be null)
+     * @param ext   lines of the outside block
      * @return width of the parcel on road
      */
     public static double getParcelFrontSideWidth(Polygon p, SimpleFeatureCollection roads, List<LineString> ext) {
         try {
-            double len = p.buffer(0.2).intersection(p.getFactory().createMultiLineString(ext.toArray(new LineString[ext.size()]))).getLength();
+            double len = p.buffer(1).intersection(p.getFactory().createMultiLineString(ext.toArray(new LineString[ext.size()]))).getLength();
             if (len > 0)
                 return len;
             if (roads != null) {
-                len = p.buffer(0.2)
-                        .intersection(Lines.getListLineStringAsMultiLS(
-                                Arrays.stream(roads.toArray(new SimpleFeature[0])).filter(r -> ((Geometry) r.getDefaultGeometry()).intersects(p))
-                                        .flatMap(r -> Lines.getLineStrings((Geometry) r.getDefaultGeometry()).stream()).collect(Collectors.toList()),
-                                new GeometryFactory()))
-                        .getLength();
+                len = p.buffer(1).intersection(Lines.getListLineStringAsMultiLS(getRoadPolygon(roads).stream().filter(r -> r.intersects(p))
+                        .flatMap(r -> Lines.getLineStrings(r).stream()).collect(Collectors.toList()), new GeometryFactory())).getLength();
                 if (len > 0)
                     return len;
                 else
                     return 0;
             } else
                 return 0;
-        } catch (Exception e) {
-            try {
-                double len = p.buffer(0.4).intersection(p.getFactory().createMultiLineString(ext.toArray(new LineString[ext.size()]))).getLength();
-                if (len > 0)
-                    return len;
-                if (roads != null) {
-                    len = p.buffer(0.4).intersection(Lines.getListLineStringAsMultiLS(
-                            Arrays.stream(roads.toArray(new SimpleFeature[0])).filter(r -> ((Geometry) r.getDefaultGeometry()).intersects(p))
-                                    .flatMap(r -> Lines.getLineStrings((Geometry) r.getDefaultGeometry()).stream()).collect(Collectors.toList()),
-                            new GeometryFactory())).getLength();
-                    if (len > 0)
-                        return len;
-                    else
-                        return 0;
-                } else
-                    return 0;
             } catch (Exception ee) {
                 return 0;
             }
-        }
     }
 
     /**
@@ -176,7 +152,7 @@ public class ParcelState {
      * @return true is the polygon has a road access
      */
     public static boolean isParcelHasRoadAccess(Polygon poly, SimpleFeatureCollection roads, MultiLineString ext, Geometry disabledBuffer) {
-        if (poly.intersects(ext.buffer(0.5)))
+        if (poly.intersects(ext.buffer(1)))
             return disabledBuffer == null || !poly.intersects(disabledBuffer.buffer(0.5));
         return roads != null && !roads.isEmpty() && poly.intersects(Geom.unionGeom(getRoadPolygon(roads)));
     }
@@ -261,10 +237,8 @@ public class ParcelState {
     public static boolean isAlreadyBuilt(File buildingFile, SimpleFeature parcel, double bufferBati, double uncountedBuildingArea)
             throws IOException {
         DataStore batiDS = CollecMgmt.getDataStore(buildingFile);
-        boolean result = isAlreadyBuilt(
-                CollecTransform.selectIntersection(batiDS.getFeatureSource(batiDS.getTypeNames()[0]).getFeatures(),
-                        ((Geometry) parcel.getDefaultGeometry()).buffer(10)),
-                (Geometry) parcel.getDefaultGeometry(), bufferBati, uncountedBuildingArea);
+        boolean result = isAlreadyBuilt(CollecTransform.selectIntersection(batiDS.getFeatureSource(batiDS.getTypeNames()[0]).getFeatures(),
+                        ((Geometry) parcel.getDefaultGeometry()).buffer(10)),(Geometry) parcel.getDefaultGeometry(), bufferBati, uncountedBuildingArea);
         batiDS.dispose();
         return result;
     }

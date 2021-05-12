@@ -206,7 +206,7 @@ public class FlagParcelDecomposition {
      */
     public static SimpleFeatureCollection generateFlagSplitedParcels(SimpleFeatureCollection parcelSFC, File buildingFile, File roadFile, ProfileUrbanFabric profile) throws IOException {
         FilterFactory2 ff = CommonFactoryFinder.getFilterFactory2();
-        SimpleFeatureCollection block = CityGeneration.createUrbanBlock(parcelSFC);
+        SimpleFeatureCollection block = CityGeneration.createUrbanBlock(parcelSFC, true);
         DefaultFeatureCollection result = new DefaultFeatureCollection();
 
         // import related collections (if they exists)
@@ -270,7 +270,7 @@ public class FlagParcelDecomposition {
      * @throws IOException geomsToCollec() creation
      */
     public static SimpleFeatureCollection generateFlagSplitedParcels(SimpleFeature feat, List<LineString> extLines, double harmonyCoeff, double noise,
-                                                                     Double maximalAreaSplitParcel, Double maximalWidthSplitParcel, Double lenDriveway, Geometry exclusionZone) throws IOException {
+                                                                     Double maximalAreaSplitParcel, Double maximalWidthSplitParcel, Double lenDriveway, Geometry exclusionZone) {
         return Geom.geomsToCollec((new FlagParcelDecomposition(Polygons.getPolygon((Geometry) feat.getDefaultGeometry()),
                 maximalAreaSplitParcel, maximalWidthSplitParcel, lenDriveway, extLines, exclusionZone)).decompParcel(harmonyCoeff, noise), Schemas.getBasicSchemaMultiPolygon("geom"));
     }

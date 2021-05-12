@@ -1,6 +1,7 @@
 {
 	"rootfile": "src/main/resources/ParcelComparison/",
-	"buildingFile":"src/main/resources/ParcelComparison/building2003.gpkg",
+	"buildingFile":"src/main/resources/ParcelComparison/building2003.gpkg",	
+	"roadFile":"src/main/resources/ParcelComparison/road2003.gpkg",
 	"parcelFile":"src/main/resources/ParcelComparison/parcel2003.gpkg",
 	"polygonIntersectionFile":"src/main/resources/ParcelComparison/out/place.gpkg",
 	"outFolder": "src/main/resources/ParcelComparison/out/",

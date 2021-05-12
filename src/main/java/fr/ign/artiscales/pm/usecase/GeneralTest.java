@@ -43,7 +43,7 @@ public class GeneralTest extends UseCase {
         setDEBUG(false);
         Workflow.setSAVEINTERMEDIATERESULT(true);
         doGeneralTest(outFolder, rootFolder);
-        System.out.println(System.currentTimeMillis() - start);
+        System.out.println("time: "+ ((System.currentTimeMillis() - start)/1000)+" sec");
     }
 
     public static void doGeneralTest(File outRootFolder, File rootFolder) throws Exception {
@@ -53,9 +53,9 @@ public class GeneralTest extends UseCase {
         File parcelFile = new File(rootFolder, "parcel.gpkg");
         File profileFolder = new File(rootFolder, "profileUrbanFabric");
         boolean allowIsolatedParcel = false;
-        DataStore gpkgDSParcel = CollecMgmt.getDataStore(parcelFile);
-        SimpleFeatureCollection parcel = DataUtilities.collection(ParcelGetter.getParcelByZip(gpkgDSParcel.getFeatureSource(gpkgDSParcel.getTypeNames()[0]).getFeatures(), "25267,25395"));
-        gpkgDSParcel.dispose();
+        DataStore DSParcel = CollecMgmt.getDataStore(parcelFile);
+        SimpleFeatureCollection parcel = DataUtilities.collection(ParcelGetter.getParcelByZip(DSParcel.getFeatureSource(DSParcel.getTypeNames()[0]).getFeatures(), "25267,25395"));
+        DSParcel.dispose();
         ProfileUrbanFabric profileDetached = ProfileUrbanFabric.convertJSONtoProfile(new File(profileFolder, "detachedHouse.json"));
         ProfileUrbanFabric profileSmallHouse = ProfileUrbanFabric.convertJSONtoProfile(new File(profileFolder, "smallHouse.json"));
         ProfileUrbanFabric profileLargeCollective = ProfileUrbanFabric.convertJSONtoProfile(new File(profileFolder, "largeCollective.json"));

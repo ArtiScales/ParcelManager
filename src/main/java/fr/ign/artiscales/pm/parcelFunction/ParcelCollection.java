@@ -1,12 +1,12 @@
 package fr.ign.artiscales.pm.parcelFunction;
 
 import fr.ign.artiscales.pm.fields.artiscales.ArtiScalesSchemas;
-import fr.ign.artiscales.tools.FeaturePolygonizer;
 import fr.ign.artiscales.tools.geoToolsFunctions.Attribute;
 import fr.ign.artiscales.tools.geoToolsFunctions.Schemas;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Geom;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.collec.CollecMgmt;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.collec.CollecTransform;
+import fr.ign.artiscales.tools.geoToolsFunctions.vectors.collec.OpOnCollec;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.geom.Polygons;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
@@ -17,9 +17,7 @@ import org.geotools.data.simple.SimpleFeatureIterator;
 import org.geotools.factory.CommonFactoryFinder;
 import org.geotools.feature.DefaultFeatureCollection;
 import org.geotools.feature.simple.SimpleFeatureBuilder;
-import org.locationtech.jts.algorithm.match.HausdorffSimilarityMeasure;
 import org.locationtech.jts.geom.Geometry;
-import org.locationtech.jts.geom.Polygon;
 import org.locationtech.jts.geom.TopologyException;
 import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.feature.simple.SimpleFeatureType;
@@ -92,11 +90,10 @@ public class ParcelCollection {
      * @throws IOException
      */
     public static void sortDifferentParcel(File parcelRefFile, File parcelToCompareFile, File parcelOutFolder, double maxParcelSimulatedSize, double minParcelSimulatedSize, boolean overwrite) throws IOException {
-        File fSame = new File(parcelOutFolder, "same" + CollecMgmt.getDefaultGISFileType());
-        File fNotSame = new File(parcelOutFolder, "notSame" + CollecMgmt.getDefaultGISFileType());
+
         File fReal = new File(parcelOutFolder, "realParcel" + CollecMgmt.getDefaultGISFileType());
         File fPlace = new File(parcelOutFolder, "place" + CollecMgmt.getDefaultGISFileType());
-        if (!overwrite && fSame.exists() && fReal.exists() && fNotSame.exists() && fPlace.exists()) {
+        if (!overwrite && fReal.exists()  && fPlace.exists() ) {
             System.out.println("markDiffParcel(...) already calculated");
             return;
         }
@@ -105,50 +102,12 @@ public class ParcelCollection {
         SimpleFeatureCollection parcelToCompare = dsParcelToCompare.getFeatureSource(dsParcelToCompare.getTypeNames()[0]).getFeatures();
         DataStore dsRef = CollecMgmt.getDataStore(parcelRefFile);
         SimpleFeatureCollection parcelRef = dsRef.getFeatureSource(dsRef.getTypeNames()[0]).getFeatures();
+        SimpleFeatureCollection notSame = OpOnCollec.sortDiffGeom( parcelRefFile, parcelToCompareFile, parcelOutFolder, overwrite)[1];
+
         FilterFactory2 ff = CommonFactoryFinder.getFilterFactory2();
         PropertyName pName = ff.property(parcelRef.getSchema().getGeometryDescriptor().getLocalName());
-        DefaultFeatureCollection same = new DefaultFeatureCollection();
-        DefaultFeatureCollection notSame = new DefaultFeatureCollection();
 
-        // for every reference parcels, we check if an intersection with the intersection compared parcels are +/- 5% of its area and their shapes are similar regarding to the Hausdorf distance mesure
-        try (SimpleFeatureIterator itRef = parcelRef.features()) {
-            refParcel:
-            while (itRef.hasNext()) {
-                SimpleFeature pRef = itRef.next();
-                Geometry geomPRef = (Geometry) pRef.getDefaultGeometry();
-                double geomArea = geomPRef.getArea();
-                //for every intersected parcels, we check if it is close to (as tiny geometry changes)
-                SimpleFeatureCollection parcelsCompIntersectRef = parcelToCompare.subCollection(ff.intersects(pName, ff.literal(geomPRef)));
-                HausdorffSimilarityMeasure hausDis = new HausdorffSimilarityMeasure();
-                try (SimpleFeatureIterator itParcelIntersectRef = parcelsCompIntersectRef.features()) {
-                    while (itParcelIntersectRef.hasNext()) {
-                        Geometry g = (Geometry) itParcelIntersectRef.next().getDefaultGeometry();
-                        double inter = Geom.scaledGeometryReductionIntersection(Arrays.asList(geomPRef, g)).getArea();
-                        // if there are parcel intersection and a similar area, we conclude that parcel haven't changed. We put it in the \"same\" collection and stop the search
-                        if ((inter > 0.95 * geomArea && inter < 1.05 * geomArea) || hausDis.measure(g, geomPRef) > 0.95) {
-                            same.add(pRef);
-                            continue refParcel;
-                        }
-                    }
-                } catch (Exception problem) {
-                    problem.printStackTrace();
-                }
-                // we check if the parcel has been intentionally deleted by generating new polygons (same technique of area comparison, but with a way smaller error bound)
-                // if it has been cleaned, we don't add it to no additional parcels
-                List<Geometry> geomList = Arrays.stream(parcelsCompIntersectRef.toArray(new SimpleFeature[0])).map(x -> (Geometry) x.getDefaultGeometry()).collect(Collectors.toList());
-                geomList.add(geomPRef);
-                for (Polygon polygon : FeaturePolygonizer.getPolygons(geomList))
-                    if (polygon.getArea() > geomArea * 0.9 && polygon.getArea() < geomArea * 1.1 && polygon.buffer(0.5).contains(geomPRef))
-                        continue refParcel;
-                notSame.add(pRef);
-            }
-        } catch (Exception problem) {
-            problem.printStackTrace();
-        }
-        CollecMgmt.exportSFC(same, fSame);
-        CollecMgmt.exportSFC(notSame, fNotSame);
-
-        // make a Collection of not same parcels with an inner buffer to select others
+         // make a Collection of not same parcels with an inner buffer to select others
         List<Geometry> lInter = Arrays.stream(notSame.toArray(new SimpleFeature[0])).map(sf -> ((Geometry) sf.getDefaultGeometry())).collect(Collectors.toList());
 
         // isolate the compared parcels that have changed
@@ -169,9 +128,8 @@ public class ParcelCollection {
                     || (ds.getMean() > maxParcelSimulatedSize * 2 || ds.getMean() < minParcelSimulatedSize * 0.25)
                     || ((((Geometry) CollecTransform.getBiggestSF(parcelsReal).getDefaultGeometry()).getArea() > 0.8 * firstZone.getArea()) && firstZone.getArea() > 5 * maxParcelSimulatedSize)) // We skip parcels if the biggest "real" parcel represents 80% of the total zone area and is higher than 5x the max parcel size
                 continue;
-            for (Geometry g : Arrays.stream(notSame.toArray(new SimpleFeature[0])).map(x -> (Geometry) x.getDefaultGeometry())
-                    .filter(g -> g.intersects(firstZoneB)).collect(Collectors.toList()))
-                intersectionGeoms.add(g);
+            intersectionGeoms.addAll(Arrays.stream(notSame.toArray(new SimpleFeature[0])).map(x -> (Geometry) x.getDefaultGeometry())
+                    .filter(g -> g.intersects(firstZoneB)).collect(Collectors.toList()));
         }
         List<Geometry> listGeom = Geom.unionTouchingGeometries(intersectionGeoms).stream().map(g -> g.buffer(-1)).collect(Collectors.toList());
         Geom.exportGeom(listGeom, fPlace);

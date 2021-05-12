@@ -127,13 +127,17 @@ public class Densification extends Workflow {
                     else
                         unsortedFlagParcel = FlagParcelDecomposition.generateFlagSplitedParcels(initialParcel, lines, harmonyCoeff, noise,
                                 maximalAreaSplitParcel, maximalWidthSplitParcel, lenDriveway, exclusionZone);
-
-                    // If it returned a collection of 1, it was impossible to flag split the parcel. If allowed, we cut the parcel with regular OBB
-                    if (unsortedFlagParcel.size() == 1 && allowIsolatedParcel)
-                        unsortedFlagParcel = OBBBlockDecomposition.splitParcels(initialParcel, maximalAreaSplitParcel, maximalWidthSplitParcel, 0.5, noise,
-                                lines, 0, true, 99);
                     // we check if the cut parcels are meeting the expectations
                     boolean add = true;
+                    // If it returned a collection of 1, it was impossible to flag split the parcel. If allowed, we cut the parcel with regular OBB
+                    if (unsortedFlagParcel.size() == 1) {
+                        add = false;
+                        if (allowIsolatedParcel) {
+                            unsortedFlagParcel = OBBBlockDecomposition.splitParcels(initialParcel, maximalAreaSplitParcel, maximalWidthSplitParcel, 0.5, noise,
+                                    lines, 0, true, 99);
+                            add = true;
+                        }
+                    }
                     // If the flag cut parcel size is too small, we won't add anything
                     try (SimpleFeatureIterator parcelIt = unsortedFlagParcel.features()) {
                         while (parcelIt.hasNext())
@@ -202,12 +206,9 @@ public class Densification extends Workflow {
                                 Geometry pGeom = (Geometry) parcelCuted.getDefaultGeometry();
                                 for (int ii = 0; ii < pGeom.getNumGeometries(); ii++) {
                                     sFBMinParcel.set(geomName, pGeom.getGeometryN(ii));
-                                    sFBMinParcel.set(ParcelSchema.getMinParcelSectionField(),
-                                            makeNewSection(initialParcel.getAttribute(ParcelSchema.getMinParcelSectionField()) + "-" + i++));
-                                    sFBMinParcel.set(ParcelSchema.getMinParcelNumberField(),
-                                            initialParcel.getAttribute(ParcelSchema.getMinParcelNumberField()));
-                                    sFBMinParcel.set(ParcelSchema.getMinParcelCommunityField(),
-                                            initialParcel.getAttribute(ParcelSchema.getMinParcelCommunityField()));
+                                    sFBMinParcel.set(ParcelSchema.getMinParcelSectionField(), makeNewSection(initialParcel.getAttribute(ParcelSchema.getMinParcelSectionField()) + "-" + i++));
+                                    sFBMinParcel.set(ParcelSchema.getMinParcelNumberField(), initialParcel.getAttribute(ParcelSchema.getMinParcelNumberField()));
+                                    sFBMinParcel.set(ParcelSchema.getMinParcelCommunityField(), initialParcel.getAttribute(ParcelSchema.getMinParcelCommunityField()));
                                     SimpleFeature cutedParcel = sFBMinParcel.buildFeature(Attribute.makeUniqueId());
                                     resultParcels.add(cutedParcel);
                                     if (isSAVEINTERMEDIATERESULT())
@@ -378,7 +379,7 @@ public class Densification extends Workflow {
                 blockCollection, outFolder, buildingFile, roadFile, profile.getHarmonyCoeff(), profile.getNoise(), profile.getMaximalArea(),
                 profile.getMinimalArea(), profile.getMinimalWidthContactRoad(), profile.getLenDriveway(), allowIsolatedParcel, exclusionZone);
         if (isDEBUG())
-            CollecMgmt.exportSFC(parcelDensified , new File(outFolder, "densificationOrNeighborhood-Dens"));
+            CollecMgmt.exportSFC(parcelDensified, new File(outFolder, "densificationOrNeighborhood-Dens"));
         // if parcels are too big, we try to create neighborhoods inside them with the consolidation algorithm
         // We first re-mark the parcels that were marked.
         DataStore ds = CollecMgmt.getDataStore(tmpDens);
@@ -386,13 +387,13 @@ public class Densification extends Workflow {
                 MarkParcelAttributeFromPosition.markAlreadyMarkedParcels(parcelDensified, DataUtilities.collection(ds.getFeatureSource(ds.getTypeNames()[0]).getFeatures())),
                 profile.getMaximalArea() * factorOflargeZoneCreation);
         if (isDEBUG())
-            CollecMgmt.exportSFC(parcelDensified , new File(outFolder, "densificationOrNeighborhood-ReMarked"));
+            CollecMgmt.exportSFC(parcelDensified, new File(outFolder, "densificationOrNeighborhood-ReMarked"));
 
         if (!MarkParcelAttributeFromPosition.isNoParcelMarked(supParcels)) {
             profile.setLargeStreetWidth(profile.getStreetWidth());
             parcelDensified = (new ConsolidationDivision()).consolidationDivision(supParcels, roadFile, outFolder, profile);
             if (isDEBUG())
-                CollecMgmt.exportSFC(parcelDensified , new File(outFolder, "densificationOrNeighborhood-Neigh"));
+                CollecMgmt.exportSFC(parcelDensified, new File(outFolder, "densificationOrNeighborhood-Neigh"));
         }
 
         ds.dispose();
