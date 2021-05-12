@@ -91,7 +91,7 @@ public class FlagParcelDecomposition {
     private Geometry exclusionZone = null;
 
     /**
-     * Flag decomposition algorithm
+     * Flag decomposition algorithm method without buildings, roads and exclusion geometry
      *
      * @param p             the initial polygon to decompose
      * @param buildings     the buildings that will constraint the possibility of adding a road
@@ -111,24 +111,24 @@ public class FlagParcelDecomposition {
     /**
      * Constructor of a FlagParcelDecomposition method without buildings and roads
      *
-     * @param parcelGeom
-     * @param maximalArea
-     * @param maximalWidth
-     * @param drivewayWidth
-     * @param extLines
-     * @param exclusionZone
+     * @param parcelGeom              the initial polygon to decompose
+     * @param maximalArea    the maximalArea for a parcel
+     * @param maximalWidth   the maximal width
+     * @param drivewayWidth  the width of driveways
+     * @param islandExterior the exterior of this island to assess road access
+     * @param exclusionZone  a zone to find roads from empty parcels area
      */
-    public FlagParcelDecomposition(Polygon parcelGeom, Double maximalArea, Double maximalWidth, Double drivewayWidth, List<LineString> extLines, Geometry exclusionZone) {
+    public FlagParcelDecomposition(Polygon parcelGeom, Double maximalArea, Double maximalWidth, Double drivewayWidth, List<LineString>  islandExterior, Geometry exclusionZone) {
         this.maximalArea = maximalArea;
         this.maximalWidth = maximalWidth;
         this.polygonInit = parcelGeom;
         this.drivewayWidth = drivewayWidth;
-        this.ext = extLines;
+        this.setExt(islandExterior);
         this.exclusionZone = exclusionZone;
     }
 
     /**
-     * Flag decomposition algorithm
+     * Flag decomposition algorithm without road and exclusion geometry
      *
      * @param p              the initial polygon to decompose
      * @param buildings      the buildings that will constraint the possibility of adding a road
@@ -149,10 +149,11 @@ public class FlagParcelDecomposition {
     }
 
     /**
-     * Flag decomposition algorithm
+     * Flag decomposition algorithm without exclusion geometry
      *
      * @param p              the initial polygon to decompose
      * @param buildings      the buildings that will constraint the possibility of adding a road
+     * @param roads
      * @param maximalArea    the maximalArea for a parcel
      * @param maximalWidth   the maximal width
      * @param drivewayWidth  the width of driveways
@@ -175,6 +176,7 @@ public class FlagParcelDecomposition {
      *
      * @param p              the initial polygon to decompose
      * @param buildings      the buildings that will constraint the possibility of adding a road
+     * @param roads
      * @param maximalArea    the maximalArea for a parcel
      * @param maximalWidth   the maximal width
      * @param drivewayWidth  the width of driveways
@@ -340,7 +342,6 @@ public class FlagParcelDecomposition {
         List<Polygon> splittingPolygon = OBBBlockDecomposition.computeSplittingPolygon(p, this.getExt(), true, harmonyCoeff, noise, 0.0, 0, 0.0, 0, 0);
         // Split into polygon
         List<Polygon> splitPolygon = OBBBlockDecomposition.split(p, splittingPolygon);
-
         // If a parcel has no road access, there is a probability to make a flag split
         List<Polygon> result = new ArrayList<>();
         if (splitPolygon.stream().anyMatch(x -> !hasRoadAccess(x))) {

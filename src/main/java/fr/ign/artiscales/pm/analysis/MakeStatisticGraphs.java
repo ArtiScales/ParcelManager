@@ -171,7 +171,7 @@ public class MakeStatisticGraphs {
 
     public static void makeGraphHisto(List<Graph> graphs, File graphDepotFolder, String title, String xTitle, String yTitle, int range) {
         // general settings
-        CategoryChart chart = new CategoryChartBuilder().width(450).height(400).title(title).xAxisTitle(xTitle).yAxisTitle(yTitle).build();
+        CategoryChart chart = new CategoryChartBuilder().width(450).height(350).title(title).xAxisTitle(xTitle).yAxisTitle(yTitle).build();
         // TODO FIXME l'échelle en x n'est pas respécté pour le second graph..
         for (Graph ag : graphs) {
             Histogram histo = new Histogram(ag.getSortedDistribution(), range, ag.getBoundMin(), ag.getBoundMax());
@@ -210,8 +210,8 @@ public class MakeStatisticGraphs {
             while (it.hasNext()) {
                 SimpleFeature road = it.next();
                 String line = (String) road.getAttribute("NATURE");
-                if (!Objects.equals(road.getAttribute("CL_ADMIN"), "Autre"))
-                    line = line + "-" + road.getAttribute("CL_ADMIN");
+//                if (!Objects.equals(road.getAttribute("CL_ADMIN"), "Autre"))
+//                    line = line + "-" + road.getAttribute("CL_ADMIN");
                 line = line + "- Width:" + road.getAttribute("LARGEUR") + "m";
                 vals.put(line, ((Geometry) road.getDefaultGeometry()).getLength() + vals.getOrDefault(road.getAttribute("LARGEUR"), 0.0));
             }
@@ -219,12 +219,12 @@ public class MakeStatisticGraphs {
             e.printStackTrace();
         }
         // general settings
-        CategoryChart chart = new CategoryChartBuilder().width(600).height(600).title(title).xAxisTitle(xTitle).yAxisTitle(yTitle).build();
+        CategoryChart chart = new CategoryChartBuilder().width(500).height(600).title(title).xAxisTitle(xTitle).yAxisTitle(yTitle).build();
         chart.addSeries("roads length", new ArrayList<>(vals.keySet()), new ArrayList<>(vals.values()));
 
         // Customize Chart
         // chart.getStyler().setLegendPosition(LegendPosition.InsideNW);
-        chart.getStyler().setLegendVisible(true);
+        chart.getStyler().setLegendVisible(false);
         chart.getStyler().setHasAnnotations(false);
         chart.getStyler().setXAxisLabelRotation(90);
         chart.getStyler().setXAxisDecimalPattern("####");
