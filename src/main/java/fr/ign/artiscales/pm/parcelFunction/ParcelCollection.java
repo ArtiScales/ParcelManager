@@ -80,7 +80,6 @@ public class ParcelCollection {
      * <li><b>same</b> contains the reference parcels that have not evolved</li>
      * <li><b>notSame</b> contains the reference parcels that have evolved</li>
      * <li><b>realParcel</b> contains the compared parcels that have evolved to its current 'real' state</li>
-     * <li><b>zone</b> Optional contains special zones to be simulated. They consist in a small evolved parts of large parcels that mostly haven't evolved. If we don't proceed to its calculation, the large parcel won't be urbanized. Can also be ignored</li>
      * <li><b>place</b> contains reference parcels that evolved and aren't a <b>zone</b>. We apply a reduction buffer for a precise intersection with other parcel in Parcel Manager scenarios.</li>
      * </ul>
      *
@@ -88,6 +87,8 @@ public class ParcelCollection {
      * @param parcelToCompareFile    The parcel plan to compare
      * @param parcelOutFolder        Folder where are stored the result geopackages
      * @param minParcelSimulatedSize The minimal size of parcels of the usual urban fabric profile. If the algorithm is used outside the simulation, default value of 100 square meters is used.
+     * @param maxParcelSimulatedSize The maximal size of parcel simulated (used for selection)
+     * @param overwrite do we overwrite the
      * @throws IOException
      */
     public static void sortDifferentParcel(File parcelRefFile, File parcelToCompareFile, File parcelOutFolder, double maxParcelSimulatedSize, double minParcelSimulatedSize, boolean overwrite) throws IOException {
@@ -117,9 +118,9 @@ public class ParcelCollection {
                 Geometry geomPRef = (Geometry) pRef.getDefaultGeometry();
                 double geomArea = geomPRef.getArea();
                 //for every intersected parcels, we check if it is close to (as tiny geometry changes)
-                SimpleFeatureCollection parcelsIntersectRef = parcelToCompare.subCollection(ff.intersects(pName, ff.literal(geomPRef)));
+                SimpleFeatureCollection parcelsCompIntersectRef = parcelToCompare.subCollection(ff.intersects(pName, ff.literal(geomPRef)));
                 HausdorffSimilarityMeasure hausDis = new HausdorffSimilarityMeasure();
-                try (SimpleFeatureIterator itParcelIntersectRef = parcelsIntersectRef.features()) {
+                try (SimpleFeatureIterator itParcelIntersectRef = parcelsCompIntersectRef.features()) {
                     while (itParcelIntersectRef.hasNext()) {
                         Geometry g = (Geometry) itParcelIntersectRef.next().getDefaultGeometry();
                         double inter = Geom.scaledGeometryReductionIntersection(Arrays.asList(geomPRef, g)).getArea();
@@ -132,12 +133,12 @@ public class ParcelCollection {
                 } catch (Exception problem) {
                     problem.printStackTrace();
                 }
-                //we check if the parcel has been intentionally deleted by generating new polygons (same technique of area comparison, but with a way smaller error bound)
+                // we check if the parcel has been intentionally deleted by generating new polygons (same technique of area comparison, but with a way smaller error bound)
                 // if it has been cleaned, we don't add it to no additional parcels
-                List<Geometry> geomList = Arrays.stream(parcelsIntersectRef.toArray(new SimpleFeature[0])).map(x -> (Geometry) x.getDefaultGeometry()).collect(Collectors.toList());
+                List<Geometry> geomList = Arrays.stream(parcelsCompIntersectRef.toArray(new SimpleFeature[0])).map(x -> (Geometry) x.getDefaultGeometry()).collect(Collectors.toList());
                 geomList.add(geomPRef);
                 for (Polygon polygon : FeaturePolygonizer.getPolygons(geomList))
-                    if ((polygon.getArea() > geomArea * 0.9 && polygon.getArea() < geomArea * 1.1) && polygon.buffer(0.5).contains(geomPRef))
+                    if (polygon.getArea() > geomArea * 0.9 && polygon.getArea() < geomArea * 1.1 && polygon.buffer(0.5).contains(geomPRef))
                         continue refParcel;
                 notSame.add(pRef);
             }
