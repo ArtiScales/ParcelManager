@@ -2,7 +2,6 @@ package fr.ign.artiscales.pm.decomposition;
 
 import fr.ign.artiscales.pm.parcelFunction.MarkParcelAttributeFromPosition;
 import fr.ign.artiscales.pm.parcelFunction.ParcelState;
-import fr.ign.artiscales.tools.FeaturePolygonizer;
 import fr.ign.artiscales.tools.geoToolsFunctions.Schemas;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Geom;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.collec.CollecMgmt;
@@ -23,16 +22,12 @@ import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.geom.LineString;
 import org.locationtech.jts.geom.MultiLineString;
 import org.locationtech.jts.geom.Polygon;
-import org.locationtech.jts.geom.PrecisionModel;
-import org.locationtech.jts.operation.union.CascadedPolygonUnion;
-import org.locationtech.jts.precision.GeometryPrecisionReducer;
 import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.filter.FilterFactory2;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -52,10 +47,6 @@ import java.util.stream.Collectors;
  * @author Mickael Brasebin
  */
 public class FlagParcelDecomposition {
-
-    // We remove some parts that may have a too small area < 25
-    public static double TOO_SMALL_PARCEL_AREA = 25;
-
     /*	 public static void main(String[] args) throws Exception {
          /////////////////////////
          //////// try the generateFlagSplitedParcels method
@@ -81,12 +72,17 @@ public class FlagParcelDecomposition {
              CollecMgmt.exportSFC(result, new File(rootFolder, "out.gpkg"));
              System.out.println("time : " + (System.currentTimeMillis() - start));
          }*/
+    /**
+     * We remove <i>silver</i> parts that may have a too small area inferior to 25
+     */
+    public static double TOO_SMALL_PARCEL_AREA = 25;
     final private double maximalArea, maximalWidth, drivewayWidth;
-    Polygon polygonInit;
-    SimpleFeatureCollection buildings;
-    SimpleFeatureCollection roads;
-    // This line represents the exterior of an urban island (it serves to determine
-    // if a parcel has road access)
+    private final Polygon polygonInit;
+    private SimpleFeatureCollection buildings;
+    private SimpleFeatureCollection roads;
+    /**
+     * This line represents the exterior of an urban island (it serves to determine if a parcel has road access)
+     */
     private List<LineString> ext = null;
     private Geometry exclusionZone = null;
 
@@ -111,14 +107,14 @@ public class FlagParcelDecomposition {
     /**
      * Constructor of a FlagParcelDecomposition method without buildings and roads
      *
-     * @param parcelGeom              the initial polygon to decompose
+     * @param parcelGeom     the initial polygon to decompose
      * @param maximalArea    the maximalArea for a parcel
      * @param maximalWidth   the maximal width
      * @param drivewayWidth  the width of driveways
      * @param islandExterior the exterior of this island to assess road access
      * @param exclusionZone  a zone to find roads from empty parcels area
      */
-    public FlagParcelDecomposition(Polygon parcelGeom, Double maximalArea, Double maximalWidth, Double drivewayWidth, List<LineString>  islandExterior, Geometry exclusionZone) {
+    public FlagParcelDecomposition(Polygon parcelGeom, Double maximalArea, Double maximalWidth, Double drivewayWidth, List<LineString> islandExterior, Geometry exclusionZone) {
         this.maximalArea = maximalArea;
         this.maximalWidth = maximalWidth;
         this.polygonInit = parcelGeom;
@@ -136,6 +132,7 @@ public class FlagParcelDecomposition {
      * @param maximalWidth   the maximal width
      * @param drivewayWidth  the width of driveways
      * @param islandExterior the exterior of this island to assess road access
+     * @param exclusionZone  a zone to find roads from empty parcels area
      */
     public FlagParcelDecomposition(Polygon p, SimpleFeatureCollection buildings, double maximalArea, double maximalWidth, double drivewayWidth, List<LineString> islandExterior, Geometry exclusionZone) {
         super();
@@ -153,7 +150,7 @@ public class FlagParcelDecomposition {
      *
      * @param p              the initial polygon to decompose
      * @param buildings      the buildings that will constraint the possibility of adding a road
-     * @param roads
+     * @param roads          road segment could be used for detecting road contact (can be null)
      * @param maximalArea    the maximalArea for a parcel
      * @param maximalWidth   the maximal width
      * @param drivewayWidth  the width of driveways
@@ -176,7 +173,7 @@ public class FlagParcelDecomposition {
      *
      * @param p              the initial polygon to decompose
      * @param buildings      the buildings that will constraint the possibility of adding a road
-     * @param roads
+     * @param roads          road segment could be used for detecting road contact (can be null)
      * @param maximalArea    the maximalArea for a parcel
      * @param maximalWidth   the maximal width
      * @param drivewayWidth  the width of driveways
@@ -202,7 +199,8 @@ public class FlagParcelDecomposition {
      * @param buildingFile building that could stop the creation of a driveway
      * @param roadFile     complementary roads (as line and not as parcel void)
      * @param profile      type of {@link ProfileUrbanFabric} to simulate
-     * @throws IOException geomsToCollec() creation
+     * @return collection of cut parcels
+     * @throws IOException reading buildingFile
      */
     public static SimpleFeatureCollection generateFlagSplitedParcels(SimpleFeatureCollection parcelSFC, File buildingFile, File roadFile, ProfileUrbanFabric profile) throws IOException {
         FilterFactory2 ff = CommonFactoryFinder.getFilterFactory2();
@@ -267,7 +265,7 @@ public class FlagParcelDecomposition {
      * @param maximalWidthSplitParcel with between road and parcel under which parcel won't be cut anymore
      * @param lenDriveway             length of the driveway to simulate
      * @param exclusionZone           Zone to consider as not existing
-     * @throws IOException geomsToCollec() creation
+     * @return collection of cut parcels
      */
     public static SimpleFeatureCollection generateFlagSplitedParcels(SimpleFeature feat, List<LineString> extLines, double harmonyCoeff, double noise,
                                                                      Double maximalAreaSplitParcel, Double maximalWidthSplitParcel, Double lenDriveway, Geometry exclusionZone) {
@@ -287,10 +285,10 @@ public class FlagParcelDecomposition {
      * @param maximalWidthSplitParcel with between road and parcel under which parcel won't be cut anymore
      * @param lenDriveway             length of the driveway to simulate
      * @param exclusionZone           Zone to consider as not existing
-     * @throws IOException geomsToCollec() creation
+     * @return collection of cut parcels
      */
     public static SimpleFeatureCollection generateFlagSplitedParcels(SimpleFeature feat, List<LineString> extLines, double harmonyCoeff, double noise,
-                                                                     SimpleFeatureCollection buildingSFC, Double maximalAreaSplitParcel, Double maximalWidthSplitParcel, Double lenDriveway, Geometry exclusionZone) throws IOException {
+                                                                     SimpleFeatureCollection buildingSFC, Double maximalAreaSplitParcel, Double maximalWidthSplitParcel, Double lenDriveway, Geometry exclusionZone) {
         return Geom.geomsToCollec((new FlagParcelDecomposition(Polygons.getPolygon((Geometry) feat.getDefaultGeometry()), buildingSFC,
                 maximalAreaSplitParcel, maximalWidthSplitParcel, lenDriveway, extLines, exclusionZone)).decompParcel(harmonyCoeff, noise), Schemas.getBasicSchemaMultiPolygon("geom"));
     }
@@ -308,6 +306,7 @@ public class FlagParcelDecomposition {
      * @param maximalWidthSplitParcel with between road and parcel under which parcel won't be cut anymore
      * @param lenDriveway             length of the driveway to simulate
      * @param exclusionZone           Zone to consider as not existing
+     * @return collection of cut parcels
      */
     public static SimpleFeatureCollection generateFlagSplitedParcels(SimpleFeature feat, List<LineString> extLines, double harmonyCoeff, double noise, SimpleFeatureCollection buildingSFC,
                                                                      SimpleFeatureCollection roadSFC, Double maximalAreaSplitParcel, Double maximalWidthSplitParcel, Double lenDriveway, Geometry exclusionZone) {
@@ -315,7 +314,7 @@ public class FlagParcelDecomposition {
                 maximalAreaSplitParcel, maximalWidthSplitParcel, lenDriveway, extLines, exclusionZone)).decompParcel(harmonyCoeff, noise), Schemas.getBasicSchemaMultiPolygon("geom"));
     }
 
-    public static boolean isRoadPolygonIntersectsLine(SimpleFeatureCollection roads, LineString ls) {
+    static boolean isRoadPolygonIntersectsLine(SimpleFeatureCollection roads, LineString ls) {
         return roads != null && Geom.unionGeom(ParcelState.getRoadPolygon(roads)).contains(ls);
     }
 
@@ -324,7 +323,7 @@ public class FlagParcelDecomposition {
      *
      * @return List of parcels
      */
-    public List<Polygon> decompParcel(double harmonyCoeff, double noise) {
+    List<Polygon> decompParcel(double harmonyCoeff, double noise) {
         return decompParcel(this.polygonInit, harmonyCoeff, noise);
     }
 
@@ -334,7 +333,7 @@ public class FlagParcelDecomposition {
      * @param p
      * @return the flag cut parcel if possible. The input parcel otherwise
      */
-    private List<Polygon> decompParcel(Polygon p, double harmonyCoeff, double noise) {
+    List<Polygon> decompParcel(Polygon p, double harmonyCoeff, double noise) {
         // End test condition
         if (this.endCondition(p.getArea(), this.frontSideWidth(p)))
             return Collections.singletonList(p);
@@ -369,14 +368,15 @@ public class FlagParcelDecomposition {
      * <li> the right one contains parcel with added road access</li>
      * </ul>
      */
-    private Pair<List<Polygon>, List<Polygon>> generateFlagParcel(List<Polygon> splittedPolygon) {
+    Pair<List<Polygon>, List<Polygon>> generateFlagParcel(List<Polygon> splittedPolygon) {
         List<Polygon> right = new ArrayList<>();
 
         // We get the two geometries with and without road access
         List<Polygon> lPolygonWithRoadAccess = splittedPolygon.stream().filter(this::hasRoadAccess).collect(Collectors.toList());
         List<Polygon> lPolygonWithNoRoadAccess = splittedPolygon.stream().filter(x -> !hasRoadAccess(x)).collect(Collectors.toList());
 
-        bouclepoly:for (Polygon currentPoly : lPolygonWithNoRoadAccess) {
+        bouclepoly:
+        for (Polygon currentPoly : lPolygonWithNoRoadAccess) {
             List<Pair<MultiLineString, Polygon>> listMap = generateCandidateForCreatingRoad(currentPoly, lPolygonWithRoadAccess);
             // We order the proposition according to the length (we will try at first to build the road on the shortest side
             listMap.sort(Comparator.comparingDouble(o -> o.getKey().getLength()));
@@ -386,7 +386,6 @@ public class FlagParcelDecomposition {
 //          return Double.compare(o1.getKey().getLength(), o2.getKey().getLength());
 //        }
 //      });
-
             loopSide:
             for (Pair<MultiLineString, Polygon> side : listMap) {
                 // The geometry road
@@ -397,8 +396,8 @@ public class FlagParcelDecomposition {
                     continue;
                 try {
                     // The first geometry is the polygon with road access and a remove of the geometry
-                    Geometry geomPol1 = getDifference(polygon, road);
-                    Geometry geomPol2 = getIntersection(getUnion(currentPoly, road), getUnion(currentPoly, polygon));
+                    Geometry geomPol1 = Geom.safeDifference(polygon, road);
+                    Geometry geomPol2 = Geom.safeIntersection(Geom.safeUnion(currentPoly, road), Geom.safeUnion(currentPoly, polygon));
                     // It might be a multi polygon so we remove the small area <
                     List<Polygon> lPolygonsOut1 = Polygons.getPolygons(geomPol1);
                     lPolygonsOut1 = lPolygonsOut1.stream().filter(x -> x.getArea() > TOO_SMALL_PARCEL_AREA).collect(Collectors.toList());
@@ -432,40 +431,6 @@ public class FlagParcelDecomposition {
         }
         // We add the polygon with road access
         return new ImmutablePair<>(new ArrayList<>(lPolygonWithRoadAccess), right);
-    }
-
-    //TODO move those functions to ArtiScales-Tools?
-    private Geometry getDifference(Geometry a, Geometry b) {
-        PrecisionModel pm = new PrecisionModel(100);
-        Geometry jtsGeomA = GeometryPrecisionReducer.reduce(a, pm);
-        Geometry jtsGeomB = GeometryPrecisionReducer.reduce(b, pm);
-        return FeaturePolygonizer.getDifference(new ArrayList<>(Collections.singletonList(jtsGeomA)), new ArrayList<>(Collections.singletonList(jtsGeomB)));
-    }
-
-    @SuppressWarnings("unused")
-    private Pair<Geometry, Geometry> getIntersectionDifference(Geometry a, Geometry b) {
-        PrecisionModel pm = new PrecisionModel(100);
-        Geometry jtsGeomA = GeometryPrecisionReducer.reduce(a, pm);
-        Geometry jtsGeomB = GeometryPrecisionReducer.reduce(b, pm);
-        return FeaturePolygonizer.getIntersectionDifference(new ArrayList<>(Collections.singletonList(jtsGeomA)), new ArrayList<>(Collections.singletonList(jtsGeomB)));
-    }
-
-    private Geometry getUnion(Geometry a, Geometry b) {
-        PrecisionModel pm = new PrecisionModel(100);
-        Geometry jtsGeomA = GeometryPrecisionReducer.reduce(a, pm);
-        Geometry jtsGeomB = GeometryPrecisionReducer.reduce(b, pm);
-        return new CascadedPolygonUnion(new ArrayList<>(Arrays.asList(jtsGeomA, jtsGeomB))).union();
-    }
-
-    private Geometry getIntersection(Geometry a, Geometry b) {
-        try {
-            return a.intersection(b);
-        } catch (Exception e) {
-            PrecisionModel pm = new PrecisionModel(100);
-            Geometry jtsGeomA = GeometryPrecisionReducer.reduce(a, pm);
-            Geometry jtsGeomB = GeometryPrecisionReducer.reduce(b, pm);
-            return FeaturePolygonizer.getIntersection(new ArrayList<>(Arrays.asList(jtsGeomA, jtsGeomB)));
-        }
     }
 
     private List<MultiLineString> regroupLineStrings(List<LineString> lineStrings) {
@@ -544,7 +509,7 @@ public class FlagParcelDecomposition {
      * <p>
      * If no roads have been found and a road Geopacakge has been set, we look if a road Geopacakge has been set and if the given road is nearby
      *
-     * @param poly
+     * @param poly parcel's polygon
      */
     private boolean hasRoadAccess(Polygon poly) {
         return ParcelState.isParcelHasRoadAccess(poly, roads, poly.getFactory().createMultiLineString(ext.toArray(new LineString[ext.size()])), exclusionZone);
@@ -554,14 +519,14 @@ public class FlagParcelDecomposition {
         return Lines.getListLineStringAsMultiLS(list, this.polygonInit.getFactory());
     }
 
-    public List<LineString> getExt() {
+    private List<LineString> getExt() {
         if (ext == null) {
             generateExt();
         }
         return ext;
     }
 
-    public void setExt(List<LineString> ext) {
+    private void setExt(List<LineString> ext) {
         this.ext = ext;
     }
 

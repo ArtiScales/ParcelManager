@@ -7,6 +7,8 @@ import fr.ign.artiscales.pm.parcelFunction.MarkParcelAttributeFromPosition;
 import fr.ign.artiscales.pm.parcelFunction.ParcelSchema;
 import fr.ign.artiscales.pm.parcelFunction.ParcelState;
 import fr.ign.artiscales.tools.geoToolsFunctions.Attribute;
+import fr.ign.artiscales.tools.geoToolsFunctions.Schemas;
+import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Geom;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.collec.CollecMgmt;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.collec.CollecTransform;
 import fr.ign.artiscales.tools.parameter.ProfileUrbanFabric;
@@ -96,7 +98,6 @@ public class Densification extends Workflow {
             hasRoad = true;
             roadDS = CollecMgmt.getDataStore(roadFile);
         }
-
         // preparation of the builder and empty collections
         final String geomName = parcelCollection.getSchema().getGeometryDescriptor().getLocalName();
         FilterFactory2 ff = CommonFactoryFinder.getFilterFactory2();
@@ -162,17 +163,18 @@ public class Densification extends Workflow {
                         } catch (Exception problem) {
                             problem.printStackTrace();
                         }
-                        // if all parcels are marked, we won't bother
+                        // if all parcels are marked, buildings are present on every cut parts. We then cancel densification
                         if (toMerge.size() == unsortedFlagParcel.size())
                             add = false;
-                            // merge the parcel that are built upon a building (we assume that it must be the same building)
-                        else if (toMerge.size() > 1) {
+                        else if (toMerge.size() > 1) { // merge the parcel that are built upon a building (we assume that it must be the same building)
                             // tmp save the collection of output parcels
                             DefaultFeatureCollection tmpUnsortedFlagParcel = new DefaultFeatureCollection();
                             tmpUnsortedFlagParcel.addAll(unsortedFlagParcel);
                             unsortedFlagParcel = new DefaultFeatureCollection();
                             // we add the merged parcels
-                            ((DefaultFeatureCollection) unsortedFlagParcel).add(CollecTransform.unionSFC(toMerge));
+                            SimpleFeatureBuilder builder = Schemas.getSFBSchemaWithMultiPolygon(toMerge.getSchema());
+                            builder.set(toMerge.getSchema().getGeometryDescriptor().getLocalName(), Geom.unionSFC(toMerge).buffer(0.1).buffer(-0.1));
+                            ((DefaultFeatureCollection) unsortedFlagParcel).add(builder.buildFeature(Attribute.makeUniqueId()));
                             // we check if the flag cut parcels have been merged or if they need to be put on the new collection
                             try (SimpleFeatureIterator parcelIt = tmpUnsortedFlagParcel.features()) {
                                 while (parcelIt.hasNext()) {
@@ -222,9 +224,7 @@ public class Densification extends Workflow {
                         sFBMinParcel = ParcelSchema.setSFBMinParcelWithFeat(initialParcel, sFBMinParcel.getFeatureType());
                         resultParcels.add(sFBMinParcel.buildFeature(Attribute.makeUniqueId()));
                     }
-                }
-                // if no simulation needed, we ad the normal parcel
-                else {
+                } else { // if no simulation needed, we add the normal parcel
                     sFBMinParcel = ParcelSchema.setSFBMinParcelWithFeat(initialParcel, sFBMinParcel.getFeatureType());
                     resultParcels.add(sFBMinParcel.buildFeature(Attribute.makeUniqueId()));
                 }
@@ -311,10 +311,10 @@ public class Densification extends Workflow {
      * @param allowIsolatedParcel true if the simulated parcels have the right to be isolated from the road, false otherwise.
      * @return The input parcel {@link SimpleFeatureCollection} with the marked parcels replaced by the simulated parcels. All parcels have the
      * {@link fr.ign.artiscales.pm.parcelFunction.ParcelSchema#getSFBMinParcel()} schema.
-     * @throws Exception
+     * @throws IOException
      */
     public SimpleFeatureCollection densification(SimpleFeatureCollection parcelCollection, SimpleFeatureCollection blockCollection, File outFolder,
-                                                 File buildingFile, File roadFile, ProfileUrbanFabric profile, boolean allowIsolatedParcel) throws Exception {
+                                                 File buildingFile, File roadFile, ProfileUrbanFabric profile, boolean allowIsolatedParcel) throws IOException {
         return densification(parcelCollection, blockCollection, outFolder, buildingFile, roadFile, profile, allowIsolatedParcel, null);
     }
 

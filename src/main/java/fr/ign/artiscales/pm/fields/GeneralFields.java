@@ -15,18 +15,20 @@ import org.geotools.feature.DefaultFeatureCollection;
 import org.geotools.feature.simple.SimpleFeatureBuilder;
 import org.opengis.feature.simple.SimpleFeature;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+/**
+ * Method containing functions to deal with parcel attributes and fields
+ */
 public class GeneralFields {
 
     /**
      * Represent the general permission of the zones. Its default name is '<b>TYPEZONE</b>' and can be of three different types:
      * <ul>
      * <li><b>U</b>: Already urbanized land,</li>
-     * <li><b>AU</b>: Not urbanized land but open to new developments,</li>
+     * <li><b>AU (TBU in english)</b>: Not urbanized land but open to new developments,</li>
      * <li><b>N</b>: Not urbanized land and not open to new developments.</li>
      * </ul>
      */
@@ -235,10 +237,8 @@ public class GeneralFields {
      * @param sfc         input {@link SimpleFeatureCollection} to transform.
      * @param sfcWithInfo {@link SimpleFeatureCollection} containing the interesting attribute informations.
      * @return A {@link SimpleFeatureCollection} with attributes following the minimal schema
-     * @throws IOException
      */
-    public static SimpleFeatureCollection transformSFCToMinParcel(SimpleFeatureCollection sfc, SimpleFeatureCollection sfcWithInfo)
-            throws IOException {
+    public static SimpleFeatureCollection transformSFCToMinParcel(SimpleFeatureCollection sfc, SimpleFeatureCollection sfcWithInfo) {
         DefaultFeatureCollection result = new DefaultFeatureCollection();
         SimpleFeatureBuilder builder = Schemas.getSFBSchemaWithMultiPolygon(ParcelSchema.getSFBMinParcel().getFeatureType());
         try (SimpleFeatureIterator it = sfc.features()) {
@@ -253,7 +253,7 @@ public class GeneralFields {
         } catch (Exception problem) {
             problem.printStackTrace();
         }
-        return result.collection();
+        return result;
     }
 
     /**

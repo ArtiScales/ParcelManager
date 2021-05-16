@@ -1,6 +1,7 @@
 package fr.ign.artiscales.pm.fields.french;
 
 import fr.ign.artiscales.pm.parcelFunction.MarkParcelAttributeFromPosition;
+import fr.ign.artiscales.tools.geoToolsFunctions.Schemas;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.collec.CollecMgmt;
 import org.geotools.feature.simple.SimpleFeatureBuilder;
 import org.geotools.feature.simple.SimpleFeatureTypeBuilder;
@@ -11,6 +12,9 @@ import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.feature.simple.SimpleFeatureType;
 import org.opengis.referencing.FactoryException;
 
+/**
+ * Method to deal with French parcel nomenclature
+ */
 public class FrenchParcelSchemas {
     /////////////////////
     /////////////////////
@@ -22,7 +26,7 @@ public class FrenchParcelSchemas {
         SimpleFeatureTypeBuilder sfTypeBuilder = new SimpleFeatureTypeBuilder();
         sfTypeBuilder.setName("frenchZoning");
         try {
-            sfTypeBuilder.setCRS(CRS.decode("EPSG:2154"));
+            sfTypeBuilder.setCRS(CRS.decode(Schemas.getEpsg()));
         } catch (FactoryException e) {
             e.printStackTrace();
         }

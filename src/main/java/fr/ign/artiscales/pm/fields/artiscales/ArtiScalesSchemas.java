@@ -1,6 +1,7 @@
 package fr.ign.artiscales.pm.fields.artiscales;
 
 import fr.ign.artiscales.pm.fields.french.FrenchParcelFields;
+import fr.ign.artiscales.tools.geoToolsFunctions.Schemas;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.collec.CollecMgmt;
 import org.geotools.feature.simple.SimpleFeatureBuilder;
 import org.geotools.feature.simple.SimpleFeatureTypeBuilder;
@@ -10,17 +11,20 @@ import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.feature.simple.SimpleFeatureType;
 import org.opengis.referencing.FactoryException;
 
+/**
+ * ArtiScale schemas and nomenclature of parcel implementation.
+ */
 public class ArtiScalesSchemas {
-    /////////////////////
-    /////////////////////
-    //// AsAS Schemas : basic parcels schema used in ArtiScales
-    /////////////////////
-    /////////////////////
+
+    /**
+     * Get Artiscales's parcel {@link SimpleFeatureBuilder}. Not updated with recent code change
+     * @return parcel builder
+     */
     public static SimpleFeatureBuilder getSFBParcelAsAS() {
         SimpleFeatureTypeBuilder sfTypeBuilder = new SimpleFeatureTypeBuilder();
         sfTypeBuilder.setName("parcelAsAS");
         try {
-            sfTypeBuilder.setCRS(CRS.decode("EPSG:2154"));
+            sfTypeBuilder.setCRS(CRS.decode(Schemas.getEpsg()));
         } catch (FactoryException e) {
             e.printStackTrace();
         }
@@ -48,8 +52,7 @@ public class ArtiScalesSchemas {
     }
 
     public static SimpleFeatureBuilder setSFBParcelAsASWithFeat(SimpleFeature feat, SimpleFeatureType schema) {
-        SimpleFeatureBuilder finalParcelBuilder = new SimpleFeatureBuilder(schema);
-        return finalParcelBuilder = fillSFBParcelAsASWithFeat(feat, finalParcelBuilder, schema);
+        return fillSFBParcelAsASWithFeat(feat, new SimpleFeatureBuilder(schema), schema);
     }
 
     public static SimpleFeatureBuilder fillSFBParcelAsASWithFeat(SimpleFeature feat, SimpleFeatureBuilder builder, SimpleFeatureType schema) {
@@ -97,16 +100,15 @@ public class ArtiScalesSchemas {
         return finalParcelBuilder;
     }
 
-    /////////////////////
-    /////////////////////
-    //// AsASSplit Schemas : parcels schema used in ArtiScales for marking which parcel is cut (or merged) on parcel reshaping process
-    /////////////////////
-    /////////////////////
+    /**
+     * parcels schema used in ArtiScales for marking which parcel is cut (or merged) on parcel reshaping process
+     * @return parcel schema
+     */
     public static SimpleFeatureBuilder getSFBParcelAsASSplit() {
         SimpleFeatureTypeBuilder sfTypeBuilder = new SimpleFeatureTypeBuilder();
         sfTypeBuilder.setName("parcelAsASSplit");
         try {
-            sfTypeBuilder.setCRS(CRS.decode("EPSG:2154"));
+            sfTypeBuilder.setCRS(CRS.decode(Schemas.getEpsg()));
         } catch (FactoryException e) {
             e.printStackTrace();
         }
@@ -130,9 +132,7 @@ public class ArtiScalesSchemas {
     }
 
     public static SimpleFeatureBuilder setSFBParcelAsASSplitWithFeat(SimpleFeature feat, SimpleFeatureType schema) {
-        SimpleFeatureBuilder finalParcelBuilder = new SimpleFeatureBuilder(schema);
-        finalParcelBuilder = fillSFBParcelAsASSplitWithFeat(feat, finalParcelBuilder, schema);
-        return finalParcelBuilder;
+        return fillSFBParcelAsASSplitWithFeat(feat, new SimpleFeatureBuilder(schema), schema);
     }
 
     public static SimpleFeatureBuilder fillSFBParcelAsASSplitWithFeat(SimpleFeature feat, SimpleFeatureBuilder builder, SimpleFeatureType schema) {

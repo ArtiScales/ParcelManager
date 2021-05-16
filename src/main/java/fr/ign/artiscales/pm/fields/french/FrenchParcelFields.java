@@ -21,6 +21,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
+/**
+ * Methods to deal with french parcel fields
+ */
 public class FrenchParcelFields {
 
     /**

@@ -41,10 +41,10 @@ import java.util.stream.Collectors;
  */
 public class ParcelCollection {
 
-//    public static void main(String[] args) throws IOException {
-//        File rootFile = new File("src/main/resources/ParcelComparison/");
-//        sortDifferentParcel(new File(rootFile, "parcel2003.gpkg"), new File(rootFile, "parcel2018.gpkg"), new File("/tmp/"), 800, 150, true);
-//    }
+    public static void main(String[] args) throws IOException {
+        File rootFile = new File("src/main/resources/ParcelComparison/");
+        sortDifferentParcel(new File(rootFile, "parcel2003.gpkg"), new File(rootFile, "parcel2018.gpkg"), new File("/tmp/Correct/"), 550, 175, true);
+    }
 
     /**
      * Method that compares two set of parcel plans and sort the reference parcel plan with the ones that changed and the ones that doesn't. We compare the parcels area of the
@@ -102,7 +102,7 @@ public class ParcelCollection {
         SimpleFeatureCollection parcelToCompare = dsParcelToCompare.getFeatureSource(dsParcelToCompare.getTypeNames()[0]).getFeatures();
         DataStore dsRef = CollecMgmt.getDataStore(parcelRefFile);
         SimpleFeatureCollection parcelRef = dsRef.getFeatureSource(dsRef.getTypeNames()[0]).getFeatures();
-        SimpleFeatureCollection notSame = OpOnCollec.sortDiffGeom( parcelRefFile, parcelToCompareFile, parcelOutFolder, overwrite)[1];
+        SimpleFeatureCollection notSame = OpOnCollec.sortDiffGeom( parcelRefFile, parcelToCompareFile, parcelOutFolder,false, overwrite)[1];
 
         FilterFactory2 ff = CommonFactoryFinder.getFilterFactory2();
         PropertyName pName = ff.property(parcelRef.getSchema().getGeometryDescriptor().getLocalName());
@@ -113,11 +113,7 @@ public class ParcelCollection {
         // isolate the compared parcels that have changed
         SimpleFeatureCollection realParcel = parcelToCompare.subCollection(ff.intersects(pName, ff.literal(Geom.unionGeom(lInter))));
 
-//        // We now seek if a large part of the real parcel stays intact and small parts. We can keep them or leave them
-//        List<Geometry> notSameMerged = Geom.unionTouchingGeometries(
-//                Arrays.stream(notSame.toArray(new SimpleFeature[0])).map(x -> (Geometry) x.getDefaultGeometry()).collect(Collectors.toList()));
-//        List<Geometry> intersectionGeoms = new ArrayList<>();
-//        for (Geometry firstZone : notSameMerged) {
+       // We now seek if a large part of the real parcel stays intact and small parts. We can keep them or leave them
         List<Geometry> intersectionGeoms = new ArrayList<>();
         for (Geometry firstZone : Geom.importListGeom(notSame)) {
             Geometry firstZoneB = firstZone.buffer(-1);

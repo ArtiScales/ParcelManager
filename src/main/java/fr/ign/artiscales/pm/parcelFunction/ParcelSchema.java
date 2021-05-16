@@ -133,7 +133,7 @@ public class ParcelSchema {
         SimpleFeatureTypeBuilder sfTypeBuilder = new SimpleFeatureTypeBuilder();
         for (AttributeDescriptor attr : schema.getAttributeDescriptors())
             sfTypeBuilder.add(attr);
-        sfTypeBuilder.add(MarkParcelAttributeFromPosition.markFieldName, int.class);
+        sfTypeBuilder.add(MarkParcelAttributeFromPosition.getMarkFieldName(), int.class);
         sfTypeBuilder.setName(schema.getName());
         sfTypeBuilder.setCRS(schema.getCoordinateReferenceSystem());
         sfTypeBuilder.setDefaultGeometry(schema.getGeometryDescriptor().getLocalName());

@@ -6,6 +6,9 @@ import org.opengis.feature.simple.SimpleFeature;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Implementation for french zoning schemas
+ */
 public class FrenchZoningSchemas {
 
     /**

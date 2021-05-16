@@ -82,7 +82,6 @@ public class GeneralTest extends UseCase {
             }
             System.out.println("PROCESS: "+ext);
             File outFolder = new File(outRootFolder, ext);
-            outFolder.mkdirs();
             File statFolder = new File(outFolder, "stat");
             statFolder.mkdirs();
 

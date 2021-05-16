@@ -36,7 +36,7 @@ object compSimuParcel {
     val profile = new ProfileUrbanFabric(maximalArea, decompositionLevelWithoutStreet, largeStreetLevel, streetWidth,
       largeStreetWidth, minimalWidthContactRoad, harmonyCoeff)
     val parcelSimuled = ZoneDivision.zoneDivision(zoneFile, parcelFile, profile, outFolder)
-    val hausdorfDistance = SingleParcelStat.hausdorfDistanceAverage(parcelSimuled, parcelEvolved)
+    val hausdorfDistance = SingleParcelStat.hausdorffDistanceAverage(parcelSimuled, parcelEvolved)
     val nbParcelDiff = SingleParcelStat.diffNumberOfParcel(parcelSimuled, parcelEvolved)
     val areaParcelDiff = SingleParcelStat.diffAreaAverage(parcelSimuled, parcelEvolved)
     (-hausdorfDistance, nbParcelDiff, areaParcelDiff)

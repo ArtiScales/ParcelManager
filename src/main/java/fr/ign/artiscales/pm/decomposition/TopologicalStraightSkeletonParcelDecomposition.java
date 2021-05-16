@@ -181,7 +181,6 @@ public class TopologicalStraightSkeletonParcelDecomposition {
 		this(p, roads, roadNameAttribute, roadImportanceAttribute, offsetDistance, maxDistanceForNearestRoad, minimalArea, 2, false,0);
 	}
 
-
 	public TopologicalStraightSkeletonParcelDecomposition(Polygon p, SimpleFeatureCollection roads, String roadNameAttribute,
 			String roadImportanceAttribute, double offsetDistance, double maxDistanceForNearestRoad, double minimalArea,boolean generatePeriphericalRoad, double widthRoad)
 			throws StraightSkeletonException, EdgeException {
@@ -386,20 +385,16 @@ public class TopologicalStraightSkeletonParcelDecomposition {
 		Face currFace = null;
 		Set<Face> facesWithMultipleFrontages = new HashSet<>();
 		for (HalfEdge e : orderedEdges) {
-			if (currFace == null) {
-				// this is the first edge
+			if (currFace == null) { // case for is the first edge
 				currFace = e.getFace();
 				frontage.add(e);
 			} else {
-				// if we are sill on the same face
-				if (e.getFace() == currFace) {
+				if (e.getFace() == currFace) { // if we are sill on the same face
 					frontage.add(e);
-				} else {
-					// we changed face. Save the current frontage
+				} else { // we changed face. Save the current frontage
 					List<List<HalfEdge>> l = frontages.getOrDefault(currFace, new ArrayList<>());
-					if (!l.isEmpty()) {
+					if (!l.isEmpty())
 						facesWithMultipleFrontages.add(currFace);
-					}
 					l.add(frontage);
 					frontages.put(currFace, l);
 					// we create a new frontage

@@ -26,34 +26,63 @@ import java.util.HashMap;
 import java.util.stream.Collectors;
 
 /**
- * This class generates values for the description of an urban fabric. It is aimed to help the setting of {@link fr.ign.artiscales.tools.parameter.ProfileUrbanFabric} parameters.
+ * This class generates values for the description of a parcel layout. It is aimed to help the setting of {@link fr.ign.artiscales.tools.parameter.ProfileUrbanFabric} parameters.
  * It can work on different scales, from the block or the zonePreciseNameField of a zoning plan to a whole community.
+ * A zone scale must be defined
  *
  * @author Maxime Colomb
  */
 public class RealUrbanFabricParameters {
-    /**
-     * scaleZone The scale of the studied zone. Can either be:
-     * <ul>
-     *           <li>community</li>
-     *           <li>genericZone</li>
-     *           <li>preciseZone</li>
-     *           <li>block</li>
-     * </ul>
-     */
-    String scaleZone;
-    // TODO program the possibility of mixing those scales - List<String> scaleZone = Arrays.asList("community");
-    File parcelFile, buildingFile, zoningFile, roadFile, outFolder;
-    HashMap<String, SimpleFeatureCollection> parcelPerZone = new HashMap<>();
 
-    public RealUrbanFabricParameters(File root) {
+    private final HashMap<String, SimpleFeatureCollection> parcelPerZone = new HashMap<>();
+    private String scaleZone;
+    // TODO program the possibility of mixing those scales - List<String> scaleZone = Arrays.asList("community");
+    private File parcelFile, buildingFile, zoningFile, roadFile, outFolder;
+
+    /**
+     * Constructor for a complete analysis.
+     *
+     * @param scaleZone    scale of the analysis
+     * @param parcelFile   geoFile for parcel plan
+     * @param buildingFile geoFile for buildings
+     * @param zoningFile   geoFile for zoning plan
+     * @param roadFile     geoFile for roads
+     * @param outFolder    folder where outputs are wrote
+     */
+    public RealUrbanFabricParameters(String scaleZone, File parcelFile, File buildingFile, File zoningFile, File roadFile, File outFolder) {
+        this.setScaleZone(scaleZone);
+        this.parcelFile = parcelFile;
+        if (!parcelFile.exists())
+            System.out.println(parcelFile + " doesn't exist");
+        this.buildingFile = buildingFile;
+        if (!buildingFile.exists())
+            System.out.println(buildingFile + " doesn't exist");
+        this.zoningFile = zoningFile;
+        if (!zoningFile.exists())
+            System.out.println(zoningFile + " doesn't exist");
+        this.roadFile = roadFile;
+        if (!roadFile.exists())
+            System.out.println(roadFile + " doesn't exist");
+        this.outFolder = outFolder;
+        outFolder.mkdirs();
+    }
+
+    /**
+     * Constructor for a basic file organization.
+     *
+     * @param scaleZone scale of the analysis
+     * @param root      root folder must contain geo files properly named
+     */
+    public RealUrbanFabricParameters(String scaleZone, File root) {
+        setScaleZone(scaleZone);
         setFiles(root);
     }
 
     /**
-     * For a direct usage
+     * Constructor for a short usage (only input parcel's area).
      *
-     * @param parcelSFC
+     * @param parcelSFC    set of parcels
+     * @param buildingFile geoFile containing
      */
     public RealUrbanFabricParameters(SimpleFeatureCollection parcelSFC, File buildingFile) {
         parcelPerZone.put("parcel", parcelSFC);
@@ -64,8 +93,7 @@ public class RealUrbanFabricParameters {
      * Proceed to the analysis of parameters in every defined zones of the geographic files.
      */
     public static void main(String[] args) throws IOException {
-        RealUrbanFabricParameters rufp = new RealUrbanFabricParameters(new File("src/main/resources/GeneralTest/"));
-        rufp.scaleZone = "genericZone";
+        RealUrbanFabricParameters rufp = new RealUrbanFabricParameters("genericZone", new File("src/main/resources/GeneralTest/"));
         rufp.generateEveryAnalysisOfScene();
 //        RealUrbanFabricParameters rufp = new RealUrbanFabricParameters(new File("src/main/resources/ParcelComparison/"));
 //        rufp.setParcelFile(new File("src/main/resources/ParcelComparison/parcel2003.gpkg"));
@@ -80,21 +108,46 @@ public class RealUrbanFabricParameters {
 //            System.out.println("80: " + stat.getPercentile(80));
 //            System.out.println("90: " + stat.getPercentile(90));
 //        }
-
     }
 
     private static String getZoneEnglishName(String scaleZone, String zone) {
         switch (scaleZone) {
             case "genericZone":
-                return GeneralFields.getGenericZoneEnglishName(zone) +" zone";
+                return GeneralFields.getGenericZoneEnglishName(zone) + " zone";
             case "preciseZone":
-                return zone+" zone";
+                return zone + " zone";
             case "block":
-                return zone+" block";
+                return zone + " block";
             case "community":
-                return zone+ " community";
+                return zone + " community";
         }
         throw new NullArgumentException();
+    }
+
+    /**
+     * Get the scale of the analyzed zone
+     *
+     * @return the scale
+     */
+    public String getScaleZone() {
+        return scaleZone;
+    }
+
+    /**
+     * Set the scale of the analyzed zone. Can either be:
+     * <ul>
+     *           <li>community</li>
+     *           <li>genericZone</li>
+     *           <li>preciseZone</li>
+     *           <li>block</li>
+     * </ul>
+     */
+    public void setScaleZone(String scaleZone) {
+        if (!scaleZone.equals("community") && !scaleZone.equals("genericZone") && !scaleZone.equals("preciseZone") && !scaleZone.equals("block")) {
+            System.out.println("setScaleZone: invalid value. Set community as default value");
+            this.scaleZone = "community";
+        } else
+            this.scaleZone = scaleZone;
     }
     /// **
     // * Allow the
@@ -125,14 +178,14 @@ public class RealUrbanFabricParameters {
         roadFile = new File(mainFolder, "road" + CollecMgmt.getDefaultGISFileType());
         if (!roadFile.exists())
             System.out.println(roadFile + " doesn't exist");
-        outFolder = new File(mainFolder,"/ParametersOfScene");
+        outFolder = new File(mainFolder, "/ParametersOfScene");
         outFolder.mkdirs();
     }
 
     /**
      * Generate every indicators about the urban scene (area of parcel built and area of all parcels, road statistics)
      *
-     * @throws IOException
+     * @throws IOException reading files
      */
     public void generateEveryAnalysisOfScene() throws IOException {
         makeSplitParcelBetweenZone();
@@ -151,7 +204,7 @@ public class RealUrbanFabricParameters {
     /**
      * Fulfill the collection of zones by splitting the parcel plan.
      *
-     * @throws IOException
+     * @throws IOException reading files
      */
     public void makeSplitParcelBetweenZone() throws IOException {
         DataStore dsParcel = CollecMgmt.getDataStore(parcelFile);
@@ -194,11 +247,11 @@ public class RealUrbanFabricParameters {
     /**
      * Generate the road information in the give zones.
      *
-     * @param zoneCollection
-     * @param road
-     * @param scaleZone
-     * @param zoneName
-     * @throws IOException
+     * @param zoneCollection parcels from the zones to analyse
+     * @param road           road feature collection
+     * @param scaleZone      name of the scale to analyse
+     * @param zoneName       name of the zone to analyse
+     * @throws IOException reading files
      */
     public void roadInformations(SimpleFeatureCollection zoneCollection, SimpleFeatureCollection road, String scaleZone, String zoneName) throws IOException {
         if (parcelPerZone.isEmpty())
@@ -217,20 +270,35 @@ public class RealUrbanFabricParameters {
         Geometry zoneGeom = Geom.unionSFC(zoneCollection).buffer(buffer).buffer(-buffer);
         SimpleFeatureCollection roadsSelected = CollecTransform.selectIntersection(road, zoneGeom);
         if (roadsSelected.size() > 1)
-            MakeStatisticGraphs.roadGraph(roadsSelected, "Characteristics of the roads from the "+getZoneEnglishName(scaleZone, zoneName),
+            MakeStatisticGraphs.roadGraph(roadsSelected, "Characteristics of the roads from the " + getZoneEnglishName(scaleZone, zoneName),
                     "Type of road", "Total lenght of road", outFolder);
         DataStore parcelDS = CollecMgmt.getDataStore(parcelFile);
         RoadRatioParcels.roadRatioZone(zoneCollection, CollecTransform.selectIntersection(parcelDS.getFeatureSource(parcelDS.getTypeNames()[0]).getFeatures(), Geom.unionSFC(zoneCollection).buffer(buffer)), zoneName, outFolder, roadFile);
         parcelDS.dispose();
     }
 
+    /**
+     * Get area built for a short usage. A single zone has to be defined.
+     *
+     * @return the distribution of area.
+     * @throws IOException if wrong parcelPerZone Map is defined, or (potentially) reading geo files and writing csv
+     */
     public DescriptiveStatistics getAreaBuilt() throws IOException {
-        for (String zone : parcelPerZone.keySet()) {
+        if (parcelPerZone.size() > 1)
+            throw new IOException("RealUrbanFabricParameters.getAreaBuilt() : wrong usage of this method, there must be a single zone defined");
+        for (String zone : parcelPerZone.keySet())
             return getAreaBuilt(parcelPerZone.get(zone), zone);
-        }
-        return null;
+        throw new IOException("RealUrbanFabricParameters.getAreaBuilt() : wrong usage of this method, there must be a single zone defined");
     }
 
+    /**
+     * Get the distribution of built parcel's area of one zone.
+     *
+     * @param collection parcel collection
+     * @param zoneName   name of the zone to get
+     * @return the distribution
+     * @throws IOException (potentially) reading geo files and writing csv
+     */
     public DescriptiveStatistics getAreaBuilt(SimpleFeatureCollection collection, String zoneName) throws IOException {
         if (parcelPerZone.isEmpty())
             this.makeSplitParcelBetweenZone();
@@ -238,7 +306,7 @@ public class RealUrbanFabricParameters {
             return null;
         DataStore buildingDS = CollecMgmt.getDataStore(buildingFile);
         DefaultFeatureCollection df = new DefaultFeatureCollection();
-        Arrays.stream(collection.toArray(new SimpleFeature[0])).forEach( sf -> df.add((SimpleFeature) DataUtilities.duplicate(sf)));
+        Arrays.stream(collection.toArray(new SimpleFeature[0])).forEach(sf -> df.add((SimpleFeature) DataUtilities.duplicate(sf)));
         SimpleFeatureCollection sfc = MarkParcelAttributeFromPosition.getOnlyMarkedParcels(MarkParcelAttributeFromPosition.markBuiltParcel(MarkParcelAttributeFromPosition.resetMarkingField(df),
                 CollecTransform.selectIntersection(buildingDS.getFeatureSource(buildingDS.getTypeNames()[0]).getFeatures(), Geom.unionSFC(df))));
         buildingDS.dispose();
@@ -256,6 +324,14 @@ public class RealUrbanFabricParameters {
         return ds;
     }
 
+    /**
+     * Get the distribution of every parcel's area of one zone.
+     *
+     * @param collection parcel collection
+     * @param zoneName   name of the zone to get
+     * @return the distribution
+     * @throws IOException (potentially) reading geofiles and writting csv
+     */
     public DescriptiveStatistics getAreaTotal(SimpleFeatureCollection collection, String zoneName) throws IOException {
         if (parcelPerZone.isEmpty())
             this.makeSplitParcelBetweenZone();
@@ -263,7 +339,7 @@ public class RealUrbanFabricParameters {
             return null;
         DescriptiveStatistics ds = new DescriptiveStatistics();
         SimpleFeatureCollection sfc = MarkParcelAttributeFromPosition.markAllParcel(collection);
-        if (sfc != null && sfc.size() > 2) {
+        if (sfc.size() > 2) {
             Graph vals = MakeStatisticGraphs.sortValuesAreaAndCategorize(
                     Arrays.stream(sfc.toArray(new SimpleFeature[0])).collect(Collectors.toList()), scaleZone + zoneName, true);
             vals.toCSV(outFolder);
@@ -277,9 +353,9 @@ public class RealUrbanFabricParameters {
     /**
      * Calculate the area bound of every parcels then only the build parcels.
      *
-     * @param collection
-     * @param zoneName
-     * @throws IOException
+     * @param collection parcel collection
+     * @param zoneName   name of the zone to analyze
+     * @throws IOException reading geofiles and writting csv
      */
     public void makeAreaBuiltAndTotal(SimpleFeatureCollection collection, String zoneName) throws IOException {
         if (parcelPerZone.isEmpty())
@@ -288,45 +364,5 @@ public class RealUrbanFabricParameters {
             return;
         getAreaTotal(collection, zoneName);
         getAreaBuilt(collection, zoneName);
-    }
-
-    public File getParcelFile() {
-        return parcelFile;
-    }
-
-    public void setParcelFile(File parcelFile) {
-        this.parcelFile = parcelFile;
-    }
-
-    public File getBuildingFile() {
-        return buildingFile;
-    }
-
-    public void setBuildingFile(File buildingFile) {
-        this.buildingFile = buildingFile;
-    }
-
-    public File getZoningFile() {
-        return zoningFile;
-    }
-
-    public void setZoningFile(File zoningFile) {
-        this.zoningFile = zoningFile;
-    }
-
-    public File getRoadFile() {
-        return roadFile;
-    }
-
-    public void setRoadFile(File roadFile) {
-        this.roadFile = roadFile;
-    }
-
-    public File getOutFolder() {
-        return outFolder;
-    }
-
-    public void setOutFolder(File outFolder) {
-        this.outFolder = outFolder;
     }
 }

@@ -15,18 +15,21 @@ import org.opengis.feature.simple.SimpleFeature;
 import java.io.File;
 import java.io.IOException;
 
+/**
+ * Basic methods for ArtiScale nomenclature implementation
+ */
 public class ArtiScalesParcelFields {
     /**
      * Set the parcel's attribute after a parcel recomposition processus based on the French model. Won't change parcel's information if they are already set
      *
      * @param parcels                 Whole set of parcels
-     * @param buildingFile            A Geopacakge containing the builings of the zone.
-     * @param polygonIntersectionFile A Geopacakge containing outputs of MUP-City. Can be empty
-     * @param originalParcels
-     * @param zoningFile
-     * @param allOrCell
+     * @param buildingFile            geo file containing the builings of the zone.
+     * @param polygonIntersectionFile geo file containing outputs of MUP-City. Can be empty
+     * @param originalParcels Parcel before any cut
+     * @param zoningFile geofile containing the zoning file
+     * @param allOrCell do we mark every parcels or only the ones that intersects MUP-City's cells ?
      * @return The parcel set with the right attributes
-     * @throws IOException
+     * @throws IOException reading geofiles
      */
     public static SimpleFeatureCollection fixParcelAttributes(SimpleFeatureCollection parcels, SimpleFeatureCollection originalParcels, File buildingFile,
                                                               File polygonIntersectionFile, File zoningFile, boolean allOrCell) throws IOException {

@@ -42,26 +42,26 @@ import java.util.Arrays;
  */
 public class SingleParcelStat {
 
-	 public static void main(String[] args) throws IOException {
-	 long strat = System.currentTimeMillis();
-	 File root = new File("src/main/resources/ParcelComparison/");
-	 DataStore dsParcelEv = CollecMgmt.getDataStore(new File(root,"/out/evolvedParcel.gpkg"));
-	 DataStore dsParcelSimu = CollecMgmt.getDataStore(new File(root, "/out/simulatedParcel.gpkg"));
-	 SimpleFeatureCollection parcelEv = FrenchParcelFields.addCommunityCode(
-	         MarkParcelAttributeFromPosition.markAllParcel(dsParcelEv.getFeatureSource(dsParcelEv.getTypeNames()[0]).getFeatures()));
-	 SimpleFeatureCollection parcelSimu = MarkParcelAttributeFromPosition.markAllParcel(dsParcelSimu.getFeatureSource(dsParcelSimu.getTypeNames()[0]).getFeatures());
-	 DataStore dsRoad = CollecMgmt.getDataStore(new File(root, "/road.gpkg"));
-	 SimpleFeatureCollection road = dsRoad.getFeatureSource(dsRoad.getTypeNames()[0]).getFeatures();
-
-	 writeStatSingleParcel(parcelEv, road, new File(root,"out2/ev.csv"));
-	 writeStatSingleParcel(parcelSimu, road, parcelEv, new File(root,"out2/sim.csv"));
-
-	 // Collec.exportSFC(makeHausdorfDistanceMaps(parcelEv, parcelSimu), new File("/tmp/haus"));
-	 dsParcelEv.dispose();
-	 dsParcelSimu.dispose();
-	 dsRoad.dispose();
-	 System.out.println("time : " + (System.currentTimeMillis() - strat));
-	 }
+//	 public static void main(String[] args) throws IOException {
+//	 long strat = System.currentTimeMillis();
+//	 File root = new File("src/main/resources/ParcelComparison/");
+//	 DataStore dsParcelEv = CollecMgmt.getDataStore(new File(root,"/out/evolvedParcel.gpkg"));
+//	 DataStore dsParcelSimu = CollecMgmt.getDataStore(new File(root, "/out/simulatedParcel.gpkg"));
+//	 SimpleFeatureCollection parcelEv = FrenchParcelFields.addCommunityCode(
+//	         MarkParcelAttributeFromPosition.markAllParcel(dsParcelEv.getFeatureSource(dsParcelEv.getTypeNames()[0]).getFeatures()));
+//	 SimpleFeatureCollection parcelSimu = MarkParcelAttributeFromPosition.markAllParcel(dsParcelSimu.getFeatureSource(dsParcelSimu.getTypeNames()[0]).getFeatures());
+//	 DataStore dsRoad = CollecMgmt.getDataStore(new File(root, "/road.gpkg"));
+//	 SimpleFeatureCollection road = dsRoad.getFeatureSource(dsRoad.getTypeNames()[0]).getFeatures();
+//
+//	 writeStatSingleParcel(parcelEv, road, new File(root,"out2/ev.csv"));
+//	 writeStatSingleParcel(parcelSimu, road, parcelEv, new File(root,"out2/sim.csv"));
+//
+//	 // Collec.exportSFC(makeHausdorfDistanceMaps(parcelEv, parcelSimu), new File("/tmp/haus"));
+//	 dsParcelEv.dispose();
+//	 dsParcelSimu.dispose();
+//	 dsRoad.dispose();
+//	 System.out.println("time : " + (System.currentTimeMillis() - strat));
+//	 }
 
     /**
      * Write every regular statistics for a parcel plan
@@ -106,16 +106,38 @@ public class SingleParcelStat {
         dsParcel.dispose();
     }
 
+    /**
+     * Calculate statistics (area, perimeter, widthContactWithRoad, numberOfNeighborhood and AspectRatio) for every single parcels.
+     * @param parcels collection of parcels
+     * @param roadFile road feature collection to calculate contact with road. Could be optional (but it's not yet)
+     * @param parcelStatCsv output tab file to write
+     * @throws IOException writing stats
+     */
     public static void writeStatSingleParcel(SimpleFeatureCollection parcels, File roadFile, File parcelStatCsv) throws IOException {
         DataStore sds = CollecMgmt.getDataStore(roadFile);
         writeStatSingleParcel(parcels, sds.getFeatureSource(sds.getTypeNames()[0]).getFeatures(), parcelStatCsv);
         sds.dispose();
     }
 
+    /**
+     * Calculate statistics (area, perimeter, widthContactWithRoad, numberOfNeighborhood and AspectRatio) for every single parcels.
+     * @param parcels collection of parcels
+     * @param roads road feature collection to calculate contact with road. Could be optional (but it's not yet)
+     * @param parcelStatCsv output tab file to write
+     * @throws IOException writing stats
+     */
     public static void writeStatSingleParcel(SimpleFeatureCollection parcels, SimpleFeatureCollection roads, File parcelStatCsv) throws IOException {
         writeStatSingleParcel(parcels, roads, null, parcelStatCsv);
     }
 
+    /**
+     * Calculate statistics (area, perimeter, widthContactWithRoad, numberOfNeighborhood, Hausdorf Distances and AspectRatio) for every single parcels.
+     * @param parcels collection of parcels
+     * @param roads road feature collection to calculate contact with road. Could be optional (but it's not yet)
+     * @param parcelToCompare  parcel plan before their simulation.
+     * @param parcelStatCsv output tab file to write
+     * @throws IOException writing stats
+     */
     public static void writeStatSingleParcel(SimpleFeatureCollection parcels, SimpleFeatureCollection roads, SimpleFeatureCollection parcelToCompare, File parcelStatCsv) throws IOException {
         // look if there's mark field. If not, every parcels are marked
         if (!CollecMgmt.isCollecContainsAttribute(parcels, MarkParcelAttributeFromPosition.getMarkFieldName())) {
@@ -134,9 +156,7 @@ public class SingleParcelStat {
             double widthRoadContact = ParcelState.getParcelFrontSideWidth(Polygons.getPolygon(parcelGeom),
                     CollecTransform.selectIntersection(roads, parcelGeom.buffer(7)), Lines.fromMultiToLineString(
                             CollecTransform.fromPolygonSFCtoRingMultiLines(CollecTransform.selectIntersection(block, parcelGeom.buffer(7)))));
-            boolean contactWithRoad = false;
-            if (widthRoadContact != 0)
-                contactWithRoad = true;
+            boolean contactWithRoad = widthRoadContact != 0;
             // if we set a parcel plan to compare, we calculate the Hausdorff distances for the parcels that intersects the most parts.
             String HausDist = "NA";
             String DisHausDst = "NA";
@@ -180,10 +200,10 @@ public class SingleParcelStat {
     //// return mic.getRadiusLine().getLength() / mbc.getDiameter().getLength();
     // return mbc.getDiameter().getLength();
     // }
-    public static double hausdorfDistanceAverage(File parcelInFile, File parcelToCompareFile) throws IOException {
+    public static double hausdorffDistanceAverage(File parcelInFile, File parcelToCompareFile) throws IOException {
         DataStore sdsParcelIn = CollecMgmt.getDataStore(parcelInFile);
         DataStore sdsParcelToCompareFile = CollecMgmt.getDataStore(parcelToCompareFile);
-        double result = hausdorfDistanceAverage(sdsParcelIn.getFeatureSource(sdsParcelIn.getTypeNames()[0]).getFeatures(),
+        double result = hausdorffDistanceAverage(sdsParcelIn.getFeatureSource(sdsParcelIn.getTypeNames()[0]).getFeatures(),
                 sdsParcelToCompareFile.getFeatureSource(sdsParcelToCompareFile.getTypeNames()[0]).getFeatures());
         sdsParcelIn.dispose();
         sdsParcelToCompareFile.dispose();
@@ -218,7 +238,13 @@ public class SingleParcelStat {
         return Math.abs(result);
     }
 
-    public static double hausdorfDistanceAverage(SimpleFeatureCollection parcelIn, SimpleFeatureCollection parcelToCompare) {
+    /**
+     * Calculation Hausdorff Distance average for a set of parcels. Candidate must have been reduced before methode call
+     * @param parcelIn reference parcel set
+     * @param parcelToCompare parcels to compare shapes
+     * @return Mean of Hausdorff distances
+     */
+    public static double hausdorffDistanceAverage(SimpleFeatureCollection parcelIn, SimpleFeatureCollection parcelToCompare) {
         HausdorffSimilarityMeasure hausDis = new HausdorffSimilarityMeasure();
         DescriptiveStatistics stat = new DescriptiveStatistics();
         try (SimpleFeatureIterator parcelIt = parcelIn.features()) {
@@ -235,7 +261,14 @@ public class SingleParcelStat {
         return stat.getMean();
     }
 
-    public static SimpleFeatureCollection makeHausdorfDistanceMaps(SimpleFeatureCollection parcelIn, SimpleFeatureCollection parcelToCompare) throws IOException {
+    /**
+     * Generation of maps containing Hausdorf distance between a parcel plan and its matched compared parcel
+     *
+     * @param parcelIn Reference parcel plan
+     * @param parcelToCompare parcel to build Hausdorf distance.
+     * @return A simple
+     */
+    public static SimpleFeatureCollection makeHausdorfDistanceMaps(SimpleFeatureCollection parcelIn, SimpleFeatureCollection parcelToCompare) {
         if (!CollecMgmt.isCollecContainsAttribute(parcelIn, "CODE"))
             GeneralFields.addParcelCode(parcelIn);
         if (!CollecMgmt.isCollecContainsAttribute(parcelToCompare, "CODE"))
@@ -272,6 +305,6 @@ public class SingleParcelStat {
         } catch (Exception problem) {
             problem.printStackTrace();
         }
-        return result.collection();
+        return result;
     }
 }

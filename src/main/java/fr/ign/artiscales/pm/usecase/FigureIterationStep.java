@@ -5,6 +5,9 @@ import fr.ign.artiscales.pm.scenario.PMStep;
 
 import java.io.File;
 
+/**
+ * Method generating figures in Colomb 2021 et al.
+ */
 public class FigureIterationStep {
     public static void main(String[] args) throws Exception {
         long start = System.currentTimeMillis();

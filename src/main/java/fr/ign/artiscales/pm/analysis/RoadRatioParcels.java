@@ -61,8 +61,8 @@ public class RoadRatioParcels {
      *                            it with the {@link fr.ign.artiscales.pm.parcelFunction.MarkParcelAttributeFromPosition#setMarkFieldName(String)} function.
      * @param cutParcel           A collection of parcels after a Parcel Manager simulation
      * @param folderOutStat       folder to store the results
-     * @param roadFile            the road Shapefile
-     * @throws IOException
+     * @param roadFile            the road geo file
+     * @throws IOException  reading geo files and exporting csv
      */
     public static void roadRatioParcels(SimpleFeatureCollection initialMarkedParcel, SimpleFeatureCollection cutParcel, String legend, File folderOutStat, File roadFile) throws IOException {
         // We construct zones to analyze the street ratio for each operations.
@@ -104,8 +104,8 @@ public class RoadRatioParcels {
      * @param zone          {@link SimpleFeatureCollection} of initial zones
      * @param cutParcel     {@link SimpleFeatureCollection} of the cuted parcels
      * @param folderOutStat folder to store the results
-     * @param roadFile      the road Shapefile
-     * @throws IOException
+     * @param roadFile      the road geo file
+     * @throws IOException reading geo files and exporting csv
      */
     public static void roadRatioZone(SimpleFeatureCollection zone, SimpleFeatureCollection cutParcel, String legend, File folderOutStat, File roadFile) throws IOException {
         System.out.println("++++++++++Road Ratios++++++++++");
@@ -165,8 +165,8 @@ public class RoadRatioParcels {
     /**
      * Get the area of parcels that have been marked with a simulated field
      *
-     * @param markedParcels
-     * @return
+     * @param markedParcels input set of parcels with marked fileds
+     * @return the sum of marked parcel's area
      */
     private static double areaParcelNewlySimulated(SimpleFeatureCollection markedParcels) {
         double totArea = 0.0;
@@ -174,7 +174,7 @@ public class RoadRatioParcels {
             while (parcels.hasNext()) {
                 SimpleFeature parcel = parcels.next();
                 if (GeneralFields.isParcelHasSimulatedFields(parcel))
-                    totArea = totArea + ((Geometry) parcel.getDefaultGeometry()).getArea();
+                    totArea += ((Geometry) parcel.getDefaultGeometry()).getArea();
             }
         } catch (Exception problem) {
             problem.printStackTrace();
