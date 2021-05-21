@@ -80,7 +80,7 @@ public class OBBBlockDecomposition {
      * <p>
      * Overload to split a single parcel.
      *
-     * @param featToSplit                     parcel
+     * @param featToSplit                     parcel. Must have been marked in order to be simulated
      * @param maximalArea                     Area of the parcel under which the parcel won't be anymore cut
      * @param maximalWidth                    Width of the parcel under which the parcel won't be anymore cut
      * @param harmonyCoeff                    intensity of the forcing of a parcel to be connected with a road
@@ -157,7 +157,7 @@ public class OBBBlockDecomposition {
      * Split the parcels into sub parcels. The parcel that are going to be cut must have a field matching the {@link MarkParcelAttributeFromPosition#getMarkFieldName()} field or
      * "SPLIT" by default with the value of 1.
      *
-     * @param toSplit                         {@link SimpleFeatureCollection} of parcels
+     * @param toSplit                         {@link SimpleFeatureCollection} of parcels. Must have been marked in order to be simulated
      * @param roads                           Road layer (can be null)
      * @param maximalArea                     Area of the parcel under which the parcel won't be anymore cut
      * @param maximalWidth                    Width of the parcel under which the parcel won't be anymore cut

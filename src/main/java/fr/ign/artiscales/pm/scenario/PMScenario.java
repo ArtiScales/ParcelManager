@@ -179,6 +179,16 @@ public class PMScenario {
                     fileSet = true;
                 }
             }
+            //specific options concerning workflows can be parsed here
+            if (token == JsonToken.FIELD_NAME && "optional".equals(parser.getCurrentName())) {
+                token = parser.nextToken();
+                if (token == JsonToken.VALUE_STRING) {
+                   if (parser.getText().equals("keepExistingRoad"))
+                       PMStep.setKeepExistingRoad(true);
+                    if (parser.getText().equals("adaptAreaOfUrbanFabric"))
+                        PMStep.setAdaptAreaOfUrbanFabric(true);
+                }
+            }
         }
         parser.close();
         PMStep.setFiles(parcelFile, zoningFile, buildingFile, roadFile, predicateFile, polygonIntersection, zone, outFolder,

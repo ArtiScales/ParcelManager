@@ -38,7 +38,7 @@ import java.util.List;
  * @see <a href="https://github.com/ArtiScales/ParcelManager/blob/master/src/main/resources/doc/scenarioCreation.md">scenarioCreation.md</a>
  */
 public class PMStep {
-    public static List<String> cachePlacesSimulates = new ArrayList<>();
+    private static List<String> cachePlacesSimulates = new ArrayList<>();
     /**
      * Geographic files
      */
@@ -65,9 +65,13 @@ public class PMStep {
     }
 
     /**
-     * If true, will look at the community buildt parcel's area to adapt the maximal and minimal area (set with the 1st and the 9th decile of the built area's distribution)
-     */
+     * If true, will look at the community built parcel's area to adapt the maximal and minimal area (set with the 1st and the 9th decile of the built area's distribution). False by default.     */
     private static boolean adaptAreaOfUrbanFabric = false;
+
+    /**
+     * If true, will keep road on ZoneDivision processes. True by default
+     */
+    private static boolean keepExistingRoad = true;
     final private String workflow, parcelProcess, communityNumber, communityType, urbanFabricType, genericZone, preciseZone;
     List<String> communityNumbers = new ArrayList<>();
     /**
@@ -258,7 +262,7 @@ public class PMStep {
                 case "zoneDivision":
                     ZoneDivision.PROCESS = parcelProcess;
                     ((DefaultFeatureCollection) parcelCut).addAll((new ZoneDivision()).zoneDivision(parcelMarkedComm,
-                            ParcelGetter.getParcelByCommunityCode(parcel, communityNumber), OUTFOLDER, profile));
+                            ParcelGetter.getParcelByCommunityCode(parcel, communityNumber), OUTFOLDER, profile, keepExistingRoad));
                     break;
                 case "densification":
                     ((DefaultFeatureCollection) parcelCut).addAll((new Densification()).densification(parcelMarkedComm,
@@ -513,6 +517,16 @@ public class PMStep {
      */
     public File getLastOutput() {
         return lastOutput;
+    }
+
+    public static void setKeepExistingRoad(boolean keepExistingRoad) {
+        PMStep.keepExistingRoad = keepExistingRoad;
+    }
+    /**
+     * Empty the cache of zones that have already been simulated
+     */
+    public static void flushCachePlacesSimulates(){
+        cachePlacesSimulates.clear();
     }
 
     public File makeFileName() {

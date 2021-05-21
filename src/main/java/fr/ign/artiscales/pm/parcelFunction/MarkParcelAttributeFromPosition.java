@@ -945,7 +945,7 @@ public class MarkParcelAttributeFromPosition {
      * Merge SimpleFeatures that are marked and touches each other and keep the attribute of the largest feature
      *
      * @param parcelCollection
-     * @return
+     * @return The collection with the same schema and its touching parcels merged
      */
     public static SimpleFeatureCollection unionTouchingMarkedGeometries(SimpleFeatureCollection parcelCollection) {
         DefaultFeatureCollection result = new DefaultFeatureCollection();

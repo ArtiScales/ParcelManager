@@ -1,5 +1,6 @@
 package fr.ign.artiscales.pm.workflow;
 
+import fr.ign.artiscales.pm.analysis.SingleParcelStat;
 import fr.ign.artiscales.pm.decomposition.OBBBlockDecomposition;
 import fr.ign.artiscales.pm.decomposition.TopologicalStraightSkeletonParcelDecomposition;
 import fr.ign.artiscales.pm.parcelFunction.MarkParcelAttributeFromPosition;
@@ -48,20 +49,15 @@ public class ZoneDivision extends Workflow {
     public ZoneDivision() {
     }
 
-//	public static void main(String[] args) throws Exception {
-//		File evolvedParcel = new File(
-//				"/home/thema/.openmole/thema-HP-ZBook-14/webui/projects/compare/donnee/evolvedParcel.gpkg");
-//		File outFile = new File("/tmp/out");
-//		outFile.mkdirs();
-//		File simuledFile = zoneDivision(
-//				new File("/home/thema/.openmole/thema-HP-ZBook-14/webui/projects/compare/donnee/zone.gpkg"),
-//				new File("/home/thema/.openmole/thema-HP-ZBook-14/webui/projects/compare/donnee/parcel2003.gpkg"),
-//				ProfileUrbanFabric.convertJSONtoProfile(new File(
-//						"/home/thema/Documents/MC/workspace/ParcelManager/src/main/resources/ParcelComparison/profileUrbanFabric/smallHouse.json")), outFile);
-//		System.out.println(SingleParcelStat.diffNumberOfParcel(simuledFile, evolvedParcel));
-//		System.out.println(SingleParcelStat.diffAreaAverage(simuledFile, evolvedParcel));
-//		System.out.println(SingleParcelStat.hausdorfDistanceAverage(simuledFile, evolvedParcel));
-//	}
+	public static void main(String[] args) throws Exception {
+		File outFile = new File("/tmp/");
+		outFile.mkdirs();
+		File simuledFile = (new ZoneDivision()).zoneDivision(
+				new File("/home/mc/workspace/parcelmanagergui/tmp/zone.gpkg"),
+				new File("/home/mc/workspace/parcelmanagergui/tmp/parcels.gpkg"),
+				ProfileUrbanFabric.convertJSONtoProfile(new File(
+						"/home/mc/workspace/parcelmanager/src/main/resources/ParcelComparison/profileUrbanFabric/mediumCollective.json")), false, outFile);
+	}
 
     /**
      * Create a zone to cut from a zoning plan by selecting features from a Geopackage regarding a fixed value. Name of the field is by default set to <i>TYPEZONE</i> and must be changed if needed
@@ -111,15 +107,15 @@ public class ZoneDivision extends Workflow {
         return finalZone;
     }
 
-    public SimpleFeatureCollection zoneDivision(File zoneFile, SimpleFeatureCollection parcelSFC, File roadFile, ProfileUrbanFabric profile, File outFolder) throws IOException {
+    public SimpleFeatureCollection zoneDivision(File zoneFile, SimpleFeatureCollection parcelSFC, File roadFile, ProfileUrbanFabric profile, boolean keepExistingRoad, File outFolder) throws IOException {
         DataStore sdsZone = CollecMgmt.getDataStore(zoneFile);
         SimpleFeatureCollection zone = sdsZone.getFeatureSource(sdsZone.getTypeNames()[0]).getFeatures();
         SimpleFeatureCollection result;
         if (roadFile == null) {
-            result = zoneDivision(zone, parcelSFC, outFolder, profile);
+            result = zoneDivision(zone, parcelSFC, outFolder, profile, keepExistingRoad);
         } else {
             DataStore sdsRoad = CollecMgmt.getDataStore(zoneFile);
-            result = zoneDivision(zone, parcelSFC, sdsRoad.getFeatureSource(sdsRoad.getTypeNames()[0]).getFeatures(), outFolder, profile);
+            result = zoneDivision(zone, parcelSFC, sdsRoad.getFeatureSource(sdsRoad.getTypeNames()[0]).getFeatures(), outFolder, profile, keepExistingRoad);
             sdsRoad.dispose();
         }
         sdsZone.dispose();
@@ -129,44 +125,62 @@ public class ZoneDivision extends Workflow {
     /**
      * Method to use from fresh Geopackages. Also used by OpenMole tasks.
      *
-     * @param zoneFile   Geopackage representing the zones to be cut
-     * @param parcelFile Geopackage of the entire parcel plan of the area
-     * @param profile    Urban fabric profile of the wanted parcel plan
-     * @param outFolder  folder where everything is stored
+     * @param zoneFile          Geopackage representing the zones to be cut
+     * @param parcelFile        Geopackage of the entire parcel plan of the area
+     * @param profile           Urban fabric profile of the wanted parcel plan
+     * @param outFolder         folder where everything is stored
+     * @param keepExistingRoads If true, existing raod (lack of parcel in the parcel plan) will be kept. If not, the whole zone is simulated regardless of its content.
      * @return Geopackage containing only the cuted parcel plan
      * @throws IOException from marking parcel
      */
-    public File zoneDivision(File zoneFile, File parcelFile, ProfileUrbanFabric profile, File outFolder) throws IOException {
-        DataStore sdsZone = CollecMgmt.getDataStore(zoneFile);
-        DataStore sdsParcel = CollecMgmt.getDataStore(parcelFile);
-        SimpleFeatureCollection zone = DataUtilities.collection(sdsZone.getFeatureSource(sdsZone.getTypeNames()[0]).getFeatures());
-        SimpleFeatureCollection parcel = DataUtilities.collection(sdsParcel.getFeatureSource(sdsParcel.getTypeNames()[0]).getFeatures());
-        sdsZone.dispose();
-        sdsParcel.dispose();
+    public File zoneDivision(File zoneFile, File parcelFile, ProfileUrbanFabric profile, boolean keepExistingRoads, File outFolder) throws IOException {
+        DataStore dsZone = CollecMgmt.getDataStore(zoneFile);
+        DataStore dsParcel = CollecMgmt.getDataStore(parcelFile);
+        SimpleFeatureCollection zone = DataUtilities.collection(dsZone.getFeatureSource(dsZone.getTypeNames()[0]).getFeatures());
+        SimpleFeatureCollection parcel = DataUtilities.collection(dsParcel.getFeatureSource(dsParcel.getTypeNames()[0]).getFeatures());
+        dsZone.dispose();
+        dsParcel.dispose();
         setSAVEINTERMEDIATERESULT(true);
         OVERWRITEGEOPACKAGE = true;
-        zoneDivision(zone, parcel, outFolder, profile);
+        zoneDivision(zone, parcel, outFolder, profile, keepExistingRoads);
         return new File(outFolder, "parcelZoneDivisionOnly" + CollecMgmt.getDefaultGISFileType());
     }
 
+    /**
+     * Merge and re-cut a specific zone. Cut first the surrounding parcels to keep them unsplit, then split the zone parcel and remerge them all into the original parcel file A bit
+     * complicated algorithm to deal with non-existing pieces of parcels (as road).
+     *
+     * @param initialZone       Zone which will be used to cut parcels. Will cut parcels that intersects them and keep their infos. Will then optionally fill the empty spaces in between the zones and feed
+     *                          it to the OBB algorithm.
+     * @param keepExistingRoads If true, existing raod (lack of parcel in the parcel plan) will be kept. If not, the whole zone is simulated regardless of its content.
+     * @param parcels           {@link SimpleFeatureCollection} of the unmarked parcels.
+     * @param outFolder         folder to write {@link Workflow#isDEBUG()} and {@link Workflow#isSAVEINTERMEDIATERESULT()} geofile if concerned
+     * @param profile           {@link ProfileUrbanFabric} contains the parameters of the wanted urban scene
+     * @return The input parcel {@link SimpleFeatureCollection} with the marked parcels replaced by the simulated parcels. All parcels have the
+     * {@link fr.ign.artiscales.pm.parcelFunction.ParcelSchema#getSFBMinParcel()} schema.
+     * @throws IOException from marking parcel
+     */
     public SimpleFeatureCollection zoneDivision(SimpleFeatureCollection initialZone, SimpleFeatureCollection parcels,
-                                                File outFolder, ProfileUrbanFabric profile) throws IOException {
-        return zoneDivision(initialZone, parcels, null, outFolder, profile);
+                                                File outFolder, ProfileUrbanFabric profile, boolean keepExistingRoads) throws IOException {
+        return zoneDivision(initialZone, parcels, null, outFolder, profile, keepExistingRoads);
     }
 
     /**
      * Merge and recut a specific zone. Cut first the surrounding parcels to keep them unsplit, then split the zone parcel and remerge them all into the original parcel file A bit
      * complicated algorithm to deal with non-existing pieces of parcels (as road).
      *
-     * @param initialZone Zone which will be used to cut parcels. Will cut parcels that intersects them and keep their infos. Will then fill the empty spaces in between the zones and feed
-     *                    it to the OBB algorithm.
-     * @param parcels     {@link SimpleFeatureCollection} of the unmarked parcels.
-     * @param profile     {@link ProfileUrbanFabric} contains the parameters of the wanted urban scene
+     * @param initialZone       Zone which will be used to cut parcels. Will cut parcels that intersects them and keep their infos. Will then optionally fill the empty spaces in between the zones and feed
+     *                          it to the OBB algorithm.
+     * @param parcels           {@link SimpleFeatureCollection} of the unmarked parcels.
+     * @param roads             Road features can be used in OBB process (optional)
+     * @param keepExistingRoads If true, existing raod (lack of parcel in the parcel plan) will be kept. If not, the whole zone is simulated regardless of its content.
+     * @param outFolder         folder to write {@link Workflow#isDEBUG()} and {@link Workflow#isSAVEINTERMEDIATERESULT()} geofile if concerned
+     * @param profile           {@link ProfileUrbanFabric} contains the parameters of the wanted urban scene
      * @return The input parcel {@link SimpleFeatureCollection} with the marked parcels replaced by the simulated parcels. All parcels have the
      * {@link fr.ign.artiscales.pm.parcelFunction.ParcelSchema#getSFBMinParcel()} schema.
      * @throws IOException from marking parcel
      */
-    public SimpleFeatureCollection zoneDivision(SimpleFeatureCollection initialZone, SimpleFeatureCollection parcels, SimpleFeatureCollection roads, File outFolder, ProfileUrbanFabric profile) throws IOException {
+    public SimpleFeatureCollection zoneDivision(SimpleFeatureCollection initialZone, SimpleFeatureCollection parcels, SimpleFeatureCollection roads, File outFolder, ProfileUrbanFabric profile, boolean keepExistingRoads) throws IOException {
         File tmpFolder = new File(outFolder, "tmp");
         if (isDEBUG())
             tmpFolder.mkdirs();
@@ -186,8 +200,6 @@ public class ZoneDivision extends Workflow {
                 savedParcels.add(
                         ParcelSchema.setSFBMinParcelWithFeat(parcel, finalParcelBuilder.getFeatureType()).buildFeature(Attribute.makeUniqueId()));
         });
-        // complete the void left by the existing roads from the zones. Also assess a section number
-        SimpleFeatureBuilder sfBuilder = ParcelSchema.getSFBMinParcelSplit();
         SimpleFeatureBuilder originalSFB = new SimpleFeatureBuilder(parcelsInZone.getSchema());
         if (isDEBUG()) {
             CollecMgmt.exportSFC(parcelsInZone, new File(tmpFolder, "parcelsInZone"));
@@ -195,35 +207,40 @@ public class ZoneDivision extends Workflow {
             System.out.println("parcels in zone exported");
         }
         int numZone = 0;
-        Geometry unionParcel = Geom.unionSFC(parcels);
         DefaultFeatureCollection goOdZone = new DefaultFeatureCollection();
-        try (SimpleFeatureIterator zoneIt = initialZone.features()) {
-            while (zoneIt.hasNext()) {
-                numZone++;
-                SimpleFeature feat = zoneIt.next();
-                // avoid most of tricky geometry problems
-                Geometry intersection = Geom.scaledGeometryReductionIntersection(Arrays.asList(((Geometry) feat.getDefaultGeometry()), unionParcel));
-                if (!intersection.isEmpty()) {
-                    List<Polygon> geomsZone = Polygons.getPolygons(intersection);
-                    for (Geometry geomPartZone : geomsZone) {
-                        Geometry geom = GeometryPrecisionReducer.reduce(geomPartZone, new PrecisionModel(100));
-                        // avoid silvers (plants the code)
-                        if (geom.getArea() > 10) {
-                            sfBuilder.set(geomName, geom);
-                            sfBuilder.set(ParcelSchema.getMinParcelSectionField(), makeNewSection(String.valueOf(numZone)));
-                            sfBuilder.set(MarkParcelAttributeFromPosition.getMarkFieldName(), 1);
-                            goOdZone.add(sfBuilder.buildFeature(Attribute.makeUniqueId()));
+        if (keepExistingRoads) {// complete the void left by the existing roads from the zones. Also assess a section number
+            Geometry unionParcel = Geom.unionSFC(parcels);
+            SimpleFeatureBuilder sfBuilder = ParcelSchema.getSFBMinParcelSplit();
+            try (SimpleFeatureIterator zoneIt = initialZone.features()) {
+                while (zoneIt.hasNext()) {
+                    numZone++;
+                    SimpleFeature zone = zoneIt.next();
+                    // avoid most of tricky geometry problems
+                    Geometry intersection = Geom.scaledGeometryReductionIntersection(Arrays.asList(((Geometry) zone.getDefaultGeometry()), unionParcel));
+                    if (!intersection.isEmpty()) {
+                        List<Polygon> geomsZone = Polygons.getPolygons(intersection);
+                        for (Geometry geomPartZone : geomsZone) {
+                            Geometry geom = GeometryPrecisionReducer.reduce(geomPartZone, new PrecisionModel(100));
+                            // avoid silvers (plants the code)
+                            if (geom.getArea() > 10) {
+                                sfBuilder.set(geomName, geom);
+                                sfBuilder.set(ParcelSchema.getMinParcelSectionField(), makeNewSection(String.valueOf(numZone)));
+                                sfBuilder.set(MarkParcelAttributeFromPosition.getMarkFieldName(), 1);
+                                goOdZone.add(sfBuilder.buildFeature(Attribute.makeUniqueId()));
+                            }
                         }
                     }
                 }
+            } catch (Exception problem) {
+                problem.printStackTrace();
             }
-        } catch (Exception problem) {
-            problem.printStackTrace();
-        }
-        // zone verification
-        if (goOdZone.isEmpty() || OpOnCollec.area(goOdZone) < profile.getMinimalArea()) {
-            System.out.println("ZoneDivision: no zones to cut or zone is too small to be taken into consideration");
-            return parcels;
+            // zone verification
+            if (goOdZone.isEmpty() || OpOnCollec.area(goOdZone) < profile.getMinimalArea()) {
+                System.out.println("ZoneDivision: no zones to cut or zone is too small to be taken into consideration");
+                return parcels;
+            }
+        } else { // get the whole zone
+            goOdZone.addAll(MarkParcelAttributeFromPosition.markAllParcel(initialZone));
         }
         // parts of parcel outside the zone must not be cut by the algorithm and keep their attributes
         List<Geometry> geomList = Arrays.stream(parcelsInZone.toArray(new SimpleFeature[0]))

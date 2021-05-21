@@ -110,6 +110,19 @@ public class GeneralFields {
         return null;
     }
 
+    public static String makeParcelCode(SimpleFeature feat) {
+        if (CollecMgmt.isSimpleFeatureContainsAttribute(feat, ParcelSchema.getMinParcelCommunityField()))
+            return feat.getAttribute(ParcelSchema.getMinParcelCommunityField()) + "-" + feat.getAttribute(ParcelSchema.getMinParcelSectionField()) + "-" + feat.getAttribute(ParcelSchema.getMinParcelNumberField());
+        else
+            switch (parcelFieldType) {
+                case "french":
+                    return FrenchParcelFields.makeFrenchParcelCode(feat);
+                default:
+                    return "";
+            }
+
+    }
+
     /**
      * Add the {@link #zoneCommunityCode} field for every parcels of a {@link SimpleFeatureCollection}. Only french solution implemented yet.
      *

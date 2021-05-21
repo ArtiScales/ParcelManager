@@ -50,7 +50,7 @@ public class Densification extends Workflow {
 //	 DataStore pDS = Geopackages.getDataStore(parcelFile);
 //	 SimpleFeatureCollection parcels = pDS.getFeatureSource(pDS.getTypeNames()[0]).getFeatures();
 //	 Collec.exportSFC((new Densification()).densificationOrNeighborhood(parcels, CityGeneration.createUrbanBlock(parcels), outFolder, buildingFile, roadFile,
-//	 ProfileUrbanFabric.convertJSONtoProfile(new File("src/main/resources/GeneralTest/profileUrbanFabric/smallHouse.json")), false, null,4),
+//	 ProfileUrbanFabric.convertJSONtoProfile(new File("src/main/resources/TestScenario/profileUrbanFabric/smallHouse.json")), false, null,4),
 //	 new File(outFolder, "result"));
 //	 }
 

@@ -70,7 +70,7 @@ public class CompareSimulatedParcelsWithEvolution extends UseCase {
         PMStep.setAdaptAreaOfUrbanFabric(true);
         PMStep.setAllowIsolatedParcel(true);
         PMScenario pm = new PMScenario(scenarioFile);
-        pm.executeStep();
+//        pm.executeStep();
         System.out.println("++++++++++ Done with PMscenario ++++++++++");
         System.out.println();
 
@@ -86,7 +86,7 @@ public class CompareSimulatedParcelsWithEvolution extends UseCase {
         File realParcelFile = new File(outFolder, "realParcel.gpkg");
         SingleParcelStat.writeStatSingleParcel(realParcelFile, roadFile, new File(outFolder, "RealParcelStats.csv"), true);
         // stat for the simulated parcels
-        SingleParcelStat.writeStatSingleParcel(simulatedFile, realParcelFile, roadFile, new File(outFolder, "SimulatedParcelStats.csv"), true);
+        SingleParcelStat.writeStatSingleParcel(simulatedFile,  roadFile, realParcelFile,new File(outFolder, "SimulatedParcelStats.csv"), true);
         // for every workflows
         System.out.println("++++++++++ Analysis by zones ++++++++++");
         System.out.println("steps" + pm.getStepList());
@@ -94,7 +94,7 @@ public class CompareSimulatedParcelsWithEvolution extends UseCase {
         PMStep.setParcel(parcelRefFile);
         PMStep.setPOLYGONINTERSECTION(null);
         // we proceed with an analysis made for each steps
-        PMStep.cachePlacesSimulates.clear();
+        PMStep.flushCachePlacesSimulates();
         MarkParcelAttributeFromPosition.setPostMark(true);
         FilterFactory2 ff = CommonFactoryFinder.getFilterFactory2(GeoTools.getDefaultHints());
         DataStore dsRoad = CollecMgmt.getDataStore(roadFile);
@@ -120,7 +120,7 @@ public class CompareSimulatedParcelsWithEvolution extends UseCase {
             SingleParcelStat.writeStatSingleParcel(
                     MarkParcelAttributeFromPosition.markSimulatedParcel(MarkParcelAttributeFromPosition.markParcelIntersectPolygonIntersection(
                             sdsGoalParcel.getFeatureSource(sdsGoalParcel.getTypeNames()[0]).getFeatures(), geoms.stream().map(g -> g.buffer(-2)).collect(Collectors.toList()))),
-                    sfcRealParcel, CollecTransform.selectIntersection(dsRoad.getFeatureSource(dsRoad.getTypeNames()[0]).getFeatures(), geomUnion),
+                    CollecTransform.selectIntersection(dsRoad.getFeatureSource(dsRoad.getTypeNames()[0]).getFeatures(), geomUnion),sfcRealParcel,
                     new File(zoneOutFolder, "SimulatedParcelStats.csv"));
             sdsSimulatedParcel.dispose();
             sdsGoalParcel.dispose();

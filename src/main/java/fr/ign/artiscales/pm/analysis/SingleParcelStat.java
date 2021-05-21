@@ -35,6 +35,8 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Arrays;
 
+import static fr.ign.artiscales.pm.fields.GeneralFields.makeParcelCode;
+
 /**
  * This class calculates basic statistics for every marked parcels. If no mark parcels are found, stats are calucated for every parcels.
  *
@@ -65,26 +67,28 @@ public class SingleParcelStat {
 
     /**
      * Write every regular statistics for a parcel plan
-     * @param parcelFile geofile conaining the plan
-     * @param roadFile Road files
+     *
+     * @param parcelFile    geofile conaining the plan
+     * @param roadFile      Road files
      * @param parcelStatCsv output statistic .csv file
-     * @param markAll do we mark every parcels ? Only marked parcels will have their stat made.
+     * @param markAll       do we mark every parcels ? Only marked parcels will have their stat made.
      * @throws IOException reading and writing file
      */
     public static void writeStatSingleParcel(File parcelFile, File roadFile, File parcelStatCsv, boolean markAll) throws IOException {
-        writeStatSingleParcel(parcelFile, null, roadFile, parcelStatCsv, markAll);
+        writeStatSingleParcel(parcelFile, roadFile,null, parcelStatCsv, markAll);
     }
 
     /**
      * Write every regular statistics for a parcel plan
-     * @param parcelFile geofile conaining the plan
+     *
+     * @param parcelFile      geofile conaining the plan
      * @param parcelToCompare Optional parcel plan to compare shapes
-     * @param roadFile Road files
-     * @param parcelStatCsv output statistic .csv file
-     * @param markAll do we mark every parcels ? Only marked parcels will have their stat made.
+     * @param roadFile        Road files
+     * @param parcelStatCsv   output statistic .csv file
+     * @param markAll         do we mark every parcels ? Only marked parcels will have their stat made.
      * @throws IOException reading and writing file
      */
-    public static void writeStatSingleParcel(File parcelFile, File parcelToCompare, File roadFile, File parcelStatCsv, boolean markAll) throws IOException {
+    public static void writeStatSingleParcel(File parcelFile, File roadFile, File parcelToCompare, File parcelStatCsv, boolean markAll) throws IOException {
         DataStore dsRoad = CollecMgmt.getDataStore(roadFile);
         DataStore dsParcel = CollecMgmt.getDataStore(parcelFile);
         SimpleFeatureCollection parcels;
@@ -98,8 +102,8 @@ public class SingleParcelStat {
             writeStatSingleParcel(parcels, dsRoad.getFeatureSource(dsRoad.getTypeNames()[0]).getFeatures(), parcelStatCsv);
         else {
             DataStore dsParcel2 = CollecMgmt.getDataStore(parcelToCompare);
-            writeStatSingleParcel(parcels, dsParcel2.getFeatureSource(dsParcel2.getTypeNames()[0]).getFeatures(),
-                    dsRoad.getFeatureSource(dsRoad.getTypeNames()[0]).getFeatures(), parcelStatCsv);
+            writeStatSingleParcel(parcels, dsRoad.getFeatureSource(dsRoad.getTypeNames()[0]).getFeatures(),
+                    dsParcel2.getFeatureSource(dsParcel2.getTypeNames()[0]).getFeatures(), parcelStatCsv);
             dsParcel2.dispose();
         }
         dsRoad.dispose();
@@ -108,8 +112,9 @@ public class SingleParcelStat {
 
     /**
      * Calculate statistics (area, perimeter, widthContactWithRoad, numberOfNeighborhood and AspectRatio) for every single parcels.
-     * @param parcels collection of parcels
-     * @param roadFile road feature collection to calculate contact with road. Could be optional (but it's not yet)
+     *
+     * @param parcels       collection of parcels
+     * @param roadFile      road feature collection to calculate contact with road. Could be optional (but it's not yet)
      * @param parcelStatCsv output tab file to write
      * @throws IOException writing stats
      */
@@ -121,8 +126,9 @@ public class SingleParcelStat {
 
     /**
      * Calculate statistics (area, perimeter, widthContactWithRoad, numberOfNeighborhood and AspectRatio) for every single parcels.
-     * @param parcels collection of parcels
-     * @param roads road feature collection to calculate contact with road. Could be optional (but it's not yet)
+     *
+     * @param parcels       collection of parcels
+     * @param roads         road feature collection to calculate contact with road. Could be optional (but it's not yet)
      * @param parcelStatCsv output tab file to write
      * @throws IOException writing stats
      */
@@ -132,10 +138,11 @@ public class SingleParcelStat {
 
     /**
      * Calculate statistics (area, perimeter, widthContactWithRoad, numberOfNeighborhood, Hausdorf Distances and AspectRatio) for every single parcels.
-     * @param parcels collection of parcels
-     * @param roads road feature collection to calculate contact with road. Could be optional (but it's not yet)
-     * @param parcelToCompare  parcel plan before their simulation.
-     * @param parcelStatCsv output tab file to write
+     *
+     * @param parcels         collection of parcels
+     * @param roads           road feature collection to calculate contact with road. Could be optional (but it's not yet)
+     * @param parcelToCompare parcel plan before their simulation.
+     * @param parcelStatCsv   output tab file to write
      * @throws IOException writing stats
      */
     public static void writeStatSingleParcel(SimpleFeatureCollection parcels, SimpleFeatureCollection roads, SimpleFeatureCollection parcelToCompare, File parcelStatCsv) throws IOException {
@@ -170,11 +177,7 @@ public class SingleParcelStat {
                     DiscreteHausdorffDistance dhd = new DiscreteHausdorffDistance(parcelGeom, parcelCompareGeom);
                     HausDist = String.valueOf(hausDis.measure(parcelGeom, parcelCompareGeom));
                     DisHausDst = String.valueOf(dhd.distance());
-                    if (!Schemas.isSchemaContainsAttribute(parcelCompare.getFeatureType(), "CODE")
-                            && GeneralFields.getParcelFieldType().equals("french"))
-                        CodeAppar = FrenchParcelFields.makeDEPCOMCode(parcelCompare);
-                    else
-                        CodeAppar = (String) parcelCompare.getAttribute("CODE");
+                    CodeAppar = makeParcelCode(parcelCompare);
                 }
             }
             // Calculating Aspect Ratio
@@ -240,7 +243,8 @@ public class SingleParcelStat {
 
     /**
      * Calculation Hausdorff Distance average for a set of parcels. Candidate must have been reduced before methode call
-     * @param parcelIn reference parcel set
+     *
+     * @param parcelIn        reference parcel set
      * @param parcelToCompare parcels to compare shapes
      * @return Mean of Hausdorff distances
      */
@@ -264,7 +268,7 @@ public class SingleParcelStat {
     /**
      * Generation of maps containing Hausdorf distance between a parcel plan and its matched compared parcel
      *
-     * @param parcelIn Reference parcel plan
+     * @param parcelIn        Reference parcel plan
      * @param parcelToCompare parcel to build Hausdorf distance.
      * @return A simple
      */
@@ -296,7 +300,7 @@ public class SingleParcelStat {
                     DiscreteHausdorffDistance dhd = new DiscreteHausdorffDistance(parcelGeom, parcelCompareGeom);
                     builder.set("DisHausDst", dhd.distance());
                     builder.set("HausDist", hausDis.measure(parcelGeom, parcelCompareGeom));
-                    builder.set("CodeAppar", parcelCompare.getAttribute("CODE"));
+                    builder.set("CodeAppar", makeParcelCode(parcelCompare));
                 }
                 builder.set("CODE", parcel.getAttribute("CODE"));
                 builder.set(schema.getGeometryDescriptor().getLocalName(), parcelGeom);

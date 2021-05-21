@@ -120,14 +120,14 @@ public class TopologicalStraightSkeletonParcelDecomposition {
 	private final GeometryFactory factory;
 
 	public static void main(String[] args) throws IOException, ParseException, EdgeException, StraightSkeletonException {
-		// File rootFolder = new File("src/main/resources/GeneralTest/");
+		// File rootFolder = new File("src/main/resources/TestScenario/");
 		// File roadFile = new File(rootFolder, "road.gpkg");
 		// File parcelFile = new File(rootFolder, "parcel.gpkg");
 		// String inputParcelShapeFile = "/home/julien/data/PLU_PARIS/ilots_13.gpkg";
 		// String inputRoadShapeFile = "/home/julien/data/PLU_PARIS/voie/voie_l93.gpkg";
 
 
-/*		File roadFile = new File("src/main/resources/GeneralTest/roadSS.gpkg");
+/*		File roadFile = new File("src/main/resources/TestScenario/roadSS.gpkg");
 		DataStore dsRoad = CollecMgmt.getDataStore(roadFile);
 		WKTReader wktR = new WKTReader();
 		Polygon p = (Polygon) wktR.read("Polygon ((936196.68000000005122274 6686773.66999999992549419, 936133.36999999999534339 6686860.29999999981373549, 936135.26000000000931323 6686866.84999999962747097, 936156.80000000004656613 6686873.40000000037252903, 936171.07999999995809048 6686876.15000000037252903, 936179.31000000005587935 6686876.16000000014901161, 936229.02000000001862645 6686853.55999999959021807, 936267.09999999997671694 6686877.25999999977648258, 936273.81999999994877726 6686902.66999999992549419, 936286.67000000004190952 6686909.95000000018626451, 936312.3248988043051213 6686907.25010256376117468, 936328.68455505429301411 6686921.16424318868666887, 936346.64644567924551666 6686922.59782131295651197, 936371.86055505427066237 6686936.76494631543755531, 936434.27000000001862645 6686848.03000000026077032, 936396.00122593785636127 6686822.96879218984395266, 936245.18126894463784993 6686772.6954731922596693, 936196.68000000005122274 6686773.66999999992549419))");
@@ -151,8 +151,8 @@ public class TopologicalStraightSkeletonParcelDecomposition {
 
 
 		/*
-		File roadFile = new File("src/main/resources/GeneralTest/road.gpkg");
-		File zoningFile = new File("src/main/resources/GeneralTest/zoning.gpkg");
+		File roadFile = new File("src/main/resources/TestScenario/road.gpkg");
+		File zoningFile = new File("src/main/resources/TestScenario/zoning.gpkg");
 
 		String NAME_ATT_IMPORTANCE = "IMPORTANCE";
 		String NAME_ATT_ROAD = "NOM_VOIE_G";
@@ -187,6 +187,21 @@ public class TopologicalStraightSkeletonParcelDecomposition {
 		this(p, roads, roadNameAttribute, roadImportanceAttribute, offsetDistance, maxDistanceForNearestRoad, minimalArea, 2, generatePeriphericalRoad, widthRoad);
 	}
 
+	/**
+	 * Constructor decomposing initial polygon until beta-stripes
+	 * @param p
+	 * @param roads
+	 * @param roadNameAttribute
+	 * @param roadImportanceAttribute
+	 * @param offsetDistance
+	 * @param maxDistanceForNearestRoad
+	 * @param minimalArea
+	 * @param numberOfDigits
+	 * @param generatePeriphericalRoad
+	 * @param widthRoad
+	 * @throws StraightSkeletonException
+	 * @throws EdgeException
+	 */
 	public TopologicalStraightSkeletonParcelDecomposition(Polygon p, SimpleFeatureCollection roads, String roadNameAttribute,
 			String roadImportanceAttribute, double offsetDistance, double maxDistanceForNearestRoad, double minimalArea, int numberOfDigits, boolean generatePeriphericalRoad, double widthRoad)
 			throws StraightSkeletonException, EdgeException {
@@ -240,6 +255,7 @@ public class TopologicalStraightSkeletonParcelDecomposition {
 		// get alpha strips
 		this.alphaStrips = mergeOnLogicalStreets();
 		export(alphaStrips, new File(FOLDER_OUT_DEBUG, "alpha"));
+		//get beta stripes
 		this.betaStrips = fixDiagonalEdges(alphaStrips, attributes);
 		export(betaStrips, new File(FOLDER_OUT_DEBUG, "beta"));
 	}
@@ -420,15 +436,13 @@ public class TopologicalStraightSkeletonParcelDecomposition {
 		// determine the primary frontage for each face
 		for (Entry<Face, List<List<HalfEdge>>> entry : frontages.entrySet()) {
 			log("Face with " + entry.getValue().size() + " frontages\n" + entry.getKey().getGeometry());
-			if (entry.getValue().size() > 1) {
-				// there are multiple frontages for this face, determine the primary one
+			if (entry.getValue().size() > 1) { // there are multiple frontages for this face, determine the primary one
 				List<HalfEdge> primaryFrontage = entry.getValue().stream()
 						.map(f -> new ImmutablePair<>(f, f.stream().map(e -> e.getGeometry().getLength()).reduce((a, b) -> a + b).get()))
 						.max((a, b) -> Double.compare(a.getRight(), b.getRight())).get().getLeft();
 				primary.put(entry.getKey(), primaryFrontage);
 				primaryFrontage.stream().map(HalfEdge::getGeometry).forEach(l -> log(l));
-			} else {
-				// only one frontage. Easy
+			} else { // only one frontage. Easy
 				primary.put(entry.getKey(), entry.getValue().get(0));
 				entry.getValue().get(0).stream().map(HalfEdge::getGeometry).forEach(l -> log(l));
 			}

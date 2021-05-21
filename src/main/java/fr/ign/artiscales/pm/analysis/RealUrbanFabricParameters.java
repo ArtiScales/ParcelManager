@@ -93,7 +93,7 @@ public class RealUrbanFabricParameters {
      * Proceed to the analysis of parameters in every defined zones of the geographic files.
      */
     public static void main(String[] args) throws IOException {
-        RealUrbanFabricParameters rufp = new RealUrbanFabricParameters("genericZone", new File("src/main/resources/GeneralTest/"));
+        RealUrbanFabricParameters rufp = new RealUrbanFabricParameters("genericZone", new File("src/main/resources/TestScenario/"));
         rufp.generateEveryAnalysisOfScene();
 //        RealUrbanFabricParameters rufp = new RealUrbanFabricParameters(new File("src/main/resources/ParcelComparison/"));
 //        rufp.setParcelFile(new File("src/main/resources/ParcelComparison/parcel2003.gpkg"));

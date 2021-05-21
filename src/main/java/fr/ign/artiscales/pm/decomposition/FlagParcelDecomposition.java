@@ -52,7 +52,7 @@ public class FlagParcelDecomposition {
          //////// try the generateFlagSplitedParcels method
             /////////////////////////
             long start = System.currentTimeMillis();
-            File rootFolder = new File("src/main/resources/GeneralTest/");
+            File rootFolder = new File("src/main/resources/TestScenario/");
 
             // Input 1/ the input parcels to split
             File parcelFile = new File(rootFolder, "parcel.gpkg");

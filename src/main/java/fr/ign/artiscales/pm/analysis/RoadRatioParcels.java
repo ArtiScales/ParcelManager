@@ -39,7 +39,7 @@ public class RoadRatioParcels {
 
     // public static void main(String[] args) throws IOException {
     // long start = System.currentTimeMillis();
-    // File rootFolder = new File("src/main/resources/GeneralTest/");
+    // File rootFolder = new File("src/main/resources/TestScenario/");
     // File zoningFile = new File(rootFolder, "zoning.gpkg");
     // DataStore ds = Geopackages.getDataStore(new File(rootFolder, "parcel.gpkg"));
     // SimpleFeatureCollection sfc = ds.getFeatureSource(ds.getTypeNames()[0]).getFeatures();

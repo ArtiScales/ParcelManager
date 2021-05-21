@@ -1,0 +1,11 @@
+{
+	"largeStreetLevel": "5",
+	"decompositionLevelWithoutStreet": "3",
+	"largeStreetWidth": "15",
+	"streetWidth": "7",	
+	"maximalArea": "1000",
+	"minimalArea": "300",
+	"minimalWidthContactRoad": "7",
+	"nameBuildingType": "detachedHouse",
+	"lenDriveway": "3"
+}

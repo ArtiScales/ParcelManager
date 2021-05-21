@@ -92,7 +92,7 @@ public class CompareSimulatedParcelsWithEvolutionOM {
                 listId.add(i);
         int i = 0;
         for (String[] line : r.readAll())
-            Files.copy((new ZoneDivision()).zoneDivision(zoneFile, parcelFile, new ProfileUrbanFabric(firstLine, line), outFolder).toPath(), new File(outFolder, i++ + CsvOp.makeLine(listId, line)).toPath());
+            Files.copy((new ZoneDivision()).zoneDivision(zoneFile, parcelFile, new ProfileUrbanFabric(firstLine, line), true, outFolder).toPath(), new File(outFolder, i++ + CsvOp.makeLine(listId, line)).toPath());
         r.close();
     }
 
