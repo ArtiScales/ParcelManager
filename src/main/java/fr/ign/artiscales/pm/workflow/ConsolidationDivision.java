@@ -47,7 +47,7 @@ public class ConsolidationDivision extends Workflow {
      * @param outFolder The folder where will be saved intermediate results and temporary files for debug
      * @param profile   {@link ProfileUrbanFabric} contains the parameters of the wanted urban scene
      * @return the set of parcel with decomposition
-     * @throws IOException
+     * @throws IOException Writing files in debug modes
      */
     public SimpleFeatureCollection consolidationDivision(SimpleFeatureCollection parcels, File roadFile, File outFolder, ProfileUrbanFabric profile) throws IOException {
         return consolidationDivision(parcels, roadFile, outFolder, profile, null);
@@ -62,7 +62,7 @@ public class ConsolidationDivision extends Workflow {
      * @param profile             {@link ProfileUrbanFabric} contains the parameters of the wanted urban scene
      * @param polygonIntersection Optional polygon layer that was used to process to the selection of parcels with their intersection. Used to keep only the intersecting simulated parcels. CAn be null
      * @return the set of parcel with decomposition
-     * @throws IOException
+     * @throws IOException Writing files in debug modes
      */
     public SimpleFeatureCollection consolidationDivision(SimpleFeatureCollection parcels, File roadFile, File outFolder, ProfileUrbanFabric profile, File polygonIntersection) throws IOException {
         File tmpFolder = new File(outFolder, "tmp");
@@ -133,15 +133,13 @@ public class ConsolidationDivision extends Workflow {
                             freshCutParcel = OBBBlockDecomposition.splitParcel(feat,
                                     roads == null || roads.isEmpty() ? null : CollecTransform.selectIntersection(roads, ((Geometry) feat.getDefaultGeometry()).buffer(30)),
                                     profile.getMaximalArea(), profile.getMinimalWidthContactRoad(), profile.getHarmonyCoeff(), profile.getNoise(),
-                                    CollecTransform.fromPolygonSFCtoListRingLines(blockCollection.subCollection(
-                                            ff.bbox(ff.property(feat.getFeatureType().getGeometryDescriptor().getLocalName()), feat.getBounds()))),
-                                    profile.getStreetWidth(), profile.getLargeStreetLevel(), profile.getLargeStreetWidth(), true,
-                                    profile.getDecompositionLevelWithoutStreet());
+                                    CollecTransform.fromPolygonSFCtoListRingLines(blockCollection.subCollection(ff.bbox(ff.property(feat.getFeatureType().getGeometryDescriptor().getLocalName()), feat.getBounds()))),
+                                    profile.getLaneWidth(), profile.getStreetLane(), profile.getStreetWidth(), true, profile.getBlockShape());
                             break;
                         case "SS":
                             freshCutParcel = TopologicalStraightSkeletonParcelDecomposition.runTopologicalStraightSkeletonParcelDecomposition(feat, roads, "NOM_VOIE_G", "IMPORTANCE", profile.getMaxDepth(),
                                     profile.getMaxDistanceForNearestRoad(), profile.getMinimalArea(), profile.getMinimalWidthContactRoad(), profile.getMaxWidth(),
-                                    (profile.getNoise() == 0) ? 0.1 : profile.getNoise(), new MersenneTwister(1), profile.isGeneratePeripheralRoad(), profile.getStreetWidth());
+                                    (profile.getNoise() == 0) ? 0.1 : profile.getNoise(), new MersenneTwister(1), profile.getStreetWidth());
                             break;
                     }
                     if (freshCutParcel != null && !freshCutParcel.isEmpty() && freshCutParcel.size() > 0) {

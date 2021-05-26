@@ -390,7 +390,7 @@ public class Densification extends Workflow {
             CollecMgmt.exportSFC(parcelDensified, new File(outFolder, "densificationOrNeighborhood-ReMarked"));
 
         if (!MarkParcelAttributeFromPosition.isNoParcelMarked(supParcels)) {
-            profile.setLargeStreetWidth(profile.getStreetWidth());
+            profile.setStreetWidth(profile.getLaneWidth());
             parcelDensified = (new ConsolidationDivision()).consolidationDivision(supParcels, roadFile, outFolder, profile);
             if (isDEBUG())
                 CollecMgmt.exportSFC(parcelDensified, new File(outFolder, "densificationOrNeighborhood-Neigh"));

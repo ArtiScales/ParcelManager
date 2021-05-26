@@ -330,7 +330,9 @@ public class FlagParcelDecomposition {
     /**
      * The core algorithm
      *
-     * @param p
+     * @param p            input polygon
+     * @param harmonyCoeff OBB algorithm parameter to check if the bounding box could be rotated accordingely to the ratio between the box's length and width
+     * @param noise        irregularity into parcel shape
      * @return the flag cut parcel if possible. The input parcel otherwise
      */
     List<Polygon> decompParcel(Polygon p, double harmonyCoeff, double noise) {
@@ -380,12 +382,6 @@ public class FlagParcelDecomposition {
             List<Pair<MultiLineString, Polygon>> listMap = generateCandidateForCreatingRoad(currentPoly, lPolygonWithRoadAccess);
             // We order the proposition according to the length (we will try at first to build the road on the shortest side
             listMap.sort(Comparator.comparingDouble(o -> o.getKey().getLength()));
-//      listMap.sort(new Comparator<Pair<MultiLineString, Polygon>>() {
-//        @Override
-//        public int compare(Pair<MultiLineString, Polygon> o1, Pair<MultiLineString, Polygon> o2) {
-//          return Double.compare(o1.getKey().getLength(), o2.getKey().getLength());
-//        }
-//      });
             loopSide:
             for (Pair<MultiLineString, Polygon> side : listMap) {
                 // The geometry road

@@ -3,6 +3,7 @@ package fr.ign.artiscales.pm.scenario;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonToken;
+import fr.ign.artiscales.pm.decomposition.TopologicalStraightSkeletonParcelDecomposition;
 
 import java.io.File;
 import java.io.IOException;
@@ -183,10 +184,24 @@ public class PMScenario {
             if (token == JsonToken.FIELD_NAME && "optional".equals(parser.getCurrentName())) {
                 token = parser.nextToken();
                 if (token == JsonToken.VALUE_STRING) {
-                   if (parser.getText().equals("keepExistingRoad"))
-                       PMStep.setKeepExistingRoad(true);
-                    if (parser.getText().equals("adaptAreaOfUrbanFabric"))
-                        PMStep.setAdaptAreaOfUrbanFabric(true);
+                    switch (parser.getText()) {
+                        case "keepExistingRoad:true":
+                            PMStep.setKeepExistingRoad(true);
+                            break;
+                        case "keepExistingRoad:false":
+                            PMStep.setKeepExistingRoad(false);
+                            break;
+                        case "adaptAreaOfUrbanFabric:true":
+                        case "adaptAreaOfUrbanFabric":
+                            PMStep.setAdaptAreaOfUrbanFabric(true);
+                            break;
+                        case "peripheralRoad:true":
+                            TopologicalStraightSkeletonParcelDecomposition.setGeneratePeripheralRoad(true);
+                            break;
+                        case "peripheralRoad:false":
+                            TopologicalStraightSkeletonParcelDecomposition.setGeneratePeripheralRoad(false);
+                            break;
+                    }
                 }
             }
         }
@@ -213,6 +228,7 @@ public class PMScenario {
 
     /**
      * Run every step that are present in the stepList
+     *
      * @throws IOException
      */
     public void executeStep() throws IOException {

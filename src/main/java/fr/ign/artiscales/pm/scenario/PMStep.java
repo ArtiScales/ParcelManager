@@ -95,8 +95,7 @@ public class PMStep {
      * Set the path of the different files for a PMStep to be executed. The method is used by PMScenario in a static way because it has no reasons to change within a PM simulation,
      * except for the parcel file that must be updated after each PMStep to make the new PMStep simulation on an already simulated parcel plan
      */
-    public static void setFiles(File parcelFile, File zoningFile, File buildingFile, File roadFile, File predicateFile,
-                                File polygonIntersection, File zone, File outFolder, File profileFolder) {
+    public static void setFiles(File parcelFile, File zoningFile, File buildingFile, File roadFile, File predicateFile, File polygonIntersection, File zone, File outFolder, File profileFolder) {
         PARCELFILE = parcelFile;
         ZONINGFILE = zoningFile;
         BUILDINGFILE = buildingFile;

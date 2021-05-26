@@ -105,6 +105,7 @@ public class TopologicalStraightSkeletonParcelDecomposition {
 
 	private static boolean SAVEINTERMEDIATERESULT = true;
 	private static boolean DEBUG = false;
+	private static boolean generatePeripheralRoad;
 	public static File FOLDER_OUT_DEBUG = new File("/tmp/skeleton");
 
 	private final Polygon initialPolygon;
@@ -175,16 +176,25 @@ public class TopologicalStraightSkeletonParcelDecomposition {
 		CollecMgmt.exportSFC(cut, new File("/tmp/cutSS.gpkg"));*/
 	}
 
+	/**
+	 * Create and compute Straight Skeleton algorithm. Version without peripheral road
+	 * @param p
+	 * @param roads
+	 * @param roadNameAttribute
+	 * @param roadImportanceAttribute
+	 * @param maxDepth
+	 * @param maxDistanceForNearestRoad
+	 * @throws StraightSkeletonException
+	 * @throws EdgeException
+	 */
 	public TopologicalStraightSkeletonParcelDecomposition(Polygon p, SimpleFeatureCollection roads, String roadNameAttribute,
-			String roadImportanceAttribute, double offsetDistance, double maxDistanceForNearestRoad, double minimalArea)
-			throws StraightSkeletonException, EdgeException {
-		this(p, roads, roadNameAttribute, roadImportanceAttribute, offsetDistance, maxDistanceForNearestRoad, minimalArea, 2, false,0);
+			String roadImportanceAttribute, double maxDepth, double maxDistanceForNearestRoad) throws StraightSkeletonException, EdgeException {
+		this(p, roads, roadNameAttribute, roadImportanceAttribute, maxDepth, maxDistanceForNearestRoad, 2, false,0);
 	}
 
 	public TopologicalStraightSkeletonParcelDecomposition(Polygon p, SimpleFeatureCollection roads, String roadNameAttribute,
-			String roadImportanceAttribute, double offsetDistance, double maxDistanceForNearestRoad, double minimalArea,boolean generatePeriphericalRoad, double widthRoad)
-			throws StraightSkeletonException, EdgeException {
-		this(p, roads, roadNameAttribute, roadImportanceAttribute, offsetDistance, maxDistanceForNearestRoad, minimalArea, 2, generatePeriphericalRoad, widthRoad);
+			String roadImportanceAttribute, double maxDepth, double maxDistanceForNearestRoad, boolean generatePeripheralRoad, double widthRoad) throws StraightSkeletonException, EdgeException {
+		this(p, roads, roadNameAttribute, roadImportanceAttribute, maxDepth, maxDistanceForNearestRoad, 2, generatePeripheralRoad, widthRoad);
 	}
 
 	/**
@@ -195,7 +205,6 @@ public class TopologicalStraightSkeletonParcelDecomposition {
 	 * @param roadImportanceAttribute
 	 * @param offsetDistance
 	 * @param maxDistanceForNearestRoad
-	 * @param minimalArea
 	 * @param numberOfDigits
 	 * @param generatePeriphericalRoad
 	 * @param widthRoad
@@ -203,7 +212,7 @@ public class TopologicalStraightSkeletonParcelDecomposition {
 	 * @throws EdgeException
 	 */
 	public TopologicalStraightSkeletonParcelDecomposition(Polygon p, SimpleFeatureCollection roads, String roadNameAttribute,
-			String roadImportanceAttribute, double offsetDistance, double maxDistanceForNearestRoad, double minimalArea, int numberOfDigits, boolean generatePeriphericalRoad, double widthRoad)
+			String roadImportanceAttribute, double offsetDistance, double maxDistanceForNearestRoad, int numberOfDigits, boolean generatePeriphericalRoad, double widthRoad)
 			throws StraightSkeletonException, EdgeException {
 		this.tolerance = 2.0 / Math.pow(10, numberOfDigits);
 		p = (Polygon) TopologyPreservingSimplifier.simplify(p, 10 * tolerance);
@@ -1350,10 +1359,10 @@ public class TopologicalStraightSkeletonParcelDecomposition {
 		return (int) ca.stream().filter(cb::contains).count();
 	}
 
-	public static SimpleFeatureCollection runTopologicalStraightSkeletonParcelDecomposition(SimpleFeatureCollection sfcParcelIn, File roadFile, String NAME_ATT_ROAD, String NAME_ATT_IMPORTANCE, double maxDepth, double maxDistanceForNearestRoad, double minimalArea, double minWidth, double maxWidth, double omega, RandomGenerator rng, boolean peripheralRoad, double streetWidth) throws IOException {
+	public static SimpleFeatureCollection runTopologicalStraightSkeletonParcelDecomposition(SimpleFeatureCollection sfcParcelIn, File roadFile, String NAME_ATT_ROAD, String NAME_ATT_IMPORTANCE, double maxDepth, double maxDistanceForNearestRoad, double minimalArea, double minWidth, double maxWidth, double omega, RandomGenerator rng, double streetWidth) throws IOException {
 		DataStore dsRoad = CollecMgmt.getDataStore(roadFile);
 		SimpleFeatureCollection p = runTopologicalStraightSkeletonParcelDecomposition(sfcParcelIn, dsRoad.getFeatureSource(dsRoad.getTypeNames()[0]).getFeatures(), NAME_ATT_ROAD, NAME_ATT_IMPORTANCE, maxDepth, maxDistanceForNearestRoad,
-				minimalArea, minWidth, maxWidth, omega, rng, peripheralRoad, streetWidth);
+				minimalArea, minWidth, maxWidth, omega, rng, streetWidth);
 		dsRoad.dispose();
 		return p;
 	}
@@ -1361,14 +1370,14 @@ public class TopologicalStraightSkeletonParcelDecomposition {
 	/**
 	 * Run Straight Skeleton on marked parcels
 	 */
-    public static SimpleFeatureCollection runTopologicalStraightSkeletonParcelDecomposition(SimpleFeatureCollection sfcParcelIn, SimpleFeatureCollection roads, String NAME_ATT_ROAD, String NAME_ATT_IMPORTANCE, double maxDepth, double maxDistanceForNearestRoad, double minimalArea, double minWidth, double maxWidth, double omega, RandomGenerator rng, boolean peripheralRoad, double streetWidth) throws IOException {
+    public static SimpleFeatureCollection runTopologicalStraightSkeletonParcelDecomposition(SimpleFeatureCollection sfcParcelIn, SimpleFeatureCollection roads, String NAME_ATT_ROAD, String NAME_ATT_IMPORTANCE, double maxDepth, double maxDistanceForNearestRoad, double minimalArea, double minWidth, double maxWidth, double omega, RandomGenerator rng, double streetWidth) throws IOException {
         DefaultFeatureCollection result = new DefaultFeatureCollection();
         try (SimpleFeatureIterator parcelIt = sfcParcelIn.features()) {
             while (parcelIt.hasNext()) {
                 SimpleFeature sf = parcelIt.next();
                 if (sf.getAttribute(MarkParcelAttributeFromPosition.getMarkFieldName()).equals(1))
                     result.addAll(runTopologicalStraightSkeletonParcelDecomposition(sf, roads, NAME_ATT_ROAD, NAME_ATT_IMPORTANCE, maxDepth,
-                            maxDistanceForNearestRoad, minimalArea, minWidth, maxWidth, omega, rng, peripheralRoad, streetWidth));
+                            maxDistanceForNearestRoad, minimalArea, minWidth, maxWidth, omega, rng, streetWidth));
             }
         } catch (Exception problem) {
             problem.printStackTrace();
@@ -1463,7 +1472,7 @@ public class TopologicalStraightSkeletonParcelDecomposition {
 
 	public static SimpleFeatureCollection runTopologicalStraightSkeletonParcelDecomposition(SimpleFeature feat, SimpleFeatureCollection roads,
 			String roadNameAttribute, String roadImportanceAttribute, double maxDepth, double maxDistanceForNearestRoad,
-			double minimalArea, double minWidth, double maxWidth, double omega, RandomGenerator rng, boolean generatePeripheralRoad, double widthRoad) {
+			double minimalArea, double minWidth, double maxWidth, double omega, RandomGenerator rng, double widthRoad) {
 		int count = 0;
 		List<Polygon> globalOutputParcels = new ArrayList<>();
 		List<Polygon> polygons = Polygons.getPolygons((Geometry) feat.getDefaultGeometry());
@@ -1474,7 +1483,7 @@ public class TopologicalStraightSkeletonParcelDecomposition {
 				FOLDER_OUT_DEBUG = new File("/tmp/skeleton/polygon_" + count + "_" + feat.getID());
 				log("start with polygon " + count);
 				TopologicalStraightSkeletonParcelDecomposition decomposition = new TopologicalStraightSkeletonParcelDecomposition(polygon, roads,
-						roadNameAttribute, roadImportanceAttribute, maxDepth, generatePeripheralRoad ? maxDistanceForNearestRoad + widthRoad : maxDistanceForNearestRoad, minimalArea, generatePeripheralRoad, widthRoad);
+						roadNameAttribute, roadImportanceAttribute, maxDepth, generatePeripheralRoad ? maxDistanceForNearestRoad + widthRoad : maxDistanceForNearestRoad, generatePeripheralRoad, widthRoad);
 				export(decomposition.straightSkeleton.getGraph(), new File(FOLDER_OUT_DEBUG, "after_fix"));
 				if (decomposition.betaStrips != null)
 					globalOutputParcels.addAll(decomposition.createParcels(minWidth, maxWidth, omega, rng));
@@ -1534,6 +1543,13 @@ public class TopologicalStraightSkeletonParcelDecomposition {
 
 	public static void setSAVEINTERMEDIATERESULT(boolean SAVEINTERMEDIATERES) {
 		SAVEINTERMEDIATERESULT = SAVEINTERMEDIATERES;
+	}
+	public static boolean isGeneratePeripheralRoad() {
+		return generatePeripheralRoad;
+	}
+
+	public static void setGeneratePeripheralRoad(boolean generatePeripheralRoad) {
+		TopologicalStraightSkeletonParcelDecomposition.generatePeripheralRoad = generatePeripheralRoad;
 	}
 
 	public static boolean isDEBUG() {

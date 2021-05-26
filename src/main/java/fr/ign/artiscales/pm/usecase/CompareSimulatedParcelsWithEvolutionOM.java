@@ -73,7 +73,7 @@ public class CompareSimulatedParcelsWithEvolutionOM {
             if ((f.getName().contains(("Only")) && f.getName().contains(".gpkg")))
                 lF.add(f);
         File simulatedFile = new File(outFolder, "simulatedParcels.gpkg");
-// todo fix it         Shp.mergeVectFiles(lF, simulatedFile);
+        CollecMgmt.mergeFiles(lF, simulatedFile);
         PMStep.setParcel(fileParcelPast);
         PMStep.setPOLYGONINTERSECTION(null);
     }
@@ -103,7 +103,7 @@ public class CompareSimulatedParcelsWithEvolutionOM {
      * @param zoningFile the zoning plan in a geopackage format (field names are set in the {@link GeneralFields} class)
      * @param outFolder  the folder which will contain the exported geopackages
      * @return A folder (the same as the outFolder parameter) containing the exported Geopackages
-     * @throws IOException
+     * @throws IOException Reading and writing files
      */
     public static File sortUniqueZoning(File toSortFile, File zoningFile, File outFolder) throws IOException {
         DataStore dsToSort = CollecMgmt.getDataStore(toSortFile);

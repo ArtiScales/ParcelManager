@@ -125,20 +125,20 @@ public class RoadRatioParcels {
                 tab[0] = legend;
                 tab[1] = (String) z.getAttribute(ParcelSchema.getMinParcelCommunityField());
                 tab[2] = (String) z.getAttribute(GeneralFields.getZonePreciseNameField());
-                DefaultFeatureCollection df = new DefaultFeatureCollection();
+                DefaultFeatureCollection intersectingParcels = new DefaultFeatureCollection();
                 // get the intersecting parcels
                 try (SimpleFeatureIterator parcelIt = cutParcel.features()) {
                     while (parcelIt.hasNext()) {
                         SimpleFeature parcel = parcelIt.next();
                         if (((Geometry) z.getDefaultGeometry()).buffer(0.5).contains((Geometry) parcel.getDefaultGeometry()))
-                            df.add(parcel);
+                            intersectingParcels.add(parcel);
                     }
                 } catch (Exception problem) {
                     problem.printStackTrace();
                 }
                 double iniA = ((Geometry) z.getDefaultGeometry()).getArea();
                 GeneralFields.setParcelFieldType("every");
-                double pNew = areaParcelNewlySimulated(df);
+                double pNew = areaParcelNewlySimulated(intersectingParcels);
                 GeneralFields.setParcelFieldType("french");
                 if (pNew == 0.0)
                     continue;
@@ -146,11 +146,11 @@ public class RoadRatioParcels {
                 tab[4] = Double.toString(pNew);
                 tab[5] = Double.toString(1 - (pNew / iniA));
                 // get the ratio of parcels having a connection to the road
-                tab[6] = String.valueOf(((double) Arrays.stream(df.toArray(new SimpleFeature[0]))
+                tab[6] = String.valueOf(((double) Arrays.stream(intersectingParcels.toArray(new SimpleFeature[0]))
                         .filter(feat -> ParcelState.isParcelHasRoadAccess(Polygons.getPolygon((Geometry) feat.getDefaultGeometry()),
                                 CollecTransform.selectIntersection(roads, ((Geometry) feat.getDefaultGeometry())),
                                 CollecTransform.fromPolygonSFCtoRingMultiLines(CollecTransform.selectIntersection(blocks, (Geometry) z.getDefaultGeometry()))))
-                        .count() / (double) df.size()));
+                        .count() / (double) intersectingParcels.size()));
                 stat.put(count++ + "-" + tab[1] + "-" + tab[2], tab);
             }
         } catch (Exception problem) {

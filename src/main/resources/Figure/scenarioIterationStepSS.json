@@ -1,25 +1,26 @@
 {
 	"rootfile": "src/main/resources/FigureIterationStep/",
-	"outFolder": "src/main/resources/FigureIterationStep/outOBB",
+	"parcelFile":"src/main/resources/FigureIterationStep/parcelFigureIteration.gpkg",
+	"outFolder": "src/main/resources/FigureIterationStep/outSS",
 	"steps": [
 		{
 			"workflow": "consolidationDivision",
-			"parcelProcess": "OBB",
+			"parcelProcess": "SS",
 			"urbanFabricType": "smallHouse"
 		},
 		{
 			"workflow": "consolidationDivision",
-			"parcelProcess": "OBB",
+			"parcelProcess": "SS",
 			"urbanFabricType": "smallCollective"
 		},
 		{
 			"workflow": "consolidationDivision",
-			"parcelProcess": "OBB",
+			"parcelProcess": "SS",
 			"urbanFabricType": "largeCollective"
 		},
 		{
 			"workflow": "consolidationDivision",
-			"parcelProcess": "OBB",
+			"parcelProcess": "SS",
 			"urbanFabricType": "detachedHouse"
 		}]
 }

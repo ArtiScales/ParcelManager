@@ -1,6 +1,5 @@
 package fr.ign.artiscales.pm.workflow;
 
-import fr.ign.artiscales.pm.analysis.SingleParcelStat;
 import fr.ign.artiscales.pm.decomposition.OBBBlockDecomposition;
 import fr.ign.artiscales.pm.decomposition.TopologicalStraightSkeletonParcelDecomposition;
 import fr.ign.artiscales.pm.parcelFunction.MarkParcelAttributeFromPosition;
@@ -49,15 +48,15 @@ public class ZoneDivision extends Workflow {
     public ZoneDivision() {
     }
 
-	public static void main(String[] args) throws Exception {
-		File outFile = new File("/tmp/");
-		outFile.mkdirs();
-		File simuledFile = (new ZoneDivision()).zoneDivision(
-				new File("/home/mc/workspace/parcelmanagergui/tmp/zone.gpkg"),
-				new File("/home/mc/workspace/parcelmanagergui/tmp/parcels.gpkg"),
-				ProfileUrbanFabric.convertJSONtoProfile(new File(
-						"/home/mc/workspace/parcelmanager/src/main/resources/ParcelComparison/profileUrbanFabric/mediumCollective.json")), false, outFile);
-	}
+//	public static void main(String[] args) throws Exception {
+//		File outFile = new File("/tmp/");
+//		outFile.mkdirs();
+//		File simuledFile = (new ZoneDivision()).zoneDivision(
+//				new File("/home/mc/workspace/parcelmanagergui/tmp/zone.gpkg"),
+//				new File("/home/mc/workspace/parcelmanagergui/tmp/parcels.gpkg"),
+//				ProfileUrbanFabric.convertJSONtoProfile(new File(
+//						"/home/mc/workspace/parcelmanager/src/main/resources/ParcelComparison/profileUrbanFabric/mediumCollective.json")), false, outFile);
+//	}
 
     /**
      * Create a zone to cut from a zoning plan by selecting features from a Geopackage regarding a fixed value. Name of the field is by default set to <i>TYPEZONE</i> and must be changed if needed
@@ -194,11 +193,9 @@ public class ZoneDivision extends Workflow {
         DefaultFeatureCollection savedParcels = new DefaultFeatureCollection();
         Arrays.stream(parcels.toArray(new SimpleFeature[0])).forEach(parcel -> {
             if (((Geometry) parcel.getDefaultGeometry()).intersects(geomZone))
-                parcelsInZone.add(
-                        ParcelSchema.setSFBMinParcelWithFeat(parcel, finalParcelBuilder.getFeatureType()).buildFeature(Attribute.makeUniqueId()));
+                parcelsInZone.add(ParcelSchema.setSFBMinParcelWithFeat(parcel, finalParcelBuilder.getFeatureType()).buildFeature(Attribute.makeUniqueId()));
             else
-                savedParcels.add(
-                        ParcelSchema.setSFBMinParcelWithFeat(parcel, finalParcelBuilder.getFeatureType()).buildFeature(Attribute.makeUniqueId()));
+                savedParcels.add(ParcelSchema.setSFBMinParcelWithFeat(parcel, finalParcelBuilder.getFeatureType()).buildFeature(Attribute.makeUniqueId()));
         });
         SimpleFeatureBuilder originalSFB = new SimpleFeatureBuilder(parcelsInZone.getSchema());
         if (isDEBUG()) {
@@ -291,13 +288,13 @@ public class ZoneDivision extends Workflow {
                                 .addAll(OBBBlockDecomposition.splitParcels(tmpZoneToCut, null, profile.getMaximalArea(), profile.getMinimalWidthContactRoad(), profile.getHarmonyCoeff(), profile.getNoise(),
                                         CollecTransform.fromPolygonSFCtoListRingLines(
                                                 CollecTransform.selectIntersection(blockCollection, (Geometry) zone.getDefaultGeometry())),
-                                        profile.getStreetWidth(), profile.getLargeStreetLevel(), profile.getLargeStreetWidth(), true, profile.getDecompositionLevelWithoutStreet()));
+                                        profile.getLaneWidth(), profile.getStreetLane(), profile.getStreetWidth(), true, profile.getBlockShape()));
                         break;
                     case "SS":
                         ((DefaultFeatureCollection) splitedParcels)
                                 .addAll(TopologicalStraightSkeletonParcelDecomposition.runTopologicalStraightSkeletonParcelDecomposition(zone, roads,
                                         "NOM_VOIE_G", "IMPORTANCE", profile.getMaxDepth(), profile.getMaxDistanceForNearestRoad(), profile.getMinimalArea(), profile.getMinimalWidthContactRoad(), profile.getMaxWidth(),
-                                        profile.getNoise() == 0 ? 0.1 : profile.getNoise(), new MersenneTwister(42), profile.isGeneratePeripheralRoad(), profile.getStreetWidth()));
+                                        profile.getNoise() == 0 ? 0.1 : profile.getNoise(), new MersenneTwister(42), profile.getLaneWidth()));
                         break;
                     case "MS":
                         System.out.println("not implemented yet");

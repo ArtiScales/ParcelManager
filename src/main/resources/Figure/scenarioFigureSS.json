@@ -1,0 +1,18 @@
+{
+	"rootfile": "src/main/resources/Figure/",
+	"outFolder": "src/main/resources/Figure/outFigSS",
+	"steps": [
+		{
+			"workflow": "zoneDivision",
+			"parcelProcess": "SS",
+			"urbanFabricType": "smallHouseOffset",
+			"optional":"peripheralRoad:true"
+		},
+		{
+			"workflow": "zoneDivision",
+			"parcelProcess": "SS",
+			"urbanFabricType": "smallHouse",
+			"optional":"peripheralRoad:false"
+
+		}]
+}

@@ -1,8 +1,8 @@
 {
-	"largeStreetLevel": "6",
-	"decompositionLevelWithoutStreet": "4",
-	"largeStreetWidth": "15",
-	"streetWidth": "8",	
+	"streetLane": "6",
+	"blockShape": "4",
+	"streetWidth": "15",
+	"laneWidth": "8",	
 	"maximalArea": "425",
 	"minimalArea": "100",
 	"minimalWidthContactRoad": "7",
@@ -10,6 +10,5 @@
 	"lenDriveway": "3",
 	"maxDepth":"30",
 	"maxDistanceForNearestRoad":"20",
-	"maxWidth":"20",
-	"generatePeripheralRoad":"true"
+	"maxWidth":"20"
 }

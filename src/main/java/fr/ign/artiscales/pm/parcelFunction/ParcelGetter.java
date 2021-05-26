@@ -6,7 +6,6 @@ import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Geom;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.collec.CollecMgmt;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.collec.CollecTransform;
 import org.geotools.data.DataStore;
-import org.geotools.data.collection.SpatialIndexFeatureCollection;
 import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.data.simple.SimpleFeatureIterator;
 import org.geotools.factory.CommonFactoryFinder;
@@ -39,14 +38,13 @@ public class ParcelGetter {
     /**
      * Get a set of parcel depending to their zoning type.
      *
-     * @param zone zone to select parcels from
-     * @param parcels input parcels
+     * @param zone       zone to select parcels from
+     * @param parcels    input parcels
      * @param zoningFile Shapefile containing the french zoning
      * @return a {@link SimpleFeatureCollection} of parcels that more of the half are contained into the zone
-     * @throws IOException
+     * @throws IOException reading zoning file
      */
-    public static SimpleFeatureCollection getParcelByFrenchZoningType(String zone, SimpleFeatureCollection parcels, File zoningFile)
-            throws IOException {
+    public static SimpleFeatureCollection getParcelByFrenchZoningType(String zone, SimpleFeatureCollection parcels, File zoningFile) throws IOException {
         DataStore zonesSDS = CollecMgmt.getDataStore(zoningFile);
         SimpleFeatureCollection zonesSFC = CollecTransform.selectIntersection(zonesSDS.getFeatureSource(zonesSDS.getTypeNames()[0]).getFeatures(), parcels);
         List<String> listZones = FrenchZoningSchemas.getUsualNames(zone);
@@ -94,11 +92,11 @@ public class ParcelGetter {
      * @param parcels    Collection of parcels
      * @param zoningFile Geopackage of the communities with a filed describing their typology
      * @return parcels which are included in the communities of a given typology
-     * @throws IOException
+     * @throws IOException Reading zoning file
      */
     public static SimpleFeatureCollection getParcelByTypo(String typo, SimpleFeatureCollection parcels, File zoningFile) throws IOException {
         DataStore zoningDS = CollecMgmt.getDataStore(zoningFile);
-        SimpleFeatureCollection zoningSFC = CollecTransform.selectIntersection(new SpatialIndexFeatureCollection(zoningDS.getFeatureSource(zoningDS.getTypeNames()[0]).getFeatures()), parcels);
+        SimpleFeatureCollection zoningSFC = CollecTransform.selectIntersection(zoningDS.getFeatureSource(zoningDS.getTypeNames()[0]).getFeatures(), parcels);
         FilterFactory2 ff = CommonFactoryFinder.getFilterFactory2(GeoTools.getDefaultHints());
         Filter filter = ff.like(ff.property(typologyField), typo);
         DefaultFeatureCollection result = new DefaultFeatureCollection();

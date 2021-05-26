@@ -35,6 +35,7 @@ The parameter ***step*** must contain a .json table with the following arguments
 * ***workflow***
 * ***parcelProcess***
 * ***urbanFabric***
+* ***optionnal***
 
 <h3>Parcel selection</h3>
 It is possible to set two different types of parcel selection regarding their inclusion in a part of the zoning plan or a community. 
@@ -68,7 +69,7 @@ Once a parcel has been simulated, it attribute filed <i>SECTION</i> (see attribu
 
 <h3>Parcel Manager Workflows</h3>
 Different algorithm are available in Parcel Manager.
-The parameter <b><i>workflow</i></b> can be set with one of those three values:
+The parameter ***workflow*** can be set with one of those three values:
 
 * ***zoneDivision***: They take a total zone as an input and decompose it as a big zone
 * ***consolidationDivision***: Takes a set of marked parcels as an input and decompose them as contiguious zones
@@ -89,3 +90,12 @@ The java object **parameter.ProfileUrbanFabric** from the ArtiScales-tools proje
 The ***urbanFabric*** parameter defines the profile of the parcels parameters.
 Examples can be found in the folders of every *use cases*
 
+
+<h3>Optional</h3>
+Few special parameters could be parsed to the scenario. 
+They could concern either processes or workflows.
+In order to be taken in consideration, the name of the parameter should be <i>optional</i> and its value should metion a parameter and its value separated by a ':' 
+Parameters could either be 
+* ***peripheralRoad*** (only for **Straight Skeleton** process). Generates of a peripheral road around the initial zone.  (i.e. to set the generation of a peripheral road, line should look like that : <i>"optional":"peripheralRoad:true"</i>).
+* ***adaptAreaOfUrbanFabric*** On-the-fly change of the parameters maximal area and minimal area of urban fabric profiles. For more information about this option, please read section 5.2 of Colomb et al. 2021. As this option is by default disabled, there's no need to add a : value (the line could look like <i>"optional":"adaptAreaOfUrbanFabric"</i>).
+* ***keepExistingRoad*** (only for **Zone Division** workflow). If true, will conserve the void left by road or public space in the zone to be reshaped. If false, will reshape all the zone.
