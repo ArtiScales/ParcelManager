@@ -17,7 +17,6 @@ import java.util.List;
  * @see <a href="https://github.com/ArtiScales/ParcelManager/blob/master/src/main/resources/doc/scenarioCreation.md">scenarioCreation.md</a>
  */
 public class PMScenario {
-
     /**
      * If true, the parcels simulated for each steps will be the input of the next step. If false, the simulation will operate on the input parcel for each steps
      */
@@ -29,6 +28,7 @@ public class PMScenario {
     private File zoningFile, buildingFile, roadFile, polygonIntersection, zone, predicateFile, parcelFile, profileFolder, outFolder;
     private List<PMStep> stepList = new ArrayList<>();
     private boolean fileSet = false;
+    boolean keepExistingRoad, adaptAreaOfUrbanFabric, generatePeripheralRoad;
 
 //	public static void main(String[] args) throws Exception {
 //		PMScenario pm = new PMScenario(
@@ -107,9 +107,33 @@ public class PMScenario {
                         if (token == JsonToken.VALUE_STRING)
                             urbanFabric = parser.getText();
                     }
+                    //specific options concerning workflows can be parsed here
+                    if (token == JsonToken.FIELD_NAME && "optional".equals(parser.getCurrentName())) {
+                        token = parser.nextToken();
+                        if (token == JsonToken.VALUE_STRING) {
+                            switch (parser.getText()) {
+                                case "keepExistingRoad:true":
+                                    keepExistingRoad = true;
+                                    break;
+                                case "keepExistingRoad:false":
+                                    keepExistingRoad = false;
+                                    break;
+                                case "adaptAreaOfUrbanFabric:true":
+                                case "adaptAreaOfUrbanFabric":
+                                    adaptAreaOfUrbanFabric = true;
+                                    break;
+                                case "peripheralRoad:true":
+                                    generatePeripheralRoad =true;
+                                    break;
+                                case "peripheralRoad:false":
+                                    generatePeripheralRoad = false;
+                                    break;
+                            }
+                        }
+                    }
                     if (token == JsonToken.END_OBJECT) {
                         List<PMStep> list = getStepList();
-                        PMStep step = new PMStep(workflow, parcelProcess, genericZone, preciseZone, communityNumber, communityType, urbanFabric);
+                        PMStep step = new PMStep(workflow, parcelProcess, genericZone, preciseZone, communityNumber, communityType, urbanFabric, generatePeripheralRoad,  keepExistingRoad,  adaptAreaOfUrbanFabric);
                         list.add(step);
                         setStepList(list);
                         workflow = parcelProcess = genericZone = preciseZone = communityNumber = communityType = urbanFabric = "";
@@ -178,30 +202,6 @@ public class PMScenario {
                 if (token == JsonToken.VALUE_STRING) {
                     outFolder = new File(parser.getText());
                     fileSet = true;
-                }
-            }
-            //specific options concerning workflows can be parsed here
-            if (token == JsonToken.FIELD_NAME && "optional".equals(parser.getCurrentName())) {
-                token = parser.nextToken();
-                if (token == JsonToken.VALUE_STRING) {
-                    switch (parser.getText()) {
-                        case "keepExistingRoad:true":
-                            PMStep.setKeepExistingRoad(true);
-                            break;
-                        case "keepExistingRoad:false":
-                            PMStep.setKeepExistingRoad(false);
-                            break;
-                        case "adaptAreaOfUrbanFabric:true":
-                        case "adaptAreaOfUrbanFabric":
-                            PMStep.setAdaptAreaOfUrbanFabric(true);
-                            break;
-                        case "peripheralRoad:true":
-                            TopologicalStraightSkeletonParcelDecomposition.setGeneratePeripheralRoad(true);
-                            break;
-                        case "peripheralRoad:false":
-                            TopologicalStraightSkeletonParcelDecomposition.setGeneratePeripheralRoad(false);
-                            break;
-                    }
                 }
             }
         }

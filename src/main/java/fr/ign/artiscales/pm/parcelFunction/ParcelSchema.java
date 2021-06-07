@@ -69,7 +69,6 @@ public class ParcelSchema {
         builder.set(schema.getGeometryDescriptor().getName().toString(), feat.getDefaultGeometry());
         builder.set(minParcelSectionField, feat.getAttribute(minParcelSectionField));
         builder.set(minParcelNumberField, feat.getAttribute(minParcelNumberField));
-
         // setting zipcode
         if (CollecMgmt.isSimpleFeatureContainsAttribute(feat, minParcelCommunityField))
             builder.set(minParcelCommunityField, feat.getAttribute(minParcelCommunityField));

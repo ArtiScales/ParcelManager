@@ -1,6 +1,7 @@
 package fr.ign.artiscales.pm.scenario;
 
 import fr.ign.artiscales.pm.analysis.RealUrbanFabricParameters;
+import fr.ign.artiscales.pm.decomposition.TopologicalStraightSkeletonParcelDecomposition;
 import fr.ign.artiscales.pm.fields.GeneralFields;
 import fr.ign.artiscales.pm.fields.french.FrenchParcelFields;
 import fr.ign.artiscales.pm.parcelFunction.MarkParcelAttributeFromPosition;
@@ -19,7 +20,6 @@ import fr.ign.artiscales.tools.parameter.ProfileUrbanFabric;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.geotools.data.DataStore;
 import org.geotools.data.DataUtilities;
-import org.geotools.data.collection.SpatialIndexFeatureCollection;
 import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.feature.DefaultFeatureCollection;
 import org.locationtech.jts.geom.Geometry;
@@ -38,7 +38,7 @@ import java.util.List;
  * @see <a href="https://github.com/ArtiScales/ParcelManager/blob/master/src/main/resources/doc/scenarioCreation.md">scenarioCreation.md</a>
  */
 public class PMStep {
-    private static List<String> cachePlacesSimulates = new ArrayList<>();
+    private static final List<String> cachePlacesSimulates = new ArrayList<>();
     /**
      * Geographic files
      */
@@ -57,29 +57,23 @@ public class PMStep {
     private static boolean DEBUG = false;
     private static boolean allowIsolatedParcel = false;
 
-    public static boolean isAdaptAreaOfUrbanFabric() {
-        return adaptAreaOfUrbanFabric;
-    }
-    public static void setAdaptAreaOfUrbanFabric(boolean newAdaptAreaOfUrbanFabric) {
-        adaptAreaOfUrbanFabric = newAdaptAreaOfUrbanFabric;
-    }
-
+    final private String workflow, parcelProcess, communityNumber, communityType, urbanFabricType, genericZone, preciseZone;
+    private final boolean peripheralRoad;
+    List<String> communityNumbers = new ArrayList<>();
     /**
-     * If true, will look at the community built parcel's area to adapt the maximal and minimal area (set with the 1st and the 9th decile of the built area's distribution). False by default.     */
-    private static boolean adaptAreaOfUrbanFabric = false;
-
+     * If true, will look at the community built parcel's area to adapt the maximal and minimal area (set with the 1st and the 9th decile of the built area's distribution). False by default.
+     */
+    private boolean adaptAreaOfUrbanFabric = false;
     /**
      * If true, will keep road on ZoneDivision processes. True by default
      */
-    private static boolean keepExistingRoad = true;
-    final private String workflow, parcelProcess, communityNumber, communityType, urbanFabricType, genericZone, preciseZone;
-    List<String> communityNumbers = new ArrayList<>();
+    private boolean keepExistingRoad = true;
     /**
      * The last generated parcel plan file. Could be useful for programs to get it directly
      */
     private File lastOutput;
 
-    public PMStep(String workflow, String parcelProcess, String genericZone, String preciseZone, String communityNumber, String communityType, String urbanFabricType) {
+    public PMStep(String workflow, String parcelProcess, String genericZone, String preciseZone, String communityNumber, String communityType, String urbanFabricType, boolean peripheralRoad, boolean keepExistingRoad, boolean adaptUrbanFabric) {
         this.workflow = workflow;
         this.parcelProcess = parcelProcess;
         this.genericZone = genericZone;
@@ -87,8 +81,19 @@ public class PMStep {
         this.communityNumber = communityNumber;
         this.communityType = communityType;
         this.urbanFabricType = urbanFabricType;
+        this.adaptAreaOfUrbanFabric = adaptUrbanFabric;
+        this.keepExistingRoad = keepExistingRoad;
+        this.peripheralRoad = peripheralRoad;
         setSaveIntermediateResult(SAVEINTERMEDIATERESULT);
         setDEBUG(DEBUG);
+    }
+
+    public static File getOUTFOLDER() {
+        return OUTFOLDER;
+    }
+
+    public static void setOUTFOLDER(File OUTFOLDER) {
+        PMStep.OUTFOLDER = OUTFOLDER;
     }
 
     /**
@@ -199,6 +204,33 @@ public class PMStep {
     }
 
     /**
+     * Empty the cache of zones that have already been simulated
+     */
+    public static void flushCachePlacesSimulates() {
+        cachePlacesSimulates.clear();
+    }
+
+    public static File getPROFILEFOLDER() {
+        return PROFILEFOLDER;
+    }
+
+    public boolean isPeripheralRoad() {
+        return peripheralRoad;
+    }
+
+    public boolean isAdaptAreaOfUrbanFabric() {
+        return adaptAreaOfUrbanFabric;
+    }
+
+    public void setAdaptAreaOfUrbanFabric(boolean newAdaptAreaOfUrbanFabric) {
+        adaptAreaOfUrbanFabric = newAdaptAreaOfUrbanFabric;
+    }
+
+    public String getUrbanFabricType() {
+        return urbanFabricType;
+    }
+
+    /**
      * Execute the current PM Step.
      *
      * @return The geo file containing the whole parcels of the given collection, where the simulated parcel have replaced the former parcels.
@@ -206,6 +238,7 @@ public class PMStep {
      */
     public File execute() throws IOException {
         OUTFOLDER.mkdirs();
+        TopologicalStraightSkeletonParcelDecomposition.setGeneratePeripheralRoad(peripheralRoad);
         //convert the parcel to a common type
         DataStore dSParcel = CollecMgmt.getDataStore(PARCELFILE);
         SimpleFeatureCollection parcel = DataUtilities.collection(dSParcel.getFeatureSource(dSParcel.getTypeNames()[0]).getFeatures());
@@ -252,16 +285,16 @@ public class PMStep {
                 profile.setMinimalArea(min);
             }
             // If a predicate file has been set
-            if (PREDICATEFILE!= null && PREDICATEFILE.exists()) {
+            if (PREDICATEFILE != null && PREDICATEFILE.exists()) {
                 allowIsolatedParcel = ParcelState.isArt3AllowsIsolatedParcel(parcel.features().next(), PREDICATEFILE);
                 System.out.println("allowIsolatedParcel finally " + allowIsolatedParcel);
             }
-                // we choose one of the different workflows
+            // we choose one of the different workflows
             switch (workflow) {
                 case "zoneDivision":
                     ZoneDivision.PROCESS = parcelProcess;
                     ((DefaultFeatureCollection) parcelCut).addAll((new ZoneDivision()).zoneDivision(parcelMarkedComm,
-                            ParcelGetter.getParcelByCommunityCode(parcel, communityNumber), OUTFOLDER, profile, keepExistingRoad));
+                            ParcelGetter.getParcelByCommunityCode(parcel, communityNumber), OUTFOLDER, profile, ROADFILE, keepExistingRoad));
                     break;
                 case "densification":
                     ((DefaultFeatureCollection) parcelCut).addAll((new Densification()).densification(parcelMarkedComm,
@@ -487,7 +520,7 @@ public class PMStep {
         // If no zone have been set, it means we have to use the zoning plan.
         else {
             DataStore dsZoning = CollecMgmt.getDataStore(ZONINGFILE);
-            SimpleFeatureCollection zoning = new SpatialIndexFeatureCollection(DataUtilities.collection((dsZoning.getFeatureSource(dsZoning.getTypeNames()[0]).getFeatures())));
+            SimpleFeatureCollection zoning = DataUtilities.collection((dsZoning.getFeatureSource(dsZoning.getTypeNames()[0]).getFeatures()));
             dsZoning.dispose();
             zoneIn = ZoneDivision.createZoneToCut(genericZone, preciseZone, zoning, ZONINGFILE, parcel);
         }
@@ -518,14 +551,8 @@ public class PMStep {
         return lastOutput;
     }
 
-    public static void setKeepExistingRoad(boolean keepExistingRoad) {
-        PMStep.keepExistingRoad = keepExistingRoad;
-    }
-    /**
-     * Empty the cache of zones that have already been simulated
-     */
-    public static void flushCachePlacesSimulates(){
-        cachePlacesSimulates.clear();
+    public void setKeepExistingRoad(boolean keepExistingRoad) {
+        this.keepExistingRoad = keepExistingRoad;
     }
 
     public File makeFileName() {

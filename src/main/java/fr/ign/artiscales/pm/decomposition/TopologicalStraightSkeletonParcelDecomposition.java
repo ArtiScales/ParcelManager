@@ -74,6 +74,7 @@ import java.util.stream.Stream;
  *
  * @author Mickael Brasebin
  * @author Julien Perret
+ * @author Maxime Colomb
  *
  */
 public class TopologicalStraightSkeletonParcelDecomposition {
@@ -114,7 +115,7 @@ public class TopologicalStraightSkeletonParcelDecomposition {
 	private final GeometryPrecisionReducer precisionReducer;
 	private final StraightSkeleton straightSkeleton;
 	private List<HalfEdge> orderedEdges;
-	final private TopologicalGraph alphaStrips, betaStrips;
+	private final TopologicalGraph alphaStrips, betaStrips;
 	private Map<Face, LineString> psiMap;
 	private final Map<HalfEdge, Optional<Pair<String, Double>>> attributes;
 	private final Geometry snapGeom;
@@ -175,7 +176,7 @@ public class TopologicalStraightSkeletonParcelDecomposition {
 		roadDS.dispose();
 		CollecMgmt.exportSFC(cut, new File("/tmp/cutSS.gpkg"));*/
 	}
-
+	//TODO rename to StraightSkeletonDivision
 	/**
 	 * Create and compute Straight Skeleton algorithm. Version without peripheral road
 	 * @param p
@@ -199,21 +200,9 @@ public class TopologicalStraightSkeletonParcelDecomposition {
 
 	/**
 	 * Constructor decomposing initial polygon until beta-stripes
-	 * @param p
-	 * @param roads
-	 * @param roadNameAttribute
-	 * @param roadImportanceAttribute
-	 * @param offsetDistance
-	 * @param maxDistanceForNearestRoad
-	 * @param numberOfDigits
-	 * @param generatePeriphericalRoad
-	 * @param widthRoad
-	 * @throws StraightSkeletonException
-	 * @throws EdgeException
 	 */
-	public TopologicalStraightSkeletonParcelDecomposition(Polygon p, SimpleFeatureCollection roads, String roadNameAttribute,
-			String roadImportanceAttribute, double offsetDistance, double maxDistanceForNearestRoad, int numberOfDigits, boolean generatePeriphericalRoad, double widthRoad)
-			throws StraightSkeletonException, EdgeException {
+	public TopologicalStraightSkeletonParcelDecomposition(Polygon p, SimpleFeatureCollection roads, String roadNameAttribute, String roadImportanceAttribute, double offsetDistance,
+														  double maxDistanceForNearestRoad, int numberOfDigits, boolean generatePeripheralRoad, double widthRoad) throws StraightSkeletonException, EdgeException {
 		this.tolerance = 2.0 / Math.pow(10, numberOfDigits);
 		p = (Polygon) TopologyPreservingSimplifier.simplify(p, 10 * tolerance);
 		this.precisionReducer = new GeometryPrecisionReducer(new PrecisionModel(Math.pow(10, numberOfDigits)));
@@ -221,14 +210,16 @@ public class TopologicalStraightSkeletonParcelDecomposition {
 		this.factory = p.getFactory();
 		this.NAME_ATT_ROAD = roadNameAttribute;
 		this.NAME_ATT_IMPORTANCE = roadImportanceAttribute;
-		if (generatePeriphericalRoad)
+		if (generatePeripheralRoad)
 			p = this.generatePeripheralRoad(p, widthRoad);
-		try {
-			if (!FOLDER_OUT_DEBUG.exists())
-				FOLDER_OUT_DEBUG.mkdirs();
-			CollecMgmt.exportSFC(this.roads, new File(FOLDER_OUT_DEBUG,"roads.gpkg"));
-		} catch (IOException e) {
-			e.printStackTrace();
+		if (isSAVEINTERMEDIATERESULT() || isDEBUG()) {
+			try {
+				if (!FOLDER_OUT_DEBUG.exists())
+					FOLDER_OUT_DEBUG.mkdirs();
+				CollecMgmt.exportSFC(this.roads, new File(FOLDER_OUT_DEBUG, "roads.gpkg"));
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
 		}
 
 		this.initialPolygon = (Polygon) precisionReducer.reduce(p);
@@ -247,7 +238,7 @@ public class TopologicalStraightSkeletonParcelDecomposition {
 		this.orderedEdges = getOrderedExteriorEdges(straightSkeleton.getGraph());
 		export(graph, new File(FOLDER_OUT_DEBUG, "init"));
 		snapGeom = factory.createGeometryCollection(
-				graph.getFaces().stream().map(Face::getGeometry).collect(Collectors.toList()).toArray(new Geometry[] {}));
+				graph.getFaces().stream().map(Face::getGeometry).collect(Collectors.toList()).toArray(new Geometry[]{}));
 
 		// get the road attributes (name and importance)
 		this.attributes = new HashMap<>();
@@ -398,7 +389,7 @@ public class TopologicalStraightSkeletonParcelDecomposition {
 	}
 
 	/**
-	 * Create alpha strips by merging faces.
+	 * Create alpha strips by merging faces facing common frontages.
 	 *
 	 * @return a topological graph whose faces are the alpha strips
 	 */
@@ -450,10 +441,10 @@ public class TopologicalStraightSkeletonParcelDecomposition {
 						.map(f -> new ImmutablePair<>(f, f.stream().map(e -> e.getGeometry().getLength()).reduce((a, b) -> a + b).get()))
 						.max((a, b) -> Double.compare(a.getRight(), b.getRight())).get().getLeft();
 				primary.put(entry.getKey(), primaryFrontage);
-				primaryFrontage.stream().map(HalfEdge::getGeometry).forEach(l -> log(l));
+				primaryFrontage.stream().map(HalfEdge::getGeometry).forEach(TopologicalStraightSkeletonParcelDecomposition::log);
 			} else { // only one frontage. Easy
 				primary.put(entry.getKey(), entry.getValue().get(0));
-				entry.getValue().get(0).stream().map(HalfEdge::getGeometry).forEach(l -> log(l));
+				entry.getValue().get(0).stream().map(HalfEdge::getGeometry).forEach(TopologicalStraightSkeletonParcelDecomposition::log);
 			}
 		}
 		for (int i = 0; i < orderedEdges.size(); i++) {
@@ -481,7 +472,8 @@ public class TopologicalStraightSkeletonParcelDecomposition {
 			boolean p1 = primary.get(f1).contains(e1);
 			boolean p2 = primary.get(f2).contains(e2);
 			if (p1 && p2) {
-				if (f1 == f2 || mergeOnStreetName(e1, e2, true)) {
+//				if (f1 == f2 || mergeOnStreetName(e1, e2, false)) { //TODO I set false here because it makes the FIGURE wrong, but the problem is more about why there is roads where there shouldn't be ? !
+				if (f1 == f2 || mergeOnStreetName(e1, e2, true)) { //TODO I set false here because it makes the FIGURE wrong, but the problem is more about why there is roads where there shouldn't be ? !
 					currentStripHE.getChildren().add(e2);
 				} else {
 					Node node = straightSkeleton.getGraph().getCommonNode(e1, e2);// FIXME
@@ -1370,7 +1362,7 @@ public class TopologicalStraightSkeletonParcelDecomposition {
 	/**
 	 * Run Straight Skeleton on marked parcels
 	 */
-    public static SimpleFeatureCollection runTopologicalStraightSkeletonParcelDecomposition(SimpleFeatureCollection sfcParcelIn, SimpleFeatureCollection roads, String NAME_ATT_ROAD, String NAME_ATT_IMPORTANCE, double maxDepth, double maxDistanceForNearestRoad, double minimalArea, double minWidth, double maxWidth, double omega, RandomGenerator rng, double streetWidth) throws IOException {
+    public static SimpleFeatureCollection runTopologicalStraightSkeletonParcelDecomposition(SimpleFeatureCollection sfcParcelIn, SimpleFeatureCollection roads, String NAME_ATT_ROAD, String NAME_ATT_IMPORTANCE, double maxDepth, double maxDistanceForNearestRoad, double minimalArea, double minWidth, double maxWidth, double omega, RandomGenerator rng, double streetWidth) {
         DefaultFeatureCollection result = new DefaultFeatureCollection();
         try (SimpleFeatureIterator parcelIt = sfcParcelIn.features()) {
             while (parcelIt.hasNext()) {
@@ -1480,7 +1472,7 @@ public class TopologicalStraightSkeletonParcelDecomposition {
 			try {
 				if (polygon.getArea() < minimalArea) // if small parcel, we ignore
 					continue;
-				FOLDER_OUT_DEBUG = new File("/tmp/skeleton/polygon_" + count + "_" + feat.getID());
+				FOLDER_OUT_DEBUG = new File(FOLDER_OUT_DEBUG,"skeleton/polygon_" + (generatePeripheralRoad ? "peripheralRoad" : "noPeripheralRoad") + "_"+(maxDepth != 0  ? "offset" : "noOffset") + "_"  + count + "_" + feat.getID());
 				log("start with polygon " + count);
 				TopologicalStraightSkeletonParcelDecomposition decomposition = new TopologicalStraightSkeletonParcelDecomposition(polygon, roads,
 						roadNameAttribute, roadImportanceAttribute, maxDepth, generatePeripheralRoad ? maxDistanceForNearestRoad + widthRoad : maxDistanceForNearestRoad, generatePeripheralRoad, widthRoad);
@@ -1507,7 +1499,7 @@ public class TopologicalStraightSkeletonParcelDecomposition {
 	}
 
 	private static void export(TopologicalGraph graph, File directory) {
-		if (!isSAVEINTERMEDIATERESULT())
+		if (!isSAVEINTERMEDIATERESULT() && !isDEBUG())
 			return;
 		for (int id = 0; id < graph.getFaces().size(); id++)
 			graph.getFaces().get(id).setAttribute("ID", id);

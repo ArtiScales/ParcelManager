@@ -46,6 +46,7 @@ import java.util.stream.Collectors;
  *
  * @author Mickael Brasebin
  */
+//TODO rename to FlagDivision
 public class FlagParcelDecomposition {
     /*	 public static void main(String[] args) throws Exception {
          /////////////////////////
@@ -169,7 +170,7 @@ public class FlagParcelDecomposition {
 
 
     /**
-     * Flag decomposition algorithm
+     * Flag decomposition object. Have to be created before any flag division
      *
      * @param p              the initial polygon to decompose
      * @param buildings      the buildings that will constraint the possibility of adding a road

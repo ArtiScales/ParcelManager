@@ -67,14 +67,14 @@ public class MarkParcelAttributeFromPosition {
 //
 //	 }
 
-
-    private static String markFieldName = "SPLIT";
     /**
      * The buildings that have an area under this value will be considered as light buildings and won't be considered when we are looking if a parcel is built or not
      */
     static double uncountedBuildingArea = 20;
+    private static String markFieldName = "SPLIT";
     /**
-     * Specify that the marking is made before (false) or after (true) the simulation process. It won't allow or will the marking of the already simulated parcels
+     * Specify that the marking is made before (false) or after (true) the simulation process.
+     * It won't or will allow the marking of the already simulated parcels.
      */
     private static boolean postMark = false;
 
@@ -256,43 +256,58 @@ public class MarkParcelAttributeFromPosition {
     /**
      * Mark a given number of parcel for the simulation. The selection is random but parcels must be bigger than a certain area threshold.
      *
-     * @param parcels        Input parcel {@link SimpleFeatureCollection}
-     * @param minSize        minimal size of parcels to be selected
-     * @param nbParcelToMark number of parcel wanted
+     * @param parcels           Input parcel {@link SimpleFeatureCollection}
+     * @param nbParcelToMark    number of parcel wanted
+     * @param markExistingMarks if true, randomly marked parcels will only be pe-existing parcels. If false, random follows a new selection
      * @return {@link SimpleFeatureCollection} of the input parcels with random marked parcels on the {@link #markFieldName} field.
      * @throws IOException reading zoningFile
      */
-    public static SimpleFeatureCollection markRandomParcels(SimpleFeatureCollection parcels, int minSize, int nbParcelToMark) throws IOException {
-        return markRandomParcels(parcels, null, null, minSize, nbParcelToMark);
+    public static SimpleFeatureCollection markRandomParcels(SimpleFeatureCollection parcels, int nbParcelToMark, boolean markExistingMarks) throws IOException {
+        return markRandomParcels(parcels, null, null, 0, nbParcelToMark, markExistingMarks);
     }
 
     /**
      * Mark a given number of parcel for the simulation. The selection is random but parcels must be bigger than a certain area threshold and must be contained is a given zoning
      * type.
      *
-     * @param parcels        Input parcel {@link SimpleFeatureCollection}
-     * @param minSize        Minimal size of parcels to be selected
-     * @param genericZone    Type of the zoning plan to take into consideration
-     * @param zoningFile     Geopackage containing the zoning plan
-     * @param nbParcelToMark Number of parcel wanted
+     * @param parcels           Input parcel {@link SimpleFeatureCollection}
+     * @param minSize           Minimal size of parcels to be selected (optional)
+     * @param genericZone       Type of the zoning plan to take into consideration
+     * @param zoningFile        Geopackage containing the zoning plan
+     * @param nbParcelToMark    Number of parcel wanted
+     * @param markExistingMarks if true, randomly marked parcels will only be pe-existing parcels. If false, random follows a new selection
      * @return {@link SimpleFeatureCollection} of the input parcels with random marked parcels on the {@link #markFieldName} field.
      * @throws IOException reading zoningFile
      */
-    public static SimpleFeatureCollection markRandomParcels(SimpleFeatureCollection parcels, String genericZone, File zoningFile, double minSize,
-                                                            int nbParcelToMark) throws IOException {
+    public static SimpleFeatureCollection markRandomParcels(SimpleFeatureCollection parcels, String genericZone, File zoningFile, double minSize, int nbParcelToMark, boolean markExistingMarks) throws IOException {
         if (zoningFile != null && genericZone != null)
             parcels = markParcelIntersectGenericZoningType(parcels, genericZone, zoningFile);
-        List<SimpleFeature> list = Arrays.stream(parcels.toArray(new SimpleFeature[0]))
-                .filter(feat -> ((Geometry) feat.getDefaultGeometry()).getArea() > minSize).collect(Collectors.toList());
-        Collections.shuffle(list);
         DefaultFeatureCollection result = new DefaultFeatureCollection();
-        while (nbParcelToMark > 0) {
-            if (!list.isEmpty())
-                result.add(list.remove(0));
-            nbParcelToMark--;
+        if (markExistingMarks) {
+            List<SimpleFeature> list = Arrays.stream(getOnlyMarkedParcels(parcels).toArray(new SimpleFeature[0])).filter(feat -> ((Geometry) feat.getDefaultGeometry()).getArea() > minSize).collect(Collectors.toList());
+            Collections.shuffle(list);
+            for (SimpleFeature sf : list) {
+                if (nbParcelToMark > 0) {
+                    result.add(sf);
+                    nbParcelToMark--;
+                } else {
+                    sf.setAttribute(markFieldName, 0);
+                    result.add(sf);
+                }
+            }
+            result.addAll(getNotMarkedParcels(parcels));
+        } else {
+            List<SimpleFeature> list = Arrays.stream(parcels.toArray(new SimpleFeature[0])).filter(feat -> ((Geometry) feat.getDefaultGeometry()).getArea() > minSize).collect(Collectors.toList());
+            Collections.shuffle(list);
+            for (SimpleFeature sf : list)
+                if (nbParcelToMark > 0) {
+                    result.add(markParcel(sf));
+                    nbParcelToMark--;
+                } else
+                    result.add(sf);
         }
         signalIfNoParcelMarked(result, "markRandomParcels");
-        return parcels;
+        return result;
     }
 
     /**
@@ -301,7 +316,7 @@ public class MarkParcelAttributeFromPosition {
      * @param parcels      Input parcel {@link SimpleFeatureCollection}
      * @param buildingFile Geopackage containing building features
      * @return {@link SimpleFeatureCollection} of the input parcels with marked parcels on the {@link #markFieldName} field.
-     * @throws IOException
+     * @throws IOException reading building file
      */
     public static SimpleFeatureCollection markUnBuiltParcel(SimpleFeatureCollection parcels, File buildingFile) throws IOException {
         DataStore ds = CollecMgmt.getDataStore(buildingFile);
@@ -354,7 +369,7 @@ public class MarkParcelAttributeFromPosition {
      * @param parcels      Input parcel {@link SimpleFeatureCollection}
      * @param buildingFile Geopackage representing the buildings
      * @return {@link SimpleFeatureCollection} of the input parcels with marked parcels on the {@link #markFieldName} field.
-     * @throws IOException
+     * @throws IOException reading building file
      */
     public static SimpleFeatureCollection markBuiltParcel(SimpleFeatureCollection parcels, File buildingFile) throws IOException {
         DataStore buildingDS = CollecMgmt.getDataStore(buildingFile);
@@ -681,11 +696,11 @@ public class MarkParcelAttributeFromPosition {
     /**
      * Mark parcels that intersects that are usually constructible for French regulation
      *
-     * @param parcels    Input parcel {@link SimpleFeatureCollection}
-     * @param zoning A collection containing the zoning plan
+     * @param parcels Input parcel {@link SimpleFeatureCollection}
+     * @param zoning  A collection containing the zoning plan
      * @return {@link SimpleFeatureCollection} of the input parcels with marked parcels on the {@link #markFieldName} field.
      */
-    public static SimpleFeatureCollection markParcelIntersectFrenchConstructibleZoningType(SimpleFeatureCollection parcels, SimpleFeatureCollection zoning){
+    public static SimpleFeatureCollection markParcelIntersectFrenchConstructibleZoningType(SimpleFeatureCollection parcels, SimpleFeatureCollection zoning) {
         final SimpleFeatureType featureSchema = ParcelSchema.getSFBMinParcelSplit().getFeatureType();
         DefaultFeatureCollection result = new DefaultFeatureCollection();
         // if features have the schema that the one intended to set, we bypass
@@ -718,14 +733,14 @@ public class MarkParcelAttributeFromPosition {
     }
 
     public static SimpleFeatureCollection markParcelOfCommunityType(SimpleFeatureCollection parcels, String attribute) {
-        return markParcelOfCommunity(parcels, ParcelAttribute.getCommunityTypeFieldName(), attribute);
+        return markParcelWithAttribute(parcels, ParcelAttribute.getCommunityTypeFieldName(), attribute);
     }
 
     public static SimpleFeatureCollection markParcelOfCommunityNumber(SimpleFeatureCollection parcels, String attribute) {
-        return markParcelOfCommunity(parcels, ParcelSchema.getMinParcelCommunityField(), attribute);
+        return markParcelWithAttribute(parcels, ParcelSchema.getMinParcelCommunityField(), attribute);
     }
 
-    public static SimpleFeatureCollection markParcelOfCommunity(SimpleFeatureCollection parcels, String fieldName, String attribute) {
+    public static SimpleFeatureCollection markParcelWithAttribute(SimpleFeatureCollection parcels, String fieldName, String attribute) {
         final SimpleFeatureType featureSchema = ParcelSchema.getSFBMinParcelSplit().getFeatureType();
         DefaultFeatureCollection result = new DefaultFeatureCollection();
         // if features have the schema that the one intended to set, we bypass
@@ -750,12 +765,13 @@ public class MarkParcelAttributeFromPosition {
         } catch (Exception e) {
             e.printStackTrace();
         }
-        signalIfNoParcelMarked(result, "markParcelOfCommunity");
+        signalIfNoParcelMarked(result, "markParcelWithAttribute");
         return result;
     }
 
     /**
-     *  Get the name of the field containing the parcel's mark
+     * Get the name of the field containing the parcel's mark
+     *
      * @return the field name
      */
     public static String getMarkFieldName() {
@@ -763,7 +779,8 @@ public class MarkParcelAttributeFromPosition {
     }
 
     /**
-     *  Set the name of the field containing the parcel's mark
+     * Set the name of the field containing the parcel's mark
+     *
      * @param markFieldName the field name
      */
     public static void setMarkFieldName(String markFieldName) {
@@ -900,7 +917,7 @@ public class MarkParcelAttributeFromPosition {
         if (sfcIn == null || sfcIn.isEmpty() || !CollecMgmt.isCollecContainsAttribute(sfcIn, markFieldName))
             return true;
         try {
-            return Arrays.stream(sfcIn.toArray(new SimpleFeature[0])).noneMatch(x -> (int) x.getAttribute(markFieldName) != 0);
+            return countMarkedParcels(sfcIn) == 0;
         } catch (NullPointerException np) {
             np.printStackTrace();
             System.out.println("Maybe you have null values on your attribute table (not premise). Returned false");
@@ -915,20 +932,33 @@ public class MarkParcelAttributeFromPosition {
      * @return {@link SimpleFeatureCollection} with only marked parcels and same schema as input
      */
     public static SimpleFeatureCollection getOnlyMarkedParcels(SimpleFeatureCollection in) {
+        return getMarkedOrNotMarkedParcels(in, true);
+    }
+
+    /**
+     * Return a {@link SimpleFeatureCollection} containing only the not marked parcels on their <i>markFieldName</i> field.
+     *
+     * @param in input {@link SimpleFeatureCollection} with marking attribute
+     * @return {@link SimpleFeatureCollection} with only marked parcels and same schema as input
+     */
+    public static SimpleFeatureCollection getNotMarkedParcels(SimpleFeatureCollection in) {
+        return getMarkedOrNotMarkedParcels(in, false);
+    }
+
+    private static SimpleFeatureCollection getMarkedOrNotMarkedParcels(SimpleFeatureCollection in, boolean marked) {
         DefaultFeatureCollection result = new DefaultFeatureCollection();
         if (!CollecMgmt.isCollecContainsAttribute(in, getMarkFieldName())) {
             System.out.println("getOnlyMarkedParcels : no " + getMarkFieldName() + " field");
             return null;
         }
         Arrays.stream(in.toArray(new SimpleFeature[0])).forEach(feat -> {
-            if ((int) feat.getAttribute(markFieldName) == 1)
+            if (marked == ((int) feat.getAttribute(markFieldName) == 1))
                 result.add(feat);
         });
         return result;
     }
 
     /**
-     *
      * @param sfc
      * @return
      */
@@ -950,10 +980,10 @@ public class MarkParcelAttributeFromPosition {
     public static SimpleFeatureCollection unionTouchingMarkedGeometries(SimpleFeatureCollection parcelCollection) {
         DefaultFeatureCollection result = new DefaultFeatureCollection();
         SimpleFeatureBuilder sfb = new SimpleFeatureBuilder(parcelCollection.getSchema());
-        List<Geometry> lGmerged = Geom.unionTouchingGeometries(Arrays.stream(parcelCollection.toArray(new SimpleFeature[0])).filter(sf -> ((Integer) sf.getAttribute(getMarkFieldName()))== 1).map(sf -> (Geometry) sf.getDefaultGeometry()).collect(Collectors.toList()));
+        List<Geometry> lGmerged = Geom.unionTouchingGeometries(Arrays.stream(parcelCollection.toArray(new SimpleFeature[0])).filter(sf -> ((Integer) sf.getAttribute(getMarkFieldName())) == 1).map(sf -> (Geometry) sf.getDefaultGeometry()).collect(Collectors.toList()));
         FilterFactory2 ff = CommonFactoryFinder.getFilterFactory2();
         String geomName = parcelCollection.getSchema().getGeometryDescriptor().getLocalName();
-        for (Geometry g : lGmerged){
+        for (Geometry g : lGmerged) {
             SimpleFeature s = CollecTransform.getBiggestSF(parcelCollection.subCollection(ff.within(ff.property(geomName), ff.literal(g.buffer(1)))));
             for (AttributeDescriptor attr : parcelCollection.getSchema().getAttributeDescriptors()) {
                 if (attr.getLocalName().equals(geomName))
@@ -961,11 +991,11 @@ public class MarkParcelAttributeFromPosition {
                 sfb.set(attr.getLocalName(), s.getAttribute(attr.getLocalName()));
             }
             sfb.add(s);
-            sfb.set(geomName,g);
+            sfb.set(geomName, g);
             result.add(sfb.buildFeature(Attribute.makeUniqueId()));
         }
         Arrays.stream(parcelCollection.toArray(new SimpleFeature[0])).forEach(feat -> {
-            if ((int) feat.getAttribute(getMarkFieldName()) !=1 ){
+            if ((int) feat.getAttribute(getMarkFieldName()) != 1) {
                 result.add(feat);
             }
         });
@@ -988,5 +1018,22 @@ public class MarkParcelAttributeFromPosition {
      */
     public static void setPostMark(boolean postMark) {
         MarkParcelAttributeFromPosition.postMark = postMark;
+    }
+
+    public static long countMarkedParcels(SimpleFeatureCollection parcelCollection) {
+        return Arrays.stream(parcelCollection.toArray(new SimpleFeature[0])).filter(sf -> sf.getAttribute(getMarkFieldName()) != null && ((Integer) sf.getAttribute(getMarkFieldName())) == 1).count();
+    }
+
+    public static SimpleFeature markParcel(SimpleFeature parcel) {
+        if (!CollecMgmt.isSimpleFeatureContainsAttribute(parcel, markFieldName)) {
+            SimpleFeatureBuilder parcelSchema = ParcelSchema.addSplitField(parcel.getFeatureType());
+            for (AttributeDescriptor attr : parcelSchema.getFeatureType().getAttributeDescriptors())
+                parcelSchema.set(attr.getLocalName(), parcel.getAttribute(attr.getLocalName()));
+            parcelSchema.set(markFieldName, 1);
+            return parcelSchema.buildFeature(Attribute.makeUniqueId());
+        } else {
+            parcel.setAttribute(markFieldName, 1);
+            return parcel;
+        }
     }
 }

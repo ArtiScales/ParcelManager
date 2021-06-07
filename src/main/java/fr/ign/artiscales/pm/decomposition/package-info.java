@@ -1,4 +1,4 @@
 /**
- * Methods containing process for parcel division
+ * Methods containing processes for parcel division
  */
 package fr.ign.artiscales.pm.decomposition;

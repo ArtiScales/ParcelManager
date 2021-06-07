@@ -37,9 +37,9 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * Simulation following this workflow operates on a zone rather than on parcels. Zones can either be taken from a zoning plan or from a ready-to-use zone parcel collection. Their
- * integration is anyhow made with the {@link #createZoneToCut(String, SimpleFeatureCollection, File, SimpleFeatureCollection)} method. The parcel which are across the zone are cut
- * and the parts that aren't contained into * the zone are kept with their attributes. The chosen parcel division process (OBB by default) is then applied on the zone.
+ * This workflow operates on a zone rather than on parcels. Zones can either be taken from a zoning plan or from a ready-to-use zone collection (which can be made out of parcels).
+ * Creation and integration of zone could be made with the {@link #createZoneToCut(String, SimpleFeatureCollection, File, SimpleFeatureCollection)} method. The parcel which are across the zone are cut
+ * and the parts that aren't contained into the zone are kept with their attributes. The chosen parcel division process (OBB by default) is then applied on the zone.
  *
  * @author Maxime Colomb
  */
@@ -52,10 +52,10 @@ public class ZoneDivision extends Workflow {
 //		File outFile = new File("/tmp/");
 //		outFile.mkdirs();
 //		File simuledFile = (new ZoneDivision()).zoneDivision(
-//				new File("/home/mc/workspace/parcelmanagergui/tmp/zone.gpkg"),
-//				new File("/home/mc/workspace/parcelmanagergui/tmp/parcels.gpkg"),
+//				new File("parcelmanagergui/tmp/zone.gpkg"),
+//				new File(parcelmanagergui/tmp/parcels.gpkg"),
 //				ProfileUrbanFabric.convertJSONtoProfile(new File(
-//						"/home/mc/workspace/parcelmanager/src/main/resources/ParcelComparison/profileUrbanFabric/mediumCollective.json")), false, outFile);
+//						"src/main/resources/ParcelComparison/profileUrbanFabric/mediumCollective.json")), false, outFile);
 //	}
 
     /**
@@ -70,8 +70,7 @@ public class ZoneDivision extends Workflow {
      * @return An extraction of the zoning collection
      * @throws IOException from marking parcel
      */
-    public static SimpleFeatureCollection createZoneToCut(String genericZone, SimpleFeatureCollection inputSFC, File zoningFile,
-                                                          SimpleFeatureCollection boundingSFC) throws IOException {
+    public static SimpleFeatureCollection createZoneToCut(String genericZone, SimpleFeatureCollection inputSFC, File zoningFile, SimpleFeatureCollection boundingSFC) throws IOException {
         return createZoneToCut(genericZone, null, inputSFC, zoningFile, boundingSFC);
     }
 
@@ -159,9 +158,29 @@ public class ZoneDivision extends Workflow {
      * {@link fr.ign.artiscales.pm.parcelFunction.ParcelSchema#getSFBMinParcel()} schema.
      * @throws IOException from marking parcel
      */
-    public SimpleFeatureCollection zoneDivision(SimpleFeatureCollection initialZone, SimpleFeatureCollection parcels,
-                                                File outFolder, ProfileUrbanFabric profile, boolean keepExistingRoads) throws IOException {
+    public SimpleFeatureCollection zoneDivision(SimpleFeatureCollection initialZone, SimpleFeatureCollection parcels, File outFolder, ProfileUrbanFabric profile, boolean keepExistingRoads) throws IOException {
         return zoneDivision(initialZone, parcels, null, outFolder, profile, keepExistingRoads);
+    }
+
+    /**
+     * Merge and re-cut a specific zone. Cut first the surrounding parcels to keep them unsplit, then split the zone parcel and remerge them all into the original parcel file A bit
+     * complicated algorithm to deal with non-existing pieces of parcels (as road).
+     *
+     * @param initialZone       Zone which will be used to cut parcels. Will cut parcels that intersects them and keep their infos. Will then optionally fill the empty spaces in between the zones and feed
+     *                          it to the OBB algorithm.
+     * @param keepExistingRoads If true, existing raod (lack of parcel in the parcel plan) will be kept. If not, the whole zone is simulated regardless of its content.
+     * @param parcels           {@link SimpleFeatureCollection} of the unmarked parcels.
+     * @param outFolder         folder to write {@link Workflow#isDEBUG()} and {@link Workflow#isSAVEINTERMEDIATERESULT()} geofile if concerned
+     * @param profile           {@link ProfileUrbanFabric} contains the parameters of the wanted urban scene
+     * @return The input parcel {@link SimpleFeatureCollection} with the marked parcels replaced by the simulated parcels. All parcels have the
+     * {@link fr.ign.artiscales.pm.parcelFunction.ParcelSchema#getSFBMinParcel()} schema.
+     * @throws IOException from marking parcel
+     */
+    public SimpleFeatureCollection zoneDivision(SimpleFeatureCollection initialZone, SimpleFeatureCollection parcels, File outFolder,  ProfileUrbanFabric profile, File roadFile, boolean keepExistingRoads) throws IOException {
+        DataStore dsRoad = CollecMgmt.getDataStore(roadFile);
+        SimpleFeatureCollection result = zoneDivision(initialZone, parcels, dsRoad.getFeatureSource(dsRoad.getTypeNames()[0]).getFeatures(), outFolder, profile, keepExistingRoads);
+        dsRoad.dispose();
+        return result;
     }
 
     /**
@@ -291,6 +310,7 @@ public class ZoneDivision extends Workflow {
                                         profile.getLaneWidth(), profile.getStreetLane(), profile.getStreetWidth(), true, profile.getBlockShape()));
                         break;
                     case "SS":
+                        TopologicalStraightSkeletonParcelDecomposition.FOLDER_OUT_DEBUG = tmpFolder;
                         ((DefaultFeatureCollection) splitedParcels)
                                 .addAll(TopologicalStraightSkeletonParcelDecomposition.runTopologicalStraightSkeletonParcelDecomposition(zone, roads,
                                         "NOM_VOIE_G", "IMPORTANCE", profile.getMaxDepth(), profile.getMaxDistanceForNearestRoad(), profile.getMinimalArea(), profile.getMinimalWidthContactRoad(), profile.getMaxWidth(),

@@ -22,7 +22,6 @@ import org.opengis.feature.simple.SimpleFeature;
 import java.io.File;
 import java.util.Arrays;
 import java.util.List;
-import java.util.logging.Level;
 import java.util.stream.Collectors;
 
 /**
@@ -37,7 +36,7 @@ public class TestScenario extends UseCase {
     /////////////////////////
     public static void main(String[] args) throws Exception {
         // org.geotools.util.logging.Logging.getLogger("org.hsqldb.persist.Logger").setLevel(Level.OFF);
-        org.geotools.util.logging.Logging.getLogger("org.geotools.jdbc.JDBCDataStore").setLevel(Level.OFF);
+//        org.geotools.util.logging.Logging.getLogger("org.geotools.jdbc.JDBCDataStore").setLevel(Level.OFF);
         long start = System.currentTimeMillis();
         File rootFolder = new File("src/main/resources/TestScenario/");
         File outFolder = new File(rootFolder, "out");
