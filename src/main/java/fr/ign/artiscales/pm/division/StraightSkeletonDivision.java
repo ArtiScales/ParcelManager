@@ -39,7 +39,6 @@ import org.locationtech.jts.geom.MultiLineString;
 import org.locationtech.jts.geom.Point;
 import org.locationtech.jts.geom.Polygon;
 import org.locationtech.jts.geom.PrecisionModel;
-import org.locationtech.jts.io.ParseException;
 import org.locationtech.jts.linearref.LengthIndexedLine;
 import org.locationtech.jts.operation.linemerge.LineMerger;
 import org.locationtech.jts.operation.overlay.snap.GeometrySnapper;
@@ -87,8 +86,8 @@ public class StraightSkeletonDivision {
 	// // public final static String NAME_ATT_ROAD = "n_sq_vo";
 	// public final static String NAME_ATT_ROAD = "Id";
 	// Indicate the importance of the neighbour road
-	private final String NAME_ATT_IMPORTANCE;
-	private final String NAME_ATT_ROAD;
+	private final String NAME_ATT_LEVELOFATTRACTION;
+	private final String NAME_ATT_ROADNAME;
 
 	//////////////////////////////////////////////////////
 
@@ -121,7 +120,7 @@ public class StraightSkeletonDivision {
 	private final Geometry snapGeom;
 	private final GeometryFactory factory;
 
-	public static void main(String[] args) throws IOException, ParseException, EdgeException, StraightSkeletonException {
+		// public static void main(String[] args) throws IOException, ParseException, EdgeException, StraightSkeletonException {
 		// File rootFolder = new File("src/main/resources/TestScenario/");
 		// File roadFile = new File(rootFolder, "road.gpkg");
 		// File parcelFile = new File(rootFolder, "parcel.gpkg");
@@ -174,9 +173,9 @@ public class StraightSkeletonDivision {
 				maxDistanceForNearestRoad, minimalArea, minWidth, maxWidth, omega, rng, true, 15);
 		parcelDS.dispose();
 		roadDS.dispose();
-		CollecMgmt.exportSFC(cut, new File("/tmp/cutSS.gpkg"));*/
-	}
-	//TODO rename to StraightSkeletonDivision
+		CollecMgmt.exportSFC(cut, new File("/tmp/cutSS.gpkg"));
+	}*/
+
 	/**
 	 * Create and compute Straight Skeleton algorithm. Version without peripheral road
 	 * @param p
@@ -208,8 +207,8 @@ public class StraightSkeletonDivision {
 		this.precisionReducer = new GeometryPrecisionReducer(new PrecisionModel(Math.pow(10, numberOfDigits)));
 		this.roads = roads;
 		this.factory = p.getFactory();
-		this.NAME_ATT_ROAD = roadNameAttribute;
-		this.NAME_ATT_IMPORTANCE = roadImportanceAttribute;
+		this.NAME_ATT_ROADNAME = roadNameAttribute;
+		this.NAME_ATT_LEVELOFATTRACTION = roadImportanceAttribute;
 		if (generatePeripheralRoad)
 			p = this.generatePeripheralRoad(p, widthRoad);
 		if (isSAVEINTERMEDIATERESULT() || isDEBUG()) {
@@ -237,14 +236,17 @@ public class StraightSkeletonDivision {
 		// order edges in list and mark if they are exterior
 		this.orderedEdges = getOrderedExteriorEdges(straightSkeleton.getGraph());
 		export(graph, new File(FOLDER_OUT_DEBUG, "init"));
+
+		//store faces of initial Straight Skeleton into an independant variable
 		snapGeom = factory.createGeometryCollection(
 				graph.getFaces().stream().map(Face::getGeometry).collect(Collectors.toList()).toArray(new Geometry[]{}));
 
 		// get the road attributes (name and importance)
 		this.attributes = new HashMap<>();
 		for (HalfEdge e : orderedEdges) {
-			Optional<Pair<String, Double>> a = FindObjectInDirection.find(e.getGeometry(), this.initialPolygon, this.roads, maxDistanceForNearestRoad, this.NAME_ATT_IMPORTANCE).map(this::getAttributes);
-			attributes.put(e, a);
+			Optional<Pair<String, Double>> a = FindObjectInDirection.find(e.getGeometry(), this.initialPolygon, this.roads, maxDistanceForNearestRoad, this.NAME_ATT_LEVELOFATTRACTION).map(this::getAttributes);
+//			if (a.isPresent())
+				attributes.put(e, a);
 		}
 		if (attributes.entrySet().stream().noneMatch(x -> x.getValue().isPresent())) {
 			System.out.println("WARNING : no road found - alpha and beta stripes ignored");
@@ -289,8 +291,8 @@ public class StraightSkeletonDivision {
 	}
 
 	private Pair<String, Double> getAttributes(SimpleFeature s) {
-		String name = (String) s.getAttribute(NAME_ATT_ROAD);
-		String impo = (String) s.getAttribute(NAME_ATT_IMPORTANCE);
+		String name = (String) s.getAttribute(NAME_ATT_ROADNAME);
+		String impo = (String) s.getAttribute(NAME_ATT_LEVELOFATTRACTION);
 		return new ImmutablePair<>(name == null ? "unknown" : name, Double.parseDouble(impo.replaceAll(",", ".")));
 	}
 
@@ -354,7 +356,7 @@ public class StraightSkeletonDivision {
 	}
 
 	/**
-	 * Mark the edges wether they are in the exterior of the polygon or not. Also order the nodes in the list
+	 * Mark the edges whether they are in the exterior of the polygon or not. Also order the nodes in the list
 	 * @param graph straight skeleton graph
 	 * @return the graph classed and with attribute EXTERIOR
 	 */
@@ -988,7 +990,11 @@ public class StraightSkeletonDivision {
 				gainingBetaSplit.setPolygon(Polygons.polygonUnion(newAbsorbing, precisionReducer));
 				log("UNION\n" + gainingBetaSplit.getGeometry());
 				// loosingBetaSplit.setPolygon(Util.polygonDifference(Arrays.asList(splitAlphaStripSnapped), Arrays.asList(exchangedPolygonPart)));
-				log("DIFFERENCE\n" + Polygons.polygonDifference(Collections.singletonList(splitAlphaStripSnapped), Arrays.asList(exchangedPolygonPart)));
+				try {
+					log("DIFFERENCE\n" + Polygons.polygonDifference(Collections.singletonList(splitAlphaStripSnapped), Collections.singletonList(exchangedPolygonPart)));
+				} catch (NullPointerException npe) {
+//				npe.printStackTrace();
+				}
 				log("REMAINING\n" + remainingPolygonPart);
 				if (remainingPolygonPart != null) {
 					loosingBetaSplit.setPolygon((Polygon) precisionReducer.reduce(remainingPolygonPart));
@@ -1397,9 +1403,9 @@ public class StraightSkeletonDivision {
 			int nb=0;
 			for (MultiLineString ls : dividePeripheralRoadInParts(pp.getExteriorRing())) {
 				roadSFB.set(roads.getSchema().getGeometryDescriptor().getLocalName(), ls );
-				roadSFB.set(this.NAME_ATT_ROAD, "autogenerated" + nb++);
+				roadSFB.set(this.NAME_ATT_ROADNAME, "autogenerated" + nb++);
 //			roadSFB.set(this.NAME_ATT_IMPORTANCE, ( new Random()).nextInt(5));
-				roadSFB.set(this.NAME_ATT_IMPORTANCE, 10);
+				roadSFB.set(this.NAME_ATT_LEVELOFATTRACTION, 10);
 				SimpleFeature sf = roadSFB.buildFeature(Attribute.makeUniqueId());
 				newRoad.add(sf);
 			}

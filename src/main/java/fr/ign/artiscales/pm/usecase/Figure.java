@@ -29,11 +29,12 @@ public class Figure {
         // Generate parcel reshaping for the Straight Skeleton example in Section 3 of Colomb et al. 2021.
         PMScenario pmSSfig = new PMScenario(new File("src/main/resources/Figure/scenarioFigureSS.json"));
         UseCase.setSAVEINTERMEDIATERESULT(true);
-        UseCase.setDEBUG(true);
+        UseCase.setDEBUG(false);
+        File f = PMStep.getOUTFOLDER();
         for (PMStep pmstep : pmSSfig.getStepList()) {
             System.out.println("try " + pmstep);
             // set new out folder to avoid overwriting
-            PMStep.setOUTFOLDER(new File(PMStep.getOUTFOLDER(), (pmstep.isPeripheralRoad() ? "peripheralRoad" : "noPeripheralRoad") + "_"+(ProfileUrbanFabric.convertJSONtoProfile(new File(PMStep.getPROFILEFOLDER() + "/" + pmstep.getUrbanFabricType() + ".json")).getMaxDepth() != 0  ? "offset" : "noOffset")));
+            PMStep.setOUTFOLDER(new File(f, (pmstep.isPeripheralRoad() ? "peripheralRoad" : "noPeripheralRoad") + "_"+(ProfileUrbanFabric.convertJSONtoProfile(new File(PMStep.getPROFILEFOLDER() + "/" + pmstep.getUrbanFabricType() + ".json")).getMaxDepth() != 0  ? "offset" : "noOffset")));
             pmstep.execute();
         }
         System.out.println("Figure took "+(System.currentTimeMillis() - start) + " milliseconds");

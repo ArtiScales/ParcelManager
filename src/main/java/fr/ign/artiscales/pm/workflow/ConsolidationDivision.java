@@ -143,7 +143,7 @@ public class ConsolidationDivision extends Workflow {
                                     (profile.getNoise() == 0) ? 0.1 : profile.getNoise(), new MersenneTwister(1), profile.getLaneWidth());
                             break;
                     }
-                    if (freshCutParcel != null && !freshCutParcel.isEmpty() && freshCutParcel.size() > 0) {
+                    if (!freshCutParcel.isEmpty() && freshCutParcel.size() > 0) {
                         SimpleFeatureIterator it = freshCutParcel.features();
                         // every single parcel goes into new collection
                         int i = 0;

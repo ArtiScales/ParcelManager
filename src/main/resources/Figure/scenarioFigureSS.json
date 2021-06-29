@@ -8,7 +8,25 @@
 		{
 			"workflow": "zoneDivision",
 			"parcelProcess": "SS",
+			"urbanFabricType": "smallHouse",
+			"optional":"peripheralRoad:true"
+		},
+		{
+			"workflow": "zoneDivision",
+			"parcelProcess": "SS",
 			"urbanFabricType": "smallHouseNoOffset",
+			"optional":"peripheralRoad:true"
+		},
+		{
+			"workflow": "zoneDivision",
+			"parcelProcess": "SS",
+			"urbanFabricType": "smallHouseNoOffset",
+			"optional":"peripheralRoad:false"
+		},
+		{
+			"workflow": "zoneDivision",
+			"parcelProcess": "SS",
+			"urbanFabricType": "smallHouse",
 			"optional":"peripheralRoad:false"
 
 		}]
