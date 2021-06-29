@@ -1,4 +1,4 @@
-package fr.ign.artiscales.pm.decomposition;
+package fr.ign.artiscales.pm.division;
 
 import fr.ign.artiscales.pm.parcelFunction.MarkParcelAttributeFromPosition;
 import fr.ign.artiscales.tools.FeaturePolygonizer;
@@ -77,7 +77,7 @@ import java.util.stream.Stream;
  * @author Maxime Colomb
  *
  */
-public class TopologicalStraightSkeletonParcelDecomposition {
+public class StraightSkeletonDivision {
 
 	//////////////////////////////////////////////////////
 	// Input data parameters
@@ -188,21 +188,21 @@ public class TopologicalStraightSkeletonParcelDecomposition {
 	 * @throws StraightSkeletonException
 	 * @throws EdgeException
 	 */
-	public TopologicalStraightSkeletonParcelDecomposition(Polygon p, SimpleFeatureCollection roads, String roadNameAttribute,
-			String roadImportanceAttribute, double maxDepth, double maxDistanceForNearestRoad) throws StraightSkeletonException, EdgeException {
+	public StraightSkeletonDivision(Polygon p, SimpleFeatureCollection roads, String roadNameAttribute,
+									String roadImportanceAttribute, double maxDepth, double maxDistanceForNearestRoad) throws StraightSkeletonException, EdgeException {
 		this(p, roads, roadNameAttribute, roadImportanceAttribute, maxDepth, maxDistanceForNearestRoad, 2, false,0);
 	}
 
-	public TopologicalStraightSkeletonParcelDecomposition(Polygon p, SimpleFeatureCollection roads, String roadNameAttribute,
-			String roadImportanceAttribute, double maxDepth, double maxDistanceForNearestRoad, boolean generatePeripheralRoad, double widthRoad) throws StraightSkeletonException, EdgeException {
+	public StraightSkeletonDivision(Polygon p, SimpleFeatureCollection roads, String roadNameAttribute,
+									String roadImportanceAttribute, double maxDepth, double maxDistanceForNearestRoad, boolean generatePeripheralRoad, double widthRoad) throws StraightSkeletonException, EdgeException {
 		this(p, roads, roadNameAttribute, roadImportanceAttribute, maxDepth, maxDistanceForNearestRoad, 2, generatePeripheralRoad, widthRoad);
 	}
 
 	/**
 	 * Constructor decomposing initial polygon until beta-stripes
 	 */
-	public TopologicalStraightSkeletonParcelDecomposition(Polygon p, SimpleFeatureCollection roads, String roadNameAttribute, String roadImportanceAttribute, double offsetDistance,
-														  double maxDistanceForNearestRoad, int numberOfDigits, boolean generatePeripheralRoad, double widthRoad) throws StraightSkeletonException, EdgeException {
+	public StraightSkeletonDivision(Polygon p, SimpleFeatureCollection roads, String roadNameAttribute, String roadImportanceAttribute, double offsetDistance,
+									double maxDistanceForNearestRoad, int numberOfDigits, boolean generatePeripheralRoad, double widthRoad) throws StraightSkeletonException, EdgeException {
 		this.tolerance = 2.0 / Math.pow(10, numberOfDigits);
 		p = (Polygon) TopologyPreservingSimplifier.simplify(p, 10 * tolerance);
 		this.precisionReducer = new GeometryPrecisionReducer(new PrecisionModel(Math.pow(10, numberOfDigits)));
@@ -441,10 +441,10 @@ public class TopologicalStraightSkeletonParcelDecomposition {
 						.map(f -> new ImmutablePair<>(f, f.stream().map(e -> e.getGeometry().getLength()).reduce((a, b) -> a + b).get()))
 						.max((a, b) -> Double.compare(a.getRight(), b.getRight())).get().getLeft();
 				primary.put(entry.getKey(), primaryFrontage);
-				primaryFrontage.stream().map(HalfEdge::getGeometry).forEach(TopologicalStraightSkeletonParcelDecomposition::log);
+				primaryFrontage.stream().map(HalfEdge::getGeometry).forEach(StraightSkeletonDivision::log);
 			} else { // only one frontage. Easy
 				primary.put(entry.getKey(), entry.getValue().get(0));
-				entry.getValue().get(0).stream().map(HalfEdge::getGeometry).forEach(TopologicalStraightSkeletonParcelDecomposition::log);
+				entry.getValue().get(0).stream().map(HalfEdge::getGeometry).forEach(StraightSkeletonDivision::log);
 			}
 		}
 		for (int i = 0; i < orderedEdges.size(); i++) {
@@ -1474,7 +1474,7 @@ public class TopologicalStraightSkeletonParcelDecomposition {
 					continue;
 				FOLDER_OUT_DEBUG = new File(FOLDER_OUT_DEBUG,"skeleton/polygon_" + (generatePeripheralRoad ? "peripheralRoad" : "noPeripheralRoad") + "_"+(maxDepth != 0  ? "offset" : "noOffset") + "_"  + count + "_" + feat.getID());
 				log("start with polygon " + count);
-				TopologicalStraightSkeletonParcelDecomposition decomposition = new TopologicalStraightSkeletonParcelDecomposition(polygon, roads,
+				StraightSkeletonDivision decomposition = new StraightSkeletonDivision(polygon, roads,
 						roadNameAttribute, roadImportanceAttribute, maxDepth, generatePeripheralRoad ? maxDistanceForNearestRoad + widthRoad : maxDistanceForNearestRoad, generatePeripheralRoad, widthRoad);
 				export(decomposition.straightSkeleton.getGraph(), new File(FOLDER_OUT_DEBUG, "after_fix"));
 				if (decomposition.betaStrips != null)
@@ -1541,7 +1541,7 @@ public class TopologicalStraightSkeletonParcelDecomposition {
 	}
 
 	public static void setGeneratePeripheralRoad(boolean generatePeripheralRoad) {
-		TopologicalStraightSkeletonParcelDecomposition.generatePeripheralRoad = generatePeripheralRoad;
+		StraightSkeletonDivision.generatePeripheralRoad = generatePeripheralRoad;
 	}
 
 	public static boolean isDEBUG() {
@@ -1549,7 +1549,7 @@ public class TopologicalStraightSkeletonParcelDecomposition {
 	}
 
 	public static void setDEBUG(boolean DEBUG) {
-		TopologicalStraightSkeletonParcelDecomposition.DEBUG = DEBUG;
+		StraightSkeletonDivision.DEBUG = DEBUG;
 	}
 }
 

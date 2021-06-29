@@ -3,7 +3,7 @@ package fr.ign.artiscales.pm.usecase;
 import fr.ign.artiscales.pm.analysis.MakeStatisticGraphs;
 import fr.ign.artiscales.pm.analysis.RoadRatioParcels;
 import fr.ign.artiscales.pm.analysis.SingleParcelStat;
-import fr.ign.artiscales.pm.decomposition.TopologicalStraightSkeletonParcelDecomposition;
+import fr.ign.artiscales.pm.division.StraightSkeletonDivision;
 import fr.ign.artiscales.pm.fields.french.FrenchParcelFields;
 import fr.ign.artiscales.pm.parcelFunction.MarkParcelAttributeFromPosition;
 import fr.ign.artiscales.pm.parcelFunction.ParcelGetter;
@@ -60,7 +60,7 @@ public class TestScenario extends UseCase {
         ProfileUrbanFabric profileSmallHouse = ProfileUrbanFabric.convertJSONtoProfile(new File(profileFolder, "smallHouse.json"));
         ProfileUrbanFabric profileLargeCollective = ProfileUrbanFabric.convertJSONtoProfile(new File(profileFolder, "mediumCollective.json"));
         Workflow.PROCESS = "SS";
-        TopologicalStraightSkeletonParcelDecomposition.setGeneratePeripheralRoad(true);
+        StraightSkeletonDivision.setGeneratePeripheralRoad(true);
         for (int i = 0; i <= 3; i++) {
             // multiple process calculation
             String ext = "offset";
@@ -73,7 +73,7 @@ public class TestScenario extends UseCase {
             else if (i == 2) {
                 Workflow.PROCESS = "SS";
                 ext = "SSwithoutRoad";
-                TopologicalStraightSkeletonParcelDecomposition.setGeneratePeripheralRoad(false);
+                StraightSkeletonDivision.setGeneratePeripheralRoad(false);
             }
             else if (i == 3) {
                 Workflow.PROCESS = "OBB";

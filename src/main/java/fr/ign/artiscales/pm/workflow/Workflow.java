@@ -1,7 +1,6 @@
 package fr.ign.artiscales.pm.workflow;
 
-import fr.ign.artiscales.pm.decomposition.OBBBlockDecomposition;
-import fr.ign.artiscales.pm.decomposition.TopologicalStraightSkeletonParcelDecomposition;
+import fr.ign.artiscales.pm.division.StraightSkeletonDivision;
 import org.opengis.feature.simple.SimpleFeature;
 
 public abstract class Workflow {
@@ -19,7 +18,7 @@ public abstract class Workflow {
     }
 
     public static void setSAVEINTERMEDIATERESULT(boolean SAVEINTERMEDIATERESULT) {
-        TopologicalStraightSkeletonParcelDecomposition.setSAVEINTERMEDIATERESULT(SAVEINTERMEDIATERESULT);
+        StraightSkeletonDivision.setSAVEINTERMEDIATERESULT(SAVEINTERMEDIATERESULT);
         Workflow.SAVEINTERMEDIATERESULT = SAVEINTERMEDIATERESULT;
     }
 
@@ -28,7 +27,7 @@ public abstract class Workflow {
     }
 
     public static void setDEBUG(boolean DEBUG) {
-        TopologicalStraightSkeletonParcelDecomposition.setDEBUG(DEBUG);
+        StraightSkeletonDivision.setDEBUG(DEBUG);
         Workflow.DEBUG = DEBUG;
     }
 

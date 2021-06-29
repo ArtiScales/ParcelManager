@@ -1,7 +1,7 @@
 package fr.ign.artiscales.pm.workflow;
 
-import fr.ign.artiscales.pm.decomposition.OBBBlockDecomposition;
-import fr.ign.artiscales.pm.decomposition.TopologicalStraightSkeletonParcelDecomposition;
+import fr.ign.artiscales.pm.division.OBBDivision;
+import fr.ign.artiscales.pm.division.StraightSkeletonDivision;
 import fr.ign.artiscales.pm.parcelFunction.MarkParcelAttributeFromPosition;
 import fr.ign.artiscales.pm.parcelFunction.ParcelCollection;
 import fr.ign.artiscales.pm.parcelFunction.ParcelSchema;
@@ -130,15 +130,15 @@ public class ConsolidationDivision extends Workflow {
                     SimpleFeatureCollection freshCutParcel = new DefaultFeatureCollection();
                     switch (PROCESS) {
                         case "OBB":
-                            freshCutParcel = OBBBlockDecomposition.splitParcel(feat,
+                            freshCutParcel = OBBDivision.splitParcel(feat,
                                     roads == null || roads.isEmpty() ? null : CollecTransform.selectIntersection(roads, ((Geometry) feat.getDefaultGeometry()).buffer(30)),
                                     profile.getMaximalArea(), profile.getMinimalWidthContactRoad(), profile.getHarmonyCoeff(), profile.getNoise(),
                                     CollecTransform.fromPolygonSFCtoListRingLines(blockCollection.subCollection(ff.bbox(ff.property(feat.getFeatureType().getGeometryDescriptor().getLocalName()), feat.getBounds()))),
                                     profile.getLaneWidth(), profile.getStreetLane(), profile.getStreetWidth(), true, profile.getBlockShape());
                             break;
                         case "SS":
-                            TopologicalStraightSkeletonParcelDecomposition.FOLDER_OUT_DEBUG = tmpFolder;
-                            freshCutParcel = TopologicalStraightSkeletonParcelDecomposition.runTopologicalStraightSkeletonParcelDecomposition(feat, roads, "NOM_VOIE_G", "IMPORTANCE", profile.getMaxDepth(),
+                            StraightSkeletonDivision.FOLDER_OUT_DEBUG = tmpFolder;
+                            freshCutParcel = StraightSkeletonDivision.runTopologicalStraightSkeletonParcelDecomposition(feat, roads, "NOM_VOIE_G", "IMPORTANCE", profile.getMaxDepth(),
                                     profile.getMaxDistanceForNearestRoad(), profile.getMinimalArea(), profile.getMinimalWidthContactRoad(), profile.getMaxWidth(),
                                     (profile.getNoise() == 0) ? 0.1 : profile.getNoise(), new MersenneTwister(1), profile.getLaneWidth());
                             break;

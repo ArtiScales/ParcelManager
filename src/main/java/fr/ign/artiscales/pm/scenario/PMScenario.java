@@ -3,7 +3,6 @@ package fr.ign.artiscales.pm.scenario;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonToken;
-import fr.ign.artiscales.pm.decomposition.TopologicalStraightSkeletonParcelDecomposition;
 
 import java.io.File;
 import java.io.IOException;

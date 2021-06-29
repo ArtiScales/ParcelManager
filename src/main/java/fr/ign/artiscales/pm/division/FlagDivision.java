@@ -1,4 +1,4 @@
-package fr.ign.artiscales.pm.decomposition;
+package fr.ign.artiscales.pm.division;
 
 import fr.ign.artiscales.pm.parcelFunction.MarkParcelAttributeFromPosition;
 import fr.ign.artiscales.pm.parcelFunction.ParcelState;
@@ -46,8 +46,7 @@ import java.util.stream.Collectors;
  *
  * @author Mickael Brasebin
  */
-//TODO rename to FlagDivision
-public class FlagParcelDecomposition {
+public class FlagDivision {
     /*	 public static void main(String[] args) throws Exception {
          /////////////////////////
          //////// try the generateFlagSplitedParcels method
@@ -96,7 +95,7 @@ public class FlagParcelDecomposition {
      * @param maximalWidth  the maximal width
      * @param drivewayWidth the width of the created driveway
      */
-    public FlagParcelDecomposition(Polygon p, SimpleFeatureCollection buildings, double maximalArea, double maximalWidth, double drivewayWidth) {
+    public FlagDivision(Polygon p, SimpleFeatureCollection buildings, double maximalArea, double maximalWidth, double drivewayWidth) {
         super();
         this.maximalArea = maximalArea;
         this.maximalWidth = maximalWidth;
@@ -115,7 +114,7 @@ public class FlagParcelDecomposition {
      * @param islandExterior the exterior of this island to assess road access
      * @param exclusionZone  a zone to find roads from empty parcels area
      */
-    public FlagParcelDecomposition(Polygon parcelGeom, Double maximalArea, Double maximalWidth, Double drivewayWidth, List<LineString> islandExterior, Geometry exclusionZone) {
+    public FlagDivision(Polygon parcelGeom, Double maximalArea, Double maximalWidth, Double drivewayWidth, List<LineString> islandExterior, Geometry exclusionZone) {
         this.maximalArea = maximalArea;
         this.maximalWidth = maximalWidth;
         this.polygonInit = parcelGeom;
@@ -135,7 +134,7 @@ public class FlagParcelDecomposition {
      * @param islandExterior the exterior of this island to assess road access
      * @param exclusionZone  a zone to find roads from empty parcels area
      */
-    public FlagParcelDecomposition(Polygon p, SimpleFeatureCollection buildings, double maximalArea, double maximalWidth, double drivewayWidth, List<LineString> islandExterior, Geometry exclusionZone) {
+    public FlagDivision(Polygon p, SimpleFeatureCollection buildings, double maximalArea, double maximalWidth, double drivewayWidth, List<LineString> islandExterior, Geometry exclusionZone) {
         super();
         this.maximalArea = maximalArea;
         this.maximalWidth = maximalWidth;
@@ -157,7 +156,7 @@ public class FlagParcelDecomposition {
      * @param drivewayWidth  the width of driveways
      * @param islandExterior the exterior of this island to assess road access
      */
-    public FlagParcelDecomposition(Polygon p, SimpleFeatureCollection buildings, SimpleFeatureCollection roads, double maximalArea, double maximalWidth, double drivewayWidth, List<LineString> islandExterior) {
+    public FlagDivision(Polygon p, SimpleFeatureCollection buildings, SimpleFeatureCollection roads, double maximalArea, double maximalWidth, double drivewayWidth, List<LineString> islandExterior) {
         super();
         this.maximalArea = maximalArea;
         this.maximalWidth = maximalWidth;
@@ -181,7 +180,7 @@ public class FlagParcelDecomposition {
      * @param islandExterior the exterior of this island to assess road access
      * @param exclusionZone  a zone to find roads from empty parcels area
      */
-    public FlagParcelDecomposition(Polygon p, SimpleFeatureCollection buildings, SimpleFeatureCollection roads, double maximalArea, double maximalWidth, double drivewayWidth, List<LineString> islandExterior, Geometry exclusionZone) {
+    public FlagDivision(Polygon p, SimpleFeatureCollection buildings, SimpleFeatureCollection roads, double maximalArea, double maximalWidth, double drivewayWidth, List<LineString> islandExterior, Geometry exclusionZone) {
         super();
         this.maximalArea = maximalArea;
         this.maximalWidth = maximalWidth;
@@ -270,7 +269,7 @@ public class FlagParcelDecomposition {
      */
     public static SimpleFeatureCollection generateFlagSplitedParcels(SimpleFeature feat, List<LineString> extLines, double harmonyCoeff, double noise,
                                                                      Double maximalAreaSplitParcel, Double maximalWidthSplitParcel, Double lenDriveway, Geometry exclusionZone) {
-        return Geom.geomsToCollec((new FlagParcelDecomposition(Polygons.getPolygon((Geometry) feat.getDefaultGeometry()),
+        return Geom.geomsToCollec((new FlagDivision(Polygons.getPolygon((Geometry) feat.getDefaultGeometry()),
                 maximalAreaSplitParcel, maximalWidthSplitParcel, lenDriveway, extLines, exclusionZone)).decompParcel(harmonyCoeff, noise), Schemas.getBasicSchemaMultiPolygon("geom"));
     }
 
@@ -290,7 +289,7 @@ public class FlagParcelDecomposition {
      */
     public static SimpleFeatureCollection generateFlagSplitedParcels(SimpleFeature feat, List<LineString> extLines, double harmonyCoeff, double noise,
                                                                      SimpleFeatureCollection buildingSFC, Double maximalAreaSplitParcel, Double maximalWidthSplitParcel, Double lenDriveway, Geometry exclusionZone) {
-        return Geom.geomsToCollec((new FlagParcelDecomposition(Polygons.getPolygon((Geometry) feat.getDefaultGeometry()), buildingSFC,
+        return Geom.geomsToCollec((new FlagDivision(Polygons.getPolygon((Geometry) feat.getDefaultGeometry()), buildingSFC,
                 maximalAreaSplitParcel, maximalWidthSplitParcel, lenDriveway, extLines, exclusionZone)).decompParcel(harmonyCoeff, noise), Schemas.getBasicSchemaMultiPolygon("geom"));
     }
 
@@ -311,7 +310,7 @@ public class FlagParcelDecomposition {
      */
     public static SimpleFeatureCollection generateFlagSplitedParcels(SimpleFeature feat, List<LineString> extLines, double harmonyCoeff, double noise, SimpleFeatureCollection buildingSFC,
                                                                      SimpleFeatureCollection roadSFC, Double maximalAreaSplitParcel, Double maximalWidthSplitParcel, Double lenDriveway, Geometry exclusionZone) {
-        return Geom.geomsToCollec((new FlagParcelDecomposition(Polygons.getPolygon((Geometry) feat.getDefaultGeometry()), buildingSFC, roadSFC,
+        return Geom.geomsToCollec((new FlagDivision(Polygons.getPolygon((Geometry) feat.getDefaultGeometry()), buildingSFC, roadSFC,
                 maximalAreaSplitParcel, maximalWidthSplitParcel, lenDriveway, extLines, exclusionZone)).decompParcel(harmonyCoeff, noise), Schemas.getBasicSchemaMultiPolygon("geom"));
     }
 
@@ -341,9 +340,9 @@ public class FlagParcelDecomposition {
         if (this.endCondition(p.getArea(), this.frontSideWidth(p)))
             return Collections.singletonList(p);
         // Determination of splitting polygon (it is a splitting line in the article)
-        List<Polygon> splittingPolygon = OBBBlockDecomposition.computeSplittingPolygon(p, this.getExt(), true, harmonyCoeff, noise, 0.0, 0, 0.0, 0, 0);
+        List<Polygon> splittingPolygon = OBBDivision.computeSplittingPolygon(p, this.getExt(), true, harmonyCoeff, noise, 0.0, 0, 0.0, 0, 0);
         // Split into polygon
-        List<Polygon> splitPolygon = OBBBlockDecomposition.split(p, splittingPolygon);
+        List<Polygon> splitPolygon = OBBDivision.split(p, splittingPolygon);
         // If a parcel has no road access, there is a probability to make a flag split
         List<Polygon> result = new ArrayList<>();
         if (splitPolygon.stream().anyMatch(x -> !hasRoadAccess(x))) {
@@ -477,7 +476,7 @@ public class FlagParcelDecomposition {
 
     /**
      * End condition : either the area or the contact width to road is below a threshold (0 value is not allowed for contact width to road, as opposite to straight OBB).
-     * Goes to the {@link OBBBlockDecomposition} class.
+     * Goes to the {@link OBBDivision} class.
      *
      * @param area           Area of the current parcel
      * @param frontSideWidth width of contact between road and parcel
@@ -486,7 +485,7 @@ public class FlagParcelDecomposition {
     private boolean endCondition(double area, double frontSideWidth) {
         if (frontSideWidth == 0.0)
             return true;
-        return OBBBlockDecomposition.endCondition(area, frontSideWidth, maximalArea, maximalWidth);
+        return OBBDivision.endCondition(area, frontSideWidth, maximalArea, maximalWidth);
     }
 
     /**
@@ -501,7 +500,7 @@ public class FlagParcelDecomposition {
 
     /**
      * Indicate if the given polygon is near the {@link org.locationtech.jts.geom.Polygon#getExteriorRing() shell} of a given Polygon object. This object is the islandExterior
-     * argument out of {@link #FlagParcelDecomposition(Polygon, SimpleFeatureCollection, double, double, double, List, Geometry)} the FlagParcelDecomposition constructor or if not
+     * argument out of {@link #FlagDivision(Polygon, SimpleFeatureCollection, double, double, double, List, Geometry)} the FlagParcelDecomposition constructor or if not
      * set, the bounds of the {@link #polygonInit initial polygon}.
      * <p>
      * If no roads have been found and a road Geopacakge has been set, we look if a road Geopacakge has been set and if the given road is nearby

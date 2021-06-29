@@ -1,4 +1,4 @@
-package fr.ign.artiscales.pm.decomposition;
+package fr.ign.artiscales.pm.division;
 
 import java.util.ArrayList;
 import java.util.HashSet;

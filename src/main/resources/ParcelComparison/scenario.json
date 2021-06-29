@@ -9,18 +9,21 @@
 		{
 			"workflow": "densificationOrNeighborhood",
 			"genericZone": "U",
-			"urbanFabricType": "smallHouse"
+			"urbanFabricType": "smallHouse",
+			"optional": "adaptAreaOfUrbanFabric"
 		},		
 		{
 			"workflow": "consolidationDivision",
 			"parcelProcess": "OBB",
 			"genericZone": "AU",
-			"urbanFabricType": "smallHouse"
+			"urbanFabricType": "smallHouse",
+			"optional": "adaptAreaOfUrbanFabric"
 		},	
 		{
 			"workflow": "consolidationDivision",
 			"parcelProcess": "OBB",
 			"genericZone": "NC",
-			"urbanFabricType": "smallHouse"
+			"urbanFabricType": "smallHouse",
+			"optional": "adaptAreaOfUrbanFabric"
 		}]
 }

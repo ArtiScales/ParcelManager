@@ -1,7 +1,7 @@
 package fr.ign.artiscales.pm.workflow;
 
-import fr.ign.artiscales.pm.decomposition.OBBBlockDecomposition;
-import fr.ign.artiscales.pm.decomposition.TopologicalStraightSkeletonParcelDecomposition;
+import fr.ign.artiscales.pm.division.OBBDivision;
+import fr.ign.artiscales.pm.division.StraightSkeletonDivision;
 import fr.ign.artiscales.pm.parcelFunction.MarkParcelAttributeFromPosition;
 import fr.ign.artiscales.pm.parcelFunction.ParcelAttribute;
 import fr.ign.artiscales.pm.parcelFunction.ParcelCollection;
@@ -304,15 +304,15 @@ public class ZoneDivision extends Workflow {
                 switch (PROCESS) {
                     case "OBB":
                         ((DefaultFeatureCollection) splitedParcels)
-                                .addAll(OBBBlockDecomposition.splitParcels(tmpZoneToCut, null, profile.getMaximalArea(), profile.getMinimalWidthContactRoad(), profile.getHarmonyCoeff(), profile.getNoise(),
+                                .addAll(OBBDivision.splitParcels(tmpZoneToCut, null, profile.getMaximalArea(), profile.getMinimalWidthContactRoad(), profile.getHarmonyCoeff(), profile.getNoise(),
                                         CollecTransform.fromPolygonSFCtoListRingLines(
                                                 CollecTransform.selectIntersection(blockCollection, (Geometry) zone.getDefaultGeometry())),
                                         profile.getLaneWidth(), profile.getStreetLane(), profile.getStreetWidth(), true, profile.getBlockShape()));
                         break;
                     case "SS":
-                        TopologicalStraightSkeletonParcelDecomposition.FOLDER_OUT_DEBUG = tmpFolder;
+                        StraightSkeletonDivision.FOLDER_OUT_DEBUG = tmpFolder;
                         ((DefaultFeatureCollection) splitedParcels)
-                                .addAll(TopologicalStraightSkeletonParcelDecomposition.runTopologicalStraightSkeletonParcelDecomposition(zone, roads,
+                                .addAll(StraightSkeletonDivision.runTopologicalStraightSkeletonParcelDecomposition(zone, roads,
                                         "NOM_VOIE_G", "IMPORTANCE", profile.getMaxDepth(), profile.getMaxDistanceForNearestRoad(), profile.getMinimalArea(), profile.getMinimalWidthContactRoad(), profile.getMaxWidth(),
                                         profile.getNoise() == 0 ? 0.1 : profile.getNoise(), new MersenneTwister(42), profile.getLaneWidth()));
                         break;

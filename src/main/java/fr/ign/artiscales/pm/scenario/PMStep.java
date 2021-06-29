@@ -1,7 +1,7 @@
 package fr.ign.artiscales.pm.scenario;
 
 import fr.ign.artiscales.pm.analysis.RealUrbanFabricParameters;
-import fr.ign.artiscales.pm.decomposition.TopologicalStraightSkeletonParcelDecomposition;
+import fr.ign.artiscales.pm.division.StraightSkeletonDivision;
 import fr.ign.artiscales.pm.fields.GeneralFields;
 import fr.ign.artiscales.pm.fields.french.FrenchParcelFields;
 import fr.ign.artiscales.pm.parcelFunction.MarkParcelAttributeFromPosition;
@@ -238,7 +238,7 @@ public class PMStep {
      */
     public File execute() throws IOException {
         OUTFOLDER.mkdirs();
-        TopologicalStraightSkeletonParcelDecomposition.setGeneratePeripheralRoad(peripheralRoad);
+        StraightSkeletonDivision.setGeneratePeripheralRoad(peripheralRoad);
         //convert the parcel to a common type
         DataStore dSParcel = CollecMgmt.getDataStore(PARCELFILE);
         SimpleFeatureCollection parcel = DataUtilities.collection(dSParcel.getFeatureSource(dSParcel.getTypeNames()[0]).getFeatures());

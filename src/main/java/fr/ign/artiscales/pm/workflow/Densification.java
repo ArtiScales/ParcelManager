@@ -1,7 +1,7 @@
 package fr.ign.artiscales.pm.workflow;
 
-import fr.ign.artiscales.pm.decomposition.FlagParcelDecomposition;
-import fr.ign.artiscales.pm.decomposition.OBBBlockDecomposition;
+import fr.ign.artiscales.pm.division.FlagDivision;
+import fr.ign.artiscales.pm.division.OBBDivision;
 import fr.ign.artiscales.pm.fields.GeneralFields;
 import fr.ign.artiscales.pm.parcelFunction.MarkParcelAttributeFromPosition;
 import fr.ign.artiscales.pm.parcelFunction.ParcelSchema;
@@ -30,9 +30,9 @@ import java.util.List;
 
 /**
  * Simulation following that workflow divides parcels to ensure that they could be densified. The
- * {@link FlagParcelDecomposition#generateFlagSplitedParcels(SimpleFeature, List, double, double, SimpleFeatureCollection, SimpleFeatureCollection, Double, Double, Double, Geometry)} method is applied on the selected
+ * {@link FlagDivision#generateFlagSplitedParcels(SimpleFeature, List, double, double, SimpleFeatureCollection, SimpleFeatureCollection, Double, Double, Double, Geometry)} method is applied on the selected
  * parcels. If the creation of a flag parcel is impossible and the local rules allows parcel to be disconnected from the road network, the
- * {@link OBBBlockDecomposition#splitParcels(SimpleFeature, double, double, double, double, List, double, boolean, int)} is applied. Other behavior can be set relatively to the
+ * {@link OBBDivision#splitParcels(SimpleFeature, double, double, double, double, List, double, boolean, int)} is applied. Other behavior can be set relatively to the
  * parcel's sizes.
  *
  * @author Maxime Colomb
@@ -117,16 +117,16 @@ public class Densification extends Workflow {
                     // we flag cut the parcel (differently regarding whether they have optional data or not)
                     SimpleFeatureCollection unsortedFlagParcel;
                     if (hasBuilding && hasRoad)
-                        unsortedFlagParcel = FlagParcelDecomposition.generateFlagSplitedParcels(initialParcel, lines, harmonyCoeff, noise,
+                        unsortedFlagParcel = FlagDivision.generateFlagSplitedParcels(initialParcel, lines, harmonyCoeff, noise,
                                 CollecTransform.selectIntersection(buildingDS.getFeatureSource(buildingDS.getTypeNames()[0]).getFeatures(), ((Geometry) initialParcel.getDefaultGeometry()).buffer(10)),
                                 CollecTransform.selectIntersection(roadDS.getFeatureSource(roadDS.getTypeNames()[0]).getFeatures(), ((Geometry) initialParcel.getDefaultGeometry()).buffer(10)),
                                 maximalAreaSplitParcel, maximalWidthSplitParcel, lenDriveway, exclusionZone);
                     else if (hasBuilding)
-                        unsortedFlagParcel = FlagParcelDecomposition.generateFlagSplitedParcels(initialParcel, lines, harmonyCoeff, noise,
+                        unsortedFlagParcel = FlagDivision.generateFlagSplitedParcels(initialParcel, lines, harmonyCoeff, noise,
                                 CollecTransform.selectIntersection(buildingDS.getFeatureSource(buildingDS.getTypeNames()[0]).getFeatures(), ((Geometry) initialParcel.getDefaultGeometry()).buffer(10)),
                                 maximalAreaSplitParcel, maximalWidthSplitParcel, lenDriveway, exclusionZone);
                     else
-                        unsortedFlagParcel = FlagParcelDecomposition.generateFlagSplitedParcels(initialParcel, lines, harmonyCoeff, noise,
+                        unsortedFlagParcel = FlagDivision.generateFlagSplitedParcels(initialParcel, lines, harmonyCoeff, noise,
                                 maximalAreaSplitParcel, maximalWidthSplitParcel, lenDriveway, exclusionZone);
                     // we check if the cut parcels are meeting the expectations
                     boolean add = true;
@@ -134,7 +134,7 @@ public class Densification extends Workflow {
                     if (unsortedFlagParcel.size() == 1) {
                         add = false;
                         if (allowIsolatedParcel) {
-                            unsortedFlagParcel = OBBBlockDecomposition.splitParcels(initialParcel, maximalAreaSplitParcel, maximalWidthSplitParcel, 0.5, noise,
+                            unsortedFlagParcel = OBBDivision.splitParcels(initialParcel, maximalAreaSplitParcel, maximalWidthSplitParcel, 0.5, noise,
                                     lines, 0, true, 99);
                             add = true;
                         }

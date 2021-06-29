@@ -123,9 +123,9 @@ public class ParcelState {
                     return 0;
             } else
                 return 0;
-            } catch (Exception ee) {
-                return 0;
-            }
+        } catch (Exception ee) {
+            return 0;
+        }
     }
 
     /**
@@ -223,8 +223,9 @@ public class ParcelState {
      * @param buildingFile
      * @param parcel
      * @param emprise
+     * @param uncountedBuildingArea
      * @return True if a building is really intersecting the parcel
-     * @throws IOException
+     * @throws IOException reading building file
      */
     public static boolean isAlreadyBuilt(File buildingFile, SimpleFeature parcel, Geometry emprise, double uncountedBuildingArea) throws IOException {
         DataStore batiDS = CollecMgmt.getDataStore(buildingFile);
@@ -238,7 +239,7 @@ public class ParcelState {
             throws IOException {
         DataStore batiDS = CollecMgmt.getDataStore(buildingFile);
         boolean result = isAlreadyBuilt(CollecTransform.selectIntersection(batiDS.getFeatureSource(batiDS.getTypeNames()[0]).getFeatures(),
-                        ((Geometry) parcel.getDefaultGeometry()).buffer(10)),(Geometry) parcel.getDefaultGeometry(), bufferBati, uncountedBuildingArea);
+                ((Geometry) parcel.getDefaultGeometry()).buffer(10)), (Geometry) parcel.getDefaultGeometry(), bufferBati, uncountedBuildingArea);
         batiDS.dispose();
         return result;
     }
@@ -275,7 +276,7 @@ public class ParcelState {
      * @param parcel Input {@link SimpleFeature} parcel
      * @param outMup Shapefile to the vectorized MUP-City output
      * @return The best evaluation of the intersected MUP-City's cells
-     * @throws IOException
+     * @throws IOException reading MUP-City's output
      */
     public static Double getEvalInParcel(SimpleFeature parcel, File outMup) throws IOException {
         DataStore cellsSDS = CollecMgmt.getDataStore(outMup);
@@ -344,10 +345,10 @@ public class ParcelState {
     /**
      * Return a single Zone Generic Name that a parcels intersect. If the parcel intersects multiple, we select the one that covers the most area
      *
-     * @param parcelIn
-     * @param zoningFile
+     * @param parcelIn input parcel
+     * @param zoningFile geo file containing zoning file
      * @return Zone Generic Name that a parcels intersect
-     * @throws IOException
+     * @throws IOException reading zoning file
      */
     public static String parcelInGenericZone(File zoningFile, SimpleFeature parcelIn) throws IOException {
         DataStore ds = CollecMgmt.getDataStore(zoningFile);
@@ -360,11 +361,11 @@ public class ParcelState {
     /**
      * return a single typology that a parcels intersect if the parcel intersects multiple, we select the one that covers the most area
      *
-     * @param parcelIn
-     * @param communityFile
+     * @param parcelIn input parcel
+     * @param communityFile geo file containing the communities
      * @param typoAttribute the field name of the typo
      * @return the number of most intersected community type
-     * @throws IOException
+     * @throws IOException reading community file
      */
     public static String parcelInTypo(File communityFile, SimpleFeature parcelIn, String typoAttribute) throws IOException {
         DataStore ds = CollecMgmt.getDataStore(communityFile);
@@ -374,18 +375,38 @@ public class ParcelState {
         return typo;
     }
 
+    /**
+     * Get the name of the field containing attribute which indicates the width of road segments (<i>LARGEUR</i> by default) .
+     *
+     * @return the name of the field
+     */
     public static String getWidthFieldAttribute() {
         return widthFieldAttribute;
     }
 
+    /**
+     * Set the name of the field containing attribute which indicates the width of road segments.
+     *
+     * @param widthFieldAttribute new name of the field
+     */
     public static void setWidthFieldAttribute(String widthFieldAttribute) {
         ParcelState.widthFieldAttribute = widthFieldAttribute;
     }
 
+    /**
+     * Get the default width for road segment (7.5 by default).
+     *
+     * @return Width in meters
+     */
     public static double getDefaultWidthRoad() {
         return defaultWidthRoad;
     }
 
+    /**
+     * Set the default width for road segment
+     *
+     * @param defaultWidthRoad new width in meters
+     */
     public static void setDefaultWidthRoad(double defaultWidthRoad) {
         ParcelState.defaultWidthRoad = defaultWidthRoad;
     }
