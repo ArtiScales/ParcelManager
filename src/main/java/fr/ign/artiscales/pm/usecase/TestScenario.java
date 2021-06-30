@@ -47,7 +47,7 @@ public class TestScenario extends UseCase {
     }
 
     public static void doTestScenario(File outRootFolder, File rootFolder) throws Exception {
-        File roadFile = new File(rootFolder, "roadStraightSkeleton.gpkg");
+        File roadFile = new File(rootFolder, "road.gpkg");
         File zoningFile = new File(rootFolder, "zoning.gpkg");
         File buildingFile = new File(rootFolder, "building.gpkg");
         File parcelFile = new File(rootFolder, "parcel.gpkg");
@@ -61,8 +61,8 @@ public class TestScenario extends UseCase {
         ProfileUrbanFabric profileLargeCollective = ProfileUrbanFabric.convertJSONtoProfile(new File(profileFolder, "mediumCollective.json"));
         Workflow.PROCESS = "SS";
         StraightSkeletonDivision.setGeneratePeripheralRoad(true);
-        for (int i = 2; i <= 2; i++) {
-//        for (int i = 0; i <= 3; i++) {
+//        for (int i = 2; i <= 2; i++) {
+        for (int i = 0; i <= 3; i++) {
             // multiple process calculation
             String ext = "offset";
             if (i == 1) {
