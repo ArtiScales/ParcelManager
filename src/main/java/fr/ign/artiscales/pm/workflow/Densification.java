@@ -374,7 +374,7 @@ public class Densification extends Workflow {
         File tmpDens = CollecMgmt.exportSFC(parcelCollection, new File(tmp, "Dens"));
         // We flagcut the parcels which size is inferior to 4x the max parcel size
         SimpleFeatureCollection parcelDensified = densification(
-//                MarkParcelAttributeFromPosition.markParcelsInf(parcelCollectionMerged, profile.getMaximalArea() * factorOflargeZoneCreation),
+//              MarkParcelAttributeFromPosition.markParcelsInf(parcelCollectionMerged, profile.getMaximalArea() * factorOflargeZoneCreation),
                 MarkParcelAttributeFromPosition.markParcelsInf(parcelCollection, profile.getMaximalArea() * factorOflargeZoneCreation),
                 blockCollection, outFolder, buildingFile, roadFile, profile.getHarmonyCoeff(), profile.getNoise(), profile.getMaximalArea(),
                 profile.getMinimalArea(), profile.getMinimalWidthContactRoad(), profile.getLenDriveway(), allowIsolatedParcel, exclusionZone);

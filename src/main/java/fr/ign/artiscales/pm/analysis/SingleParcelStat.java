@@ -2,12 +2,10 @@ package fr.ign.artiscales.pm.analysis;
 
 import com.opencsv.CSVWriter;
 import fr.ign.artiscales.pm.fields.GeneralFields;
-import fr.ign.artiscales.pm.fields.french.FrenchParcelFields;
 import fr.ign.artiscales.pm.parcelFunction.MarkParcelAttributeFromPosition;
 import fr.ign.artiscales.pm.parcelFunction.ParcelSchema;
 import fr.ign.artiscales.pm.parcelFunction.ParcelState;
 import fr.ign.artiscales.tools.geoToolsFunctions.Attribute;
-import fr.ign.artiscales.tools.geoToolsFunctions.Schemas;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.collec.CollecMgmt;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.collec.CollecTransform;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.collec.OpOnCollec;
@@ -75,7 +73,7 @@ public class SingleParcelStat {
      * @throws IOException reading and writing file
      */
     public static void writeStatSingleParcel(File parcelFile, File roadFile, File parcelStatCsv, boolean markAll) throws IOException {
-        writeStatSingleParcel(parcelFile, roadFile,null, parcelStatCsv, markAll);
+        writeStatSingleParcel(parcelFile, roadFile, null, parcelStatCsv, markAll);
     }
 
     /**

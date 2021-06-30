@@ -66,10 +66,10 @@ public class CompareSimulatedParcelsWithEvolution extends UseCase {
         CityGeneration.createUrbanBlock(parcelRefFile, rootFolder);
         PMScenario.setSaveIntermediateResult(true);
         PMStep.setGENERATEATTRIBUTES(false);
-        PMStep.setDEBUG(false);
+        PMStep.setDEBUG(true);
         PMStep.setAllowIsolatedParcel(true);
         PMScenario pm = new PMScenario(scenarioFile);
-//        pm.executeStep();
+        pm.executeStep();
         System.out.println("++++++++++ Done with PMscenario ++++++++++");
         System.out.println();
 

@@ -63,7 +63,7 @@ public class ParcelCollection {
      * @param parcelRefFile       The reference parcel plan
      * @param parcelToCompareFile The parcel plan to compare
      * @param parcelOutFolder     Folder where are stored the result geopackages
-     * @throws IOException
+     * @throws IOException read and write files
      */
     public static void sortDifferentParcel(File parcelRefFile, File parcelToCompareFile, File parcelOutFolder) throws IOException {
         sortDifferentParcel(parcelRefFile, parcelToCompareFile, parcelOutFolder, 800, 150, false);
@@ -87,7 +87,7 @@ public class ParcelCollection {
      * @param minParcelSimulatedSize The minimal size of parcels of the usual urban fabric profile. If the algorithm is used outside the simulation, default value of 100 square meters is used.
      * @param maxParcelSimulatedSize The maximal size of parcel simulated (used for selection)
      * @param overwrite do we overwrite the
-     * @throws IOException
+     * @throws IOException read and write files
      */
     public static void sortDifferentParcel(File parcelRefFile, File parcelToCompareFile, File parcelOutFolder, double maxParcelSimulatedSize, double minParcelSimulatedSize, boolean overwrite) throws IOException {
 
@@ -100,6 +100,7 @@ public class ParcelCollection {
 
         DataStore dsParcelToCompare = CollecMgmt.getDataStore(parcelToCompareFile);
         SimpleFeatureCollection parcelToCompare = dsParcelToCompare.getFeatureSource(dsParcelToCompare.getTypeNames()[0]).getFeatures();
+
         DataStore dsRef = CollecMgmt.getDataStore(parcelRefFile);
         SimpleFeatureCollection parcelRef = dsRef.getFeatureSource(dsRef.getTypeNames()[0]).getFeatures();
         SimpleFeatureCollection notSame = OpOnCollec.sortDiffGeom( parcelRefFile, parcelToCompareFile, parcelOutFolder,false, overwrite)[1];
@@ -127,7 +128,7 @@ public class ParcelCollection {
             intersectionGeoms.addAll(Arrays.stream(notSame.toArray(new SimpleFeature[0])).map(x -> (Geometry) x.getDefaultGeometry())
                     .filter(g -> g.intersects(firstZoneB)).collect(Collectors.toList()));
         }
-        List<Geometry> listGeom = Geom.unionTouchingGeometries(intersectionGeoms).stream().map(g -> g.buffer(-1)).collect(Collectors.toList());
+        List<Geometry> listGeom = intersectionGeoms.stream().map(g -> g.buffer(-1)).collect(Collectors.toList());
         Geom.exportGeom(listGeom, fPlace);
         CollecMgmt.exportSFC(CollecTransform.selectIntersection(realParcel, listGeom), fReal);
         dsParcelToCompare.dispose();
