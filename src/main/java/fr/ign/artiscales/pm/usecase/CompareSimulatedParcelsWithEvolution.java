@@ -5,16 +5,11 @@ import fr.ign.artiscales.pm.parcelFunction.MarkParcelAttributeFromPosition;
 import fr.ign.artiscales.pm.parcelFunction.ParcelCollection;
 import fr.ign.artiscales.pm.scenario.PMScenario;
 import fr.ign.artiscales.pm.scenario.PMStep;
-import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Geom;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.collec.CollecMgmt;
-import fr.ign.artiscales.tools.geoToolsFunctions.vectors.collec.CollecTransform;
 import fr.ign.artiscales.tools.geometryGeneration.CityGeneration;
 import org.geotools.data.DataStore;
-import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.factory.CommonFactoryFinder;
 import org.geotools.util.factory.GeoTools;
-import org.locationtech.jts.geom.Geometry;
-import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.filter.FilterFactory2;
 
 import java.io.File;
@@ -22,10 +17,8 @@ import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 
 /**
@@ -69,7 +62,7 @@ public class CompareSimulatedParcelsWithEvolution extends UseCase {
         PMStep.setDEBUG(false);
         PMStep.setAllowIsolatedParcel(true);
         PMScenario pm = new PMScenario(scenarioFile);
-//        pm.executeStep();
+        pm.executeStep();
         System.out.println("++++++++++ Done with PMscenario ++++++++++");
         System.out.println();
 
@@ -97,43 +90,54 @@ public class CompareSimulatedParcelsWithEvolution extends UseCase {
         MarkParcelAttributeFromPosition.setPostMark(true);
         FilterFactory2 ff = CommonFactoryFinder.getFilterFactory2(GeoTools.getDefaultHints());
         DataStore dsRoad = CollecMgmt.getDataStore(roadFile);
-        for (PMStep step : pm.getStepList()) {
-            System.out.println("analysis for step " + step);
-            File zoneOutFolder = new File(outFolder, step.getZoneStudied());
-            zoneOutFolder.mkdirs();
-            List<Geometry> geoms = step.getBoundsOfZone();
-            Geometry geomUnion = Geom.unionPrecisionReduce(geoms, 100).buffer(-1);
-            // simulated parcels crop
-            DataStore sdsSimulatedParcel = CollecMgmt.getDataStore(simulatedFile);
-            SimpleFeatureCollection sfcSimulatedParcel = sdsSimulatedParcel.getFeatureSource(sdsSimulatedParcel.getTypeNames()[0]).getFeatures()
-                    .subCollection(ff.intersects(ff.property(sdsSimulatedParcel.getFeatureSource(sdsSimulatedParcel.getTypeNames()[0]).getFeatures()
-                            .getSchema().getGeometryDescriptor().getLocalName()), ff.literal(geomUnion)));
-            CollecMgmt.exportSFC(sfcSimulatedParcel, new File(zoneOutFolder, "SimulatedParcel.gpkg"));
+//        for (PMStep step : pm.getStepList()) {
+//            System.out.println("analysis for step " + step);
+//            File zoneOutFolder = new File(outFolder, step.getZoneStudied());
+//            zoneOutFolder.mkdirs();
+//            List<Geometry> geoms = step.getBoundsOfZone();
+//            Geometry geomUnion = Geom.unionPrecisionReduce(geoms, 100).buffer(-1);
+//            // simulated parcels crop
+//            DataStore sdsSimulatedParcel = CollecMgmt.getDataStore(simulatedFile);
+//            SimpleFeatureCollection sfcSimulatedParcel = sdsSimulatedParcel.getFeatureSource(sdsSimulatedParcel.getTypeNames()[0]).getFeatures()
+//                    .subCollection(ff.intersects(ff.property(sdsSimulatedParcel.getFeatureSource(sdsSimulatedParcel.getTypeNames()[0]).getFeatures()
+//                            .getSchema().getGeometryDescriptor().getLocalName()), ff.literal(geomUnion)));
+//            CollecMgmt.exportSFC(sfcSimulatedParcel, new File(zoneOutFolder, "SimulatedParcel.gpkg"));
+//
+//            // real parcel crop
+//            DataStore dsRealParcel = CollecMgmt.getDataStore(realParcelFile);
+//            SimpleFeatureCollection sfcRealParcel = CollecTransform.selectIntersection(dsRealParcel.getFeatureSource(dsRealParcel.getTypeNames()[0]).getFeatures(), geomUnion);
+//            CollecMgmt.exportSFC(sfcRealParcel, new File(zoneOutFolder, "RealParcel.gpkg"));
+//
+//            DataStore sdsGoalParcel = CollecMgmt.getDataStore(step.getLastOutput() != null ? step.getLastOutput() : step.makeFileName());
+//            SingleParcelStat.writeStatSingleParcel(
+//                    MarkParcelAttributeFromPosition.markSimulatedParcel(MarkParcelAttributeFromPosition.markParcelIntersectPolygonIntersection(
+//                            sdsGoalParcel.getFeatureSource(sdsGoalParcel.getTypeNames()[0]).getFeatures(), geoms.stream().map(g -> g.buffer(-2)).collect(Collectors.toList()))),
+//                    CollecTransform.selectIntersection(dsRoad.getFeatureSource(dsRoad.getTypeNames()[0]).getFeatures(), geomUnion),sfcRealParcel,
+//                    new File(zoneOutFolder, "SimulatedParcelStats.csv"));
+//            sdsSimulatedParcel.dispose();
+//            sdsGoalParcel.dispose();
+//
+//            //real parcel crop
+//            System.out.println("real parcels");
+//            DataStore dsRealAndAllParcels = CollecMgmt.getDataStore(parcelCompFile);
+//            SingleParcelStat.writeStatSingleParcel(
+//                    MarkParcelAttributeFromPosition.markParcelIntersectPolygonIntersection(dsRealAndAllParcels.getFeatureSource(dsRealAndAllParcels.getTypeNames()[0]).getFeatures(),
+//                            Arrays.stream(sfcRealParcel.toArray(new SimpleFeature[0])).map(g -> ((Geometry) g.getDefaultGeometry()).buffer(-1)).collect(Collectors.toList())),
+//                    CollecTransform.selectIntersection(dsRoad.getFeatureSource(dsRoad.getTypeNames()[0]).getFeatures(), geomUnion), new File(zoneOutFolder, "RealParcelStats.csv"));
+//            dsRealParcel.dispose();
+//            dsRealAndAllParcels.dispose();
+//        }
 
-            // real parcel crop
-            DataStore dsRealParcel = CollecMgmt.getDataStore(realParcelFile);
-            SimpleFeatureCollection sfcRealParcel = CollecTransform.selectIntersection(dsRealParcel.getFeatureSource(dsRealParcel.getTypeNames()[0]).getFeatures(), geomUnion);
-            CollecMgmt.exportSFC(sfcRealParcel, new File(zoneOutFolder, "RealParcel.gpkg"));
+        // specially analyze the parcels that have been reshaped by the densification algorihtm
+        DataStore dsSimu = CollecMgmt.getDataStore(simulatedFile);
+        DataStore dsReal = CollecMgmt.getDataStore(realParcelFile);
 
-            DataStore sdsGoalParcel = CollecMgmt.getDataStore(step.getLastOutput() != null ? step.getLastOutput() : step.makeFileName());
-            SingleParcelStat.writeStatSingleParcel(
-                    MarkParcelAttributeFromPosition.markSimulatedParcel(MarkParcelAttributeFromPosition.markParcelIntersectPolygonIntersection(
-                            sdsGoalParcel.getFeatureSource(sdsGoalParcel.getTypeNames()[0]).getFeatures(), geoms.stream().map(g -> g.buffer(-2)).collect(Collectors.toList()))),
-                    CollecTransform.selectIntersection(dsRoad.getFeatureSource(dsRoad.getTypeNames()[0]).getFeatures(), geomUnion),sfcRealParcel,
-                    new File(zoneOutFolder, "SimulatedParcelStats.csv"));
-            sdsSimulatedParcel.dispose();
-            sdsGoalParcel.dispose();
+        SingleParcelStat.writeStatSingleParcel(
+                MarkParcelAttributeFromPosition.markWorkflowSimulatedParcel(dsSimu.getFeatureSource(dsSimu.getTypeNames()[0]).getFeatures(), "densification")
+                , dsRoad.getFeatureSource(dsRoad.getTypeNames()[0]).getFeatures(), dsReal.getFeatureSource(dsReal.getTypeNames()[0]).getFeatures(), new File(outFolder, "DensifiedParcelStats.csv"));
 
-            //real parcel crop
-            System.out.println("real parcels");
-            DataStore dsRealAndAllParcels = CollecMgmt.getDataStore(parcelCompFile);
-            SingleParcelStat.writeStatSingleParcel(
-                    MarkParcelAttributeFromPosition.markParcelIntersectPolygonIntersection(dsRealAndAllParcels.getFeatureSource(dsRealAndAllParcels.getTypeNames()[0]).getFeatures(),
-                            Arrays.stream(sfcRealParcel.toArray(new SimpleFeature[0])).map(g -> ((Geometry) g.getDefaultGeometry()).buffer(-1)).collect(Collectors.toList())),
-                    CollecTransform.selectIntersection(dsRoad.getFeatureSource(dsRoad.getTypeNames()[0]).getFeatures(), geomUnion), new File(zoneOutFolder, "RealParcelStats.csv"));
-            dsRealParcel.dispose();
-            dsRealAndAllParcels.dispose();
-        }
+        dsReal.dispose();
+        dsSimu.dispose();
         dsRoad.dispose();
     }
 }
