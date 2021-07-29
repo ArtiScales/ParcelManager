@@ -2,6 +2,9 @@ package fr.ign.artiscales.pm.parcelFunction;
 
 import fr.ign.artiscales.pm.fields.GeneralFields;
 import fr.ign.artiscales.pm.fields.french.FrenchZoningSchemas;
+import fr.ign.artiscales.pm.workflow.ConsolidationDivision;
+import fr.ign.artiscales.pm.workflow.Densification;
+import fr.ign.artiscales.pm.workflow.ZoneDivision;
 import fr.ign.artiscales.tools.geoToolsFunctions.Attribute;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Geom;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.collec.CollecMgmt;
@@ -862,6 +865,79 @@ public class MarkParcelAttributeFromPosition {
                 SimpleFeature feat = it.next();
                 SimpleFeatureBuilder featureBuilder = ParcelSchema.setSFBMinParcelSplitWithFeat(feat, ParcelSchema.getSFBMinParcelSplit(), featureSchema, 0);
                 if (isAlreadyMarked(feat) != 0 && GeneralFields.isParcelHasSimulatedFields(feat))
+                    featureBuilder.set(markFieldName, 1);
+                result.add(featureBuilder.buildFeature(Attribute.makeUniqueId()));
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        signalIfNoParcelMarked(result, "markSimulatedParcel");
+        return result;
+    }
+
+    /**
+     * Mark a parcel if it has been simulated with a specific workflow.
+     * This is done using the <i>section</i> field name and the method
+     * {@link fr.ign.artiscales.pm.fields.GeneralFields#isParcelHasSimulatedFields(SimpleFeature)}.
+     *
+     * @param parcels      Input parcel {@link SimpleFeatureCollection}
+     * @param workflowName can either be <ul>
+     *                     <li>densification</li>
+     *                     <li>consolidation</li>
+     *                     <li>zone</li>
+     *                     </ul>
+     * @return {@link SimpleFeatureCollection} of the input parcels with marked parcels on the {@link #markFieldName} field.
+     */
+    public static SimpleFeatureCollection markWorkflowSimulatedParcel(SimpleFeatureCollection parcels, String workflowName) {
+        final SimpleFeatureType featureSchema = ParcelSchema.getSFBMinParcelSplit().getFeatureType();
+        DefaultFeatureCollection result = new DefaultFeatureCollection();
+        if (featureSchema.equals(parcels.getSchema())) {
+            Arrays.stream(parcels.toArray(new SimpleFeature[0])).forEach(feat -> {
+//                boolean mark = isAlreadyMarked(feat) != 0;
+                boolean mark = false;
+                switch (workflowName) {
+                    case "densification":
+                        if ((new Densification()).isNewSection(feat))
+                            mark = true;
+                        break;
+                    case "consolidation":
+                        if ((new ZoneDivision()).isNewSection(feat))
+                            mark = true;
+                        break;
+                    case "zone":
+                        if ((new ConsolidationDivision()).isNewSection(feat))
+                            mark = true;
+                        break;
+                }
+                if (mark)
+                    feat.setAttribute(markFieldName, 1);
+                else
+                    feat.setAttribute(markFieldName, 0);
+                result.add(feat);
+            });
+            return result;
+        }
+        try (SimpleFeatureIterator it = parcels.features()) {
+            while (it.hasNext()) {
+                SimpleFeature feat = it.next();
+                SimpleFeatureBuilder featureBuilder = ParcelSchema.setSFBMinParcelSplitWithFeat(feat, ParcelSchema.getSFBMinParcelSplit(), featureSchema, 0);
+//                boolean mark = isAlreadyMarked(feat) != 0;
+                boolean mark = false;
+                switch (workflowName) {
+                    case "densification":
+                        if ((new Densification()).isNewSection(feat))
+                            mark = true;
+                        break;
+                    case "zone":
+                        if ((new ZoneDivision()).isNewSection(feat))
+                            mark = true;
+                        break;
+                    case "consolidation":
+                        if ((new ConsolidationDivision()).isNewSection(feat))
+                            mark = true;
+                        break;
+                }
+                if (mark)
                     featureBuilder.set(markFieldName, 1);
                 result.add(featureBuilder.buildFeature(Attribute.makeUniqueId()));
             }

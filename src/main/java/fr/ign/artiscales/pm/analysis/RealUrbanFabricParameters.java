@@ -202,7 +202,8 @@ public class RealUrbanFabricParameters {
     }
 
     /**
-     * Fulfill the collection of zones by splitting the parcel plan.
+     * Fulfill the collection of zones by splitting the parcel plan relatively to the given scale type.
+     * Scale and the collection of zones per scale type's units are stored statically.
      *
      * @throws IOException reading files
      */
@@ -223,7 +224,7 @@ public class RealUrbanFabricParameters {
                     for (String genericZone : GeneralFields.getGenericZoningTypes(zonings))
                         parcelPerZone.put(genericZone, MarkParcelAttributeFromPosition.getOnlyMarkedParcels(
                                 MarkParcelAttributeFromPosition.markParcelIntersectGenericZoningType(parcel, genericZone, zoningFile)));
-                else
+                else //precise zone
                     for (String preciseZone : GeneralFields.getPreciseZoningTypes(zonings))
                         parcelPerZone.put(preciseZone, MarkParcelAttributeFromPosition.getOnlyMarkedParcels(
                                 MarkParcelAttributeFromPosition.markParcelIntersectPreciseZoningType(parcel, "", preciseZone, zoningFile)));
@@ -316,6 +317,7 @@ public class RealUrbanFabricParameters {
             if (outFolder != null) {
                 Graph vals = MakeStatisticGraphs.sortValuesAreaAndCategorize(
                         Arrays.stream(sfc.toArray(new SimpleFeature[0])).collect(Collectors.toList()), scaleZone + zoneName, true);
+                vals.setNameDistrib(vals.getNameDistrib()+"-built");
                 vals.toCSV(outFolder);
                 MakeStatisticGraphs.makeGraphHisto(vals, outFolder, "built parcels of the " + getZoneEnglishName(scaleZone, zoneName),
                         "parcel area", "number of parcels", 15);

@@ -418,6 +418,7 @@ public class Densification extends Workflow {
      * @return true if the section field is marked with the {@link #makeNewSection(String)} method.
      */
     public boolean isNewSection(SimpleFeature feat) {
-        return ((String) feat.getAttribute(ParcelSchema.getMinParcelSectionField())).endsWith("-Densifyed");
+        String field = (String) feat.getAttribute(ParcelSchema.getMinParcelSectionField());
+        return field != null && field.endsWith("-Densifyed");
     }
 }

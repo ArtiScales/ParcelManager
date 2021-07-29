@@ -6,6 +6,7 @@ import fr.ign.artiscales.tools.geoToolsFunctions.vectors.collec.CollecMgmt;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.collec.CollecTransform;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.geom.Lines;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.geom.Polygons;
+import fr.ign.artiscales.tools.io.csv.CsvExport;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.geotools.data.DataStore;
 import org.geotools.data.simple.SimpleFeatureCollection;
@@ -25,7 +26,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
@@ -90,7 +90,7 @@ public class MakeStatisticGraphs {
         });
         roadDS.dispose();
         Graph graph = sortValuesAndCategorize(parcelMesure, false, "Length of contact between road and parcel");
-        makeGraphHisto(graph, outFolder, name,"Length (m)", "Number of parcels",10 );
+        makeGraphHisto(graph, outFolder, name, "Length (m)", "Number of parcels", 10);
     }
 
     /**
@@ -218,6 +218,18 @@ public class MakeStatisticGraphs {
         } catch (Exception e) {
             e.printStackTrace();
         }
+
+        //export to .csv
+        HashMap<String, double[]> valsCsv = new HashMap<>();
+        for (String key : vals.keySet()) {
+//            System.out.println(key);
+//            ByteBuffer buffer = StandardCharsets.US_ASCII.encode(key);
+//            String encoded_String = StandardCharsets.UTF_8.decode(buffer).toString();
+//            System.out.println(encoded_String);
+            valsCsv.put(key, new double[]{vals.get(key)});
+        }
+        CsvExport.generateCsvFile(valsCsv, title + ".csv", graphDepotFolder, new String[]{"roadType", "totalLength"}, false);
+
         // general settings
         CategoryChart chart = new CategoryChartBuilder().width(500).height(600).title(title).xAxisTitle(xTitle).yAxisTitle(yTitle).build();
         chart.addSeries("roads length", new ArrayList<>(vals.keySet()), new ArrayList<>(vals.values()));
