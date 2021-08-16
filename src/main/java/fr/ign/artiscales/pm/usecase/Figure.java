@@ -29,7 +29,7 @@ public class Figure {
         // Generate parcel reshaping for the Straight Skeleton example in Section 3 of Colomb et al. 2021.
         PMScenario pmSSfig = new PMScenario(new File("src/main/resources/Figure/scenarioFigureSS.json"));
         UseCase.setSAVEINTERMEDIATERESULT(true);
-        UseCase.setDEBUG(false);
+        UseCase.setDEBUG(true);
         File f = PMStep.getOUTFOLDER();
         for (PMStep pmstep : pmSSfig.getStepList()) {
             System.out.println("try " + pmstep);

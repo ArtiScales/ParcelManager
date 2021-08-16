@@ -163,6 +163,10 @@ public class ParcelSchema {
         ParcelSchema.minParcelCommunityField = minParcelCommunityField;
     }
 
+    public static String getParcelID(SimpleFeature feat){
+        return feat.getAttribute(minParcelCommunityField)+"_"+feat.getAttribute(minParcelSectionField)+"_"+feat.getAttribute(minParcelNumberField);
+    }
+
     public static String getEpsg() {
         return epsg;
     }

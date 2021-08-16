@@ -2,9 +2,7 @@ package fr.ign.artiscales.pm.workflow;
 
 import fr.ign.artiscales.pm.division.OBBDivision;
 import fr.ign.artiscales.pm.division.StraightSkeletonDivision;
-import fr.ign.artiscales.pm.parcelFunction.MarkParcelAttributeFromPosition;
-import fr.ign.artiscales.pm.parcelFunction.ParcelCollection;
-import fr.ign.artiscales.pm.parcelFunction.ParcelSchema;
+import fr.ign.artiscales.pm.parcelFunction.*;
 import fr.ign.artiscales.tools.geoToolsFunctions.Attribute;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Geom;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.collec.CollecMgmt;
@@ -140,7 +138,7 @@ public class ConsolidationDivision extends Workflow {
                             StraightSkeletonDivision.FOLDER_OUT_DEBUG = tmpFolder;
                             freshCutParcel = StraightSkeletonDivision.runTopologicalStraightSkeletonParcelDecomposition(feat, roads, "NOM_VOIE_G", "IMPORTANCE", profile.getMaxDepth(),
                                     profile.getMaxDistanceForNearestRoad(), profile.getMinimalArea(), profile.getMinimalWidthContactRoad(), profile.getMaxWidth(),
-                                    (profile.getNoise() == 0) ? 0.1 : profile.getNoise(), new MersenneTwister(1), profile.getLaneWidth());
+                                    (profile.getNoise() == 0) ? 0.1 : profile.getNoise(), new MersenneTwister(1), profile.getLaneWidth(), ParcelSchema.getParcelID(feat));
                             break;
                     }
                     if (!freshCutParcel.isEmpty() && freshCutParcel.size() > 0) {

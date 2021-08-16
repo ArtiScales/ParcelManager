@@ -86,14 +86,14 @@ public class ParcelCollection {
      * @param parcelOutFolder        Folder where are stored the result geopackages
      * @param minParcelSimulatedSize The minimal size of parcels of the usual urban fabric profile. If the algorithm is used outside the simulation, default value of 100 square meters is used.
      * @param maxParcelSimulatedSize The maximal size of parcel simulated (used for selection)
-     * @param overwrite do we overwrite the
+     * @param overwrite              do we overwrite the
      * @throws IOException read and write files
      */
     public static void sortDifferentParcel(File parcelRefFile, File parcelToCompareFile, File parcelOutFolder, double maxParcelSimulatedSize, double minParcelSimulatedSize, boolean overwrite) throws IOException {
 
         File fReal = new File(parcelOutFolder, "realParcel" + CollecMgmt.getDefaultGISFileType());
         File fPlace = new File(parcelOutFolder, "place" + CollecMgmt.getDefaultGISFileType());
-        if (!overwrite && fReal.exists()  && fPlace.exists() ) {
+        if (!overwrite && fReal.exists() && fPlace.exists()) {
             System.out.println("markDiffParcel(...) already calculated");
             return;
         }
@@ -103,18 +103,18 @@ public class ParcelCollection {
 
         DataStore dsRef = CollecMgmt.getDataStore(parcelRefFile);
         SimpleFeatureCollection parcelRef = dsRef.getFeatureSource(dsRef.getTypeNames()[0]).getFeatures();
-        SimpleFeatureCollection notSame = OpOnCollec.sortDiffGeom( parcelRefFile, parcelToCompareFile, parcelOutFolder,false, overwrite)[1];
+        SimpleFeatureCollection notSame = OpOnCollec.sortDiffGeom(parcelRefFile, parcelToCompareFile, parcelOutFolder, false, overwrite)[1];
 
         FilterFactory2 ff = CommonFactoryFinder.getFilterFactory2();
         PropertyName pName = ff.property(parcelRef.getSchema().getGeometryDescriptor().getLocalName());
 
-         // make a Collection of not same parcels with an inner buffer to select others
+        // make a Collection of not same parcels with an inner buffer to select others
         List<Geometry> lInter = Arrays.stream(notSame.toArray(new SimpleFeature[0])).map(sf -> ((Geometry) sf.getDefaultGeometry())).collect(Collectors.toList());
 
         // isolate the compared parcels that have changed
         SimpleFeatureCollection realParcel = parcelToCompare.subCollection(ff.intersects(pName, ff.literal(Geom.unionGeom(lInter))));
 
-       // We now seek if a large part of the real parcel stays intact and small parts. We can keep them or leave them
+        // We now seek if a large part of the real parcel stays intact and small parts. We can keep them or leave them
         List<Geometry> intersectionGeoms = new ArrayList<>();
         for (Geometry firstZone : Geom.importListGeom(notSame)) {
             Geometry firstZoneB = firstZone.buffer(-1);

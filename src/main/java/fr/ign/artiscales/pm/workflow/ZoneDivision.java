@@ -176,7 +176,7 @@ public class ZoneDivision extends Workflow {
      * {@link fr.ign.artiscales.pm.parcelFunction.ParcelSchema#getSFBMinParcel()} schema.
      * @throws IOException from marking parcel
      */
-    public SimpleFeatureCollection zoneDivision(SimpleFeatureCollection initialZone, SimpleFeatureCollection parcels, File outFolder,  ProfileUrbanFabric profile, File roadFile, boolean keepExistingRoads) throws IOException {
+    public SimpleFeatureCollection zoneDivision(SimpleFeatureCollection initialZone, SimpleFeatureCollection parcels, File outFolder, ProfileUrbanFabric profile, File roadFile, boolean keepExistingRoads) throws IOException {
         DataStore dsRoad = CollecMgmt.getDataStore(roadFile);
         SimpleFeatureCollection result = zoneDivision(initialZone, parcels, dsRoad.getFeatureSource(dsRoad.getTypeNames()[0]).getFeatures(), outFolder, profile, keepExistingRoads);
         dsRoad.dispose();
@@ -314,7 +314,7 @@ public class ZoneDivision extends Workflow {
                         ((DefaultFeatureCollection) splitedParcels)
                                 .addAll(StraightSkeletonDivision.runTopologicalStraightSkeletonParcelDecomposition(zone, roads,
                                         "NOM_VOIE_G", "IMPORTANCE", profile.getMaxDepth(), profile.getMaxDistanceForNearestRoad(), profile.getMinimalArea(), profile.getMinimalWidthContactRoad(), profile.getMaxWidth(),
-                                        profile.getNoise() == 0 ? 0.1 : profile.getNoise(), new MersenneTwister(42), profile.getLaneWidth()));
+                                        profile.getNoise() == 0 ? 0.1 : profile.getNoise(), new MersenneTwister(42), profile.getLaneWidth(), ParcelSchema.getParcelID(zone)));
                         break;
                     case "MS":
                         System.out.println("not implemented yet");
