@@ -104,6 +104,8 @@ public class ConsolidationDivision extends Workflow {
             CollecMgmt.exportSFC(mergedParcels.collection(), new File(tmpFolder, "step2"));
             System.out.println("done step 2");
         }
+        if (isSAVEINTERMEDIATERESULT())
+            CollecMgmt.exportSFC(mergedParcels.collection(), new File(tmpFolder, "parcelBeforeCut"));
         ////////////////
         // third step : cuting of the parcels
         ////////////////

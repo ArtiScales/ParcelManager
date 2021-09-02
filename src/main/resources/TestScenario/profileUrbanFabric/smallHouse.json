@@ -9,6 +9,6 @@
 	"nameBuildingType": "smallHouse",
 	"lenDriveway": "3",
 	"maxDepth":"30",
-	"maxDistanceForNearestRoad":"15",
+	"maxDistanceForNearestRoad":"10",
 	"maxWidth":"20"
 }

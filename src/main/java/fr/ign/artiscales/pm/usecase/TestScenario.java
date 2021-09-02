@@ -40,7 +40,7 @@ public class TestScenario extends UseCase {
         long start = System.currentTimeMillis();
         File rootFolder = new File("src/main/resources/TestScenario/");
         File outFolder = new File(rootFolder, "out");
-        setDEBUG(true);
+        setDEBUG(false);
         Workflow.setSAVEINTERMEDIATERESULT(true);
         doTestScenario(outFolder, rootFolder);
         System.out.println("time: " + ((System.currentTimeMillis() - start) / 1000) + " sec");

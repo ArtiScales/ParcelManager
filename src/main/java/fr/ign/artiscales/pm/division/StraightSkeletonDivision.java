@@ -121,16 +121,15 @@ public class StraightSkeletonDivision {
         DEBUG = true;
         DataStore dsRoad = CollecMgmt.getDataStore(roadFile);
         WKTReader wktR = new WKTReader();
-        Polygon p = (Polygon) wktR.read("POLYGON ((935418.23 6687083.97, 935474.5 6687118.44, 935541.01 6687165.98, 935604.32 6687212.17, 935610.35 6687214.82, 935606.47 6687215.14, 935555.67 6687292.33, 935540.79 6687315.77, 935537.45 6687314.54, 935352.96 6687196.3, 935412.97 6687083.42, 935418.23 6687083.97))");
-        double maxDepth = 0, maxDistanceForNearestRoad = 15, minWidth = 20, maxWidth = 50, omega = 0.1, widthRoad = 12;
+        Polygon p = (Polygon) wktR.read("Polygon ((935387.92000000004190952 6687121.2900000000372529, 935410.35999999998603016 6687079.05999999959021807, 935200.15000000002328306 6686960.15000000037252903, 935181.2099999999627471 6686972.41999999992549419, 935178.56999999994877726 6687002.87999999988824129, 935178.16000000003259629 6687005.49000000022351742, 935170.55000000004656613 6687021.15000000037252903, 935158.06999999994877726 6687029.84999999962747097, 935155.30000000004656613 6687034.24000000022351742, 935133.47999999998137355 6687075.08999999985098839, 935130.40000000002328306 6687072.50999999977648258, 935117.11999999999534339 6687098.29999999981373549, 935112.98999999999068677 6687105.79999999981373549, 935107.31000000005587935 6687117.05999999959021807, 935092.93000000005122274 6687138.03000000026077032, 935154.40000000002328306 6687153.92999999970197678, 935196.10999999998603016 6687163.87999999988824129, 935192.52000000001862645 6687174.84999999962747097, 935322.56000000005587935 6687244.82000000029802322, 935347.78000000002793968 6687196.87999999988824129, 935369.39000000001396984 6687156, 935387.92000000004190952 6687121.2900000000372529))");
+        double maxDepth = 20, maxDistanceForNearestRoad = 15, minWidth = 20, maxWidth = 50, omega = 0.1, widthRoad = 12;
         SAVEINTERMEDIATERESULT = true;
         String NAME_ATT_IMPORTANCE = "IMPORTANCE";
         String NAME_ATT_ROAD = "NOM_VOIE_G";
-        List<Polygon> globalOutputParcels = new ArrayList<>();
         StraightSkeletonDivision decomposition = new StraightSkeletonDivision(
-                p, dsRoad.getFeatureSource(dsRoad.getTypeNames()[0]).getFeatures(), NAME_ATT_ROAD, NAME_ATT_IMPORTANCE, maxDepth, maxDistanceForNearestRoad, false, widthRoad, "main");
+                p, dsRoad.getFeatureSource(dsRoad.getTypeNames()[0]).getFeatures(), NAME_ATT_ROAD, NAME_ATT_IMPORTANCE, maxDepth, maxDistanceForNearestRoad, true, widthRoad, "main");
         export(decomposition.straightSkeleton.getGraph(), new File(FOLDER_OUT_DEBUG, "after_fix"));
-        globalOutputParcels.addAll(decomposition.createParcels(minWidth, maxWidth, omega, new MersenneTwister(42)));
+        List<Polygon> globalOutputParcels = new ArrayList<>(decomposition.createParcels(minWidth, maxWidth, omega, new MersenneTwister(42)));
         TopologicalGraph output = new TopologicalGraph(globalOutputParcels, 0.02);
         DefaultFeatureCollection result = new DefaultFeatureCollection();
         SimpleFeatureBuilder builder = Schemas.getBasicSchema("parcelSplitSS");
@@ -220,6 +219,10 @@ public class StraightSkeletonDivision {
         export(betaStrips, new File(FOLDER_OUT_DEBUG, "beta"));
     }
 
+    private Optional<Pair<String, Double>> getRoadAttributes(LineString l, double maxDistanceForNearestRoad) {
+        return FindObjectInDirection.find(l, this.initialPolygon, this.roads, maxDistanceForNearestRoad, this.NAME_ATT_LEVELOFATTRACTION).map(this::getRoadAttributes);
+    }
+
     private Map<Face, List<HalfEdge>> frontageDefinition(double maxDistanceForNearestRoad) {
         log("");
         log("");
@@ -229,7 +232,7 @@ public class StraightSkeletonDivision {
         log("INPUT ZONE : " + this.initialPolygon);
         this.roadAttributes = new HashMap<>();
         for (HalfEdge e : orderedExteriorEdges) {
-            Optional<Pair<String, Double>> a = FindObjectInDirection.find(e.getGeometry(), this.initialPolygon, this.roads, maxDistanceForNearestRoad, this.NAME_ATT_LEVELOFATTRACTION).map(this::getRoadAttributes);
+            Optional<Pair<String, Double>> a = getRoadAttributes(e.getGeometry(), maxDistanceForNearestRoad);
 //			if (a.isPresent())
             roadAttributes.put(e, a);
         }
@@ -331,8 +334,12 @@ public class StraightSkeletonDivision {
                                 Optional<Pair<String, Double>> nextAttributes) {
         if (isReflex(node, previous, next))
             return NONE;
-        if (previousAttributes.map(Pair::getRight).orElse(0.0) > nextAttributes.map(Pair::getRight).orElse(0.0))
+        double previousValue = previousAttributes.map(Pair::getRight).orElse(0.0);
+        double nextValue = nextAttributes.map(Pair::getRight).orElse(0.0);
+        if (previousValue > nextValue)
             return PREVIOUS;
+        if (previousValue == nextValue && previousValue == 0.0)
+            return NONE;
         return NEXT;
     }
 
@@ -847,23 +854,19 @@ public class StraightSkeletonDivision {
         return null;
     }
 
-    private List<Polygon> slice(double minWidth, double maxWidth, RealDistribution nd, RandomGenerator rng, Face strip) throws EdgeException {
+    private List<Polygon> slice(double minWidth, double maxWidth, RealDistribution nd, Face strip) {
         List<Polygon> result = new ArrayList<>();
         if (strip.getGeometry().isEmpty()) {
             log("EMPTY STRIP");
             return result;
         }
-        // log("potentials");
-        // strip.getEdges().stream().filter(e -> e.getTwin() == null).forEach(f -> log(f.getGeometry()));
-        // // create the supporting edge psi
-        // List<HalfEdge> extEdges = getOrderedEdges(
-        // strip.getEdges().stream().filter(e -> e.getTwin() == null && !initialPolygon.buffer(-0.1).contains(e.getGeometry())).collect(Collectors.toList()));
-        // List<Coordinate> coordinates = extEdges.stream().map(e -> e.getTarget().getCoordinate()).collect(Collectors.toList());
-        // coordinates.add(0, extEdges.get(0).getOrigin().getCoordinate());
-        // LineString psi = strip.getGeometry().getFactory().createLineString(coordinates.toArray(new Coordinate[coordinates.size()]));
         LineString psi = psiMap.get(strip);
         LengthIndexedLine lil = new LengthIndexedLine(psi);
         log("psi\n" + psi);
+        if (psi == null) {
+            log("face not found for strip " + strip.getGeometry());
+            return Collections.singletonList(strip.getGeometry());
+        }
         double length = psi.getLength();
         List<Double> widths = sampleWidths(length, nd, minWidth, maxWidth);
         if (widths.size() == 1) {
@@ -897,22 +900,11 @@ public class StraightSkeletonDivision {
         return result;
     }
 
-    private List<Polygon> createParcels(double minWidth, double maxWidth, double omega, RandomGenerator rng) throws EdgeException {
+    private List<Polygon> createParcels(double minWidth, double maxWidth, double omega, RandomGenerator rng) {
         NormalDistribution nd = new NormalDistribution(rng, (minWidth + maxWidth) / 2, Math.sqrt(3 * omega));
         List<Polygon> result = new ArrayList<>();
-        for (Face face : betaStrips.getFaces()) {
-            boolean add = false;
-            for (List<HalfEdge> frontage : frontages.values()) {
-                if (frontage.stream().anyMatch(he -> face.getEdges().stream().anyMatch(e -> e.getGeometry().equals(he.getGeometry())))) {
-                    add = true;
-                    break;
-                }
-            }
-            if (add)
-                result.addAll(slice(minWidth, maxWidth, nd, rng, face));
-            else
-                result.add(face.getGeometry());
-        }
+        for (Face face : betaStrips.getFaces())
+            result.addAll(slice(minWidth, maxWidth, nd, face));
         return result;
     }
 
@@ -1088,14 +1080,24 @@ public class StraightSkeletonDivision {
         // add the initial supporting edges reduced to fit into the final beta strips
         psiMap = new HashMap<>();
         for (Face face : result.getFaces()) {
-            Optional<LineString> optionalPsi = psiList.stream().map(p -> reduced(p, face)).filter(Optional::isPresent)
-                    .map(o -> new ImmutablePair<>(o.get(), o.get().getLength())).sorted((a, b) -> Double.compare(b.getRight(), a.getRight()))
+            log("face : " + face.getGeometry());
+            psiList.stream().map(p -> reduced(p, face)).filter(Optional::isPresent)
+                    .filter(o -> getRoadAttributes(o.get(), 10.0).isPresent())
+                    .forEach(l -> log(l.get()));
+            List<ImmutablePair<LineString, Double>> tmp = psiList.stream().map(p -> reduced(p, face)).filter(Optional::isPresent)
+                    .filter(o -> getRoadAttributes(o.get(), 10.0).isPresent())
+                    .map(o -> new ImmutablePair<>(o.get(), o.get().getLength())).sorted((a, b) -> Double.compare(b.getRight(), a.getRight())).collect(Collectors.toList());
+            tmp.forEach(t -> log(t.getRight() + " => " + t.getLeft()));
+            Optional<LineString> optionalPsi = tmp.stream()
                     .findFirst().map(ImmutablePair::getLeft);
+            log("/face");
             if (optionalPsi.isPresent()) {
                 psiMap.put(face, optionalPsi.get());
-            } else {
+//            LineString l = Lines.union(psiList.stream().map(p -> reduced(p, face)).filter(Optional::isPresent).map(o -> o.get()).collect(Collectors.toList()));
+//            if (l != null) {
+//                psiMap.put(face,l);
+            } else
                 log("No supporting edge found for face\n" + face.getGeometry());
-            }
         }
         return result;
     }
@@ -1176,13 +1178,13 @@ public class StraightSkeletonDivision {
         return edges.stream().flatMap(e -> Stream.concat(Stream.of(e), removeInternalEdges(e.getTarget(), split, internalEdges)));
     }
 
-    private Optional<LineString> reduced(LineString psi, Face face) {
+    private Optional<LineString> reduced(LineString psi, Polygon polygon) {
         GeometrySnapper snapper = new GeometrySnapper(psi);
-        psi = (LineString) snapper.snapTo(face.getGeometry(), tolerance);
+        psi = (LineString) snapper.snapTo(polygon, tolerance);
         List<Coordinate> coords = new ArrayList<>();
         for (int index = 0; index < psi.getNumPoints(); index++) {
             Point p = psi.getPointN(index);
-            if (p.intersects(face.getGeometry())) {
+            if (p.intersects(polygon)) {
                 coords.add(p.getCoordinate());
             } else {
                 if (!coords.isEmpty())
@@ -1194,6 +1196,10 @@ public class StraightSkeletonDivision {
             return Optional.of(factory.createLineString(coords.toArray(new Coordinate[coords.size()])));
         }
         return Optional.empty();
+    }
+
+    private Optional<LineString> reduced(LineString psi, Face face) {
+        return reduced(psi, face.getGeometry());
     }
 
     private Polygon snapped(Polygon polygon, double tolerance) {
@@ -1483,7 +1489,8 @@ public class StraightSkeletonDivision {
             try {
                 tmp.addAll(Geom.geomsToCollec(ls, Schemas.getBasicMLSSchema("PeripheralRoad")));
                 FOLDER_OUT_DEBUG.mkdirs();
-                CollecMgmt.exportSFC(tmp, new File(FOLDER_OUT_DEBUG, "peripheralRoads"), false);
+                if (!tmp.isEmpty())
+                    CollecMgmt.exportSFC(tmp, new File(FOLDER_OUT_DEBUG, "peripheralRoads"), false);
             } catch (IOException e) {
                 e.printStackTrace();
             }

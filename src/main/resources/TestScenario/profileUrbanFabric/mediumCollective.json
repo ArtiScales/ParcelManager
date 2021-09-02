@@ -9,6 +9,6 @@
 	"nameBuildingType":"mediumCollective",
 	"lenDriveway":"12",
 	"maxDepth":"200",
-	"maxDistanceForNearestRoad":"30",
+	"maxDistanceForNearestRoad":"50",
 	"maxWidth":"100"
 }
