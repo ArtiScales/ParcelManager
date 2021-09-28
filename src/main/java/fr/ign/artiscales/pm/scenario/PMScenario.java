@@ -29,12 +29,11 @@ public class PMScenario {
     private boolean fileSet = false;
     boolean keepExistingRoad, adaptAreaOfUrbanFabric, generatePeripheralRoad;
 
-//	public static void main(String[] args) throws Exception {
-//		PMScenario pm = new PMScenario(
-//				new File("src/main/resources/testData/jsonEx.json"),
-//				new File("/tmp/"));
-//		pm.executeStep();
-//	}
+	public static void main(String[] args) throws Exception {
+		PMScenario pm = new PMScenario(
+				new File("src/main/resources/TestScenario/scenarioOBB.json"));
+		pm.executeStep();
+	}
 
     public PMScenario(File jSON) throws IOException {
         PMStep.setSaveIntermediateResult(SAVEINTERMEDIATERESULT);

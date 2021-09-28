@@ -1,6 +1,6 @@
 {
-	"rootfile": "/home/thema/Documents/MC/workspace/ParcelManager/src/main/resources/testData/",
-	"profileFolder": "/home/thema/Documents/MC/workspace/ParcelManager/src/main/resources/testData/profileUrbanFabric/",
+	"rootfile": "src/main/resources/TestScenario/",
+	"profileFolder": "src/main/resources/TestScenario/profileUrbanFabric/",
 	"outFolder": "/tmp/",
 	"steps": [
 		{
@@ -9,19 +9,20 @@
 			"genericZone": "AU",
 			"preciseZone":"AU1",
 			"communityNumber": "25267",
-			"urbanFabricType": "largeCollective"
+			"urbanFabricType": "mediumCollective"
 		},
 		{
 			"workflow": "consolidationDivision",
 			"parcelProcess": "OBB",
 			"genericZone": "AU",
-			"preciseZone":"AUb",
+			"preciseZone":"AU2",
 			"communityNumber": "25267",
-			"urbanFabricType": "detachedHouse"
+			"urbanFabricType": "mediumHouse"
 		},
 		{
 			"workflow": "densification",
 			"genericZone": "U",
+			"preciseZone": "UB",
 			"communityNumber": "25267",
 			"urbanFabricType": "smallHouse"
 		}]

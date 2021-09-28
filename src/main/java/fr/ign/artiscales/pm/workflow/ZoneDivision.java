@@ -310,10 +310,11 @@ public class ZoneDivision extends Workflow {
                                         profile.getLaneWidth(), profile.getStreetLane(), profile.getStreetWidth(), true, profile.getBlockShape()));
                         break;
                     case "SS":
+                    case "SSoffset":
                         StraightSkeletonDivision.FOLDER_OUT_DEBUG = tmpFolder;
                         ((DefaultFeatureCollection) splitedParcels)
                                 .addAll(StraightSkeletonDivision.runTopologicalStraightSkeletonParcelDecomposition(zone, roads,
-                                        "NOM_VOIE_G", "IMPORTANCE", profile.getMaxDepth(), profile.getMaxDistanceForNearestRoad(), profile.getMinimalArea(), profile.getMinimalWidthContactRoad(), profile.getMaxWidth(),
+                                        "NOM_VOIE_G", "IMPORTANCE", profile.getMaxDepth(), profile.getMaxDistanceForNearestRoad(), profile.getMinimalArea(), profile.getMinimalWidthContactRoad(), PROCESS.equals("SSoffset") ? profile.getMaxDepth() : 0,
                                         profile.getNoise() == 0 ? 0.1 : profile.getNoise(), new MersenneTwister(42), profile.getLaneWidth(), ParcelSchema.getParcelID(zone)));
                         break;
                     case "MS":

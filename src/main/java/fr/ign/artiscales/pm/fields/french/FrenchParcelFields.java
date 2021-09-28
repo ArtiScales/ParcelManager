@@ -232,7 +232,9 @@ public class FrenchParcelFields {
      * @return the INSEE number
      */
     public static String makeDEPCOMCode(SimpleFeature parcel) {
-        if (CollecMgmt.isSimpleFeatureContainsAttribute(parcel, "CODE_DEP") && CollecMgmt.isSimpleFeatureContainsAttribute(parcel, "CODE_COM")) {
+        if (CollecMgmt.isSimpleFeatureContainsAttribute(parcel, "DEPCOM"))
+            return (String) parcel.getAttribute("DEPCOM");
+        else if (CollecMgmt.isSimpleFeatureContainsAttribute(parcel, "CODE_DEP") && CollecMgmt.isSimpleFeatureContainsAttribute(parcel, "CODE_COM")) {
             return parcel.getAttribute("CODE_DEP") + ((String) parcel.getAttribute("CODE_COM"));
         } else {
             return null;

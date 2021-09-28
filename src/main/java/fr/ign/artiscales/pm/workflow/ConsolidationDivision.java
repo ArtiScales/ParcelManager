@@ -135,8 +135,9 @@ public class ConsolidationDivision extends Workflow {
                                     profile.getLaneWidth(), profile.getStreetLane(), profile.getStreetWidth(), true, profile.getBlockShape());
                             break;
                         case "SS":
+                        case "SSoffset":
                             StraightSkeletonDivision.FOLDER_OUT_DEBUG = tmpFolder;
-                            freshCutParcel = StraightSkeletonDivision.runTopologicalStraightSkeletonParcelDecomposition(feat, roads, "NOM_VOIE_G", "IMPORTANCE", profile.getMaxDepth(),
+                            freshCutParcel = StraightSkeletonDivision.runTopologicalStraightSkeletonParcelDecomposition(feat, roads, "NOM_VOIE_G", "IMPORTANCE", PROCESS.equals("SSoffset") ? profile.getMaxDepth() : 0,
                                     profile.getMaxDistanceForNearestRoad(), profile.getMinimalArea(), profile.getMinimalWidthContactRoad(), profile.getMaxWidth(),
                                     (profile.getNoise() == 0) ? 0.1 : profile.getNoise(), new MersenneTwister(1), profile.getLaneWidth(), ParcelSchema.getParcelID(feat));
                             break;

@@ -1,0 +1,29 @@
+{
+	"rootfile": "src/main/resources/TestScenario/",
+	"profileFolder": "src/main/resources/TestScenario/profileUrbanFabric/",
+	"outFolder": "/tmp/",
+	"steps": [
+		{
+			"workflow": "zoneDivision",
+			"parcelProcess": "SS",
+			"genericZone": "AU",
+			"preciseZone":"AU1",
+			"communityNumber": "25267",
+			"urbanFabricType": "mediumCollective"
+		},
+		{
+			"workflow": "consolidationDivision",
+			"parcelProcess": "SS",
+			"genericZone": "AU",
+			"preciseZone":"AU2",
+			"communityNumber": "25267",
+			"urbanFabricType": "mediumHouse"
+		},
+		{
+			"workflow": "densification",
+			"genericZone": "U",
+			"preciseZone": "UB",
+			"communityNumber": "25267",
+			"urbanFabricType": "smallHouse"
+		}]
+}

@@ -330,8 +330,7 @@ public class PMStep {
         if (GENERATEATTRIBUTES) {
             switch (GeneralFields.getParcelFieldType()) {
                 case "french":
-                    System.out.println("we set attribute as a french parcel");
-                    parcelCut = FrenchParcelFields.setOriginalFrenchParcelAttributes(parcelCut, dSParcel.getFeatureSource(dSParcel.getTypeNames()[0]).getFeatures());
+                    parcelCut = FrenchParcelFields.setOriginalFrenchParcelAttributes(parcelCut, parcel);
                     break;
             }
         }

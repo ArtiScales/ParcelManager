@@ -1081,17 +1081,30 @@ public class MarkParcelAttributeFromPosition {
     }
 
     /**
-     * Affect a null value to every mark field of a collection. Must contains the marking field in the first place.
+     * Affect a null value to every mark field of a collection.
      *
      * @param sfc input parcel collection to remove mark.
      * @return collection with null values in the marking field.
      */
     public static SimpleFeatureCollection resetMarkingField(SimpleFeatureCollection sfc) {
         DefaultFeatureCollection result = new DefaultFeatureCollection();
-        Arrays.stream(sfc.toArray(new SimpleFeature[0])).forEach(feat -> {
-            feat.setAttribute(markFieldName, null);
-            result.add(feat);
-        });
+        if (!CollecMgmt.isCollecContainsAttribute(sfc, markFieldName)) {
+            SimpleFeatureBuilder parcelBuilder = ParcelSchema.addSplitField(sfc.getSchema());
+            try (SimpleFeatureIterator featIt = sfc.features()) {
+                while (featIt.hasNext()) {
+                    SimpleFeature parcel = featIt.next();
+                    for (AttributeDescriptor attr : sfc.getSchema().getAttributeDescriptors())
+                        parcelBuilder.set(attr.getLocalName(), parcel.getAttribute(attr.getLocalName()));
+                    parcelBuilder.set(markFieldName, null);
+                    result.add(parcelBuilder.buildFeature(Attribute.makeUniqueId()));
+                }
+            }
+        } else {
+            Arrays.stream(sfc.toArray(new SimpleFeature[0])).forEach(feat -> {
+                feat.setAttribute(markFieldName, null);
+                result.add(feat);
+            });
+        }
         return result;
     }
 
