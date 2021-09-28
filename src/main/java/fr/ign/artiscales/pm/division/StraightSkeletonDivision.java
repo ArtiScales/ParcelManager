@@ -20,7 +20,6 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
 import org.apache.commons.math3.distribution.NormalDistribution;
 import org.apache.commons.math3.distribution.RealDistribution;
-import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.geotools.data.DataStore;
 import org.geotools.data.simple.SimpleFeatureCollection;
@@ -40,8 +39,6 @@ import org.locationtech.jts.geom.MultiLineString;
 import org.locationtech.jts.geom.Point;
 import org.locationtech.jts.geom.Polygon;
 import org.locationtech.jts.geom.PrecisionModel;
-import org.locationtech.jts.io.ParseException;
-import org.locationtech.jts.io.WKTReader;
 import org.locationtech.jts.linearref.LengthIndexedLine;
 import org.locationtech.jts.operation.linemerge.LineMerger;
 import org.locationtech.jts.operation.overlay.snap.GeometrySnapper;
@@ -52,8 +49,18 @@ import org.opengis.feature.simple.SimpleFeature;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -70,16 +77,8 @@ import java.util.stream.Stream;
  */
 public class StraightSkeletonDivision {
 
-    //////////////////////////////////////////////////////
-    // Input data parameters
-    // Must be a double attribute
-    // public final static String NAME_ATT_IMPORTANCE = "length";
-    // // public final static String NAME_ATT_ROAD = "NOM_VOIE_G";
-    // // public final static String NAME_ATT_ROAD = "n_sq_vo";
-    // public final static String NAME_ATT_ROAD = "Id";
-    // Indicate the importance of the neighbour road
-    private final String NAME_ATT_LEVELOFATTRACTION;
-    private final String NAME_ATT_ROADNAME;
+    public static final int NONE = 0;
+    public static final int PREVIOUS = 1;
 
     //////////////////////////////////////////////////////
 
@@ -94,52 +93,38 @@ public class StraightSkeletonDivision {
     // public static String ATT_FACE_ID_STRIP = "ID_STRIP";
 
     // public static String ATT_IMPORTANCE = "IMPORTANCE";
-
+    public static final int NEXT = 2;
+    private static final int RIGHT = 1;
+    private static final int LEFT = -1;
+    private static final int NEITHER = 0;
+    public static File FOLDER_OUT_DEBUG = new File("/tmp/skeleton");
     private static boolean SAVEINTERMEDIATERESULT = true;
     private static boolean DEBUG = false;
     private static boolean generatePeripheralRoad;
-    public static File FOLDER_OUT_DEBUG = new File("/tmp/skeleton");
-
+    //////////////////////////////////////////////////////
+    // Input data parameters
+    // Must be a double attribute
+    // public final static String NAME_ATT_IMPORTANCE = "length";
+    // // public final static String NAME_ATT_ROAD = "NOM_VOIE_G";
+    // // public final static String NAME_ATT_ROAD = "n_sq_vo";
+    // public final static String NAME_ATT_ROAD = "Id";
+    // Indicate the importance of the neighbour road
+    private final String NAME_ATT_LEVELOFATTRACTION;
+    private final String NAME_ATT_ROADNAME;
     private final Polygon initialPolygon;
     private final Map<Face, List<HalfEdge>> frontages;
-    private SimpleFeatureCollection roads;
     private final double tolerance;
     private final GeometryPrecisionReducer precisionReducer;
     private final StraightSkeleton straightSkeleton;
+    private final Geometry snapInitialSSFaces;
+    private final GeometryFactory factory;
+    private SimpleFeatureCollection roads;
     private List<HalfEdge> orderedExteriorEdges;
     private TopologicalGraph alphaStrips;
     private TopologicalGraph betaStrips;
     private Map<Face, LineString> psiMap;
     private Map<HalfEdge, Optional<Pair<String, Double>>> roadAttributes;
-    private final Geometry snapInitialSSFaces;
-    private final GeometryFactory factory;
     private Set<Face> facesWithMultipleFrontages;
-
-    public static void main(String[] args) throws IOException, EdgeException, StraightSkeletonException, ParseException {
-        File rootFolder = new File("src/main/resources/TestScenario/");
-        File roadFile = new File(rootFolder, "road.gpkg");
-        DEBUG = true;
-        DataStore dsRoad = CollecMgmt.getDataStore(roadFile);
-        WKTReader wktR = new WKTReader();
-        Polygon p = (Polygon) wktR.read("Polygon ((935387.92000000004190952 6687121.2900000000372529, 935410.35999999998603016 6687079.05999999959021807, 935200.15000000002328306 6686960.15000000037252903, 935181.2099999999627471 6686972.41999999992549419, 935178.56999999994877726 6687002.87999999988824129, 935178.16000000003259629 6687005.49000000022351742, 935170.55000000004656613 6687021.15000000037252903, 935158.06999999994877726 6687029.84999999962747097, 935155.30000000004656613 6687034.24000000022351742, 935133.47999999998137355 6687075.08999999985098839, 935130.40000000002328306 6687072.50999999977648258, 935117.11999999999534339 6687098.29999999981373549, 935112.98999999999068677 6687105.79999999981373549, 935107.31000000005587935 6687117.05999999959021807, 935092.93000000005122274 6687138.03000000026077032, 935154.40000000002328306 6687153.92999999970197678, 935196.10999999998603016 6687163.87999999988824129, 935192.52000000001862645 6687174.84999999962747097, 935322.56000000005587935 6687244.82000000029802322, 935347.78000000002793968 6687196.87999999988824129, 935369.39000000001396984 6687156, 935387.92000000004190952 6687121.2900000000372529))");
-        double maxDepth = 20, maxDistanceForNearestRoad = 15, minWidth = 20, maxWidth = 50, omega = 0.1, widthRoad = 12;
-        SAVEINTERMEDIATERESULT = true;
-        String NAME_ATT_IMPORTANCE = "IMPORTANCE";
-        String NAME_ATT_ROAD = "NOM_VOIE_G";
-        StraightSkeletonDivision decomposition = new StraightSkeletonDivision(
-                p, dsRoad.getFeatureSource(dsRoad.getTypeNames()[0]).getFeatures(), NAME_ATT_ROAD, NAME_ATT_IMPORTANCE, maxDepth, maxDistanceForNearestRoad, true, widthRoad, "main");
-        export(decomposition.straightSkeleton.getGraph(), new File(FOLDER_OUT_DEBUG, "after_fix"));
-        List<Polygon> globalOutputParcels = new ArrayList<>(decomposition.createParcels(minWidth, maxWidth, omega, new MersenneTwister(42)));
-        TopologicalGraph output = new TopologicalGraph(globalOutputParcels, 0.02);
-        DefaultFeatureCollection result = new DefaultFeatureCollection();
-        SimpleFeatureBuilder builder = Schemas.getBasicSchema("parcelSplitSS");
-        for (Face face : output.getFaces()) {
-            builder.set(CollecMgmt.getDefaultGeomName(), face.getGeometry());
-            result.add(builder.buildFeature(Attribute.makeUniqueId()));
-        }
-        CollecMgmt.exportSFC(result, new File(FOLDER_OUT_DEBUG, "result.gpkg"));
-
-    }
 
     /**
      * Create and compute Straight Skeleton algorithm. Version without peripheral road
@@ -163,6 +148,7 @@ public class StraightSkeletonDivision {
         this(p, roads, roadNameAttribute, roadImportanceAttribute, maxDepth, maxDistanceForNearestRoad, 2, generatePeripheralRoad, widthRoad, name);
     }
 
+
     /**
      * Constructor decomposing initial polygon until beta-stripes
      */
@@ -177,8 +163,11 @@ public class StraightSkeletonDivision {
         this.NAME_ATT_LEVELOFATTRACTION = roadImportanceAttribute;
         FOLDER_OUT_DEBUG = new File(FOLDER_OUT_DEBUG, "skeleton/" + name + "_" + (generatePeripheralRoad ? "peripheralRoad" : "noPeripheralRoad") + "_" + (maxDepth != 0 ? "offset" : "noOffset"));
         FOLDER_OUT_DEBUG.mkdirs();
-        if (generatePeripheralRoad)
-            p = this.generatePeripheralRoad(p, widthRoad);
+        if (generatePeripheralRoad) {
+            Pair<Polygon, SimpleFeatureCollection> periperalRoad = this.generatePeripheralRoad(p, widthRoad);
+            p = periperalRoad.getLeft();
+            this.roads = periperalRoad.getRight();
+        }
         if (isSAVEINTERMEDIATERESULT() || isDEBUG()) {
             try {
                 CollecMgmt.exportSFC(this.roads, new File(FOLDER_OUT_DEBUG, "roads.gpkg"));
@@ -217,6 +206,389 @@ public class StraightSkeletonDivision {
         //get beta stripes
         this.betaStrips = fixDiagonalEdges(alphaStrips, roadAttributes);
         export(betaStrips, new File(FOLDER_OUT_DEBUG, "beta"));
+    }
+
+//    public static void main(String[] args) throws IOException, EdgeException, StraightSkeletonException, ParseException {
+//        File rootFolder = new File("src/main/resources/TestScenario/");
+//        File roadFile = new File(rootFolder, "road.gpkg");
+//        DEBUG = true;
+//        DataStore dsRoad = CollecMgmt.getDataStore(roadFile);
+//        WKTReader wktR = new WKTReader();
+//        Polygon p = (Polygon) wktR.read("Polygon ((935387.92000000004190952 6687121.2900000000372529, 935410.35999999998603016 6687079.05999999959021807, 935200.15000000002328306 6686960.15000000037252903, 935181.2099999999627471 6686972.41999999992549419, 935178.56999999994877726 6687002.87999999988824129, 935178.16000000003259629 6687005.49000000022351742, 935170.55000000004656613 6687021.15000000037252903, 935158.06999999994877726 6687029.84999999962747097, 935155.30000000004656613 6687034.24000000022351742, 935133.47999999998137355 6687075.08999999985098839, 935130.40000000002328306 6687072.50999999977648258, 935117.11999999999534339 6687098.29999999981373549, 935112.98999999999068677 6687105.79999999981373549, 935107.31000000005587935 6687117.05999999959021807, 935092.93000000005122274 6687138.03000000026077032, 935154.40000000002328306 6687153.92999999970197678, 935196.10999999998603016 6687163.87999999988824129, 935192.52000000001862645 6687174.84999999962747097, 935322.56000000005587935 6687244.82000000029802322, 935347.78000000002793968 6687196.87999999988824129, 935369.39000000001396984 6687156, 935387.92000000004190952 6687121.2900000000372529))");
+//        double maxDepth = 20, maxDistanceForNearestRoad = 15, minWidth = 20, maxWidth = 50, omega = 0.1, widthRoad = 12;
+//        SAVEINTERMEDIATERESULT = true;
+//        String NAME_ATT_IMPORTANCE = "IMPORTANCE";
+//        String NAME_ATT_ROAD = "NOM_VOIE_G";
+//        StraightSkeletonDivision decomposition = new StraightSkeletonDivision(
+//                p, dsRoad.getFeatureSource(dsRoad.getTypeNames()[0]).getFeatures(), NAME_ATT_ROAD, NAME_ATT_IMPORTANCE, maxDepth, maxDistanceForNearestRoad, true, widthRoad, "main");
+//        export(decomposition.straightSkeleton.getGraph(), new File(FOLDER_OUT_DEBUG, "after_fix"));
+//        List<Polygon> globalOutputParcels = new ArrayList<>(decomposition.createParcels(minWidth, maxWidth, omega, new MersenneTwister(42)));
+//        TopologicalGraph output = new TopologicalGraph(globalOutputParcels, 0.02);
+//        DefaultFeatureCollection result = new DefaultFeatureCollection();
+//        SimpleFeatureBuilder builder = Schemas.getBasicSchema("parcelSplitSS");
+//        for (Face face : output.getFaces()) {
+//            builder.set(CollecMgmt.getDefaultGeomName(), face.getGeometry());
+//            result.add(builder.buildFeature(Attribute.makeUniqueId()));
+//        }
+//        CollecMgmt.exportSFC(result, new File(FOLDER_OUT_DEBUG, "result.gpkg"));
+//    }
+
+    private static boolean isReflex(Node node, HalfEdge previous, HalfEdge next) {
+        return isReflex(node.getCoordinate(), previous.getGeometry(), next.getGeometry());
+    }
+
+    private static Coordinate getNextCoordinate(Coordinate current, LineString line) {
+        return (line.getCoordinateN(0).equals2D(current)) ? line.getCoordinateN(1) : line.getCoordinateN(line.getNumPoints() - 2);
+    }
+
+    private static boolean isReflex(Coordinate current, LineString previous, LineString next) {
+        Coordinate previousCoordinate = getNextCoordinate(current, previous);
+        Coordinate nextCoordinate = getNextCoordinate(current, next);
+        return Orientation.index(previousCoordinate, current, nextCoordinate) == Orientation.CLOCKWISE;
+    }
+
+    private static int classify(Node node, HalfEdge previous, Optional<Pair<String, Double>> previousAttributes, HalfEdge next,
+                                Optional<Pair<String, Double>> nextAttributes) {
+        if (isReflex(node, previous, next))
+            return NONE;
+        double previousValue = previousAttributes.map(Pair::getRight).orElse(0.0);
+        double nextValue = nextAttributes.map(Pair::getRight).orElse(0.0);
+        if (previousValue > nextValue)
+            return PREVIOUS;
+        if (previousValue == nextValue && previousValue == 0.0)
+            return NONE;
+        return NEXT;
+    }
+
+    /**
+     * Order
+     *
+     * @param edges
+     * @return
+     */
+    private static List<HalfEdge> getOrderedEdgesFromCycle(List<HalfEdge> edges) {
+        List<HalfEdge> orderedEdges = new ArrayList<>();
+        if (edges.isEmpty()) {
+            return orderedEdges;
+        }
+        HalfEdge first = edges.get(0);
+        orderedEdges.add(first);
+        Node currentNode = first.getTarget();
+        HalfEdge current = TopologicalGraph.next(currentNode, first, edges);
+        orderedEdges.add(current);
+        currentNode = current.getTarget();
+        while (current != first) {
+            current = TopologicalGraph.next(currentNode, current, edges);
+            currentNode = current.getTarget();
+            if (current != first)
+                orderedEdges.add(current);
+        }
+        return orderedEdges;
+    }
+
+    private static void log(Object text) {
+        if (DEBUG)
+            System.out.println(text);
+    }
+
+    private static List<HalfEdge> getOrderedEdges(List<HalfEdge> edges) throws EdgeException {
+        log("getOrderedEdges");
+        edges.forEach(e -> log(e.getGeometry()));
+        List<HalfEdge> orderedEdges = new ArrayList<>();
+        if (edges.isEmpty())
+            return orderedEdges;
+        boolean forward = true;
+        HalfEdge current = edges.remove(0);
+        log("current\n" + current.getGeometry());
+        orderedEdges.add(current);
+        Node currentNode = current.getTarget();
+        while (!edges.isEmpty()) {
+            currentNode = forward ? current.getTarget() : orderedEdges.get(0).getOrigin();
+            current = forward ? TopologicalGraph.next(currentNode, current, edges)
+                    : TopologicalGraph.previous(currentNode, orderedEdges.get(0), edges);
+            if (current == null) {
+                if (forward) { // try backwards
+                    forward = false;
+                } else { // we already tried forwards and backwards
+                    throw new EdgeException();
+                }
+            } else {
+                log("current\n" + current.getGeometry());
+                edges.remove(current);
+                if (forward) {
+                    orderedEdges.add(current);
+                } else {
+                    orderedEdges.add(0, current);
+                }
+            }
+        }
+        return orderedEdges;
+    }
+
+    private static Coordinate getUnitVector(Coordinate c1, Coordinate c2) {
+        double dx = c2.x - c1.x, dy = c2.y - c1.y;
+        double length = Math.sqrt(dx * dx + dy * dy);
+        return new Coordinate(dx / length, dy / length);
+    }
+
+    private static Coordinate getPerpendicularVector(Coordinate c1, Coordinate c2, boolean left) {
+        double dx = c2.x - c1.x, dy = c2.y - c1.y;
+        double x = left ? -1 : 1, y = left ? 1 : -1;
+        double length = Math.sqrt(dx * dx + dy * dy);
+        return new Coordinate(x * dy / length, y * dx / length);
+    }
+
+    private static List<Double> sampleWidths(double length, RealDistribution nd, double minWidth, double maxWidth) {
+        if (length < minWidth)
+            return Collections.singletonList(length);
+        List<Double> widths = new ArrayList<>();
+        double sum = 0;
+        while (sum < length) {
+            // sample a width
+            double sample = nd.sample();
+            // if we sampled enough (total widths greater than the targer)
+            if (sum + sample > length) {
+                double remaining = length - sum;
+                // remaining is what remains to be drawn
+                if (remaining > minWidth) {
+                    sample = remaining;
+                } else {
+                    double previous = widths.get(widths.size() - 1);
+                    widths.remove(widths.size() - 1);
+                    sum -= previous;
+                    if (previous + remaining < maxWidth) {
+                        sample = previous + remaining;
+                    } else {
+                        sample = (previous + remaining) / 2;
+                        widths.add(sample);
+                        sum += sample;
+                    }
+                }
+            }
+            widths.add(sample);
+            sum += sample;
+        }
+        return widths;
+    }
+
+    private static double getAngle(Coordinate c1, Coordinate c2, Coordinate d) {
+        return Angle.angleBetween(c2, c1, new Coordinate(c1.x + d.x, c1.y + d.y));
+    }
+
+    @SuppressWarnings("rawtypes")
+    static List<Geometry> polygonize(Geometry geometry) {
+        LineMerger merger = new LineMerger();
+        merger.add(geometry);
+        Polygonizer polygonizer = new Polygonizer();
+        polygonizer.add(merger.getMergedLineStrings());
+        Collection polys = polygonizer.getPolygons();
+        return Arrays.asList(GeometryFactory.toPolygonArray(polys));
+    }
+
+    private static LinearRing snap(LinearRing l, Coordinate c, double tolerance) {
+        List<Coordinate> coordinates = new ArrayList<>(l.getNumPoints());
+        for (int i = 0; i < l.getNumPoints() - 1; i++) {
+            Coordinate c1 = l.getCoordinateN(i), c2 = l.getCoordinateN(i + 1);
+            coordinates.add(c1);
+            LineSegment segment = new LineSegment(c1, c2);
+            double distance = segment.distance(c);
+            if (distance <= tolerance && c1.distance(c) > distance && c2.distance(c) > distance) {
+                // log("INSERTING " + l.getFactory().createPoint(c));
+                coordinates.add(c);
+            }
+        }
+        coordinates.add(l.getCoordinateN(0));// has to be a loop / ring
+        return l.getFactory().createLinearRing(coordinates.toArray(new Coordinate[coordinates.size()]));
+    }
+
+    private static Polygon snap(Polygon poly, Coordinate c, double tolerance) {
+        LinearRing shell = snap(poly.getExteriorRing(), c, tolerance);
+        LinearRing[] holes = new LinearRing[poly.getNumInteriorRing()];
+        for (int i = 0; i < holes.length; i++) {
+            holes[i] = snap(poly.getInteriorRingN(i), c, tolerance);
+        }
+        return poly.getFactory().createPolygon(shell, holes);
+    }
+
+    static int sharedPoints(Geometry a, Geometry b) {
+        Geometry[] snapped = GeometrySnapper.snap(a, b, 0.1);
+        Set<Coordinate> ca = new HashSet<>(Arrays.asList(snapped[0].getCoordinates()));
+        Set<Coordinate> cb = new HashSet<>(Arrays.asList(snapped[1].getCoordinates()));
+        return (int) ca.stream().filter(cb::contains).count();
+    }
+
+    public static SimpleFeatureCollection runTopologicalStraightSkeletonParcelDecomposition(SimpleFeatureCollection sfcParcelIn, File roadFile, String NAME_ATT_ROAD, String NAME_ATT_IMPORTANCE, double maxDepth, double maxDistanceForNearestRoad, double minimalArea, double minWidth, double maxWidth, double omega, RandomGenerator rng, double streetWidth, String name) throws IOException {
+        DataStore dsRoad = CollecMgmt.getDataStore(roadFile);
+        SimpleFeatureCollection p = runTopologicalStraightSkeletonParcelDecomposition(sfcParcelIn, dsRoad.getFeatureSource(dsRoad.getTypeNames()[0]).getFeatures(), NAME_ATT_ROAD, NAME_ATT_IMPORTANCE, maxDepth, maxDistanceForNearestRoad,
+                minimalArea, minWidth, maxWidth, omega, rng, streetWidth, name);
+        dsRoad.dispose();
+        return p;
+    }
+
+    /**
+     * Run Straight Skeleton on marked parcels
+     */
+    public static SimpleFeatureCollection runTopologicalStraightSkeletonParcelDecomposition(SimpleFeatureCollection sfcParcelIn, SimpleFeatureCollection roads, String NAME_ATT_ROAD, String NAME_ATT_IMPORTANCE, double maxDepth, double maxDistanceForNearestRoad, double minimalArea, double minWidth, double maxWidth, double omega, RandomGenerator rng, double streetWidth, String name) {
+        DefaultFeatureCollection result = new DefaultFeatureCollection();
+        try (SimpleFeatureIterator parcelIt = sfcParcelIn.features()) {
+            while (parcelIt.hasNext()) {
+                SimpleFeature sf = parcelIt.next();
+                if (sf.getAttribute(MarkParcelAttributeFromPosition.getMarkFieldName()).equals(1))
+                    result.addAll(runTopologicalStraightSkeletonParcelDecomposition(sf, roads, NAME_ATT_ROAD, NAME_ATT_IMPORTANCE, maxDepth,
+                            maxDistanceForNearestRoad, minimalArea, minWidth, maxWidth, omega, rng, streetWidth, name));
+            }
+        } catch (Exception problem) {
+            problem.printStackTrace();
+        }
+        return result;
+    }
+
+    /**
+     * Divide a peripheral road into multiple parts. Will create a new segment if the road angle is too important (less than 2/3 pi) and have a certain length.
+     *
+     * @param lr peripheral road
+     * @return list of road segments
+     */
+    public static List<MultiLineString> dividePeripheralRoadInParts(LinearRing lr) {
+        List<MultiLineString> ls = new ArrayList<>();
+        double maxLength = lr.getLength() / 2;
+        Coordinate[] coordinates = lr.getCoordinates();
+        List<LineString> oneRoad = new ArrayList<>();
+        double cumulateLength = 0;
+        for (int c = 0; c < coordinates.length - 1; c++) {
+            LineString segment = new GeometryBuilder(lr.getFactory()).lineString(coordinates[c].x, coordinates[c].y, coordinates[c + 1].x, coordinates[c + 1].y);
+            cumulateLength += segment.getLength();
+            if (oneRoad.size() > 0) {
+                // get last (must be long enough to represent a real road segment, not a buffer angle part)
+                LineString last = null;
+                for (int l = oneRoad.size() - 1; l >= 0; l--) {
+                    if (oneRoad.get(l).getLength() > 2 && segment.getLength() > 2) { // if the length of a segment is superior to two meters, we consider it's a real segment
+                        last = oneRoad.get(l);
+                        break;
+                    }
+                }
+                if (last != null && Angle.angleBetween(coordinates[c + 1], coordinates[c], last.getCoordinates()[0]) < 2 * Math.PI / 3) {
+                    ls.add(oneRoad.size() == 1 ? Lines.getMultiLineString(oneRoad.get(0)) : (MultiLineString) lr.getFactory().buildGeometry(oneRoad).union());
+                    oneRoad = new ArrayList<>();
+                    cumulateLength = 0;
+                }
+            }
+            oneRoad.add(segment);
+            if (cumulateLength > maxLength) { // we start a new road
+                ls.add(oneRoad.size() == 1 ? Lines.getMultiLineString(oneRoad.get(0)) : (MultiLineString) lr.getFactory().buildGeometry(oneRoad).union());
+                oneRoad = new ArrayList<>();
+                cumulateLength -= maxLength;
+            }
+        }
+        // last segment should have not been put inside collection so we do it now
+        if (oneRoad.size() != 0)
+            ls.add(oneRoad.size() == 1 ? Lines.getMultiLineString(oneRoad.get(0)) : (MultiLineString) lr.getFactory().buildGeometry(oneRoad).union());
+
+        if (SAVEINTERMEDIATERESULT) { //save all generated peripheral roads
+            DefaultFeatureCollection tmp = new DefaultFeatureCollection();
+            try {
+                tmp.addAll(Geom.geomsToCollec(ls, Schemas.getBasicMLSSchema("PeripheralRoad")));
+                FOLDER_OUT_DEBUG.mkdirs();
+                if (!tmp.isEmpty())
+                    CollecMgmt.exportSFC(tmp, new File(FOLDER_OUT_DEBUG, "peripheralRoads"), false);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        return ls;
+    }
+
+    /**
+     * Class to run an automatic Straight Skeleton application on a set of parcels
+     */
+    public static SimpleFeatureCollection runTopologicalStraightSkeletonParcelDecomposition(SimpleFeature feat, SimpleFeatureCollection roads,
+                                                                                            String roadNameAttribute, String roadImportanceAttribute, double maxDepth, double maxDistanceForNearestRoad,
+                                                                                            double minimalArea, double minWidth, double maxWidth, double omega, RandomGenerator rng, double widthRoad, String name) {
+        int count = 0;
+        List<Polygon> globalOutputParcels = new ArrayList<>();
+        List<Polygon> polygons = Polygons.getPolygons((Geometry) feat.getDefaultGeometry());
+        for (Polygon polygon : polygons) {
+            try {
+                if (polygon.getArea() < minimalArea) // if small parcel, we ignore
+                    continue;
+                log("start with polygon " + count);
+                StraightSkeletonDivision decomposition = new StraightSkeletonDivision(polygon, roads,
+                        roadNameAttribute, roadImportanceAttribute, maxDepth, generatePeripheralRoad ? maxDistanceForNearestRoad + widthRoad : maxDistanceForNearestRoad, generatePeripheralRoad, widthRoad, name);
+                export(decomposition.straightSkeleton.getGraph(), new File(FOLDER_OUT_DEBUG, "after_fix"));
+                if (decomposition.betaStrips != null)
+                    globalOutputParcels.addAll(decomposition.createParcels(minWidth, maxWidth, omega, rng));
+                else
+                    globalOutputParcels.add(decomposition.initialPolygon);
+                log("end with polygon " + count++);
+            } catch (Exception e) {
+                log("error with polygon " + count);
+                count += 1;
+                e.printStackTrace();
+            }
+        }
+        TopologicalGraph output = new TopologicalGraph(globalOutputParcels, 0.02);
+        DefaultFeatureCollection result = new DefaultFeatureCollection();
+        SimpleFeatureBuilder builder = Schemas.getBasicSchema("parcelSplitSS");
+        for (Face face : output.getFaces()) {
+            builder.set(CollecMgmt.getDefaultGeomName(), face.getGeometry());
+            result.add(builder.buildFeature(Attribute.makeUniqueId()));
+        }
+        return result;
+    }
+
+    private static void export(TopologicalGraph graph, File directory) {
+        if (!isSAVEINTERMEDIATERESULT() && !isDEBUG())
+            return;
+        for (int id = 0; id < graph.getFaces().size(); id++)
+            graph.getFaces().get(id).setAttribute("ID", id);
+        List<Node> nodes = new ArrayList<>(graph.getNodes());
+        for (int id = 0; id < graph.getNodes().size(); id++)
+            nodes.get(id).setAttribute("ID", id);
+        for (int id = 0; id < graph.getEdges().size(); id++) {
+            HalfEdge edge = graph.getEdges().get(id);
+            edge.setAttribute("ID", id);
+            edge.setAttribute("ORIGIN", edge.getOrigin().getAttribute("ID"));
+            edge.setAttribute("TARGET", edge.getTarget().getAttribute("ID"));
+            if (edge.getFace() != null)
+                edge.setAttribute("FACE", edge.getFace().getAttribute("ID"));
+            else
+                edge.setAttribute("FACE", "");
+        }
+        for (int id = 0; id < graph.getEdges().size(); id++) {
+            HalfEdge edge = graph.getEdges().get(id);
+            edge.setAttribute("TWIN", (edge.getTwin() != null) ? edge.getTwin().getAttribute("ID") : null);
+            edge.setAttribute("NEXT", (edge.getNext() != null) ? edge.getNext().getAttribute("ID") : null);
+        }
+        if (!directory.isDirectory())
+            directory.mkdirs();
+        TopologicalGraph.setSRID(2154);
+        TopologicalGraph.export(graph.getFaces(), new File(directory, "faces.gpkg"), Polygon.class);
+        TopologicalGraph.export(graph.getEdges(), new File(directory, "edges.gpkg"), LineString.class);
+        TopologicalGraph.export(graph.getNodes(), new File(directory, "nodes.gpkg"), Point.class);
+    }
+
+    public static boolean isSAVEINTERMEDIATERESULT() {
+        return SAVEINTERMEDIATERESULT;
+    }
+
+    public static void setSAVEINTERMEDIATERESULT(boolean SAVEINTERMEDIATERES) {
+        SAVEINTERMEDIATERESULT = SAVEINTERMEDIATERES;
+    }
+
+    public static boolean isGeneratePeripheralRoad() {
+        return generatePeripheralRoad;
+    }
+
+    public static void setGeneratePeripheralRoad(boolean generatePeripheralRoad) {
+        StraightSkeletonDivision.generatePeripheralRoad = generatePeripheralRoad;
+    }
+
+    public static boolean isDEBUG() {
+        return DEBUG;
+    }
+
+    public static void setDEBUG(boolean DEBUG) {
+        StraightSkeletonDivision.DEBUG = DEBUG;
     }
 
     private Optional<Pair<String, Double>> getRoadAttributes(LineString l, double maxDistanceForNearestRoad) {
@@ -311,107 +683,10 @@ public class StraightSkeletonDivision {
         return primary;
     }
 
-    private static boolean isReflex(Node node, HalfEdge previous, HalfEdge next) {
-        return isReflex(node.getCoordinate(), previous.getGeometry(), next.getGeometry());
-    }
-
-    private static Coordinate getNextCoordinate(Coordinate current, LineString line) {
-        return (line.getCoordinateN(0).equals2D(current)) ? line.getCoordinateN(1) : line.getCoordinateN(line.getNumPoints() - 2);
-    }
-
-
-    private static boolean isReflex(Coordinate current, LineString previous, LineString next) {
-        Coordinate previousCoordinate = getNextCoordinate(current, previous);
-        Coordinate nextCoordinate = getNextCoordinate(current, next);
-        return Orientation.index(previousCoordinate, current, nextCoordinate) == Orientation.CLOCKWISE;
-    }
-
-    public static final int NONE = 0;
-    public static final int PREVIOUS = 1;
-    public static final int NEXT = 2;
-
-    private static int classify(Node node, HalfEdge previous, Optional<Pair<String, Double>> previousAttributes, HalfEdge next,
-                                Optional<Pair<String, Double>> nextAttributes) {
-        if (isReflex(node, previous, next))
-            return NONE;
-        double previousValue = previousAttributes.map(Pair::getRight).orElse(0.0);
-        double nextValue = nextAttributes.map(Pair::getRight).orElse(0.0);
-        if (previousValue > nextValue)
-            return PREVIOUS;
-        if (previousValue == nextValue && previousValue == 0.0)
-            return NONE;
-        return NEXT;
-    }
-
     private Pair<String, Double> getRoadAttributes(SimpleFeature s) {
         String name = (String) s.getAttribute(NAME_ATT_ROADNAME);
         String impo = (String) s.getAttribute(NAME_ATT_LEVELOFATTRACTION);
         return new ImmutablePair<>(name == null ? "unknown" : name, Double.parseDouble(impo.replaceAll(",", ".")));
-    }
-
-    /**
-     * Order
-     *
-     * @param edges
-     * @return
-     */
-    private static List<HalfEdge> getOrderedEdgesFromCycle(List<HalfEdge> edges) {
-        List<HalfEdge> orderedEdges = new ArrayList<>();
-        if (edges.isEmpty()) {
-            return orderedEdges;
-        }
-        HalfEdge first = edges.get(0);
-        orderedEdges.add(first);
-        Node currentNode = first.getTarget();
-        HalfEdge current = TopologicalGraph.next(currentNode, first, edges);
-        orderedEdges.add(current);
-        currentNode = current.getTarget();
-        while (current != first) {
-            current = TopologicalGraph.next(currentNode, current, edges);
-            currentNode = current.getTarget();
-            if (current != first)
-                orderedEdges.add(current);
-        }
-        return orderedEdges;
-    }
-
-    private static void log(Object text) {
-        if (DEBUG)
-            System.out.println(text);
-    }
-
-    private static List<HalfEdge> getOrderedEdges(List<HalfEdge> edges) throws EdgeException {
-        log("getOrderedEdges");
-        edges.forEach(e -> log(e.getGeometry()));
-        List<HalfEdge> orderedEdges = new ArrayList<>();
-        if (edges.isEmpty())
-            return orderedEdges;
-        boolean forward = true;
-        HalfEdge current = edges.remove(0);
-        log("current\n" + current.getGeometry());
-        orderedEdges.add(current);
-        Node currentNode = current.getTarget();
-        while (!edges.isEmpty()) {
-            currentNode = forward ? current.getTarget() : orderedEdges.get(0).getOrigin();
-            current = forward ? TopologicalGraph.next(currentNode, current, edges)
-                    : TopologicalGraph.previous(currentNode, orderedEdges.get(0), edges);
-            if (current == null) {
-                if (forward) { // try backwards
-                    forward = false;
-                } else { // we already tried forwards and backwards
-                    throw new EdgeException();
-                }
-            } else {
-                log("current\n" + current.getGeometry());
-                edges.remove(current);
-                if (forward) {
-                    orderedEdges.add(current);
-                } else {
-                    orderedEdges.add(0, current);
-                }
-            }
-        }
-        return orderedEdges;
     }
 
     /**
@@ -644,52 +919,6 @@ public class StraightSkeletonDivision {
         return alphaStripGraph;
     }
 
-    private static Coordinate getUnitVector(Coordinate c1, Coordinate c2) {
-        double dx = c2.x - c1.x, dy = c2.y - c1.y;
-        double length = Math.sqrt(dx * dx + dy * dy);
-        return new Coordinate(dx / length, dy / length);
-    }
-
-    private static Coordinate getPerpendicularVector(Coordinate c1, Coordinate c2, boolean left) {
-        double dx = c2.x - c1.x, dy = c2.y - c1.y;
-        double x = left ? -1 : 1, y = left ? 1 : -1;
-        double length = Math.sqrt(dx * dx + dy * dy);
-        return new Coordinate(x * dy / length, y * dx / length);
-    }
-
-    private static List<Double> sampleWidths(double length, RealDistribution nd, double minWidth, double maxWidth) {
-        if (length < minWidth)
-            return Collections.singletonList(length);
-        List<Double> widths = new ArrayList<>();
-        double sum = 0;
-        while (sum < length) {
-            // sample a width
-            double sample = nd.sample();
-            // if we sampled enough (total widths greater than the targer)
-            if (sum + sample > length) {
-                double remaining = length - sum;
-                // remaining is what remains to be drawn
-                if (remaining > minWidth) {
-                    sample = remaining;
-                } else {
-                    double previous = widths.get(widths.size() - 1);
-                    widths.remove(widths.size() - 1);
-                    sum -= previous;
-                    if (previous + remaining < maxWidth) {
-                        sample = previous + remaining;
-                    } else {
-                        sample = (previous + remaining) / 2;
-                        widths.add(sample);
-                        sum += sample;
-                    }
-                }
-            }
-            widths.add(sample);
-            sum += sample;
-        }
-        return widths;
-    }
-
     private Optional<ImmutablePair<HalfEdge, Coordinate>> getIntersection(Coordinate o, Coordinate d, TopologicalGraph graph, List<HalfEdge> edges) {
         Point p = factory.createPoint(o);
         log("getIntersection\n" + p + "\n" + d.getX() + "," + d.getY() + "\n" + factory.createPoint(new Coordinate(o.x + d.x, o.y + d.y)));
@@ -736,10 +965,6 @@ public class StraightSkeletonDivision {
                 .map(h -> Lines.getRayLineSegmentIntersection(origin, d, h))
                 .sorted((p1, p2) -> Double.compare(p1.distance(origin), p2.distance(origin))).findFirst();
         return intersection;
-    }
-
-    private static double getAngle(Coordinate c1, Coordinate c2, Coordinate d) {
-        return Angle.angleBetween(c2, c1, new Coordinate(c1.x + d.x, c1.y + d.y));
     }
 
     private List<Coordinate> getPath(List<HalfEdge> graphEdges, Polygon strip, Node node, Coordinate direction) {
@@ -796,7 +1021,7 @@ public class StraightSkeletonDivision {
             if (!optionalIntersection.isPresent()) {
                 // try again with exterior edges (but not the one the point is on)
                 edges = straightSkeleton.getGraph().getEdges().stream().filter(
-                        h -> h.getAttribute("EXTERIOR").toString().equals("true") && h.getGeometry().distance(factory.createPoint(c2)) > tolerance)
+                                h -> h.getAttribute("EXTERIOR").toString().equals("true") && h.getGeometry().distance(factory.createPoint(c2)) > tolerance)
                         .collect(Collectors.toList());
                 optionalIntersection = getIntersection(c2, d, straightSkeleton.getGraph(), edges);
                 if (!optionalIntersection.isPresent()) {
@@ -1211,41 +1436,6 @@ public class StraightSkeletonDivision {
         return snapped(polygon, tolerance);
     }
 
-    @SuppressWarnings("rawtypes")
-    public static List<Geometry> polygonize(Geometry geometry) {
-        LineMerger merger = new LineMerger();
-        merger.add(geometry);
-        Polygonizer polygonizer = new Polygonizer();
-        polygonizer.add(merger.getMergedLineStrings());
-        Collection polys = polygonizer.getPolygons();
-        return Arrays.asList(GeometryFactory.toPolygonArray(polys));
-    }
-
-    private static LinearRing snap(LinearRing l, Coordinate c, double tolerance) {
-        List<Coordinate> coordinates = new ArrayList<>(l.getNumPoints());
-        for (int i = 0; i < l.getNumPoints() - 1; i++) {
-            Coordinate c1 = l.getCoordinateN(i), c2 = l.getCoordinateN(i + 1);
-            coordinates.add(c1);
-            LineSegment segment = new LineSegment(c1, c2);
-            double distance = segment.distance(c);
-            if (distance <= tolerance && c1.distance(c) > distance && c2.distance(c) > distance) {
-                // log("INSERTING " + l.getFactory().createPoint(c));
-                coordinates.add(c);
-            }
-        }
-        coordinates.add(l.getCoordinateN(0));// has to be a loop / ring
-        return l.getFactory().createLinearRing(coordinates.toArray(new Coordinate[coordinates.size()]));
-    }
-
-    private static Polygon snap(Polygon poly, Coordinate c, double tolerance) {
-        LinearRing shell = snap(poly.getExteriorRing(), c, tolerance);
-        LinearRing[] holes = new LinearRing[poly.getNumInteriorRing()];
-        for (int i = 0; i < holes.length; i++) {
-            holes[i] = snap(poly.getInteriorRingN(i), c, tolerance);
-        }
-        return poly.getFactory().createPolygon(shell, holes);
-    }
-
     public Pair<Polygon, Polygon> splitPolygon(Polygon poly, Coordinate origin, Coordinate projection) {// LineString line) {
         LineString line = poly.getFactory().createLineString(new Coordinate[]{projection, origin});
         Polygon snapped = snap(poly, projection, tolerance);
@@ -1328,10 +1518,6 @@ public class StraightSkeletonDivision {
         return null;
     }
 
-    private static final int RIGHT = 1;
-    private static final int LEFT = -1;
-    private static final int NEITHER = 0;
-
     private int position(Polygon polygon, LineString line) {
         GeometrySnapper snapper = new GeometrySnapper(line);
         line = part(polygon, (LineString) snapper.snapTo(polygon, tolerance));
@@ -1378,50 +1564,18 @@ public class StraightSkeletonDivision {
         return NEITHER;
     }
 
-    public static int sharedPoints(Geometry a, Geometry b) {
-        Geometry[] snapped = GeometrySnapper.snap(a, b, 0.1);
-        Set<Coordinate> ca = new HashSet<>(Arrays.asList(snapped[0].getCoordinates()));
-        Set<Coordinate> cb = new HashSet<>(Arrays.asList(snapped[1].getCoordinates()));
-        return (int) ca.stream().filter(cb::contains).count();
-    }
-
-    public static SimpleFeatureCollection runTopologicalStraightSkeletonParcelDecomposition(SimpleFeatureCollection sfcParcelIn, File roadFile, String NAME_ATT_ROAD, String NAME_ATT_IMPORTANCE, double maxDepth, double maxDistanceForNearestRoad, double minimalArea, double minWidth, double maxWidth, double omega, RandomGenerator rng, double streetWidth, String name) throws IOException {
-        DataStore dsRoad = CollecMgmt.getDataStore(roadFile);
-        SimpleFeatureCollection p = runTopologicalStraightSkeletonParcelDecomposition(sfcParcelIn, dsRoad.getFeatureSource(dsRoad.getTypeNames()[0]).getFeatures(), NAME_ATT_ROAD, NAME_ATT_IMPORTANCE, maxDepth, maxDistanceForNearestRoad,
-                minimalArea, minWidth, maxWidth, omega, rng, streetWidth, name);
-        dsRoad.dispose();
-        return p;
-    }
-
-    /**
-     * Run Straight Skeleton on marked parcels
-     */
-    public static SimpleFeatureCollection runTopologicalStraightSkeletonParcelDecomposition(SimpleFeatureCollection sfcParcelIn, SimpleFeatureCollection roads, String NAME_ATT_ROAD, String NAME_ATT_IMPORTANCE, double maxDepth, double maxDistanceForNearestRoad, double minimalArea, double minWidth, double maxWidth, double omega, RandomGenerator rng, double streetWidth, String name) {
-        DefaultFeatureCollection result = new DefaultFeatureCollection();
-        try (SimpleFeatureIterator parcelIt = sfcParcelIn.features()) {
-            while (parcelIt.hasNext()) {
-                SimpleFeature sf = parcelIt.next();
-                if (sf.getAttribute(MarkParcelAttributeFromPosition.getMarkFieldName()).equals(1))
-                    result.addAll(runTopologicalStraightSkeletonParcelDecomposition(sf, roads, NAME_ATT_ROAD, NAME_ATT_IMPORTANCE, maxDepth,
-                            maxDistanceForNearestRoad, minimalArea, minWidth, maxWidth, omega, rng, streetWidth, name));
-            }
-        } catch (Exception problem) {
-            problem.printStackTrace();
-        }
-        return result;
-    }
-
     /**
      * Creates a road around the parcel. reduce the parcel polygon and add the newly created road to the road collection
      *
      * @param p         initial polygon shape
      * @param roadWidth width of the road to create
-     * @return the new shape of the polygon
+     * @return A pair with the new input polygon to its right and the new road feature collection ti its left
+     * TODO remove peripheral road when they touch existing road
      */
-    public Polygon generatePeripheralRoad(Polygon p, double roadWidth) {
+    public Pair<Polygon, SimpleFeatureCollection> generatePeripheralRoad(Polygon p, double roadWidth) {
         Polygon newGeom = Polygons.getPolygon(p.buffer(-roadWidth));
         if (newGeom == null || newGeom.isEmpty())
-            return p;
+            return new ImmutablePair<>(p, this.roads);
         DefaultFeatureCollection newRoad = new DefaultFeatureCollection();
         SimpleFeatureBuilder roadSFB = new SimpleFeatureBuilder(roads.getSchema());
         newRoad.addAll(roads);
@@ -1433,163 +1587,11 @@ public class StraightSkeletonDivision {
             for (MultiLineString ls : dividePeripheralRoadInParts(pp.getExteriorRing())) {
                 roadSFB.set(roads.getSchema().getGeometryDescriptor().getLocalName(), ls);
                 roadSFB.set(this.NAME_ATT_ROADNAME, "autogenerated" + nb++);
-//			roadSFB.set(this.NAME_ATT_IMPORTANCE, ( new Random()).nextInt(5));
                 roadSFB.set(this.NAME_ATT_LEVELOFATTRACTION, 4);
-                SimpleFeature sf = roadSFB.buildFeature(Attribute.makeUniqueId());
-                newRoad.add(sf);
+                newRoad.add(roadSFB.buildFeature(Attribute.makeUniqueId()));
             }
         }
-        this.roads = newRoad;
-        return newGeom;
-    }
-
-    /**
-     * Divide a peripheral road into multiple parts. Will create a new segment if the road angle is too important (less than 2/3 pi) and have a certain length.
-     *
-     * @param lr peripheral road
-     * @return list of road segments
-     */
-    public static List<MultiLineString> dividePeripheralRoadInParts(LinearRing lr) {
-        List<MultiLineString> ls = new ArrayList<>();
-        double len = lr.getLength() / 2;
-        Coordinate[] coordinates = lr.getCoordinates();
-        List<LineString> oneRoad = new ArrayList<>();
-        double lenCrossed = 0;
-        for (int c = 0; c < coordinates.length - 1; c++) {
-            LineString segment = new GeometryBuilder(lr.getFactory()).lineString(coordinates[c].x, coordinates[c].y, coordinates[c + 1].x, coordinates[c + 1].y);
-            lenCrossed += segment.getLength();
-            if (oneRoad.size() > 0) {
-                // get last (must be long enough to represent a real road segment, not a buffer angle part)
-                LineString last = null;
-                for (int l = oneRoad.size() - 1; l >= 0; l--) {
-                    if (oneRoad.get(l).getLength() > 2 && segment.getLength() > 2) { // if the length of a segment is superior to two meters, we consider it's a real segment
-                        last = oneRoad.get(l);
-                        break;
-                    }
-                }
-                if (last != null && Angle.angleBetween(coordinates[c + 1], coordinates[c], last.getCoordinates()[0]) < 2 * Math.PI / 3) {
-                    ls.add(oneRoad.size() == 1 ? Lines.getMultiLineString(oneRoad.get(0)) : (MultiLineString) lr.getFactory().buildGeometry(oneRoad).union());
-                    oneRoad = new ArrayList<>();
-                    lenCrossed = 0;
-                }
-            }
-            oneRoad.add(segment);
-            if (lenCrossed > len) { // we start a new road
-                ls.add(oneRoad.size() == 1 ? Lines.getMultiLineString(oneRoad.get(0)) : (MultiLineString) lr.getFactory().buildGeometry(oneRoad).union());
-                oneRoad = new ArrayList<>();
-                lenCrossed -= len;
-            }
-        }
-        // last segment should have not been put inside collection so we do it now
-        if (oneRoad.size() != 0)
-            ls.add(oneRoad.size() == 1 ? Lines.getMultiLineString(oneRoad.get(0)) : (MultiLineString) lr.getFactory().buildGeometry(oneRoad).union());
-
-        if (SAVEINTERMEDIATERESULT) { //save all generated peripheral roads
-            DefaultFeatureCollection tmp = new DefaultFeatureCollection();
-            try {
-                tmp.addAll(Geom.geomsToCollec(ls, Schemas.getBasicMLSSchema("PeripheralRoad")));
-                FOLDER_OUT_DEBUG.mkdirs();
-                if (!tmp.isEmpty())
-                    CollecMgmt.exportSFC(tmp, new File(FOLDER_OUT_DEBUG, "peripheralRoads"), false);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-        return ls;
-    }
-
-    /**
-     * Class to run an automatic Straight Skeleton application on a set of parcels
-     */
-
-    public static SimpleFeatureCollection runTopologicalStraightSkeletonParcelDecomposition(SimpleFeature feat, SimpleFeatureCollection roads,
-                                                                                            String roadNameAttribute, String roadImportanceAttribute, double maxDepth, double maxDistanceForNearestRoad,
-                                                                                            double minimalArea, double minWidth, double maxWidth, double omega, RandomGenerator rng, double widthRoad, String name) {
-        int count = 0;
-        List<Polygon> globalOutputParcels = new ArrayList<>();
-        List<Polygon> polygons = Polygons.getPolygons((Geometry) feat.getDefaultGeometry());
-        for (Polygon polygon : polygons) {
-            try {
-                if (polygon.getArea() < minimalArea) // if small parcel, we ignore
-                    continue;
-                log("start with polygon " + count);
-                StraightSkeletonDivision decomposition = new StraightSkeletonDivision(polygon, roads,
-                        roadNameAttribute, roadImportanceAttribute, maxDepth, generatePeripheralRoad ? maxDistanceForNearestRoad + widthRoad : maxDistanceForNearestRoad, generatePeripheralRoad, widthRoad, name);
-                export(decomposition.straightSkeleton.getGraph(), new File(FOLDER_OUT_DEBUG, "after_fix"));
-                if (decomposition.betaStrips != null)
-                    globalOutputParcels.addAll(decomposition.createParcels(minWidth, maxWidth, omega, rng));
-                else
-                    globalOutputParcels.add(decomposition.initialPolygon);
-                log("end with polygon " + count++);
-            } catch (Exception e) {
-                log("error with polygon " + count);
-                count += 1;
-                e.printStackTrace();
-            }
-        }
-        TopologicalGraph output = new TopologicalGraph(globalOutputParcels, 0.02);
-        DefaultFeatureCollection result = new DefaultFeatureCollection();
-        SimpleFeatureBuilder builder = Schemas.getBasicSchema("parcelSplitSS");
-        for (Face face : output.getFaces()) {
-            builder.set(CollecMgmt.getDefaultGeomName(), face.getGeometry());
-            result.add(builder.buildFeature(Attribute.makeUniqueId()));
-        }
-        return result;
-    }
-
-    private static void export(TopologicalGraph graph, File directory) {
-        if (!isSAVEINTERMEDIATERESULT() && !isDEBUG())
-            return;
-        for (int id = 0; id < graph.getFaces().size(); id++)
-            graph.getFaces().get(id).setAttribute("ID", id);
-        List<Node> nodes = new ArrayList<>(graph.getNodes());
-        for (int id = 0; id < graph.getNodes().size(); id++)
-            nodes.get(id).setAttribute("ID", id);
-        for (int id = 0; id < graph.getEdges().size(); id++) {
-            HalfEdge edge = graph.getEdges().get(id);
-            edge.setAttribute("ID", id);
-            edge.setAttribute("ORIGIN", edge.getOrigin().getAttribute("ID"));
-            edge.setAttribute("TARGET", edge.getTarget().getAttribute("ID"));
-            if (edge.getFace() != null)
-                edge.setAttribute("FACE", edge.getFace().getAttribute("ID"));
-            else
-                edge.setAttribute("FACE", "");
-        }
-        for (int id = 0; id < graph.getEdges().size(); id++) {
-            HalfEdge edge = graph.getEdges().get(id);
-            edge.setAttribute("TWIN", (edge.getTwin() != null) ? edge.getTwin().getAttribute("ID") : null);
-            edge.setAttribute("NEXT", (edge.getNext() != null) ? edge.getNext().getAttribute("ID") : null);
-        }
-        if (!directory.isDirectory())
-            directory.mkdirs();
-        TopologicalGraph.setSRID(2154);
-        TopologicalGraph.export(graph.getFaces(), new File(directory, "faces.gpkg"), Polygon.class);
-        TopologicalGraph.export(graph.getEdges(), new File(directory, "edges.gpkg"), LineString.class);
-        TopologicalGraph.export(graph.getNodes(), new File(directory, "nodes.gpkg"), Point.class);
-    }
-
-    public static boolean isSAVEINTERMEDIATERESULT() {
-        return SAVEINTERMEDIATERESULT;
-    }
-
-    public static void setSAVEINTERMEDIATERESULT(boolean SAVEINTERMEDIATERES) {
-        SAVEINTERMEDIATERESULT = SAVEINTERMEDIATERES;
-    }
-
-    public static boolean isGeneratePeripheralRoad() {
-        return generatePeripheralRoad;
-    }
-
-    public static void setGeneratePeripheralRoad(boolean generatePeripheralRoad) {
-        StraightSkeletonDivision.generatePeripheralRoad = generatePeripheralRoad;
-    }
-
-    public static boolean isDEBUG() {
-        return DEBUG;
-    }
-
-    public static void setDEBUG(boolean DEBUG) {
-        StraightSkeletonDivision.DEBUG = DEBUG;
+        return new ImmutablePair<>(newGeom, newRoad);
     }
 }
 

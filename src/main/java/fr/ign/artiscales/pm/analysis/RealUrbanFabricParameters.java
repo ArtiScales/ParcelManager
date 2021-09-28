@@ -89,12 +89,12 @@ public class RealUrbanFabricParameters {
         this.buildingFile = buildingFile;
     }
 
-    /**
-     * Proceed to the analysis of parameters in every defined zones of the geographic files.
-     */
-    public static void main(String[] args) throws IOException {
-        RealUrbanFabricParameters rufp = new RealUrbanFabricParameters("genericZone", new File("src/main/resources/TestScenario/"));
-        rufp.generateEveryAnalysisOfScene();
+//    /**
+//     * Proceed to the analysis of parameters in every defined zones of the geographic files.
+//     */
+//    public static void main(String[] args) throws IOException {
+//        RealUrbanFabricParameters rufp = new RealUrbanFabricParameters("genericZone", new File("src/main/resources/TestScenario/"));
+//        rufp.generateEveryAnalysisOfScene();
 //        RealUrbanFabricParameters rufp = new RealUrbanFabricParameters(new File("src/main/resources/ParcelComparison/"));
 //        rufp.setParcelFile(new File("src/main/resources/ParcelComparison/parcel2003.gpkg"));
 //        rufp.scaleZone = "community";
@@ -108,7 +108,7 @@ public class RealUrbanFabricParameters {
 //            System.out.println("80: " + stat.getPercentile(80));
 //            System.out.println("90: " + stat.getPercentile(90));
 //        }
-    }
+//    }
 
     private static String getZoneEnglishName(String scaleZone, String zone) {
         switch (scaleZone) {
@@ -134,13 +134,14 @@ public class RealUrbanFabricParameters {
     }
 
     /**
-     * Set the scale of the analyzed zone. Can either be:
-     * <ul>
-     *           <li>community</li>
-     *           <li>genericZone</li>
-     *           <li>preciseZone</li>
-     *           <li>block</li>
-     * </ul>
+     * Set the scale of the analyzed zone.
+     *
+     * @param scaleZone Can either be: <ul>
+     *                  <li>community</li>
+     *                  <li>genericZone</li>
+     *                  <li>preciseZone</li>
+     *                  <li>block</li>
+     *                  </ul>
      */
     public void setScaleZone(String scaleZone) {
         if (!scaleZone.equals("community") && !scaleZone.equals("genericZone") && !scaleZone.equals("preciseZone") && !scaleZone.equals("block")) {
@@ -317,7 +318,7 @@ public class RealUrbanFabricParameters {
             if (outFolder != null) {
                 Graph vals = MakeStatisticGraphs.sortValuesAreaAndCategorize(
                         Arrays.stream(sfc.toArray(new SimpleFeature[0])).collect(Collectors.toList()), scaleZone + zoneName, true);
-                vals.setNameDistrib(vals.getNameDistrib()+"-built");
+                vals.setNameDistrib(vals.getNameDistrib() + "-built");
                 vals.toCSV(outFolder);
                 MakeStatisticGraphs.makeGraphHisto(vals, outFolder, "built parcels of the " + getZoneEnglishName(scaleZone, zoneName),
                         "parcel area", "number of parcels", 15);

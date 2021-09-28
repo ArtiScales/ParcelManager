@@ -17,10 +17,11 @@ public class Graph {
 
     /**
      * Put every information in a graph object.
+     *
      * @param sortedDistribution distribution sorted in the wanted order
-     * @param boundMin minimal bound
-     * @param boundMax maximal bound
-     * @param nameDistribution name of the distribution
+     * @param boundMin           minimal bound
+     * @param boundMax           maximal bound
+     * @param nameDistribution   name of the distribution
      */
     public Graph(List<Double> sortedDistribution, double boundMin, double boundMax, String nameDistribution) {
         this.sortedDistribution = sortedDistribution;
@@ -31,18 +32,25 @@ public class Graph {
 
     /**
      * Get value for sorted distribution
+     *
      * @return sorted distribution
      */
     public List<Double> getSortedDistribution() {
         return sortedDistribution;
     }
 
+    /**
+     * Set value for sorted distribution
+     *
+     * @param sortedDistribution new value
+     */
     public void setSortedDistribution(List<Double> sortedDistribution) {
         this.sortedDistribution = sortedDistribution;
     }
 
     /**
      * Get value for minimal bound represented on the schema
+     *
      * @return minimal bound
      */
     public double getBoundMin() {
@@ -51,6 +59,7 @@ public class Graph {
 
     /**
      * Set value for minimal bound represented on the schema
+     *
      * @param boundMin minimal bound
      */
     public void setBoundMin(double boundMin) {
@@ -59,7 +68,8 @@ public class Graph {
 
     /**
      * Set value for maximal bound represented on the schema
-     * @return  maximal bound
+     *
+     * @return maximal bound
      */
     public double getBoundMax() {
         return boundMax;
@@ -67,6 +77,7 @@ public class Graph {
 
     /**
      * Set value for maximal bound represented on the schema
+     *
      * @param boundMax maximal bound
      */
     public void setBoundMax(double boundMax) {
@@ -75,6 +86,7 @@ public class Graph {
 
     /**
      * Get the name of the distribution
+     *
      * @return name
      */
     public String getNameDistrib() {
@@ -83,6 +95,7 @@ public class Graph {
 
     /**
      * Set the name of the distribution
+     *
      * @param nameDistrib name
      */
     public void setNameDistrib(String nameDistrib) {
@@ -96,6 +109,7 @@ public class Graph {
 
     /**
      * Write distribution to a .csv file;
+     *
      * @param folderOut folder where the .csv is wrote
      * @throws IOException writing .csv
      */

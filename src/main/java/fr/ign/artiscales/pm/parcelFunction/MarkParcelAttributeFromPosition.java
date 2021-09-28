@@ -101,7 +101,7 @@ public class MarkParcelAttributeFromPosition {
      * @param parcels       Input parcel {@link SimpleFeatureCollection}
      * @param block         {@link SimpleFeatureCollection} containing the morphological block. Can be generated with the
      *                      {@link fr.ign.artiscales.tools.geometryGeneration.CityGeneration#createUrbanBlock(SimpleFeatureCollection)} method.
-     * @param roadFile      Geopackage containing the road segments
+     * @param roadFile      Geo file containing the road segments
      * @param exclusionZone Zone to be excluded for not counting an empty parcel as a road
      * @return {@link SimpleFeatureCollection} of the input parcels with marked parcels on the {@link #markFieldName} field.
      * @throws IOException reading roadFile
@@ -113,6 +113,16 @@ public class MarkParcelAttributeFromPosition {
         return result;
     }
 
+    /**
+     * Mark the parcels that have a connection to the road network, represented either by the void of parcels or road lines (optional)
+     *
+     * @param parcels       Input parcel {@link SimpleFeatureCollection}
+     * @param block         {@link SimpleFeatureCollection} containing the morphological block. Can be generated with the
+     *                      {@link fr.ign.artiscales.tools.geometryGeneration.CityGeneration#createUrbanBlock(SimpleFeatureCollection)} method.
+     * @param road          road segments
+     * @param exclusionZone Zone to be excluded for not counting an empty parcel as a road
+     * @return {@link SimpleFeatureCollection} of the input parcels with marked parcels on the {@link #markFieldName} field.
+     */
     public static SimpleFeatureCollection markParcelsConnectedToRoad(SimpleFeatureCollection parcels, SimpleFeatureCollection block, SimpleFeatureCollection road, Geometry exclusionZone) {
         SimpleFeatureCollection roads = CollecTransform.selectIntersection(road, parcels);
         final SimpleFeatureType featureSchema = ParcelSchema.getSFBMinParcelSplit().getFeatureType();
@@ -314,10 +324,10 @@ public class MarkParcelAttributeFromPosition {
     }
 
     /**
-     * Mark the built parcels. Subtract a buffer of 1 meters on the buildings to avoid blurry parcel and builing definition
+     * Mark the unbuilt parcels. Subtract a buffer of 1 meters on the buildings to avoid blurry parcel and building definition
      *
      * @param parcels      Input parcel {@link SimpleFeatureCollection}
-     * @param buildingFile Geopackage containing building features
+     * @param buildingFile Geo file containing building features
      * @return {@link SimpleFeatureCollection} of the input parcels with marked parcels on the {@link #markFieldName} field.
      * @throws IOException reading building file
      */
@@ -328,6 +338,13 @@ public class MarkParcelAttributeFromPosition {
         return result;
     }
 
+    /**
+     * Mark the unbuilt parcels. Subtract a buffer of 1 meters on the buildings to avoid blurry parcel and building definition
+     *
+     * @param parcels     Input parcel {@link SimpleFeatureCollection}
+     * @param buildingSFC building features
+     * @return {@link SimpleFeatureCollection} of the input parcels with marked parcels on the {@link #markFieldName} field.
+     */
     public static SimpleFeatureCollection markUnBuiltParcel(SimpleFeatureCollection parcels, SimpleFeatureCollection buildingSFC) {
         SimpleFeatureCollection buildings = CollecTransform.selectIntersection(buildingSFC, parcels);
         final SimpleFeatureType featureSchema = ParcelSchema.getSFBMinParcelSplit().getFeatureType();
@@ -370,7 +387,7 @@ public class MarkParcelAttributeFromPosition {
      * Mark the built parcels. Subtract a buffer of 1 meters on the buildings to avoid blurry parcel and building definition
      *
      * @param parcels      Input parcel {@link SimpleFeatureCollection}
-     * @param buildingFile Geopackage representing the buildings
+     * @param buildingFile Geo file representing the buildings
      * @return {@link SimpleFeatureCollection} of the input parcels with marked parcels on the {@link #markFieldName} field.
      * @throws IOException reading building file
      */
@@ -381,6 +398,13 @@ public class MarkParcelAttributeFromPosition {
         return result;
     }
 
+    /**
+     * Mark the built parcels. Subtract a buffer of 1 meters on the buildings to avoid blurry parcel and building definition
+     *
+     * @param parcels  Input parcel {@link SimpleFeatureCollection}
+     * @param building collection of  buildings
+     * @return {@link SimpleFeatureCollection} of the input parcels with marked parcels on the {@link #markFieldName} field.
+     */
     public static SimpleFeatureCollection markBuiltParcel(SimpleFeatureCollection parcels, SimpleFeatureCollection building) {
         SimpleFeatureCollection buildings = CollecTransform.selectIntersection(DataUtilities.collection(building), parcels);
         final SimpleFeatureType featureSchema = ParcelSchema.getSFBMinParcelSplit().getFeatureType();
@@ -599,7 +623,7 @@ public class MarkParcelAttributeFromPosition {
      * @param preciseZone List of precise zone to not take into account
      * @param zoningFile  A Geopackage containing the zoning plan
      * @return {@link SimpleFeatureCollection} of the input parcels with marked parcels on the {@link #markFieldName} field.
-     * @throws IOException
+     * @throws IOException reading zoningFile
      */
     public static SimpleFeatureCollection markParcelIntersectZoningWithoutPreciseZonings(SimpleFeatureCollection parcels, String genericZone,
                                                                                          List<String> preciseZone, File zoningFile) throws IOException {
@@ -735,14 +759,36 @@ public class MarkParcelAttributeFromPosition {
         return result;
     }
 
+    /**
+     * Mark parcels if its community type equals a given value
+     *
+     * @param parcels   parcel feature
+     * @param attribute value for the community type to be marked
+     * @return the collection with marked parcels
+     */
     public static SimpleFeatureCollection markParcelOfCommunityType(SimpleFeatureCollection parcels, String attribute) {
         return markParcelWithAttribute(parcels, ParcelAttribute.getCommunityTypeFieldName(), attribute);
     }
 
+    /**
+     * Mark parcels if its community number equals a given value
+     *
+     * @param parcels   parcel feature
+     * @param attribute value for the community number to be marked
+     * @return the collection with marked parcels
+     */
     public static SimpleFeatureCollection markParcelOfCommunityNumber(SimpleFeatureCollection parcels, String attribute) {
         return markParcelWithAttribute(parcels, ParcelSchema.getMinParcelCommunityField(), attribute);
     }
 
+    /**
+     * Mark parcels if one of its attribute equals a given value
+     *
+     * @param parcels   parcel feature
+     * @param fieldName name of the field
+     * @param attribute value for the given field to be marked
+     * @return the collection with marked parcels
+     */
     public static SimpleFeatureCollection markParcelWithAttribute(SimpleFeatureCollection parcels, String fieldName, String attribute) {
         final SimpleFeatureType featureSchema = ParcelSchema.getSFBMinParcelSplit().getFeatureType();
         DefaultFeatureCollection result = new DefaultFeatureCollection();
@@ -1035,8 +1081,10 @@ public class MarkParcelAttributeFromPosition {
     }
 
     /**
-     * @param sfc
-     * @return
+     * Affect a null value to every mark field of a collection. Must contains the marking field in the first place.
+     *
+     * @param sfc input parcel collection to remove mark.
+     * @return collection with null values in the marking field.
      */
     public static SimpleFeatureCollection resetMarkingField(SimpleFeatureCollection sfc) {
         DefaultFeatureCollection result = new DefaultFeatureCollection();
@@ -1050,7 +1098,7 @@ public class MarkParcelAttributeFromPosition {
     /**
      * Merge SimpleFeatures that are marked and touches each other and keep the attribute of the largest feature
      *
-     * @param parcelCollection
+     * @param parcelCollection input parcel collection to mark
      * @return The collection with the same schema and its touching parcels merged
      */
     public static SimpleFeatureCollection unionTouchingMarkedGeometries(SimpleFeatureCollection parcelCollection) {
@@ -1096,10 +1144,22 @@ public class MarkParcelAttributeFromPosition {
         MarkParcelAttributeFromPosition.postMark = postMark;
     }
 
+    /**
+     * Count how many parcels of a set are marked.
+     *
+     * @param parcelCollection input parcel collection to count
+     * @return number of marked parcels
+     */
     public static long countMarkedParcels(SimpleFeatureCollection parcelCollection) {
         return Arrays.stream(parcelCollection.toArray(new SimpleFeature[0])).filter(sf -> sf.getAttribute(getMarkFieldName()) != null && ((Integer) sf.getAttribute(getMarkFieldName())) == 1).count();
     }
 
+    /**
+     * Mark a parcel's feat, either if they contain a <i>markField</i> attribute or not.
+     *
+     * @param parcel input parcel to mark.
+     * @return the parcel marked (possibly with an extra attribute)
+     */
     public static SimpleFeature markParcel(SimpleFeature parcel) {
         if (!CollecMgmt.isSimpleFeatureContainsAttribute(parcel, markFieldName)) {
             SimpleFeatureBuilder parcelSchema = ParcelSchema.addSplitField(parcel.getFeatureType());

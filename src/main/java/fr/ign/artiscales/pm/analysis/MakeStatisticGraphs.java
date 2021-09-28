@@ -71,6 +71,9 @@ public class MakeStatisticGraphs {
      * @param markedParcelFile {@link List} of parcels.
      * @param outFolder        Folder where the graph have to be exported
      * @param name             Title of the graph
+     * @param block            morphological islet
+     * @param roadFile         geo file containing road
+     * @throws IOException writing result
      */
     public static void makeWidthContactRoadGraph(List<SimpleFeature> markedParcelFile, SimpleFeatureCollection block, File roadFile, File outFolder, String name) throws IOException {
         DataStore roadDS = CollecMgmt.getDataStore(roadFile);
@@ -169,6 +172,16 @@ public class MakeStatisticGraphs {
         makeGraphHisto(Collections.singletonList(graph), graphDepotFolder, title, xTitle, yTitle, range);
     }
 
+    /**
+     * Generate a histogram graph.
+     *
+     * @param graphs           area graph objects with sorted distribution and bounds
+     * @param graphDepotFolder folder where every stats are stocked
+     * @param title            title of the graph
+     * @param xTitle           title of the x dimention
+     * @param yTitle           title of the y dimention
+     * @param range            number of categories
+     */
     public static void makeGraphHisto(List<Graph> graphs, File graphDepotFolder, String title, String xTitle, String yTitle, int range) {
         // general settings
         CategoryChart chart = new CategoryChartBuilder().width(450).height(350).title(title).xAxisTitle(xTitle).yAxisTitle(yTitle).build();
@@ -202,7 +215,7 @@ public class MakeStatisticGraphs {
      * @param title            title of the graph
      * @param xTitle           title of the x dimention
      * @param yTitle           title of the y dimention
-     * @throws IOException
+     * @throws IOException write .csv and graph
      */
     public static void roadGraph(SimpleFeatureCollection roads, String title, String xTitle, String yTitle, File graphDepotFolder) throws IOException {
         HashMap<String, Double> vals = new HashMap<>();

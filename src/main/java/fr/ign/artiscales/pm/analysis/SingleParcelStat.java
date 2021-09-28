@@ -156,42 +156,42 @@ public class SingleParcelStat {
         SimpleFeatureCollection block = CityGeneration.createUrbanBlock(parcels, true);
         Arrays.stream(parcels.toArray(new SimpleFeature[0]))
                 .filter(p -> (int) p.getAttribute(MarkParcelAttributeFromPosition.getMarkFieldName()) == 1).forEach(parcel -> {
-            // if parcel is marked to be analyzed
-            Geometry parcelGeom = (Geometry) parcel.getDefaultGeometry();
-            double widthRoadContact = ParcelState.getParcelFrontSideWidth(Polygons.getPolygon(parcelGeom),
-                    CollecTransform.selectIntersection(roads, parcelGeom.buffer(7)), Lines.fromMultiToLineString(
-                            CollecTransform.fromPolygonSFCtoRingMultiLines(CollecTransform.selectIntersection(block, parcelGeom.buffer(7)))));
-            boolean contactWithRoad = widthRoadContact != 0;
-            // if we set a parcel plan to compare, we calculate the Hausdorff distances for the parcels that intersects the most parts.
-            String HausDist = "NA";
-            String DisHausDst = "NA";
-            String CodeAppar = "NA";
-            // Setting of Hausdorf distance
-            if (parcelToCompare != null) {
-                HausdorffSimilarityMeasure hausDis = new HausdorffSimilarityMeasure();
-                SimpleFeature parcelCompare = CollecTransform.getIntersectingSimpleFeatureFromSFC(parcelGeom, parcelToCompare);
-                if (parcelCompare != null) {
-                    Geometry parcelCompareGeom = (Geometry) parcelCompare.getDefaultGeometry();
-                    DiscreteHausdorffDistance dhd = new DiscreteHausdorffDistance(parcelGeom, parcelCompareGeom);
-                    HausDist = String.valueOf(hausDis.measure(parcelGeom, parcelCompareGeom));
-                    DisHausDst = String.valueOf(dhd.distance());
-                    CodeAppar = makeParcelCode(parcelCompare);
-                }
-            }
-            // Calculating Aspect Ratio
-            MinimumBoundingCircle mbc = new MinimumBoundingCircle(parcelGeom);
-            MaximumInscribedCircle mic = new MaximumInscribedCircle(parcelGeom, 1);
-            String[] line = {
-                    parcel.getAttribute(ParcelSchema.getMinParcelCommunityField()) + "-"
-                            + parcel.getAttribute(ParcelSchema.getMinParcelSectionField()) + "-"
-                            + parcel.getAttribute(ParcelSchema.getMinParcelNumberField()),
-                    String.valueOf(parcelGeom.getArea()), String.valueOf(parcelGeom.getLength()), String.valueOf(contactWithRoad),
-                    String.valueOf(widthRoadContact),
-                    String.valueOf(ParcelState.countParcelNeighborhood(parcelGeom, CollecTransform.selectIntersection(parcels, parcelGeom.buffer(2)))),
-                    HausDist, DisHausDst, CodeAppar,
-                    String.valueOf(mic.getRadiusLine().getLength() * 2 / mbc.getDiameter().getLength())};
-            csv.writeNext(line);
-        });
+                    // if parcel is marked to be analyzed
+                    Geometry parcelGeom = (Geometry) parcel.getDefaultGeometry();
+                    double widthRoadContact = ParcelState.getParcelFrontSideWidth(Polygons.getPolygon(parcelGeom),
+                            CollecTransform.selectIntersection(roads, parcelGeom.buffer(7)), Lines.fromMultiToLineString(
+                                    CollecTransform.fromPolygonSFCtoRingMultiLines(CollecTransform.selectIntersection(block, parcelGeom.buffer(7)))));
+                    boolean contactWithRoad = widthRoadContact != 0;
+                    // if we set a parcel plan to compare, we calculate the Hausdorff distances for the parcels that intersects the most parts.
+                    String HausDist = "NA";
+                    String DisHausDst = "NA";
+                    String CodeAppar = "NA";
+                    // Setting of Hausdorf distance
+                    if (parcelToCompare != null) {
+                        HausdorffSimilarityMeasure hausDis = new HausdorffSimilarityMeasure();
+                        SimpleFeature parcelCompare = CollecTransform.getIntersectingSimpleFeatureFromSFC(parcelGeom, parcelToCompare);
+                        if (parcelCompare != null) {
+                            Geometry parcelCompareGeom = (Geometry) parcelCompare.getDefaultGeometry();
+                            DiscreteHausdorffDistance dhd = new DiscreteHausdorffDistance(parcelGeom, parcelCompareGeom);
+                            HausDist = String.valueOf(hausDis.measure(parcelGeom, parcelCompareGeom));
+                            DisHausDst = String.valueOf(dhd.distance());
+                            CodeAppar = makeParcelCode(parcelCompare);
+                        }
+                    }
+                    // Calculating Aspect Ratio
+                    MinimumBoundingCircle mbc = new MinimumBoundingCircle(parcelGeom);
+                    MaximumInscribedCircle mic = new MaximumInscribedCircle(parcelGeom, 1);
+                    String[] line = {
+                            parcel.getAttribute(ParcelSchema.getMinParcelCommunityField()) + "-"
+                                    + parcel.getAttribute(ParcelSchema.getMinParcelSectionField()) + "-"
+                                    + parcel.getAttribute(ParcelSchema.getMinParcelNumberField()),
+                            String.valueOf(parcelGeom.getArea()), String.valueOf(parcelGeom.getLength()), String.valueOf(contactWithRoad),
+                            String.valueOf(widthRoadContact),
+                            String.valueOf(ParcelState.countParcelNeighborhood(parcelGeom, CollecTransform.selectIntersection(parcels, parcelGeom.buffer(2)))),
+                            HausDist, DisHausDst, CodeAppar,
+                            String.valueOf(mic.getRadiusLine().getLength() * 2 / mbc.getDiameter().getLength())};
+                    csv.writeNext(line);
+                });
         csv.close();
     }
 
@@ -201,23 +201,40 @@ public class SingleParcelStat {
     //// return mic.getRadiusLine().getLength() / mbc.getDiameter().getLength();
     // return mbc.getDiameter().getLength();
     // }
-    public static double hausdorffDistanceAverage(File parcelInFile, File parcelToCompareFile) throws IOException {
+
+    /**
+     * Calculation Hausdorff Similarity average for a set of parcels. Candidate must have been reduced before methode call
+     *
+     * @param parcelInFile        The reference geo file
+     * @param parcelToCompareFile The geo file to compare
+     * @return Hausdorff Similarity average
+     * @throws IOException reading files
+     */
+    public static double hausdorffSimilarityAverage(File parcelInFile, File parcelToCompareFile) throws IOException {
         DataStore sdsParcelIn = CollecMgmt.getDataStore(parcelInFile);
         DataStore sdsParcelToCompareFile = CollecMgmt.getDataStore(parcelToCompareFile);
-        double result = hausdorffDistanceAverage(sdsParcelIn.getFeatureSource(sdsParcelIn.getTypeNames()[0]).getFeatures(),
+        double result = hausdorffSimilarityAverage(sdsParcelIn.getFeatureSource(sdsParcelIn.getTypeNames()[0]).getFeatures(),
                 sdsParcelToCompareFile.getFeatureSource(sdsParcelToCompareFile.getTypeNames()[0]).getFeatures());
         sdsParcelIn.dispose();
         sdsParcelToCompareFile.dispose();
         return result;
     }
 
+    /**
+     * Calculate the difference of number of parcels between two geo files.
+     *
+     * @param parcelInFile        The reference geo file
+     * @param parcelToCompareFile The geo file to compare
+     * @return the difference of average (absolute value)
+     * @throws IOException reading files
+     */
     public static int diffNumberOfParcel(File parcelInFile, File parcelToCompareFile) throws IOException {
-        DataStore sdsParcelIn = CollecMgmt.getDataStore(parcelInFile);
-        DataStore sdsParcelToCompareFile = CollecMgmt.getDataStore(parcelToCompareFile);
-        int result = sdsParcelIn.getFeatureSource(sdsParcelIn.getTypeNames()[0]).getFeatures().size()
-                - sdsParcelToCompareFile.getFeatureSource(sdsParcelToCompareFile.getTypeNames()[0]).getFeatures().size();
-        sdsParcelIn.dispose();
-        sdsParcelToCompareFile.dispose();
+        DataStore dsParcelIn = CollecMgmt.getDataStore(parcelInFile);
+        DataStore dsParcelToCompareFile = CollecMgmt.getDataStore(parcelToCompareFile);
+        int result = dsParcelIn.getFeatureSource(dsParcelIn.getTypeNames()[0]).getFeatures().size()
+                - dsParcelToCompareFile.getFeatureSource(dsParcelToCompareFile.getTypeNames()[0]).getFeatures().size();
+        dsParcelIn.dispose();
+        dsParcelToCompareFile.dispose();
         return Math.abs(result);
     }
 
@@ -227,26 +244,26 @@ public class SingleParcelStat {
      * @param parcelInFile        The reference Geopackage
      * @param parcelToCompareFile The Geopackage to compare
      * @return the difference of average (absolute value)
-     * @throws IOException io
+     * @throws IOException reading files
      */
     public static double diffAreaAverage(File parcelInFile, File parcelToCompareFile) throws IOException {
-        DataStore sdsParcelIn = CollecMgmt.getDataStore(parcelInFile);
-        DataStore sdsParcelToCompareFile = CollecMgmt.getDataStore(parcelToCompareFile);
-        double result = OpOnCollec.area(sdsParcelIn.getFeatureSource(sdsParcelIn.getTypeNames()[0]).getFeatures())
-                - OpOnCollec.area(sdsParcelToCompareFile.getFeatureSource(sdsParcelToCompareFile.getTypeNames()[0]).getFeatures());
-        sdsParcelIn.dispose();
-        sdsParcelToCompareFile.dispose();
+        DataStore dsParcelIn = CollecMgmt.getDataStore(parcelInFile);
+        DataStore dsParcelToCompareFile = CollecMgmt.getDataStore(parcelToCompareFile);
+        double result = OpOnCollec.area(dsParcelIn.getFeatureSource(dsParcelIn.getTypeNames()[0]).getFeatures())
+                - OpOnCollec.area(dsParcelToCompareFile.getFeatureSource(dsParcelToCompareFile.getTypeNames()[0]).getFeatures());
+        dsParcelIn.dispose();
+        dsParcelToCompareFile.dispose();
         return Math.abs(result);
     }
 
     /**
-     * Calculation Hausdorff Distance average for a set of parcels. Candidate must have been reduced before methode call
+     * Calculation Hausdorff Similarity average for a set of parcels. Candidate must have been reduced before methode call
      *
      * @param parcelIn        reference parcel set
      * @param parcelToCompare parcels to compare shapes
      * @return Mean of Hausdorff distances
      */
-    public static double hausdorffDistanceAverage(SimpleFeatureCollection parcelIn, SimpleFeatureCollection parcelToCompare) {
+    public static double hausdorffSimilarityAverage(SimpleFeatureCollection parcelIn, SimpleFeatureCollection parcelToCompare) {
         HausdorffSimilarityMeasure hausDis = new HausdorffSimilarityMeasure();
         DescriptiveStatistics stat = new DescriptiveStatistics();
         try (SimpleFeatureIterator parcelIt = parcelIn.features()) {

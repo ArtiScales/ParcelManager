@@ -62,7 +62,8 @@ public class RoadRatioParcels {
      * @param cutParcel           A collection of parcels after a Parcel Manager simulation
      * @param folderOutStat       folder to store the results
      * @param roadFile            the road geo file
-     * @throws IOException  reading geo files and exporting csv
+     * @param legend              name of the zone
+     * @throws IOException reading geo files and exporting csv
      */
     public static void roadRatioParcels(SimpleFeatureCollection initialMarkedParcel, SimpleFeatureCollection cutParcel, String legend, File folderOutStat, File roadFile) throws IOException {
         // We construct zones to analyze the street ratio for each operations.
@@ -105,6 +106,7 @@ public class RoadRatioParcels {
      * @param cutParcel     {@link SimpleFeatureCollection} of the cuted parcels
      * @param folderOutStat folder to store the results
      * @param roadFile      the road geo file
+     * @param legend        name of the zone
      * @throws IOException reading geo files and exporting csv
      */
     public static void roadRatioZone(SimpleFeatureCollection zone, SimpleFeatureCollection cutParcel, String legend, File folderOutStat, File roadFile) throws IOException {

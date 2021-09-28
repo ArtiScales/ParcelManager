@@ -3,6 +3,9 @@ package fr.ign.artiscales.pm.workflow;
 import fr.ign.artiscales.pm.division.StraightSkeletonDivision;
 import org.opengis.feature.simple.SimpleFeature;
 
+/**
+ * Class to implement in order to construct a new Workflow
+ */
 public abstract class Workflow {
     /**
      * The process used to divide the parcels

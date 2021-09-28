@@ -49,7 +49,7 @@ public class FrenchZoningSchemas {
     /**
      * Translate some big zone labels coming from different urban documents to a normalized one. If no match has been found, we return the input value.
      *
-     * @param nameZone
+     * @param nameZone A usual name of zone in French plan system.
      * @return The normalized name.
      */
     public static String normalizeNameFrenchBigZone(String nameZone) {
@@ -110,6 +110,12 @@ public class FrenchZoningSchemas {
         return listZones;
     }
 
+    /**
+     * Translate a French symbol of zoning type to english.
+     *
+     * @param genericZone French symbol (U, AU, or other)
+     * @return the translation.
+     */
     public static String getTranslatedName(String genericZone) {
         switch (normalizeNameFrenchBigZone(genericZone)) {
             case "U":
