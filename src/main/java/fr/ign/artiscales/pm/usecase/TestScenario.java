@@ -60,7 +60,7 @@ public class TestScenario extends UseCase {
         ProfileUrbanFabric profileSmallHouse = ProfileUrbanFabric.convertJSONtoProfile(new File(profileFolder, "smallHouse.json"));
         ProfileUrbanFabric profileMediumCollective = ProfileUrbanFabric.convertJSONtoProfile(new File(profileFolder, "mediumCollective.json"));
         StraightSkeletonDivision.setGeneratePeripheralRoad(true);
-//        for (int i = 2; i <= 2; i++) {
+//        for (int i = 3; i <= 3; i++) {
         for (int i = 0; i <= 3; i++) {
             // multiple process calculation
             String ext = "offset";

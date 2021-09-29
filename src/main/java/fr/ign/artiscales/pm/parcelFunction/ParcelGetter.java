@@ -45,8 +45,8 @@ public class ParcelGetter {
      * @throws IOException reading zoning file
      */
     public static SimpleFeatureCollection getParcelByFrenchZoningType(String zone, SimpleFeatureCollection parcels, File zoningFile) throws IOException {
-        DataStore zonesSDS = CollecMgmt.getDataStore(zoningFile);
-        SimpleFeatureCollection zonesSFC = CollecTransform.selectIntersection(zonesSDS.getFeatureSource(zonesSDS.getTypeNames()[0]).getFeatures(), parcels);
+        DataStore zonesDS = CollecMgmt.getDataStore(zoningFile);
+        SimpleFeatureCollection zonesSFC = CollecTransform.selectIntersection(zonesDS.getFeatureSource(zonesDS.getTypeNames()[0]).getFeatures(), parcels);
         List<String> listZones = FrenchZoningSchemas.getUsualNames(zone);
         DefaultFeatureCollection zoneSelected = new DefaultFeatureCollection();
         try (SimpleFeatureIterator itZonez = zonesSFC.features()) {
@@ -81,8 +81,8 @@ public class ParcelGetter {
         } catch (Exception problem) {
             problem.printStackTrace();
         }
-        zonesSDS.dispose();
-        return result.collection();
+        zonesDS.dispose();
+        return result;
     }
 
     /**
@@ -127,18 +127,18 @@ public class ParcelGetter {
             problem.printStackTrace();
         }
         zoningDS.dispose();
-        return result.collection();
+        return result;
     }
 
     /**
-     * Get parcels out of a parcel collection corresponding to a list of zipcodes
+     * Write parcels out of a parcel collection corresponding to a list of zipcodes in a new geo file.
      * Zipcodes are not directly contained in a field of the collection but is composed of two fields. Their values are set by default but it's possible to change them with the methods {@link #setCodeComFiled(String) setCodeComFiled} and {@link #setCodeDepFiled(String) setCodeDepFiled}
      *
      * @param parcelIn input parcel collection
      * @param vals     a list of zipcode values
      * @param fileOut  file to export selected parcels
      * @return a simple feature collection of parcels having the values contained in <i>vals</i>.
-     * @throws IOException
+     * @throws IOException writing file
      */
     public static File getParcelByZip(File parcelIn, List<String> vals, File fileOut) throws IOException {
         DataStore ds = CollecMgmt.getDataStore(parcelIn);
@@ -154,14 +154,13 @@ public class ParcelGetter {
      * @param parcelIn input parcel collection
      * @param vals     a list of zipcode values
      * @return a simple feature collection of parcels having the values contained in <i>vals</i>.
-     * @throws IOException
      */
-    public static SimpleFeatureCollection getParcelByZip(SimpleFeatureCollection parcelIn, List<String> vals) throws IOException {
+    public static SimpleFeatureCollection getParcelByZip(SimpleFeatureCollection parcelIn, List<String> vals) {
         DefaultFeatureCollection result = new DefaultFeatureCollection();
         for (String val : vals) {
             result.addAll(getParcelByZip(parcelIn, val));
         }
-        return result.collection();
+        return result;
     }
 
     /**
@@ -171,9 +170,8 @@ public class ParcelGetter {
      * @param parcelIn Input parcel collection
      * @param val      Value of the zipcode. Can contain comma separated values
      * @return A simple feature collection of parcels having the <i>val</i> value. * @throws IOException
-     * @throws IOException
      */
-    public static SimpleFeatureCollection getParcelByZip(SimpleFeatureCollection parcelIn, String val) throws IOException {
+    public static SimpleFeatureCollection getParcelByZip(SimpleFeatureCollection parcelIn, String val) {
         if (val.contains(","))
             return getParcelByZip(parcelIn, Arrays.asList(val.split(",")));
         return getParcelByZip(parcelIn, val, codeDepFiled, codeComFiled);
@@ -188,9 +186,8 @@ public class ParcelGetter {
      * @param firstFieldName  First part of the field name which compose zipcode field name
      * @param secondFieldName Second part of the field name which compose zipcode field name
      * @return a simple feature collection of parcels having the <i>val</i> value.
-     * @throws IOException
      */
-    public static SimpleFeatureCollection getParcelByZip(SimpleFeatureCollection parcelIn, String val, String firstFieldName, String secondFieldName) throws IOException {
+    public static SimpleFeatureCollection getParcelByZip(SimpleFeatureCollection parcelIn, String val, String firstFieldName, String secondFieldName) {
         DefaultFeatureCollection result = new DefaultFeatureCollection();
         try (SimpleFeatureIterator it = parcelIn.features()) {
             while (it.hasNext()) {
@@ -207,7 +204,7 @@ public class ParcelGetter {
         } catch (Exception problem) {
             problem.printStackTrace();
         }
-        return result.collection();
+        return result;
     }
 
     private static void coord2D(Coordinate c) {
@@ -221,9 +218,8 @@ public class ParcelGetter {
      * @param parcelIn Input {@link SimpleFeatureCollection} of parcel
      * @param val      City number value
      * @return a simple feature collection of parcels having the <i>val</i> value.
-     * @throws IOException
      */
-    public static SimpleFeatureCollection getParcelByCommunityCode(SimpleFeatureCollection parcelIn, String val) throws IOException {
+    public static SimpleFeatureCollection getParcelByCommunityCode(SimpleFeatureCollection parcelIn, String val) {
         // we check if the field for zipcodes is present, otherwise we try national types of parcels
         if (parcelIn == null || parcelIn.isEmpty())
             return null;
@@ -240,7 +236,7 @@ public class ParcelGetter {
                     && feat.getAttribute(ParcelSchema.getMinParcelCommunityField()).equals(val))
                 result.add(feat);
         });
-        return result.collection();
+        return result;
     }
 
     public static String getCodeDepFiled() {

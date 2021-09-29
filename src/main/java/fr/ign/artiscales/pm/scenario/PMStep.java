@@ -63,11 +63,11 @@ public class PMStep {
     /**
      * If true, will look at the community built parcel's area to adapt the maximal and minimal area (set with the 1st and the 9th decile of the built area's distribution). False by default.
      */
-    private boolean adaptAreaOfUrbanFabric = false;
+    private boolean adaptAreaOfUrbanFabric;
     /**
      * If true, will keep road on ZoneDivision processes. True by default
      */
-    private boolean keepExistingRoad = true;
+    private boolean keepExistingRoad;
     /**
      * The last generated parcel plan file. Could be useful for programs to get it directly
      */

@@ -304,7 +304,7 @@ public class ZoneDivision extends Workflow {
                 switch (PROCESS) {
                     case "OBB":
                         ((DefaultFeatureCollection) splitedParcels)
-                                .addAll(OBBDivision.splitParcels(tmpZoneToCut, null, profile.getMaximalArea(), profile.getMinimalWidthContactRoad(), profile.getHarmonyCoeff(), profile.getNoise(),
+                                .addAll(OBBDivision.splitParcels(tmpZoneToCut, roads, profile.getMaximalArea(), profile.getMinimalWidthContactRoad(), profile.getHarmonyCoeff(), profile.getNoise(),
                                         CollecTransform.fromPolygonSFCtoListRingLines(
                                                 CollecTransform.selectIntersection(blockCollection, (Geometry) zone.getDefaultGeometry())),
                                         profile.getLaneWidth(), profile.getStreetLane(), profile.getStreetWidth(), true, profile.getBlockShape()));

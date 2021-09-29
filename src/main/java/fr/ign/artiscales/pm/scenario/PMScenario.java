@@ -27,12 +27,17 @@ public class PMScenario {
     private File zoningFile, buildingFile, roadFile, polygonIntersection, zone, predicateFile, parcelFile, profileFolder, outFolder;
     private List<PMStep> stepList = new ArrayList<>();
     private boolean fileSet = false;
-    boolean keepExistingRoad, adaptAreaOfUrbanFabric, generatePeripheralRoad;
+    boolean keepExistingRoad = true, adaptAreaOfUrbanFabric = false , generatePeripheralRoad = false;
 
 	public static void main(String[] args) throws Exception {
-		PMScenario pm = new PMScenario(
-				new File("src/main/resources/TestScenario/scenarioOBB.json"));
-		pm.executeStep();
+		PMScenario pm = new PMScenario(new File("src/main/resources/TestScenario/scenarioOBB.json"));
+        pm.executeStep();
+		PMScenario pm2 = new PMScenario(new File("src/main/resources/TestScenario/scenarioStraightSkeleton.json"));
+        pm2.executeStep();
+		PMScenario pm3 = new PMScenario(new File("src/main/resources/TestScenario/scenarioStraightSkeletonPeripheralRoad.json"));
+        pm3.executeStep();
+		PMScenario pm4 = new PMScenario(new File("src/main/resources/TestScenario/scenarioOffset.json"));
+        pm4.executeStep();
 	}
 
     public PMScenario(File jSON) throws IOException {
@@ -111,6 +116,7 @@ public class PMScenario {
                         if (token == JsonToken.VALUE_STRING) {
                             switch (parser.getText()) {
                                 case "keepExistingRoad:true":
+                                case "keepExistingRoad":
                                     keepExistingRoad = true;
                                     break;
                                 case "keepExistingRoad:false":

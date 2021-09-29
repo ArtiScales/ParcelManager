@@ -1,9 +1,9 @@
 {
 	"rootfile": "src/main/resources/Figure/",
-	"zoneFile": "src/main/resources/Figure/ParcelInitSS.gpkg",
+	"zoneFile": "src/main/resources/Figure/ParcelInitStraightSkeleton.gpkg",
 	"parcelFile": "src/main/resources/Figure/parcel.gpkg",
 	"roadFile": "src/main/resources/Figure/road.gpkg",
-	"outFolder": "src/main/resources/Figure/outFigSS",
+	"outFolder": "src/main/resources/Figure/outFigureStraightSkeleton",
 	"steps": [
 		{
 			"workflow": "zoneDivision",
