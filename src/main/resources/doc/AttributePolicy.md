@@ -1,7 +1,7 @@
 # Field Attributes
 
 ## Parcel Marking
-On every Parcel Manager's operations, a special attribute is required on parcel that has to be simulated. By default, the field is named <b>SPLIT</b>. If it is set to 1, parcel will be simulated. Methods from the <a href="https://framagit.org/artiscales/parcelmanager/-/blob/master/src/main/java/fr/ign/artiscales/pm/parcelFunction/MarkParcelAttributeFromPosition.java">MarkParcelAttributeFromPosition</a> class can be used to set the making field automatically. 
+A specific attribute is required to define which parcels can be reshaped by simulation. By default, this specific atribute is set in a field named <b>SPLIT</b>. If the attribute value is set to 1, the corresponding parcel can be reshaped. Methods from the <a href="https://framagit.org/artiscales/parcelmanager/-/blob/master/src/main/java/fr/ign/artiscales/pm/parcelFunction/MarkParcelAttributeFromPosition.java">MarkParcelAttributeFromPosition</a> class can be used to automatically set the attribute values of the field <b>SPLIT</b> for all parcels. 
 
 ## Parcel ID
 Parcel Manager is made to be adaptable for every parcels nomenclature.
@@ -24,19 +24,18 @@ It is possible to copy those methods to adapt them for another parcel nomenclatu
 
 ## Zoning plan
 
-The zoning plan also have specific attribute nomenclature. It must contains two specific fields:
+The attribute table of a zoning plan must contain two fields:
 
 <ul>
-    <li>a <i>generic name</i> represent the general permission of the zones. Its default name is '<b>TYPEZONE</b>' and can be of three different types:
+    <li>a <i>generic name</i> sets the general authorization of each zone of the zoning plan. Its default name is '<b>TYPEZONE</b>'. Its default attribute values are:
 <ul>
-    <li> <b>U</b>: Already urbanized land,</li>
-    <li> <b>AU</b>: Not urbanized land but open to new developments,</li>
-    <li> <b>N</b>: Not urbanized land and not open to new developments.</li>
+    <li> <b>U</b>: Fully urbanized zone,</li>
+    <li> <b>AU</b>: Non urbanized zone in which new developments are authorized,</li>
+    <li> <b>N</b>: Non urbanized zone in which new developments are not authorized.</li>
 </ul>
-This field is the only one used during the Parcel Manager simulations</li>
+This field is the only one used during the Parcel Manager simulations</li> %Cécile: ???
     <li>A <i>precise name</i> which precise special rules on a zone. Its default name is '<b>LIBELLE</b>'.</li>
 </ul>
 
-Parcel Manager has always been used in a French context, so we have only implemented the French attribute style. We also implemented attributes for ArtiScales simulations, which extends the French Parcels attribute and add specific fields. 
-It is nevertheless possible and easy for a programmer to implement new parcel styles and replace the french methods with it in the workflows.
-The <i>fields.GeneralField.parcelFieldType</i> value must be changed and methods using this value must be fulfilled. 
+The default attribute tables of Parcel Manager can be modified easily.
+To do this, the <i>fields.GeneralField.parcelFieldType</i> value must be changed and methods using this value must be fulfilled. 
