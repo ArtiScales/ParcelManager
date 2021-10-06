@@ -1,0 +1,22 @@
+CODE,Urban fabric type,DEPCOM,LIBELLE,InitialArea,ParcelsArea,RatioArea,RatioParcelConnectionRoad
+2-25267-null,mediumCollective,25267,null,20408.502226257537,20399.32645005025,4.496055666193266E-4,0.0
+0-25267-null,mediumCollective,25267,null,34323.60177311309,33235.74226106719,0.031694212024626744,1.0
+1-25267-null,mediumCollective,25267,null,22625.012298703572,22632.206021859307,-3.1795444178150944E-4,1.0
+CODE,Urban fabric type,DEPCOM,LIBELLE,InitialArea,ParcelsArea,RatioArea,RatioParcelConnectionRoad
+0-25267-newSection6ConsolidationDivision,mediumHouse,25267,newSection6ConsolidationDivision,29186.58529993268,29179.13511906456,2.552604489892696E-4,1.0
+3-25267-newSection2ConsolidationDivision,mediumHouse,25267,newSection2ConsolidationDivision,37317.01385001251,37327.221641960234,-2.73542571995522E-4,1.0
+2-25267-newSection1ConsolidationDivision,mediumHouse,25267,newSection1ConsolidationDivision,135506.27735016373,135484.41828882246,1.6131401266950007E-4,1.0
+1-null-null,mediumHouse,null,null,37987.13180000229,37991.7557544253,-1.2172423144130029E-4,0.2
+4-25267-newSection0ConsolidationDivision,mediumHouse,25267,newSection0ConsolidationDivision,73819.24325010442,73806.5820381271,1.715164152309434E-4,0.972972972972973
+5-25267-newSection5ConsolidationDivision,mediumHouse,25267,newSection5ConsolidationDivision,47077.120099989355,47092.57575998392,-3.2830512915271726E-4,1.0
+CODE,Urban fabric type,DEPCOM,LIBELLE,InitialArea,ParcelsArea,RatioArea,RatioParcelConnectionRoad
+2-25267-null,mediumCollective,25267,null,20408.502226257537,20399.32645005025,4.496055666193266E-4,0.0
+0-25267-null,mediumCollective,25267,null,22625.012298703572,22632.206021859307,-3.1795444178150944E-4,1.0
+1-25267-null,mediumCollective,25267,null,34323.60177311309,33235.74226106719,0.031694212024626744,1.0
+CODE,Urban fabric type,DEPCOM,LIBELLE,InitialArea,ParcelsArea,RatioArea,RatioParcelConnectionRoad
+5-25267-newSection6ConsolidationDivision,mediumHouse,25267,newSection6ConsolidationDivision,29186.58529993268,29179.13511906455,2.5526044898949163E-4,1.0
+2-25267-newSection1ConsolidationDivision,mediumHouse,25267,newSection1ConsolidationDivision,135506.27735016373,135484.41828902508,1.613140111742517E-4,1.0
+1-25267-newSection5ConsolidationDivision,mediumHouse,25267,newSection5ConsolidationDivision,47077.120099989355,47092.57575998393,-3.283051291529393E-4,1.0
+4-null-null,mediumHouse,null,null,37987.13180000229,37991.75575442529,-1.2172423144107825E-4,0.2
+0-25267-newSection2ConsolidationDivision,mediumHouse,25267,newSection2ConsolidationDivision,37317.01385001251,37327.20824372928,-2.7318353386318606E-4,1.0
+3-25267-newSection0ConsolidationDivision,mediumHouse,25267,newSection0ConsolidationDivision,73819.24325010442,73806.58665733685,1.7145384062922098E-4,0.972972972972973

@@ -28,17 +28,17 @@ public class PMScenario {
     private List<PMStep> stepList = new ArrayList<>();
     private boolean fileSet = false;
     boolean keepExistingRoad = true, adaptAreaOfUrbanFabric = false , generatePeripheralRoad = false;
-
-	public static void main(String[] args) throws Exception {
-		PMScenario pm = new PMScenario(new File("src/main/resources/TestScenario/scenarioOBB.json"));
-        pm.executeStep();
-		PMScenario pm2 = new PMScenario(new File("src/main/resources/TestScenario/scenarioStraightSkeleton.json"));
-        pm2.executeStep();
-		PMScenario pm3 = new PMScenario(new File("src/main/resources/TestScenario/scenarioStraightSkeletonPeripheralRoad.json"));
-        pm3.executeStep();
-		PMScenario pm4 = new PMScenario(new File("src/main/resources/TestScenario/scenarioOffset.json"));
-        pm4.executeStep();
-	}
+//
+//	public static void main(String[] args) throws Exception {
+//		PMScenario pm = new PMScenario(new File("src/main/resources/TestScenario/scenarioOBB.json"));
+//        pm.executeStep();
+//		PMScenario pm2 = new PMScenario(new File("src/main/resources/TestScenario/scenarioStraightSkeleton.json"));
+//        pm2.executeStep();
+//		PMScenario pm3 = new PMScenario(new File("src/main/resources/TestScenario/scenarioStraightSkeletonPeripheralRoad.json"));
+//        pm3.executeStep();
+//		PMScenario pm4 = new PMScenario(new File("src/main/resources/TestScenario/scenarioOffset.json"));
+//        pm4.executeStep();
+//	}
 
     public PMScenario(File jSON) throws IOException {
         PMStep.setSaveIntermediateResult(SAVEINTERMEDIATERESULT);
@@ -238,6 +238,8 @@ public class PMScenario {
     public void executeStep() throws IOException {
         for (PMStep pmstep : getStepList()) {
             System.out.println("try " + pmstep);
+            if (PMStep.isDEBUG())
+                System.out.println(this);
             if (REUSESIMULATEDPARCELS)
                 PMStep.setParcel(pmstep.execute());
             else

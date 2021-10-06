@@ -1,7 +1,7 @@
 {
-	"rootfile": "src/main/resources/TestScenario/",
+	"rootfile": "src/main/resources/TestScenario/InputData",
 	"profileFolder": "src/main/resources/TestScenario/profileUrbanFabric/",
-	"outFolder": "src/main/resources/TestScenario/out/OBB",
+	"outFolder": "src/main/resources/TestScenario/OutputResults/OBB",
 	"steps": [
 		{
 			"workflow": "zoneDivision",

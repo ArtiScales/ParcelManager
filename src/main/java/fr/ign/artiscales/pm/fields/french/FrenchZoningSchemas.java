@@ -121,7 +121,7 @@ public class FrenchZoningSchemas {
             case "U":
                 return "Urbanized";
             case "AU":
-                return "To be urbanized";
+                return "Developable";
             default:
                 return "Not urbanized";
         }

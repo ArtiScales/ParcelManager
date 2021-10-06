@@ -387,7 +387,7 @@ public class Densification extends Workflow {
                 MarkParcelAttributeFromPosition.markAlreadyMarkedParcels(parcelDensified, DataUtilities.collection(ds.getFeatureSource(ds.getTypeNames()[0]).getFeatures())),
                 profile.getMaximalArea() * factorOflargeZoneCreation);
         if (isDEBUG())
-            CollecMgmt.exportSFC(parcelDensified, new File(outFolder, "densificationOrNeighborhood-ReMarked"));
+            CollecMgmt.exportSFC(supParcels, new File(outFolder, "densificationOrNeighborhood-ReMarked"));
 
         if (!MarkParcelAttributeFromPosition.isNoParcelMarked(supParcels)) {
             profile.setStreetWidth(profile.getLaneWidth());

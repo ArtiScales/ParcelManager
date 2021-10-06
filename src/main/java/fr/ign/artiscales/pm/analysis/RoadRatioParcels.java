@@ -43,7 +43,7 @@ public class RoadRatioParcels {
     // File zoningFile = new File(rootFolder, "zoning.gpkg");
     // DataStore ds = Geopackages.getDataStore(new File(rootFolder, "parcel.gpkg"));
     // SimpleFeatureCollection sfc = ds.getFeatureSource(ds.getTypeNames()[0]).getFeatures();
-    // DataStore ds2 = Geopackages.getDataStore(new File(rootFolder,"out/OBB/ParcelConsolidRecomp.gpkg"));
+    // DataStore ds2 = Geopackages.getDataStore(new File(rootFolder,"out/OBB/ParcelConsolidation.gpkg"));
     // SimpleFeatureCollection sfc2 = ds2.getFeatureSource(ds2.getTypeNames()[0]).getFeatures();
     // streetRatioParcels(MarkParcelAttributeFromPosition.markParcelIntersectPreciseZoningType(sfc, "AU", "AUb",
     // zoningFile), sfc2, "", new File("/tmp/"), new File(rootFolder, "road.gpkg"));

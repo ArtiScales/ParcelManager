@@ -257,7 +257,7 @@ public class PMStep {
         else
             parcelMarked = getSimulationParcels(parcel);
         if (DEBUG) {
-            System.out.println("parcels marked");
+            System.out.println("parcels marked with " + MarkParcelAttributeFromPosition.countMarkedParcels(parcelMarked) +" marks");
             File tmpFolder = new File(OUTFOLDER, "tmp");
             tmpFolder.mkdirs();
             CollecMgmt.exportSFC(parcelMarked, new File(tmpFolder, "parcelMarked" + this.workflow + "-" + this.parcelProcess + this.preciseZone), false);
@@ -355,7 +355,7 @@ public class PMStep {
      * If none of this informations are set, the algorithm selects all the parcels.
      *
      * @return The parcel collection with a mark for the interesting parcels to simulate.
-     * @throws IOException
+     * @throws IOException reading a lot of files
      */
     public SimpleFeatureCollection getSimulationParcels(SimpleFeatureCollection parcelIn) throws IOException {
         // special case where zoneDivision will return other than parcel
@@ -404,7 +404,7 @@ public class PMStep {
         // parcel marking with a zoning plan (possible to be hacked for any attribute feature selection by setting the field name to the genericZoning scenario parameter)
         if (ZONINGFILE != null && ZONINGFILE.exists() && genericZone != null && !genericZone.equals(""))
             // genericZone = FrenchZoningSchemas.normalizeNameFrenchBigZone(genericZone);
-            // we proceed for each cities (in )
+            // we proceed for each cities
             for (String communityNumber : communityNumbers) {
                 SimpleFeatureCollection parcelCity = ParcelGetter.getParcelByCommunityCode(parcel, communityNumber);
                 boolean alreadySimuled = false;

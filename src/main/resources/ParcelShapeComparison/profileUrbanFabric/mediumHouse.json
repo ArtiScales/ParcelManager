@@ -1,0 +1,11 @@
+{
+	"blockShape":"3",
+	"streetLane": "6",
+	"streetWidth": "20",
+	"laneWidth": "10",
+	"maximalArea": "800",
+	"minimalArea": "200",
+	"minimalWidthContactRoad":"7",
+	"nameBuildingType": "mediumHouse",
+	"lenDriveway": "3"
+}

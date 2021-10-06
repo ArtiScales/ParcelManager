@@ -1,0 +1,23 @@
+# Data integration
+
+## Parcel integration
+Parcels must respect the attribute policy explained [here](./AttributePolicy.md). 
+
+## Road integration
+The modelling of the road network differs according to national contexts and the availability of geographical datasets. We have implemented two ways to integrate the road network into Parcel Manager, which can be used separately or complementary.
+
+  1. The absence of parcels in a parcel plan is interpreted as the existence of a road. In order to avoid a road detection that may correspond an irregularity of the parcel plan (i.e. blurry recovery of different parcel plan sheets leading to a gap between parcels), a road must have a minimal width of 2.2 meters.
+A drawback of this integration is that every missing parcel is interpreted as a road.
+It is then preferable to work with complete parcel plans rather than excerpts of parcels.
+When it is impossible (outside of the parcel plan), Parcel Manager generates an exclusion zone to fill the missing parcel plan.
+Every methods using this road implementation also apply a geoprocess in order to clean the data of potential gaps. A buffer of 1.1 meters and -1.1 meters are successively applied to fill every gap (2.2 meters being the minimal value of a road to be considered as such by French laws). 
+
+  * Proper geographical objects, with a geometry of line type. Width of those segments could be taken from their attribute or is set by default to 7.5 meters. This data is mandatory for the Straight Skeleton process, because it’s the only way to link attributes to road segments.
+
+Calculation of the length between road and parcel is made by taken the length of the parcel that faces an absence of parcel. If no absence of parcel is detected around the analysed parcel, we then search for road line and return the length of the line in contact with the parcel.
+The usage of the straight skeleton algorithm necessitates a complete road dataset. We could convert the absence of parcel to a road segment, but it would be hard to generate the needed road attributes, its name and its level of attraction. In the Test Scenario, the road layer has been manually enriched.
+
+Some of the small land-field trails and lanes were missing and have been manually created. The nature and the importance of few road segments have also occasionally been changed in order to be more close to reality.
+##  Zoning plan integration
+As zoning plan is a current object used to work with parcel, we integrate its usage and determine a difference between a generic type (urbanized, non-urbanised or developable) and more descriptive types, particular for each plan.
+Specific functions in order to select parcels belonging to particular types of zoning zones are available in Parcel Manager. In the French planning context, few zone labels are commonly used on local urban zoning plans. Isolation of zones open to residential developments are zones Ua, Ub, Uc, Ud and the urbanizable zones of the Cartes Communales.

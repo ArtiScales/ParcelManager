@@ -837,7 +837,7 @@ public class MarkParcelAttributeFromPosition {
     }
 
     /**
-     * Mark parcels that have already been marked on an other simple collection feature. They may not have the same attribute, so we rely on geometries
+     * Mark parcels that have already been marked on another simple collection feature. They may not have the same attribute, so we rely on geometries
      *
      * @param parcelsToMark Parcel collection to copy the marks on. Could have a markFieldName or not.
      * @param parcelsMarked Parcel collection that has a markFieldName field
