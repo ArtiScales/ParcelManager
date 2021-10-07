@@ -1,9 +1,11 @@
 #  Data integration
 
-##  Parcel integration
+##  Parcel integration
+
 Parcels must respect the attribute policy explained [here](./AttributePolicy.md). 
 
 ##  Road integration
+
 The modelling of the road network differs according to national contexts and the availability of geographical datasets. We have implemented two ways to integrate the road network into Parcel Manager, which can be used separately or complementary.
 
   1. The absence of parcels in a parcel plan is interpreted as the existence of a road. A drawback of this integration is that every missing parcel is interpreted as a road. It is then preferable to work with complete parcel plans rather than excerpts of parcels.
