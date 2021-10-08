@@ -207,7 +207,7 @@ public class GeneralFields {
             default:
                 System.out.println("getSFBZoning: unknown method because of an unknown parcel nomenclature (" + parcelFieldType
                         + "). Returned an empty SimpleFeatureBuilder");
-                return Schemas.getBasicSchema("zoning");
+                return Schemas.getBasicSchema("zoning", "polygon");
         }
     }
 

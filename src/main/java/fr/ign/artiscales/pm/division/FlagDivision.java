@@ -228,18 +228,18 @@ public class FlagDivision {
                         && (int) feat.getAttribute(MarkParcelAttributeFromPosition.getMarkFieldName()) == 1) {
                     if (hasBuilding && hasRoad)
                         result.addAll(generateFlagSplitedParcels(feat, CollecTransform.fromPolygonSFCtoListRingLines(block.subCollection(ff.bbox(
-                                ff.property(feat.getFeatureType().getGeometryDescriptor().getLocalName()), feat.getBounds()))), profile.getHarmonyCoeff(), profile.getNoise(),
+                                        ff.property(feat.getFeatureType().getGeometryDescriptor().getLocalName()), feat.getBounds()))), profile.getHarmonyCoeff(), profile.getNoise(),
                                 DataUtilities.collection(CollecTransform.selectIntersection(buildingDS.getFeatureSource(buildingDS.getTypeNames()[0]).getFeatures(), ((Geometry) feat.getDefaultGeometry()).buffer(10))),
                                 DataUtilities.collection(CollecTransform.selectIntersection(roadDS.getFeatureSource(roadDS.getTypeNames()[0]).getFeatures(), ((Geometry) feat.getDefaultGeometry()).buffer(10))),
                                 profile.getMaximalArea(), profile.getMinimalWidthContactRoad(), profile.getLenDriveway(), null));
                     else if (hasBuilding)
                         result.addAll(generateFlagSplitedParcels(feat, CollecTransform.fromPolygonSFCtoListRingLines(block.subCollection(ff.bbox(
-                                ff.property(feat.getFeatureType().getGeometryDescriptor().getLocalName()), feat.getBounds()))), profile.getHarmonyCoeff(), profile.getNoise(),
+                                        ff.property(feat.getFeatureType().getGeometryDescriptor().getLocalName()), feat.getBounds()))), profile.getHarmonyCoeff(), profile.getNoise(),
                                 DataUtilities.collection(CollecTransform.selectIntersection(buildingDS.getFeatureSource(buildingDS.getTypeNames()[0]).getFeatures(), ((Geometry) feat.getDefaultGeometry()).buffer(10))),
                                 profile.getMaximalArea(), profile.getMinimalWidthContactRoad(), profile.getLenDriveway(), null));
                     else
                         result.addAll(generateFlagSplitedParcels(feat, CollecTransform.fromPolygonSFCtoListRingLines(block.subCollection(ff.bbox(
-                                ff.property(feat.getFeatureType().getGeometryDescriptor().getLocalName()), feat.getBounds()))), profile.getHarmonyCoeff(),
+                                        ff.property(feat.getFeatureType().getGeometryDescriptor().getLocalName()), feat.getBounds()))), profile.getHarmonyCoeff(),
                                 profile.getNoise(), profile.getMaximalArea(), profile.getMinimalWidthContactRoad(), profile.getLenDriveway(), null));
                 } else
                     result.add(feat);
@@ -270,7 +270,7 @@ public class FlagDivision {
     public static SimpleFeatureCollection generateFlagSplitedParcels(SimpleFeature feat, List<LineString> extLines, double harmonyCoeff, double noise,
                                                                      Double maximalAreaSplitParcel, Double maximalWidthSplitParcel, Double lenDriveway, Geometry exclusionZone) {
         return Geom.geomsToCollec((new FlagDivision(Polygons.getPolygon((Geometry) feat.getDefaultGeometry()),
-                maximalAreaSplitParcel, maximalWidthSplitParcel, lenDriveway, extLines, exclusionZone)).decompParcel(harmonyCoeff, noise), Schemas.getBasicSchemaMultiPolygon("geom"));
+                maximalAreaSplitParcel, maximalWidthSplitParcel, lenDriveway, extLines, exclusionZone)).decompParcel(harmonyCoeff, noise), Schemas.getBasicMultiPolygonSchema("geom"));
     }
 
     /**
@@ -290,7 +290,7 @@ public class FlagDivision {
     public static SimpleFeatureCollection generateFlagSplitedParcels(SimpleFeature feat, List<LineString> extLines, double harmonyCoeff, double noise,
                                                                      SimpleFeatureCollection buildingSFC, Double maximalAreaSplitParcel, Double maximalWidthSplitParcel, Double lenDriveway, Geometry exclusionZone) {
         return Geom.geomsToCollec((new FlagDivision(Polygons.getPolygon((Geometry) feat.getDefaultGeometry()), buildingSFC,
-                maximalAreaSplitParcel, maximalWidthSplitParcel, lenDriveway, extLines, exclusionZone)).decompParcel(harmonyCoeff, noise), Schemas.getBasicSchemaMultiPolygon("geom"));
+                maximalAreaSplitParcel, maximalWidthSplitParcel, lenDriveway, extLines, exclusionZone)).decompParcel(harmonyCoeff, noise), Schemas.getBasicMultiPolygonSchema("geom"));
     }
 
     /**
@@ -311,7 +311,7 @@ public class FlagDivision {
     public static SimpleFeatureCollection generateFlagSplitedParcels(SimpleFeature feat, List<LineString> extLines, double harmonyCoeff, double noise, SimpleFeatureCollection buildingSFC,
                                                                      SimpleFeatureCollection roadSFC, Double maximalAreaSplitParcel, Double maximalWidthSplitParcel, Double lenDriveway, Geometry exclusionZone) {
         return Geom.geomsToCollec((new FlagDivision(Polygons.getPolygon((Geometry) feat.getDefaultGeometry()), buildingSFC, roadSFC,
-                maximalAreaSplitParcel, maximalWidthSplitParcel, lenDriveway, extLines, exclusionZone)).decompParcel(harmonyCoeff, noise), Schemas.getBasicSchemaMultiPolygon("geom"));
+                maximalAreaSplitParcel, maximalWidthSplitParcel, lenDriveway, extLines, exclusionZone)).decompParcel(harmonyCoeff, noise), Schemas.getBasicMultiPolygonSchema("geom"));
     }
 
     static boolean isRoadPolygonIntersectsLine(SimpleFeatureCollection roads, LineString ls) {
@@ -468,7 +468,7 @@ public class FlagDivision {
             // We list the segments of the polygon with road access and keep the ones that does not intersect the buffer of new no-road-access polygon and the
             // Then regroup the lines according to their connectivity. We finnaly add elements to list the correspondance between pears
             this.regroupLineStrings(Lines.getSegments(polyWithRoadAcces.getExteriorRing()).stream().filter(
-                    x -> (!buffer.contains(x)) && !getListLSAsMultiLS(this.getExt()).buffer(0.1).contains(x) && !isRoadPolygonIntersectsLine(roads, x))
+                            x -> (!buffer.contains(x)) && !getListLSAsMultiLS(this.getExt()).buffer(0.1).contains(x) && !isRoadPolygonIntersectsLine(roads, x))
                     .collect(Collectors.toList())).stream().forEach(x -> listMap.add(new ImmutablePair<>(x, polyWithRoadAcces)));
         }
         return listMap;

@@ -1,0 +1,30 @@
+{
+	"rootfile": "src/main/resources/ParcelShapeComparison/",
+	"buildingFile":"src/main/resources/ParcelShapeComparison/InputData/building2003.gpkg",	
+	"roadFile":"src/main/resources/ParcelShapeComparison/InputData/road2003.gpkg",
+	"parcelFile":"src/main/resources/ParcelShapeComparison/InputData/parcel2003.gpkg",
+	"zoningFile":"src/main/resources/ParcelShapeComparison/InputData/zoning.gpkg",	
+	"polygonIntersectionFile":"src/main/resources/ParcelShapeComparison/OutputResults/simulation.gpkg",
+	"outFolder": "src/main/resources/ParcelShapeComparison/OutputResults/",
+	"steps": [
+		{
+			"workflow": "densificationOrNeighborhood",
+			"genericZone": "U",
+			"urbanFabricType": "smallHouse",
+			"optional": "adaptAreaOfUrbanFabric"
+		},		
+		{
+			"workflow": "consolidationDivision",
+			"parcelProcess": "OBB",
+			"genericZone": "AU",
+			"urbanFabricType": "smallHouse",
+			"optional": "adaptAreaOfUrbanFabric"
+		},	
+		{
+			"workflow": "consolidationDivision",
+			"parcelProcess": "OBB",
+			"genericZone": "NC",
+			"urbanFabricType": "smallHouse",
+			"optional": "adaptAreaOfUrbanFabric"
+		}]
+}

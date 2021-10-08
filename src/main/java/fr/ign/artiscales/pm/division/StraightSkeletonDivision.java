@@ -528,7 +528,7 @@ public class StraightSkeletonDivision {
         }
         TopologicalGraph output = new TopologicalGraph(globalOutputParcels, 0.02);
         DefaultFeatureCollection result = new DefaultFeatureCollection();
-        SimpleFeatureBuilder builder = Schemas.getBasicSchema("parcelSplitSS");
+        SimpleFeatureBuilder builder = Schemas.getBasicSchema("parcelSplitSS", "polygon");
         for (Face face : output.getFaces()) {
             builder.set(CollecMgmt.getDefaultGeomName(), face.getGeometry());
             result.add(builder.buildFeature(Attribute.makeUniqueId()));
