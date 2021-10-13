@@ -25,7 +25,7 @@ import java.util.Objects;
  *
  * @author Maxime Colomb
  */
-public class CompareSimulatedParcelsWithEvolution extends UseCase {
+public class CompareSimulatedWithRealParcels extends UseCase {
 
     public static void main(String[] args) throws IOException {
         Instant start = Instant.now();

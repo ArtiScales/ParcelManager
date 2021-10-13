@@ -28,6 +28,11 @@ public class ParcelSchema {
     /////////////////////
     /////////////////////
 
+    /**
+     * Get minimal builder for a parcel
+     *
+     * @return the builder
+     */
     public static SimpleFeatureBuilder getSFBMinParcel() {
         SimpleFeatureTypeBuilder sfTypeBuilder = new SimpleFeatureTypeBuilder();
         sfTypeBuilder.setName("minParcel");
@@ -44,6 +49,11 @@ public class ParcelSchema {
         return new SimpleFeatureBuilder(sfTypeBuilder.buildFeatureType());
     }
 
+    /**
+     * Get minimal builder for a parcel with a multipolygon geometry type
+     *
+     * @return the builder
+     */
     public static SimpleFeatureBuilder getSFBMinParcelMulti() {
         SimpleFeatureTypeBuilder sfTypeBuilder = new SimpleFeatureTypeBuilder();
         sfTypeBuilder.setName("minParcel");
@@ -163,8 +173,8 @@ public class ParcelSchema {
         ParcelSchema.minParcelCommunityField = minParcelCommunityField;
     }
 
-    public static String getParcelID(SimpleFeature feat){
-        return feat.getAttribute(minParcelCommunityField)+"_"+feat.getAttribute(minParcelSectionField)+"_"+feat.getAttribute(minParcelNumberField);
+    public static String getParcelID(SimpleFeature feat) {
+        return feat.getAttribute(minParcelCommunityField) + "_" + feat.getAttribute(minParcelSectionField) + "_" + feat.getAttribute(minParcelNumberField);
     }
 
     public static String getEpsg() {

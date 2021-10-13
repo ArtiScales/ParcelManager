@@ -110,6 +110,12 @@ public class GeneralFields {
         return null;
     }
 
+    /**
+     * Construct a parcel code for a {@link SimpleFeature} regarding the {@link #parcelFieldType}
+     *
+     * @param feat input parcel
+     * @return the parcel code
+     */
     public static String makeParcelCode(SimpleFeature feat) {
         if (CollecMgmt.isSimpleFeatureContainsAttribute(feat, ParcelSchema.getMinParcelCommunityField()))
             return feat.getAttribute(ParcelSchema.getMinParcelCommunityField()) + "-" + feat.getAttribute(ParcelSchema.getMinParcelSectionField()) + "-" + feat.getAttribute(ParcelSchema.getMinParcelNumberField());
@@ -124,7 +130,7 @@ public class GeneralFields {
     }
 
     /**
-     * Add the {@link #zoneCommunityCode} field for every parcels of a {@link SimpleFeatureCollection}. Only french solution implemented yet.
+     * Add the {@link #zoneCommunityCode} field for every parcel of a {@link SimpleFeatureCollection}. Only french solution implemented yet.
      *
      * @param parcels {@link SimpleFeatureCollection} of parcels.
      * @return The collection with the "CODE" field added.
@@ -200,6 +206,11 @@ public class GeneralFields {
                 && ((String) feature.getAttribute(ParcelSchema.getMinParcelSectionField())).length() > 3;
     }
 
+    /**
+     * Get a simple feature builder for the corresponding zoning regarding to the wanted {@link #parcelFieldType}.
+     *
+     * @return a zoning SFB
+     */
     public static SimpleFeatureBuilder getSFBZoning() {
         switch (parcelFieldType) {
             case "french":
@@ -211,34 +222,74 @@ public class GeneralFields {
         }
     }
 
+    /**
+     * Get the name of the field representing the generic name of zoning features (<i>TYPEZONE</i> by default)
+     *
+     * @return the field name
+     */
     public static String getZoneGenericNameField() {
         return zoneGenericNameField;
     }
 
+    /**
+     * Set the name of the field representing the generic name of zoning features
+     *
+     * @param zoneNameField the new field name
+     */
     public static void setZoneGenericNameField(String zoneNameField) {
         GeneralFields.zoneGenericNameField = zoneNameField;
     }
 
+    /**
+     * Get the name of the field representing the precise name of zoning features (<i>LIBELLE</i> by default)
+     *
+     * @return the field name
+     */
     public static String getZonePreciseNameField() {
         return zonePreciseNameField;
     }
 
+    /**
+     * Set the name of the field representing the precise name of zoning features
+     *
+     * @param zonePreciseNameField the new field name
+     */
     public static void setZonePreciseNameField(String zonePreciseNameField) {
         GeneralFields.zonePreciseNameField = zonePreciseNameField;
     }
 
+    /**
+     * Get what is the type of parcel used in the simulation
+     *
+     * @return type of parcel
+     */
     public static String getParcelFieldType() {
         return parcelFieldType;
     }
 
+    /**
+     * Set what is the type of parcel used in the simulation
+     *
+     * @param fieldType new type of parcel
+     */
     public static void setParcelFieldType(String fieldType) {
         GeneralFields.parcelFieldType = fieldType;
     }
 
+    /**
+     * Get the name of the field for community number
+     *
+     * @return field name
+     */
     public static String getZoneCommunityCode() {
         return zoneCommunityCode;
     }
 
+    /**
+     * Set the name of the field for community number
+     *
+     * @param zoneCommunityCode field name
+     */
     public static void setZoneCommunityCode(String zoneCommunityCode) {
         GeneralFields.zoneCommunityCode = zoneCommunityCode;
     }

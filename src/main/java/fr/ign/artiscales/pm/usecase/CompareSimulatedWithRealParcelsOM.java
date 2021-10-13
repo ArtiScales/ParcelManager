@@ -29,15 +29,15 @@ import java.util.List;
  *
  * @author Maxime Colomb
  */
-public class CompareSimulatedParcelsWithEvolutionOM {
+public class CompareSimulatedWithRealParcelsOM {
 
-    public static void main(String[] args) throws Exception {
-        simulateZoneDivisionFromCSV(new File("/tmp/outOM/pop.csv"),
-                new File("/home/thema/.openmole/thema-HP-ZBook-14/webui/projects/compare/donnee/parcel2003.gpkg"),
-                new File("/home/thema/.openmole/thema-HP-ZBook-14/webui/projects/compare/donnee/zone.gpkg"),
-                new File("/tmp/outOM/"));
-        sortUniqueZoning(new File("/home/thema/.openmole/thema-HP-ZBook-14/webui/projects/compare/donnee/zone.gpkg"), new File("/home/thema/Documents/MC/workspace/ParcelManager/src/main/resources/ParcelComparison/zoning.gpkg"), new File("/tmp/out"));
-    }
+//    public static void main(String[] args) throws Exception {
+//        simulateZoneDivisionFromCSV(new File("/tmp/outOM/pop.csv"),
+//                new File("/home/thema/.openmole/thema-HP-ZBook-14/webui/projects/compare/donnee/parcel2003.gpkg"),
+//                new File("/home/thema/.openmole/thema-HP-ZBook-14/webui/projects/compare/donnee/zone.gpkg"),
+//                new File("/tmp/outOM/"));
+//        sortUniqueZoning(new File("/home/thema/.openmole/thema-HP-ZBook-14/webui/projects/compare/donnee/zone.gpkg"), new File("/home/thema/Documents/MC/workspace/ParcelManager/src/main/resources/ParcelComparison/zoning.gpkg"), new File("/tmp/out"));
+//    }
 
     public static void run() throws Exception {
         // definition of the geopackages representing two set of parcel
