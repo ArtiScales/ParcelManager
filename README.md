@@ -1,7 +1,7 @@
 # Parcel Manager
 
 Library providing functions, algorithms and workflows to process various parcel reshaping operations.
-There are multiple ways of using this library as shown in the schema bellow. 
+There are multiple ways of using this library as shown in the schema bellow:
 <ul>
     <li>Use built-in functions for diverse parcel management tasks</li>
     <li>Divide a single or few parcels: choose one of the multiple implemented <b>processes</b>. Only <b>marked</b> parcels will be divided</li>
@@ -12,15 +12,20 @@ There are multiple ways of using this library as shown in the schema bellow.
 <br />
 Attributes are now only adapted for a french context but implementation of new country's nomenclature are possible. Please refer to this <a href="https://framagit.org/artiscales/parcelmanager/-/blob/master/src/main/resources/doc/AttributePolicy.md">parcel attribute and marking documentation</a>.  
 <br />
-This model has been developped during a post-doc contract for the <a href="http://thema.univ-fcomte.fr/">ThéMA laboratory</a> of the university of Franche-Comté. 
+This model has been developped during a post-doc contract for the PubPrivLand project at the <a href="http://thema.univ-fcomte.fr/">ThéMA laboratory</a> of the university of Franche-Comté. 
 <br />
-Still under active developpement.
+Version 1.0 has been released following the submission of an article. 
+<br />
+<br />
 
+<div style="text-align:center">
+<img src="misc/schema.png" alt="drawing" width="900" position="middle"/>
+</div>
 
-## Technical requirements
+## Technical requirements
 
-Library based on the function from the library <a href = "https://github.com/ArtiScales/ArtiScales-tools">ArtiScales-tools</a> (no stable version yet) and on the GeoTools 23.0 library.
-JavaDoc is available <a href="https://artiscales.github.io/javadoc/ParcelManager/">here</a> and more can be found on a coming article and on the <a href = "https://www.theses.fr/2019PESC2070">PhD thesis of Maxime Colomb</a>.
+Library based on the function from the library <a href = "https://github.com/ArtiScales/ArtiScales-tools">ArtiScales-tools</a> (which follows the same version number as Parcel Manager) and on the GeoTools library.
+JavaDoc is available <a href="https://artiscales.github.io/javadoc/ParcelManager/">here</a> and more can be found on an article to be published.
 
 A graphical user interface is available in <a href="https://framagit.org/artiscales/parcelmanagergui">this repository</a> 
 
@@ -29,7 +34,7 @@ A graphical user interface is available in <a href="https://framagit.org/artisca
 
 <ul>
 <li><b>analysis</b>: Contains automated analysis tools to analyze urban fabrics and produce tables and graphs.</li>
-<li><b>decomposition</b>: Contains the different <b>processes</b> of decomposition algorithms.</li>
+<li><b>division</b>: Contains the different <b>processes</b> of decomposition algorithms.</li>
 <li><b>fields</b>: Contains methods and tools to automatically set feature informations on the generated parcels. Solutions for french parcels types and ArtiScales parcels types are implemented.</li>
 <li><b>workflow</b>: Contains the different <b>workflows</b> for the parcel manager process. The three main workflows that are now implemented are: 
     <ul>
@@ -41,8 +46,6 @@ A graphical user interface is available in <a href="https://framagit.org/artisca
 <li><b>parcelFunction</b>: Various functions for single parcels, sort by type (collection, state, schemas, attribute, marking, etc.).</li>
 <li><b>scenario</b>: Contains objects used for processing an automated simulation on a large zone (<a href="https://github.com/ArtiScales/ParcelManager/blob/master/src/main/resources/doc/scenarioCreation.md">technical description can be found here</a>).</li>
 <li><b>workflow</b>: Cerate automated workflows for Parcel Manager which apply different workflows on specified zones</li>
+<li><b>usecase</b>: Automatic explorations that a user can directly run.</li>
 </ul>
 <br />
-<div style="text-align:center">
-<img src="misc/schema.png" alt="drawing" width="900" position="middle"/>
-</div>
