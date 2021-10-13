@@ -3,7 +3,8 @@
 ## Parcel Marking
 A specific attribute is required to define which parcels can be reshaped by simulation. By default, this specific atribute is set in a field named <b>SPLIT</b>. If the attribute value is set to 1, the corresponding parcel can be reshaped. Methods from the <a href="https://framagit.org/artiscales/parcelmanager/-/blob/master/src/main/java/fr/ign/artiscales/pm/parcelFunction/MarkParcelAttributeFromPosition.java">MarkParcelAttributeFromPosition</a> class can be used to automatically set the attribute values of the field <b>SPLIT</b> for all parcels. 
 
-## Parcel ID
+## Parcel ID
+
 Parcel Manager is made to be adaptable for every parcels nomenclature.
 It simply works with three basic fields, defined as follow:
 <ul>
@@ -33,7 +34,6 @@ The attribute table of a zoning plan must contain two fields:
     <li> <b>AU</b>: Non urbanized zone in which new developments are authorized,</li>
     <li> <b>N</b>: Non urbanized zone in which new developments are not authorized.</li>
 </ul>
-This field is the only one used during the Parcel Manager simulations</li> %Cécile: ???
     <li>A <i>precise name</i> which precise special rules on a zone. Its default name is '<b>LIBELLE</b>'.</li>
 </ul>
 

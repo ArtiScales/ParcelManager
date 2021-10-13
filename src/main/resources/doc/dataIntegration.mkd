@@ -5,7 +5,7 @@
 Parcels must respect the attribute policy explained [here](./AttributePolicy.md). 
 
 
-##  Road integration
+##  Road integration
 
 The modelling of the road network differs according to national contexts and the availability of geographical datasets. We have implemented two ways to integrate the road network into Parcel Manager, which can be used separately or complementary.
 
@@ -13,7 +13,7 @@ The modelling of the road network differs according to national contexts and the
 When it is impossible (outside of the parcel plan), Parcel Manager generates an exclusion zone to fill the missing parcel plan. In order to avoid a road detection that may correspond an irregularity of the parcel plan (i.e. blurry recovery of different parcel plan sheets leading to a gap between parcels), a road must have a minimal width of 2.2 meters.
 Every methods using this road implementation apply a geoprocess in order to clean the data of potential gaps. A buffer of 1.1 meters and -1.1 meters are successively applied to fill every unexpected gap. 
 
-  * Proper geographical objects, with a line geometry type. Width of those segments could be taken from their attribute or is set by default to 7.5 meters. This data is mandatory for the Straight Skeleton process, because it’s the only way to link attributes to road segments.
+  2. Proper geographical objects, with a line geometry type. Width of those segments could be taken from their attribute or is set by default to 7.5 meters. This data is mandatory for the Straight Skeleton process, because it’s the only way to link attributes to road segments.
 
 Calculation of the length between road and parcel is made by taken the length of the parcel that faces an absence of parcel. If no absence of parcel is detected around the analysed parcel, we then search for road line and return the length of the line in contact with the parcel.
 The usage of the straight skeleton algorithm necessitates a complete road dataset. We could convert the absence of parcel to a road segment, but it would be hard to generate the needed road attributes, its name and its level of attraction. In the Test Scenario, the road layer has been manually enriched.
