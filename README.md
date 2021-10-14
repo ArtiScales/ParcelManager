@@ -28,7 +28,7 @@ A graphical user interface is available in <a href="https://framagit.org/artisca
 
 <ul>
 <li><b>analysis</b>: contains automated tools to analyze urban fabrics under the form of tables and graphs.</li>
-<li><b>division</b>: Ccntains the different <b>processes</b> of parcel division.</li>
+<li><b>division</b>: contains the different <b>processes</b> of parcel division.</li>
 <li><b>fields</b>: contains methods and tools to automatically set feature informations on the generated parcels.</li>
 <li><b>workflow</b>: contains the <b>workflows</b>. Three main workflows are now implemented: 
     <ul>
