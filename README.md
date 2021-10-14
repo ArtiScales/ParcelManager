@@ -18,7 +18,7 @@ Parcel Manager has been developped during a post-doctoral research contract at <
 
 ## Technical requirements
 
-Parcel Manger involves functions from the library <a href = "https://github.com/ArtiScales/ArtiScales-tools">ArtiScales-tools</a> and the GeoTools library.
+Parcel Manager uses functions from the library <a href = "https://github.com/ArtiScales/ArtiScales-tools">ArtiScales-tools</a> and the GeoTools library.
 JavaDoc is available <a href="https://artiscales.github.io/javadoc/ParcelManager/">here</a>.
 
 A graphical user interface is available in <a href="https://framagit.org/artiscales/parcelmanagergui">this repository</a> 
