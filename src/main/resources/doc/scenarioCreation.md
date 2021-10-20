@@ -74,7 +74,7 @@ By default, the parameter ***workflow*** can be set with one of those three valu
 * ***consolidationDivision***: Takes a set of marked parcels as an input and decompose them as contiguious zones
 * ***densification***: Takes a set of marked parcels as an input and try to densify them with the **parcel flag** process
 
-<h3>Parcel Manager process</h3>
+<h3>Parcel Manager processes</h3>
 Different processes can be used to divise parcels.
 The parameter <b><i>parcelProcess</i></b> can be set with one of those three values: 
 
