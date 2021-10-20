@@ -33,7 +33,7 @@ The attribute table of a zoning plan must contain two fields:
     <li> <b>AU</b>: Non urbanized zone in which new developments are authorized,</li>
     <li> <b>N</b>: Non urbanized zone in which new developments are not authorized.</li>
 </ul>
-    <li>A <i>precise name</i> which precise special rules on a zone. Its default name is '<b>LIBELLE</b>'.</li>
+    <li>A <i>precise name</i> which defines special rules that apply to a zone. Its default name is '<b>LIBELLE</b>'.</li>
 </ul>
 
 The default attribute tables of Parcel Manager can be modified easily.
