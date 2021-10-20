@@ -95,6 +95,8 @@ Few special parameters can be added to a scenario.
 They concern either processes or workflows.
 In order to be taken into account, the name of the parameter should be <i>optional</i> and its value has to be separated by a ':' 
 Parameters can be:
+
 * ***peripheralRoad*** (only for **Straight Skeleton** process). Generates of a peripheral road around the initial zone (<i>"optional":"peripheralRoad:true"</i>).
 * ***adaptAreaOfUrbanFabric*** On-the-fly change of the parameters maximal area and minimal area of urban fabric profiles (<i>"optional":"adaptAreaOfUrbanFabric"</i>. As this option is disabled by default, there's no need to add a : value).
 * ***keepExistingRoad*** (only for **Zone Division** workflow). If true, spaces that correspond to a road or a public space will not be reshaped. If false, the whole zone will be reshaped.
+
