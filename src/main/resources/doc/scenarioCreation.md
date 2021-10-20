@@ -68,6 +68,7 @@ It is possible to hack this method by using another kind of Geopackage and call 
 Once a parcel has been simulated, its attribute filed <i>SECTION</i> (see attribute policy) is marked with a long value, depending on the <b><i>workflow</i></b> used. By default, parcels cannot be marked again if they have been already simulated. It is possible to change this through the setting of the static boolean <b>MarkParcelAttributeFromPosition.postMark</b> to <b>true</b>.
 
 <h3>Parcel Manager Workflows</h3>
+
 By default, the parameter ***workflow*** can be set with one of those three values:
 
 * ***zoneDivision***: They take a total zone as an input and decompose it as a big zone
