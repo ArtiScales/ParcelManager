@@ -5,18 +5,17 @@ A specific attribute is required to define which parcels can be reshaped by simu
 
 ## Parcel ID
 
-Parcel Manager is made to be adaptable for every parcels nomenclature.
-It simply works with three basic fields, defined as follow:
+The parcel nomenclature of Parcel Manager simply works with three basic fields, defined as follow:
 <ul>
-    <li>The <i>community field</i> represent the unique identifier of the community (it can be a zipcode or a statistical code). Its default name is '<b>DEPCOM</b>'</li>
-    <li>The <i>section field</i> represent a zone which must be unique for each communities. Its default name is '<b>SECTION</b>'</li>
-    <li>The <i>number field</i> represent a unique number of parcel within each section. Its default name is '<b>NUMERO</b>'</li>
+    <li>The <i>community field</i> sets the unique identifier of the community (it can be a zipcode or a statistical code). Its default name is '<b>DEPCOM</b>'</li>
+    <li>The <i>section field</i> identifies a zone, which must be unique in each community. Its default name is '<b>SECTION</b>'</li>
+    <li>The <i>number field</i> is a unique number that identifies each parcel within each section. Its default name is '<b>NUMERO</b>'</li>
 </ul>
-Those three attributes are generated and dealt with in every Parcel Manager workflows.
+Those three attributes are used in all Parcel Manager workflows.
 Reshaped parcels have a new <i>section</i> value, based on the value of the <a href="https://framagit.org/artiscales/parcelmanager/-/blob/master/src/main/java/fr/ign/artiscales/pm/workflow/Workflow.java">abstract workflow.Workflow.makeNewSection()</a> method. This value is automatically incremented.
 <i>Number</i> value is also incremented for each new zone.
 
-If the input parcels already contains attributes that share the same field name, they are copied for every parcels. 
+If the input parcels already contain attributes that have the same field name, they are copied for every parcels. 
 To match the field names of the input parcels, change them with the static setters from the <a href="https://framagit.org/artiscales/parcelmanager/-/blob/master/src/main/java/fr/ign/artiscales/pm/parcelFunction/ParcelSchema.java">parcelFunction.ParcelSchema</a> class.
 <!--If the correspondance is missing with the input data, the unsimuled parcels will have null fields.--> 
 It is also possible to convert the parcel type to this minimum type, with methods like <i>frenchParcelToMinParcel(...)</i> from the <a href="https://framagit.org/artiscales/parcelmanager/-/blob/master/src/main/java/fr/ign/artiscales/pm/fields/french/FrenchParcelFields.java">fields.french.FrenchParcelFields</a> class.
@@ -28,7 +27,7 @@ It is possible to copy those methods to adapt them for another parcel nomenclatu
 The attribute table of a zoning plan must contain two fields:
 
 <ul>
-    <li>a <i>generic name</i> sets the general authorization of each zone of the zoning plan. Its default name is '<b>TYPEZONE</b>'. Its default attribute values are:
+    <li>a <i>generic name</i> sets the general characteristics of each zone of the zoning plan. Its default name is '<b>TYPEZONE</b>'. Its default attribute values are:
 <ul>
     <li> <b>U</b>: Fully urbanized zone,</li>
     <li> <b>AU</b>: Non urbanized zone in which new developments are authorized,</li>
