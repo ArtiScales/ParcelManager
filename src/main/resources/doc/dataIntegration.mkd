@@ -16,12 +16,7 @@ Every methods using this road implementation apply a geoprocess in order to clea
   2. Proper geographical objects, with a line geometry type. Width of those segments could be taken from their attribute or is set by default to 7.5 meters. This data is mandatory for the Straight Skeleton process, because it’s the only way to link attributes to road segments.
 
 Calculation of the length between road and parcel is made by taken the length of the parcel that faces an absence of parcel. If no absence of parcel is detected around the analysed parcel, we then search for road lines and return the length of the line in contact with the parcel.
-The usage of the straight skeleton algorithm necessitates a complete road dataset. We could convert the absence of parcel to a road segment, but it would be hard to generate the needed road attributes, its name and its level of attraction. In the Test Scenario, the road layer has been manually enriched.
-
-NB: Peripheral roads created with the straight skeleton algorithm are classified as lanes in the hierarchy of roads.
-
-Some of the small trails and lanes were missing and have been manually created. The nature and the importance of few road segments have also occasionally been changed in order to be closer to reality.
 
 ##  Zoning plan integration
-As zoning plan is a current object used to work with parcel, we integrate its usage and determine a difference between a generic type (urbanized, non-urbanised or developable) and more descriptive types, particular for each plan.
-Specific functions in order to select parcels belonging to particular types of zoning zones are available in Parcel Manager. In the French planning context, few zone labels are commonly used on local urban zoning plans. Isolation of zones open to residential developments are zones Ua, Ub, Uc, Ud and the urbanizable zones of the Cartes Communales.
+A zoning plan is integrated in Parcel Manager using a **zoningFile**. Each zone is described by its generic type (urbanized, non-urbanised or developable) and, if needed, its precise type. Precise types are specific to each zoning plan.
+Specific functions taht can be used to select parcels belonging to specific types of zones are available in Parcel Manager.
