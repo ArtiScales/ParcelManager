@@ -15,7 +15,7 @@ Every methods using this road implementation apply a cleaning data process: a bu
 
   2. Proper geographical objects, with a line geometry type. Width of road segments can be taken from their attribute or is set by default to 7.5 meters. This data is mandatory to apply the Straight Skeleton aprcel division process.
 
-In order to calculate the length between a road and a parcel, the length of the parcel that faces an absence of parcel is considered. If no absence of parcel is detected around the analysed parcel, road lines are searched in the  nieghbourhood of the parcel and the algorithm considers the length of the line in contact with the parcel.
+In order to calculate the length between a road and a parcel, the length of the parcel that faces an absence of parcel is considered. If no absence of parcel is detected around the analysed parcel, road lines are searched in the  neighborhood of the parcel and the algorithm considers the length of the line in contact with the parcel.
 
 ##  Zoning plan integration
 A zoning plan is integrated in Parcel Manager using a **zoningFile**. Each zone is described by its generic type (urbanized, non-urbanised or developable) and, if needed, its precise type. Precise types are specific to each zoning plan.
