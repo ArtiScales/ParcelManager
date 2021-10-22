@@ -15,12 +15,7 @@ Those three attributes are used in all Parcel Manager workflows.
 Reshaped parcels have a new <i>section</i> value, based on the value of the <a href="https://framagit.org/artiscales/parcelmanager/-/blob/master/src/main/java/fr/ign/artiscales/pm/workflow/Workflow.java">abstract workflow.Workflow.makeNewSection()</a> method. This value is automatically incremented.
 <i>Number</i> value is also incremented for each new zone.
 
-If the input parcels already contain attributes that have the same field name, they are copied for every parcels. 
-To match the field names of the input parcels, change them with the static setters from the <a href="https://framagit.org/artiscales/parcelmanager/-/blob/master/src/main/java/fr/ign/artiscales/pm/parcelFunction/ParcelSchema.java">parcelFunction.ParcelSchema</a> class.
-<!--If the correspondance is missing with the input data, the unsimuled parcels will have null fields.--> 
-It is also possible to convert the parcel type to this minimum type, with methods like <i>frenchParcelToMinParcel(...)</i> from the <a href="https://framagit.org/artiscales/parcelmanager/-/blob/master/src/main/java/fr/ign/artiscales/pm/fields/french/FrenchParcelFields.java">fields.french.FrenchParcelFields</a> class.
-Other methods such as <i>setOriginalFrenchParcelAttributes(...)</i> helps re-assignate the fields after a Parcel Manager simulation.
-It is possible to copy those methods to adapt them for another parcel nomenclature.
+It is possible to convert the basic nomemclature of Parcel Manager into another nomeclature and vice versa using specific methods. See for instance <i>frenchParcelToMinParcel(...)</i> from the <a href="https://framagit.org/artiscales/parcelmanager/-/blob/master/src/main/java/fr/ign/artiscales/pm/fields/french/FrenchParcelFields.java">fields.french.FrenchParcelFields</a> class, and  <i>setOriginalFrenchParcelAttributes(...)</i>.
 
 ## Zoning plan
 
