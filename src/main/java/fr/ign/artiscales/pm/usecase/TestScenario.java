@@ -3,7 +3,6 @@ package fr.ign.artiscales.pm.usecase;
 import fr.ign.artiscales.pm.analysis.RoadRatioParcels;
 import fr.ign.artiscales.pm.analysis.SingleParcelStat;
 import fr.ign.artiscales.pm.division.StraightSkeletonDivision;
-import fr.ign.artiscales.pm.fields.french.FrenchParcelFields;
 import fr.ign.artiscales.pm.parcelFunction.MarkParcelAttributeFromPosition;
 import fr.ign.artiscales.pm.parcelFunction.ParcelGetter;
 import fr.ign.artiscales.pm.workflow.ConsolidationDivision;
@@ -55,8 +54,7 @@ public class TestScenario extends UseCase {
         ProfileUrbanFabric profileSmallHouse = ProfileUrbanFabric.convertJSONtoProfile(new File(profileFolder, "smallHouse.json"));
         ProfileUrbanFabric profileMediumCollective = ProfileUrbanFabric.convertJSONtoProfile(new File(profileFolder, "mediumCollective.json"));
         StraightSkeletonDivision.setGeneratePeripheralRoad(true);
-//        for (int i = 3; i <= 3; i++) {
-        for (int i = 0; i <= 3; i++) {
+        for (int i = 0; i <= 4; i++) {
             // multiple process calculation
             String ext = "offset";
             Workflow.PROCESS = "SSoffset";
@@ -70,6 +68,9 @@ public class TestScenario extends UseCase {
             } else if (i == 3) {
                 Workflow.PROCESS = "OBB";
                 ext = "OBB";
+            } else if (i == 4) {
+                Workflow.PROCESS = "OBBThenSS";
+                ext = "OBBThenSS";
             }
             System.out.println("PROCESS: " + ext);
             File outFolder = new File(outRootFolder, ext);
@@ -85,7 +86,7 @@ public class TestScenario extends UseCase {
             DataStore gpkgDSZoning = CollecMgmt.getDataStore(zoningFile);
             SimpleFeatureCollection zoning = DataUtilities.collection((gpkgDSZoning.getFeatureSource(gpkgDSZoning.getTypeNames()[0]).getFeatures()));
             gpkgDSZoning.dispose();
-            SimpleFeatureCollection zone = ZoneDivision.createZoneToCut("AU", "AU1", zoning, zoningFile, parcel);
+            SimpleFeatureCollection zone = ZoneDivision.createZoneToCut("AU", "AU1", zoning, parcel);
             // If no zones, we won't bother
             if (zone.isEmpty()) {
                 System.out.println("parcelGenZone : no zones to be cut");
@@ -94,10 +95,9 @@ public class TestScenario extends UseCase {
             DataStore rDS = CollecMgmt.getDataStore(roadFile);
             SimpleFeatureCollection parcelCuted = (new ZoneDivision()).zoneDivision(zone, parcel, rDS.getFeatureSource(rDS.getTypeNames()[0]).getFeatures(), outFolder, profileMediumCollective, true);
             rDS.dispose();
-            SimpleFeatureCollection finaux = FrenchParcelFields.setOriginalFrenchParcelAttributes(parcelCuted, parcel);
-            CollecMgmt.exportSFC(finaux, new File(outFolder, "parcelZoneDivision.gpkg"));
+            CollecMgmt.exportSFC(parcelCuted, new File(outFolder, "parcelZoneDivision.gpkg"));
             CollecMgmt.exportSFC(zone, new File(outFolder, "zone.gpkg"));
-            RoadRatioParcels.roadRatioZone(zone, finaux, profileMediumCollective.getNameBuildingType().replace(" ", "_"), statFolder, roadFile);
+            RoadRatioParcels.roadRatioZone(zone, parcelCuted, profileMediumCollective.getNameBuildingType().replace(" ", "_"), statFolder, roadFile);
 //            List<SimpleFeature> parcelSimulatedZone = Arrays.stream(finaux.toArray(new SimpleFeature[0])).filter(sf -> (new ZoneDivision()).isNewSection(sf)).collect(Collectors.toList());
 //            MakeStatisticGraphs.makeAreaGraph(parcelSimulatedZone, statFolder, "Zone division - medium-sized blocks of flats");
 //            MakeStatisticGraphs.makeWidthContactRoadGraph(parcelSimulatedZone, CityGeneration.createUrbanBlock(finaux, true), roadFile, new File(statFolder, "contact"), "Zone division - medium-sized blocks of flats");
@@ -108,11 +108,11 @@ public class TestScenario extends UseCase {
             System.out.println("*-*-*-*-*-*-*-*-*-*");
             System.out.println("consolidRecomp");
             System.out.println("*-*-*-*-*-*-*-*-*-*");
-            SimpleFeatureCollection markedZone = MarkParcelAttributeFromPosition.markParcelIntersectPreciseZoningType(finaux, "AU", "AU2", zoningFile);
+            SimpleFeatureCollection markedZone = MarkParcelAttributeFromPosition.markParcelIntersectPreciseZoningType(parcelCuted, "AU", "AU2", zoningFile);
+//            SimpleFeatureCollection markedZone = MarkParcelAttributeFromPosition.markParcelIntersectPreciseZoningType(parcelCuted, "AU", "AU2", zoningFile);
             SimpleFeatureCollection cutedNormalZone = (new ConsolidationDivision()).consolidationDivision(markedZone, roadFile, outFolder, profileMediumHouse);
-            SimpleFeatureCollection finalNormalZone = FrenchParcelFields.setOriginalFrenchParcelAttributes(cutedNormalZone, parcel);
-            CollecMgmt.exportSFC(finalNormalZone, new File(outFolder, "ParcelConsolidation.gpkg"));
-            RoadRatioParcels.roadRatioParcels(markedZone, finalNormalZone, profileMediumHouse.getNameBuildingType().replace(" ", "_"), statFolder, roadFile);
+            CollecMgmt.exportSFC(cutedNormalZone, new File(outFolder, "ParcelConsolidation.gpkg"));
+            RoadRatioParcels.roadRatioParcels(markedZone, cutedNormalZone, profileMediumHouse.getNameBuildingType().replace(" ", "_"), statFolder, roadFile);
 //            List<SimpleFeature> parcelSimulatedConsolid = Arrays.stream(finalNormalZone.toArray(new SimpleFeature[0]))
 //                    .filter(sf -> (new ConsolidationDivision()).isNewSection(sf)).collect(Collectors.toList());
 //            MakeStatisticGraphs.makeAreaGraph(parcelSimulatedConsolid, statFolder, "Zone consolidation - medium-sized houses");
@@ -125,17 +125,16 @@ public class TestScenario extends UseCase {
             System.out.println("parcelDensification");
             System.out.println("*-*-*-*-*-*-*-*-*-*");
             SimpleFeatureCollection parcelDensified = (new Densification()).densification(
-                    MarkParcelAttributeFromPosition.markParcelIntersectPreciseZoningType(finalNormalZone, "U", "UB", zoningFile),
-                    CityGeneration.createUrbanBlock(finalNormalZone, true), outFolder, buildingFile, roadFile, profileSmallHouse.getHarmonyCoeff(),
+                    MarkParcelAttributeFromPosition.markParcelIntersectPreciseZoningType(cutedNormalZone, "U", "UB", zoningFile),
+                    CityGeneration.createUrbanBlock(cutedNormalZone, true), outFolder, buildingFile, roadFile, profileSmallHouse.getHarmonyCoeff(),
                     profileSmallHouse.getNoise(), profileSmallHouse.getMaximalArea(), profileSmallHouse.getMinimalArea(),
                     profileSmallHouse.getLenDriveway(), profileSmallHouse.getLenDriveway(), allowIsolatedParcel);
-            SimpleFeatureCollection finaux3 = FrenchParcelFields.setOriginalFrenchParcelAttributes(parcelDensified, parcel);
-            CollecMgmt.exportSFC(finaux3, new File(outFolder, "parcelDensification.gpkg"));
+            CollecMgmt.exportSFC(parcelDensified, new File(outFolder, "parcelDensification.gpkg"));
 //            List<SimpleFeature> densifiedParcels = Arrays.stream(parcelDensified.toArray(new SimpleFeature[0])).filter(sf -> (new Densification()).isNewSection(sf)).collect(Collectors.toList());
 //            MakeStatisticGraphs.makeAreaGraph(densifiedParcels, statFolder, "Densification - small-sized houses simulation");
 //            MakeStatisticGraphs.makeWidthContactRoadGraph(densifiedParcels, CityGeneration.createUrbanBlock(finalNormalZone, true), roadFile, new File(statFolder, "contact"), "Densification - small-sized houses");
 
-            SingleParcelStat.writeStatSingleParcel(MarkParcelAttributeFromPosition.markSimulatedParcel(finaux3), roadFile, new File(statFolder, "statParcel.csv"));
+            SingleParcelStat.writeStatSingleParcel(MarkParcelAttributeFromPosition.markSimulatedParcel(parcelDensified), roadFile, new File(statFolder, "statParcel.csv"));
         }
     }
 }

@@ -1,6 +1,7 @@
 package fr.ign.artiscales.pm.division;
 
 import fr.ign.artiscales.pm.parcelFunction.MarkParcelAttributeFromPosition;
+import fr.ign.artiscales.pm.parcelFunction.ParcelSchema;
 import fr.ign.artiscales.tools.FeaturePolygonizer;
 import fr.ign.artiscales.tools.geoToolsFunctions.Attribute;
 import fr.ign.artiscales.tools.geoToolsFunctions.Schemas;
@@ -9,6 +10,7 @@ import fr.ign.artiscales.tools.geoToolsFunctions.vectors.collec.CollecMgmt;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.geom.Lines;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.geom.Points;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.geom.Polygons;
+import fr.ign.artiscales.tools.geometryGeneration.CityGeneration;
 import fr.ign.artiscales.tools.graph.analysis.FindObjectInDirection;
 import fr.ign.artiscales.tools.graph.recursiveGraph.Face;
 import fr.ign.artiscales.tools.graph.recursiveGraph.HalfEdge;
@@ -20,6 +22,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
 import org.apache.commons.math3.distribution.NormalDistribution;
 import org.apache.commons.math3.distribution.RealDistribution;
+import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.geotools.data.DataStore;
 import org.geotools.data.simple.SimpleFeatureCollection;
@@ -39,6 +42,7 @@ import org.locationtech.jts.geom.MultiLineString;
 import org.locationtech.jts.geom.Point;
 import org.locationtech.jts.geom.Polygon;
 import org.locationtech.jts.geom.PrecisionModel;
+import org.locationtech.jts.io.ParseException;
 import org.locationtech.jts.linearref.LengthIndexedLine;
 import org.locationtech.jts.operation.linemerge.LineMerger;
 import org.locationtech.jts.operation.overlay.snap.GeometrySnapper;
@@ -75,7 +79,7 @@ import java.util.stream.Stream;
  * @author Julien Perret
  * @author Maxime Colomb
  */
-public class StraightSkeletonDivision {
+public class StraightSkeletonDivision extends Division {
 
     public static final int NONE = 0;
     public static final int PREVIOUS = 1;
@@ -98,8 +102,8 @@ public class StraightSkeletonDivision {
     private static final int LEFT = -1;
     private static final int NEITHER = 0;
     public static File FOLDER_OUT_DEBUG = new File("/tmp/skeleton");
+    public static File FOLDER_PARTICULAR_DEBUG;
     private static boolean SAVEINTERMEDIATERESULT = true;
-    private static boolean DEBUG = false;
     private static boolean generatePeripheralRoad;
     //////////////////////////////////////////////////////
     // Input data parameters
@@ -127,7 +131,7 @@ public class StraightSkeletonDivision {
     private Set<Face> facesWithMultipleFrontages;
 
     /**
-     * Create and compute Straight Skeleton algorithm. Version without peripheral road
+     * Create and compute Straight Skeleton algorithm. Version without peripheral road.
      *
      * @param p
      * @param roads
@@ -148,7 +152,6 @@ public class StraightSkeletonDivision {
         this(p, roads, roadNameAttribute, roadImportanceAttribute, maxDepth, maxDistanceForNearestRoad, 2, generatePeripheralRoad, widthRoad, name);
     }
 
-
     /**
      * Constructor decomposing initial polygon until beta-stripes
      */
@@ -161,8 +164,8 @@ public class StraightSkeletonDivision {
         this.factory = p.getFactory();
         this.NAME_ATT_ROADNAME = roadNameAttribute;
         this.NAME_ATT_LEVELOFATTRACTION = roadImportanceAttribute;
-        FOLDER_OUT_DEBUG = new File(FOLDER_OUT_DEBUG, "skeleton/" + name + "_" + (generatePeripheralRoad ? "peripheralRoad" : "noPeripheralRoad") + "_" + (maxDepth != 0 ? "offset" : "noOffset"));
-        FOLDER_OUT_DEBUG.mkdirs();
+        FOLDER_PARTICULAR_DEBUG = new File(FOLDER_OUT_DEBUG, "skeleton/" + name + "_" + (generatePeripheralRoad ? "peripheralRoad" : "noPeripheralRoad") + "_" + (maxDepth != 0 ? "offset" : "noOffset"));
+        FOLDER_PARTICULAR_DEBUG.mkdirs();
         if (generatePeripheralRoad) {
             Pair<Polygon, SimpleFeatureCollection> periperalRoad = this.generatePeripheralRoad(p, widthRoad);
             p = periperalRoad.getLeft();
@@ -170,7 +173,7 @@ public class StraightSkeletonDivision {
         }
         if (isSAVEINTERMEDIATERESULT() || isDEBUG()) {
             try {
-                CollecMgmt.exportSFC(this.roads, new File(FOLDER_OUT_DEBUG, "roads.gpkg"));
+                CollecMgmt.exportSFC(this.roads, new File(FOLDER_PARTICULAR_DEBUG, "roads.gpkg"));
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -185,7 +188,7 @@ public class StraightSkeletonDivision {
             throw new StraightSkeletonException();
         }
         TopologicalGraph graph = this.straightSkeleton.getGraph();
-        export(graph, new File(FOLDER_OUT_DEBUG, "init"));
+        export(graph, new File(FOLDER_PARTICULAR_DEBUG, "init"));
 
         // order edges in list and mark if they are exterior
         this.orderedExteriorEdges = getOrderedExteriorEdges(straightSkeleton.getGraph());
@@ -201,37 +204,29 @@ public class StraightSkeletonDivision {
 
         // get alpha strips
         this.alphaStrips = mergeSSStripToAlphaStrip();
-        export(alphaStrips, new File(FOLDER_OUT_DEBUG, "alpha"));
+        export(alphaStrips, new File(FOLDER_PARTICULAR_DEBUG, "alpha"));
 
         //get beta stripes
         this.betaStrips = fixDiagonalEdges(alphaStrips, roadAttributes);
-        export(betaStrips, new File(FOLDER_OUT_DEBUG, "beta"));
+        export(betaStrips, new File(FOLDER_PARTICULAR_DEBUG, "beta"));
     }
 
-//    public static void main(String[] args) throws IOException, EdgeException, StraightSkeletonException, ParseException {
-//        File rootFolder = new File("src/main/resources/TestScenario/");
-//        File roadFile = new File(rootFolder, "road.gpkg");
-//        DEBUG = true;
-//        DataStore dsRoad = CollecMgmt.getDataStore(roadFile);
-//        WKTReader wktR = new WKTReader();
-//        Polygon p = (Polygon) wktR.read("Polygon ((935387.92000000004190952 6687121.2900000000372529, 935410.35999999998603016 6687079.05999999959021807, 935200.15000000002328306 6686960.15000000037252903, 935181.2099999999627471 6686972.41999999992549419, 935178.56999999994877726 6687002.87999999988824129, 935178.16000000003259629 6687005.49000000022351742, 935170.55000000004656613 6687021.15000000037252903, 935158.06999999994877726 6687029.84999999962747097, 935155.30000000004656613 6687034.24000000022351742, 935133.47999999998137355 6687075.08999999985098839, 935130.40000000002328306 6687072.50999999977648258, 935117.11999999999534339 6687098.29999999981373549, 935112.98999999999068677 6687105.79999999981373549, 935107.31000000005587935 6687117.05999999959021807, 935092.93000000005122274 6687138.03000000026077032, 935154.40000000002328306 6687153.92999999970197678, 935196.10999999998603016 6687163.87999999988824129, 935192.52000000001862645 6687174.84999999962747097, 935322.56000000005587935 6687244.82000000029802322, 935347.78000000002793968 6687196.87999999988824129, 935369.39000000001396984 6687156, 935387.92000000004190952 6687121.2900000000372529))");
-//        double maxDepth = 20, maxDistanceForNearestRoad = 15, minWidth = 20, maxWidth = 50, omega = 0.1, widthRoad = 12;
-//        SAVEINTERMEDIATERESULT = true;
-//        String NAME_ATT_IMPORTANCE = "IMPORTANCE";
-//        String NAME_ATT_ROAD = "NOM_VOIE_G";
-//        StraightSkeletonDivision decomposition = new StraightSkeletonDivision(
-//                p, dsRoad.getFeatureSource(dsRoad.getTypeNames()[0]).getFeatures(), NAME_ATT_ROAD, NAME_ATT_IMPORTANCE, maxDepth, maxDistanceForNearestRoad, true, widthRoad, "main");
-//        export(decomposition.straightSkeleton.getGraph(), new File(FOLDER_OUT_DEBUG, "after_fix"));
-//        List<Polygon> globalOutputParcels = new ArrayList<>(decomposition.createParcels(minWidth, maxWidth, omega, new MersenneTwister(42)));
-//        TopologicalGraph output = new TopologicalGraph(globalOutputParcels, 0.02);
-//        DefaultFeatureCollection result = new DefaultFeatureCollection();
-//        SimpleFeatureBuilder builder = Schemas.getBasicSchema("parcelSplitSS");
-//        for (Face face : output.getFaces()) {
-//            builder.set(CollecMgmt.getDefaultGeomName(), face.getGeometry());
-//            result.add(builder.buildFeature(Attribute.makeUniqueId()));
-//        }
-//        CollecMgmt.exportSFC(result, new File(FOLDER_OUT_DEBUG, "result.gpkg"));
-//    }
+    public static void main(String[] args) throws IOException, EdgeException, StraightSkeletonException, ParseException {
+        File rootFolder = new File("src/main/resources/TestScenario/");
+        File roadFile = new File(rootFolder, "InputData/road.gpkg");
+        File parcelFile = new File(rootFolder, "InputData/parcel.gpkg");
+        setDEBUG(true);
+        DataStore dsRoad = CollecMgmt.getDataStore(roadFile);
+        DataStore dsParcel = CollecMgmt.getDataStore(parcelFile);
+        SimpleFeatureCollection parcel = MarkParcelAttributeFromPosition.markRandomParcels(MarkParcelAttributeFromPosition.markParcelsConnectedToRoad(dsParcel.getFeatureSource(dsParcel.getTypeNames()[0]).getFeatures(), CityGeneration.createUrbanBlock(dsParcel.getFeatureSource(dsParcel.getTypeNames()[0]).getFeatures()), roadFile), 5, true);
+        double maxDepth = 20, maxDistanceForNearestRoad = 15, minimalArea = 100, minWidth = 20, maxWidth = 50, omega = 0.1, widthRoad = 12;
+        String NAME_ATT_IMPORTANCE = "IMPORTANCE";
+        String NAME_ATT_ROAD = "NOM_VOIE_G";
+        SimpleFeatureCollection result = runTopologicalStraightSkeletonParcelDecomposition(parcel, dsRoad.getFeatureSource(dsRoad.getTypeNames()[0]).getFeatures(), NAME_ATT_ROAD, NAME_ATT_IMPORTANCE, maxDepth, maxDistanceForNearestRoad, minimalArea, minWidth, maxWidth, omega, new MersenneTwister(), widthRoad, "exemple");
+        CollecMgmt.exportSFC(result, new File("/tmp/resultStraightSkeleton.gpkg"));
+        dsParcel.dispose();
+        dsRoad.dispose();
+    }
 
     private static boolean isReflex(Node node, HalfEdge previous, HalfEdge next) {
         return isReflex(node.getCoordinate(), previous.getGeometry(), next.getGeometry());
@@ -287,7 +282,7 @@ public class StraightSkeletonDivision {
     }
 
     private static void log(Object text) {
-        if (DEBUG)
+        if (isDEBUG())
             System.out.println(text);
     }
 
@@ -429,14 +424,18 @@ public class StraightSkeletonDivision {
      * Run Straight Skeleton on marked parcels
      */
     public static SimpleFeatureCollection runTopologicalStraightSkeletonParcelDecomposition(SimpleFeatureCollection sfcParcelIn, SimpleFeatureCollection roads, String NAME_ATT_ROAD, String NAME_ATT_IMPORTANCE, double maxDepth, double maxDistanceForNearestRoad, double minimalArea, double minWidth, double maxWidth, double omega, RandomGenerator rng, double streetWidth, String name) {
+        if (!CollecMgmt.isCollecContainsAttribute(sfcParcelIn, MarkParcelAttributeFromPosition.getMarkFieldName()) || MarkParcelAttributeFromPosition.isNoParcelMarked(sfcParcelIn)) {
+            if (isDEBUG())
+                System.out.println("doFlagDivision: no parcel marked");
+            return sfcParcelIn;
+        }
         DefaultFeatureCollection result = new DefaultFeatureCollection();
+        int i = 0;
         try (SimpleFeatureIterator parcelIt = sfcParcelIn.features()) {
-            while (parcelIt.hasNext()) {
-                SimpleFeature sf = parcelIt.next();
-                if (sf.getAttribute(MarkParcelAttributeFromPosition.getMarkFieldName()).equals(1))
-                    result.addAll(runTopologicalStraightSkeletonParcelDecomposition(sf, roads, NAME_ATT_ROAD, NAME_ATT_IMPORTANCE, maxDepth,
-                            maxDistanceForNearestRoad, minimalArea, minWidth, maxWidth, omega, rng, streetWidth, name));
-            }
+            while (parcelIt.hasNext())
+                result.addAll(runTopologicalStraightSkeletonParcelDecomposition(parcelIt.next(), roads, NAME_ATT_ROAD, NAME_ATT_IMPORTANCE, maxDepth,
+                        maxDistanceForNearestRoad, minimalArea, minWidth, maxWidth, omega, rng, streetWidth, name + i++));
+
         } catch (Exception problem) {
             problem.printStackTrace();
         }
@@ -488,9 +487,8 @@ public class StraightSkeletonDivision {
             DefaultFeatureCollection tmp = new DefaultFeatureCollection();
             try {
                 tmp.addAll(Geom.geomsToCollec(ls, Schemas.getBasicMLSSchema("PeripheralRoad")));
-                FOLDER_OUT_DEBUG.mkdirs();
                 if (!tmp.isEmpty())
-                    CollecMgmt.exportSFC(tmp, new File(FOLDER_OUT_DEBUG, "peripheralRoads"), false);
+                    CollecMgmt.exportSFC(tmp, new File(FOLDER_PARTICULAR_DEBUG, "peripheralRoads"), false);
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -504,33 +502,39 @@ public class StraightSkeletonDivision {
     public static SimpleFeatureCollection runTopologicalStraightSkeletonParcelDecomposition(SimpleFeature feat, SimpleFeatureCollection roads,
                                                                                             String roadNameAttribute, String roadImportanceAttribute, double maxDepth, double maxDistanceForNearestRoad,
                                                                                             double minimalArea, double minWidth, double maxWidth, double omega, RandomGenerator rng, double widthRoad, String name) {
-        int count = 0;
+        DefaultFeatureCollection result = new DefaultFeatureCollection();
+        SimpleFeatureBuilder builder = ParcelSchema.addField(feat.getFeatureType(), "SIMULATED");
+        if (feat.getAttribute(MarkParcelAttributeFromPosition.getMarkFieldName()) == null || !feat.getAttribute(MarkParcelAttributeFromPosition.getMarkFieldName()).equals(1)) {
+            Schemas.setFieldsToSFB(builder, feat);
+            builder.set("SIMULATED", 0);
+            result.add(builder.buildFeature(Attribute.makeUniqueId()));
+            return result;
+        }
         List<Polygon> globalOutputParcels = new ArrayList<>();
         List<Polygon> polygons = Polygons.getPolygons((Geometry) feat.getDefaultGeometry());
         for (Polygon polygon : polygons) {
             try {
                 if (polygon.getArea() < minimalArea) // if small parcel, we ignore
                     continue;
-                log("start with polygon " + count);
+                log("start with polygon " + feat);
                 StraightSkeletonDivision decomposition = new StraightSkeletonDivision(polygon, roads,
                         roadNameAttribute, roadImportanceAttribute, maxDepth, generatePeripheralRoad ? maxDistanceForNearestRoad + widthRoad : maxDistanceForNearestRoad, generatePeripheralRoad, widthRoad, name);
-                export(decomposition.straightSkeleton.getGraph(), new File(FOLDER_OUT_DEBUG, "after_fix"));
+                export(decomposition.straightSkeleton.getGraph(), new File(FOLDER_PARTICULAR_DEBUG, "after_fix"));
                 if (decomposition.betaStrips != null)
                     globalOutputParcels.addAll(decomposition.createParcels(minWidth, maxWidth, omega, rng));
                 else
                     globalOutputParcels.add(decomposition.initialPolygon);
-                log("end with polygon " + count++);
+                log("end with polygon " + feat);
             } catch (Exception e) {
-                log("error with polygon " + count);
-                count += 1;
+                log("error with polygon " + feat);
                 e.printStackTrace();
             }
         }
         TopologicalGraph output = new TopologicalGraph(globalOutputParcels, 0.02);
-        DefaultFeatureCollection result = new DefaultFeatureCollection();
-        SimpleFeatureBuilder builder = Schemas.getBasicSchema("parcelSplitSS", "polygon");
         for (Face face : output.getFaces()) {
+            Schemas.setFieldsToSFB(builder, feat);
             builder.set(CollecMgmt.getDefaultGeomName(), face.getGeometry());
+            builder.set("SIMULATED", 1);
             result.add(builder.buildFeature(Attribute.makeUniqueId()));
         }
         return result;
@@ -581,14 +585,6 @@ public class StraightSkeletonDivision {
 
     public static void setGeneratePeripheralRoad(boolean generatePeripheralRoad) {
         StraightSkeletonDivision.generatePeripheralRoad = generatePeripheralRoad;
-    }
-
-    public static boolean isDEBUG() {
-        return DEBUG;
-    }
-
-    public static void setDEBUG(boolean DEBUG) {
-        StraightSkeletonDivision.DEBUG = DEBUG;
     }
 
     private Optional<Pair<String, Double>> getRoadAttributes(LineString l, double maxDistanceForNearestRoad) {
@@ -1269,11 +1265,11 @@ public class StraightSkeletonDivision {
             }
         }
         export(new TopologicalGraph(alphaStrips.getFaces().stream().map(Face::getGeometry).collect(Collectors.toList()), tolerance),
-                new File(FOLDER_OUT_DEBUG, "beta_before_snap"));
+                new File(FOLDER_PARTICULAR_DEBUG, "beta_before_snap"));
         // snap everything back to the original graph
         TopologicalGraph result = new TopologicalGraph(
                 alphaStrips.getFaces().stream().map(f -> snapped(f.getGeometry())).collect(Collectors.toList()), tolerance);
-        export(result, new File(FOLDER_OUT_DEBUG, "beta_after_snap"));
+        export(result, new File(FOLDER_PARTICULAR_DEBUG, "beta_after_snap"));
         // cleanup strips without exterior edge
         orderedExteriorEdges = getOrderedExteriorEdges(result);
         List<Face> toRemove = new ArrayList<>();
@@ -1299,7 +1295,7 @@ public class StraightSkeletonDivision {
         // modify the snapping geometry to add the new points where necessary
         // snapGeom = factory.createGeometryCollection(result.getFaces().stream().map(f -> f.getGeometry()).collect(Collectors.toList()).toArray(new Geometry[] {}));
         result = new TopologicalGraph(result.getFaces().stream().map(f -> snapped(f.getGeometry())).collect(Collectors.toList()), tolerance);
-        export(result, new File(FOLDER_OUT_DEBUG, "beta_after_removal"));
+        export(result, new File(FOLDER_PARTICULAR_DEBUG, "beta_after_removal"));
         // cleanup strips without exterior edge
         orderedExteriorEdges = getOrderedExteriorEdges(result);
         // add the initial supporting edges reduced to fit into the final beta strips

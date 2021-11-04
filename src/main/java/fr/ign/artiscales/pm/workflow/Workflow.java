@@ -1,5 +1,6 @@
 package fr.ign.artiscales.pm.workflow;
 
+import fr.ign.artiscales.pm.division.Division;
 import fr.ign.artiscales.pm.division.StraightSkeletonDivision;
 import org.opengis.feature.simple.SimpleFeature;
 
@@ -30,7 +31,7 @@ public abstract class Workflow {
     }
 
     public static void setDEBUG(boolean DEBUG) {
-        StraightSkeletonDivision.setDEBUG(DEBUG);
+        Division.setDEBUG(DEBUG);
         Workflow.DEBUG = DEBUG;
     }
 

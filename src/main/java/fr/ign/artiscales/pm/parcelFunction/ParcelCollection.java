@@ -164,7 +164,7 @@ public class ParcelCollection {
      *
      * @param parcelsUnsorted   {@link SimpleFeatureCollection} to check every parcels
      * @param minimalParcelSize Threshold which parcels are under to be merged
-     * @param bufferGeom        when we merge two gemoetries, do we buffer them with 1m and -1m ? Yes for geometries that could have a geometry precision reduction and can suffer from irregular edges. Angles and topology with other parcels could then be more or less blurry.
+     * @param bufferGeom        when we merge two geometries, do we buffer them with 1m and -1m ? Yes for geometries that could have a geometry precision reduction and can suffer from irregular edges. Angles and topology with other parcels could then be more or less blurry.
      * @return The input {@link SimpleFeatureCollection} with small parcels merged or removed
      */
     public static SimpleFeatureCollection mergeTooSmallParcels(SimpleFeatureCollection parcelsUnsorted, double minimalParcelSize, boolean bufferGeom) {

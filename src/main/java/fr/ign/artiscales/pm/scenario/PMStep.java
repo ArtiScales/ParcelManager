@@ -519,9 +519,8 @@ public class PMStep {
         // If no zone have been set, it means we have to use the zoning plan.
         else {
             DataStore dsZoning = CollecMgmt.getDataStore(ZONINGFILE);
-            SimpleFeatureCollection zoning = DataUtilities.collection((dsZoning.getFeatureSource(dsZoning.getTypeNames()[0]).getFeatures()));
+            zoneIn = ZoneDivision.createZoneToCut(genericZone, preciseZone, dsZoning.getFeatureSource(dsZoning.getTypeNames()[0]).getFeatures(), parcel);
             dsZoning.dispose();
-            zoneIn = ZoneDivision.createZoneToCut(genericZone, preciseZone, zoning, ZONINGFILE, parcel);
         }
         return zoneIn;
     }

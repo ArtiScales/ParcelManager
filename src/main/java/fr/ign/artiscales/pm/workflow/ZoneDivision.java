@@ -1,13 +1,15 @@
 package fr.ign.artiscales.pm.workflow;
 
 import fr.ign.artiscales.pm.division.OBBDivision;
+import fr.ign.artiscales.pm.division.OBBThenSS;
 import fr.ign.artiscales.pm.division.StraightSkeletonDivision;
+import fr.ign.artiscales.pm.fields.GeneralFields;
 import fr.ign.artiscales.pm.parcelFunction.MarkParcelAttributeFromPosition;
-import fr.ign.artiscales.pm.parcelFunction.ParcelAttribute;
 import fr.ign.artiscales.pm.parcelFunction.ParcelCollection;
 import fr.ign.artiscales.pm.parcelFunction.ParcelSchema;
 import fr.ign.artiscales.tools.FeaturePolygonizer;
 import fr.ign.artiscales.tools.geoToolsFunctions.Attribute;
+import fr.ign.artiscales.tools.geoToolsFunctions.Schemas;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Geom;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.collec.CollecMgmt;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.collec.CollecTransform;
@@ -27,8 +29,6 @@ import org.locationtech.jts.geom.Polygon;
 import org.locationtech.jts.geom.PrecisionModel;
 import org.locationtech.jts.precision.GeometryPrecisionReducer;
 import org.opengis.feature.simple.SimpleFeature;
-import org.opengis.feature.simple.SimpleFeatureType;
-import org.opengis.feature.type.AttributeDescriptor;
 
 import java.io.File;
 import java.io.IOException;
@@ -38,7 +38,7 @@ import java.util.stream.Collectors;
 
 /**
  * This workflow operates on a zone rather than on parcels. Zones can either be taken from a zoning plan or from a ready-to-use zone collection (which can be made out of parcels).
- * Creation and integration of zone could be made with the {@link #createZoneToCut(String, SimpleFeatureCollection, File, SimpleFeatureCollection)} method. The parcel which are across the zone are cut
+ * Creation and integration of zone could be made with the {@link #createZoneToCut(String, SimpleFeatureCollection, SimpleFeatureCollection)} method. The parcel which are across the zone are cut
  * and the parts that aren't contained into the zone are kept with their attributes. The chosen parcel division process (OBB by default) is then applied on the zone.
  *
  * @author Maxime Colomb
@@ -48,15 +48,19 @@ public class ZoneDivision extends Workflow {
     public ZoneDivision() {
     }
 
-//	public static void main(String[] args) throws Exception {
-//		File outFile = new File("/tmp/");
-//		outFile.mkdirs();
-//		File simuledFile = (new ZoneDivision()).zoneDivision(
-//				new File("parcelmanagergui/tmp/zone.gpkg"),
-//				new File(parcelmanagergui/tmp/parcels.gpkg"),
-//				ProfileUrbanFabric.convertJSONtoProfile(new File(
-//						"src/main/resources/ParcelComparison/profileUrbanFabric/mediumCollective.json")), false, outFile);
-//	}
+//    public static void main(String[] args) throws Exception {
+//        File rootFolder = new File("src/main/resources/TestScenario/");
+//        DataStore parcelDS = CollecMgmt.getDataStore(new File(rootFolder, "InputData/parcel.gpkg"));
+//        DataStore zoningDS = CollecMgmt.getDataStore(new File(rootFolder, "InputData/zoning.gpkg"));
+//        DataStore roadDS = CollecMgmt.getDataStore(new File(rootFolder, "InputData/road.gpkg"));
+//        File outFolder = new File("/tmp/");
+//
+//        SimpleFeatureCollection zone = createZoneToCut("AU", "AU1", zoningDS.getFeatureSource(zoningDS.getTypeNames()[0]).getFeatures(), parcelDS.getFeatureSource(parcelDS.getTypeNames()[0]).getFeatures());
+//        CollecMgmt.exportSFC(zone, new File("/tmp/dada"));
+//        SimpleFeatureCollection z = new ZoneDivision().zoneDivision(zone, parcelDS.getFeatureSource(parcelDS.getTypeNames()[0]).getFeatures(), roadDS.getFeatureSource(roadDS.getTypeNames()[0]).getFeatures(), outFolder, ProfileUrbanFabric.convertJSONtoProfile(new File("src/main/resources/TestScenario/profileUrbanFabric/smallHouse.json")), true);
+//        CollecMgmt.exportSFC(z, new File("/tmp/p"));
+//        zoningDS.dispose();
+//    }
 
     /**
      * Create a zone to cut from a zoning plan by selecting features from a Geopackage regarding a fixed value. Name of the field is by default set to <i>TYPEZONE</i> and must be changed if needed
@@ -65,13 +69,12 @@ public class ZoneDivision extends Workflow {
      *
      * @param genericZone Name of the generic zone to be cut
      * @param inputSFC    Geopackage of zones to extract the wanted zone from (usually a zoning plan)
-     * @param zoningFile  The File containing the zoning plan (can be null if no zoning plan is planned to be used)
      * @param boundingSFC {@link SimpleFeatureCollection} to bound the process on a wanted location
      * @return An extraction of the zoning collection
      * @throws IOException from marking parcel
      */
-    public static SimpleFeatureCollection createZoneToCut(String genericZone, SimpleFeatureCollection inputSFC, File zoningFile, SimpleFeatureCollection boundingSFC) throws IOException {
-        return createZoneToCut(genericZone, null, inputSFC, zoningFile, boundingSFC);
+    public static SimpleFeatureCollection createZoneToCut(String genericZone, SimpleFeatureCollection inputSFC, SimpleFeatureCollection boundingSFC) throws IOException {
+        return createZoneToCut(genericZone, null, inputSFC, boundingSFC);
     }
 
     /**
@@ -83,21 +86,22 @@ public class ZoneDivision extends Workflow {
      * @param genericZone Name of the generic zone to be cut
      * @param preciseZone Name of the precise zone to be cut. Can be null
      * @param inputSFC    Geopackage of zones to extract the wanted zone from (usually a zoning plan)
-     * @param zoningFile  The File containing the zoning plan (can be null if no zoning plan is planned to be used)
      * @param boundingSFC {@link SimpleFeatureCollection} to bound the process on a wanted location
      * @return An extraction of the zoning collection
      * @throws IOException from marking parcel
      */
-    public static SimpleFeatureCollection createZoneToCut(String genericZone, String preciseZone, SimpleFeatureCollection inputSFC, File zoningFile, SimpleFeatureCollection boundingSFC) throws IOException {
+    public static SimpleFeatureCollection createZoneToCut(String genericZone, String preciseZone, SimpleFeatureCollection inputSFC, SimpleFeatureCollection boundingSFC) throws IOException {
         // get the wanted zones from the zoning file
         SimpleFeatureCollection finalZone;
         if (genericZone != null && !genericZone.equals(""))
             if (preciseZone == null || preciseZone.equals(""))
-                finalZone = MarkParcelAttributeFromPosition.getOnlyMarkedParcels(MarkParcelAttributeFromPosition
-                        .markParcelIntersectGenericZoningType(CollecTransform.selectIntersection(inputSFC, Geom.unionSFC(boundingSFC)), genericZone, zoningFile));
+                finalZone = MarkParcelAttributeFromPosition.getOnlyMarkedParcels(MarkParcelAttributeFromPosition.markParcelWithAttribute(
+                        CollecTransform.selectIntersection(inputSFC, Geom.unionSFC(boundingSFC)), GeneralFields.getZoneGenericNameField(), genericZone));
             else
-                finalZone = MarkParcelAttributeFromPosition.getOnlyMarkedParcels(MarkParcelAttributeFromPosition.markParcelIntersectPreciseZoningType(
-                        CollecTransform.selectIntersection(inputSFC, Geom.unionSFC(boundingSFC)), genericZone, preciseZone, zoningFile));
+                finalZone = MarkParcelAttributeFromPosition.getOnlyMarkedParcels(MarkParcelAttributeFromPosition.markParcelWithAttribute(
+                        MarkParcelAttributeFromPosition.markParcelWithAttribute(
+                                CollecTransform.selectIntersection(inputSFC, Geom.unionSFC(boundingSFC)), GeneralFields.getZoneGenericNameField(), genericZone),
+                        GeneralFields.getZonePreciseNameField(), preciseZone));
         else
             finalZone = MarkParcelAttributeFromPosition
                     .getOnlyMarkedParcels(MarkParcelAttributeFromPosition.markAllParcel(CollecTransform.selectIntersection(inputSFC, Geom.unionSFC(boundingSFC))));
@@ -205,26 +209,23 @@ public class ZoneDivision extends Workflow {
         // parcel geometry name for all
         String geomName = parcels.getSchema().getGeometryDescriptor().getLocalName();
         final Geometry geomZone = Geom.unionSFC(initialZone);
-        final SimpleFeatureBuilder finalParcelBuilder = ParcelSchema.getSFBMinParcel();
+        final SimpleFeatureBuilder finalParcelBuilder = ParcelSchema.getSFBWithoutSplit(parcels.getSchema());
         // sort in two different collections, the ones that matters and the ones that will be saved for future purposes
         DefaultFeatureCollection parcelsInZone = new DefaultFeatureCollection();
         // parcels to save for after and convert them to the minimal attribute
         DefaultFeatureCollection savedParcels = new DefaultFeatureCollection();
         Arrays.stream(parcels.toArray(new SimpleFeature[0])).forEach(parcel -> {
             if (((Geometry) parcel.getDefaultGeometry()).intersects(geomZone))
-                parcelsInZone.add(ParcelSchema.setSFBMinParcelWithFeat(parcel, finalParcelBuilder.getFeatureType()).buildFeature(Attribute.makeUniqueId()));
+                parcelsInZone.add(parcel);
             else
-                savedParcels.add(ParcelSchema.setSFBMinParcelWithFeat(parcel, finalParcelBuilder.getFeatureType()).buildFeature(Attribute.makeUniqueId()));
+                savedParcels.add(parcel);
         });
-        SimpleFeatureBuilder originalSFB = new SimpleFeatureBuilder(parcelsInZone.getSchema());
-        if (isDEBUG()) {
+        if (isDEBUG())
             CollecMgmt.exportSFC(parcelsInZone, new File(tmpFolder, "parcelsInZone"));
-            CollecMgmt.exportSFC(savedParcels, new File(tmpFolder, "parcelsSaved"));
-            System.out.println("parcels in zone exported");
-        }
+        //We prepare the zones
         int numZone = 0;
         DefaultFeatureCollection goOdZone = new DefaultFeatureCollection();
-        if (keepExistingRoads) {// complete the void left by the existing roads from the zones. Also assess a section number
+        if (keepExistingRoads) {// select zone that covers parcel rather than the actual zone.
             Geometry unionParcel = Geom.unionSFC(parcels);
             SimpleFeatureBuilder sfBuilder = ParcelSchema.getSFBMinParcelSplit();
             try (SimpleFeatureIterator zoneIt = initialZone.features()) {
@@ -242,6 +243,7 @@ public class ZoneDivision extends Workflow {
                                 sfBuilder.set(geomName, geom);
                                 sfBuilder.set(ParcelSchema.getMinParcelSectionField(), makeNewSection(String.valueOf(numZone)));
                                 sfBuilder.set(MarkParcelAttributeFromPosition.getMarkFieldName(), 1);
+//                                sfBuilder.set(ParcelSchema.getMinParcelCommunityField(), zone.getAttribute(ParcelSchema.getMinParcelCommunityField()));
                                 goOdZone.add(sfBuilder.buildFeature(Attribute.makeUniqueId()));
                             }
                         }
@@ -255,8 +257,18 @@ public class ZoneDivision extends Workflow {
                 System.out.println("ZoneDivision: no zones to cut or zone is too small to be taken into consideration");
                 return parcels;
             }
-        } else { // get the whole zone
-            goOdZone.addAll(MarkParcelAttributeFromPosition.markAllParcel(initialZone));
+        } else { // we mark and add all zones
+            SimpleFeatureBuilder sfBuilder = ParcelSchema.getSFBMinParcelSplit();
+            try (SimpleFeatureIterator zoneIt = initialZone.features()) {
+                while (zoneIt.hasNext()) {
+                    sfBuilder.set(geomName, zoneIt.next().getDefaultGeometry());
+                    sfBuilder.set(ParcelSchema.getMinParcelSectionField(), makeNewSection(String.valueOf(numZone++)));
+                    sfBuilder.set(MarkParcelAttributeFromPosition.getMarkFieldName(), 1);
+                    goOdZone.add(sfBuilder.buildFeature(Attribute.makeUniqueId()));
+                }
+            } catch (Exception problem) {
+                problem.printStackTrace();
+            }
         }
         // parts of parcel outside the zone must not be cut by the algorithm and keep their attributes
         List<Geometry> geomList = Arrays.stream(parcelsInZone.toArray(new SimpleFeature[0]))
@@ -277,15 +289,11 @@ public class ZoneDivision extends Workflow {
                 try (SimpleFeatureIterator parcelIt = parcelsInZone.features()) {
                     while (parcelIt.hasNext()) {
                         SimpleFeature feat = parcelIt.next();
-                        // if that original parcel contains that piece of parcel, we copy the previous parcels informations
+                        // if that original parcel contains that piece of parcel, we copy the previous parcels information
                         if (((Geometry) feat.getDefaultGeometry()).buffer(0.01).contains(poly)) {
-                            originalSFB.set(geomName, poly);
-                            for (AttributeDescriptor attr : feat.getFeatureType().getAttributeDescriptors()) {
-                                if (attr.getLocalName().equals(geomName))
-                                    continue;
-                                originalSFB.set(attr.getName(), feat.getAttribute(attr.getName()));
-                            }
-                            savedParcels.add(originalSFB.buildFeature(Attribute.makeUniqueId()));
+                            Schemas.setFieldsToSFB(finalParcelBuilder, feat);
+                            finalParcelBuilder.set(geomName, poly);
+                            savedParcels.add(finalParcelBuilder.buildFeature(Attribute.makeUniqueId()));
                         }
                     }
                 } catch (Exception problem) {
@@ -293,29 +301,32 @@ public class ZoneDivision extends Workflow {
                 }
             }
         }
+        if (isDEBUG())
+            CollecMgmt.exportSFC(savedParcels, new File(tmpFolder, "parcelsSaved"));
         // Parcel subdivision
-        SimpleFeatureCollection splitedParcels = new DefaultFeatureCollection();
+        SimpleFeatureCollection splitParcels = new DefaultFeatureCollection();
         SimpleFeatureCollection blockCollection = CityGeneration.createUrbanBlock(parcels);
         try (SimpleFeatureIterator it = goOdZone.features()) {
             while (it.hasNext()) {
                 SimpleFeature zone = it.next();
-                DefaultFeatureCollection tmpZoneToCut = new DefaultFeatureCollection();
-                tmpZoneToCut.add(zone);
                 switch (PROCESS) {
                     case "OBB":
-                        ((DefaultFeatureCollection) splitedParcels)
-                                .addAll(OBBDivision.splitParcels(tmpZoneToCut, roads, profile.getMaximalArea(), profile.getMinimalWidthContactRoad(), profile.getHarmonyCoeff(), profile.getNoise(),
-                                        CollecTransform.fromPolygonSFCtoListRingLines(
-                                                CollecTransform.selectIntersection(blockCollection, (Geometry) zone.getDefaultGeometry())),
+                        ((DefaultFeatureCollection) splitParcels)
+                                .addAll(OBBDivision.splitParcel(zone, roads, profile.getMaximalArea(), profile.getMinimalWidthContactRoad(), profile.getHarmonyCoeff(), profile.getNoise(),
+                                        CollecTransform.fromPolygonSFCtoListRingLines(CollecTransform.selectIntersection(blockCollection, (Geometry) zone.getDefaultGeometry())),
                                         profile.getLaneWidth(), profile.getStreetLane(), profile.getStreetWidth(), true, profile.getBlockShape()));
                         break;
                     case "SS":
                     case "SSoffset":
                         StraightSkeletonDivision.FOLDER_OUT_DEBUG = tmpFolder;
-                        ((DefaultFeatureCollection) splitedParcels)
+                        ((DefaultFeatureCollection) splitParcels)
                                 .addAll(StraightSkeletonDivision.runTopologicalStraightSkeletonParcelDecomposition(zone, roads,
                                         "NOM_VOIE_G", "IMPORTANCE", profile.getMaxDepth(), profile.getMaxDistanceForNearestRoad(), profile.getMinimalArea(), profile.getMinimalWidthContactRoad(), PROCESS.equals("SSoffset") ? profile.getMaxDepth() : 0,
                                         profile.getNoise() == 0 ? 0.1 : profile.getNoise(), new MersenneTwister(42), profile.getLaneWidth(), ParcelSchema.getParcelID(zone)));
+                        break;
+                    case "OBBThenSS":
+                        ((DefaultFeatureCollection) splitParcels)
+                                .addAll(OBBThenSS.applyOBBThenSS(zone, roads, profile, CollecTransform.fromPolygonSFCtoListRingLines(CollecTransform.selectIntersection(blockCollection, (Geometry) zone.getDefaultGeometry())), 30));
                         break;
                     case "MS":
                         System.out.println("not implemented yet");
@@ -326,34 +337,22 @@ public class ZoneDivision extends Workflow {
             problem.printStackTrace();
         }
         if (isDEBUG()) {
-            CollecMgmt.exportSFC(splitedParcels, new File(tmpFolder, "freshSplitedParcels"));
+            CollecMgmt.exportSFC(splitParcels, new File(tmpFolder, "freshSplitedParcels"));
             System.out.println("fresh cuted parcels exported");
         }
         // merge the small parcels to bigger ones
-        splitedParcels = ParcelCollection.mergeTooSmallParcels(splitedParcels, profile.getMinimalArea(), PROCESS.equals("SS"));
+        splitParcels = ParcelCollection.mergeTooSmallParcels(splitParcels, profile.getMinimalArea(), PROCESS.equals("SS"));
         DefaultFeatureCollection result = new DefaultFeatureCollection();
         int num = 0;
-        // fix attribute for the simulated parcels
-        try (SimpleFeatureIterator itParcel = splitedParcels.features()) {
+        // set attribute for the simulated parcels
+        try (SimpleFeatureIterator itParcel = splitParcels.features()) {
             while (itParcel.hasNext()) {
                 SimpleFeature parcel = itParcel.next();
                 Geometry parcelGeom = (Geometry) parcel.getDefaultGeometry();
                 finalParcelBuilder.set(geomName, parcelGeom);
-                // get the section name
-                String section = "";
-                try (SimpleFeatureIterator goOdZoneIt = goOdZone.features()) {
-                    while (goOdZoneIt.hasNext()) {
-                        SimpleFeature zone = goOdZoneIt.next();
-                        if (((Geometry) zone.getDefaultGeometry()).buffer(2).contains(parcelGeom)) {
-                            section = (String) zone.getAttribute(ParcelSchema.getMinParcelSectionField());
-                            break;
-                        }
-                    }
-                } catch (Exception problem) {
-                    problem.printStackTrace();
-                }
-                finalParcelBuilder.set(ParcelSchema.getMinParcelSectionField(), section);
-                finalParcelBuilder.set(ParcelSchema.getMinParcelCommunityField(), ParcelAttribute.getCommunityCodeFromSFC(parcelsInZone, parcel));
+                // get the section name of the corresponding zone
+                finalParcelBuilder.set(ParcelSchema.getMinParcelSectionField(), Arrays.stream(goOdZone.toArray(new SimpleFeature[0])).filter(z -> ((Geometry) z.getDefaultGeometry()).buffer(2).contains(parcelGeom)).map(z -> (String) z.getAttribute(ParcelSchema.getMinParcelSectionField())).findFirst().orElse(""));
+                finalParcelBuilder.set(ParcelSchema.getMinParcelCommunityField(), parcel.getAttribute(ParcelSchema.getMinParcelCommunityField()));
                 finalParcelBuilder.set(ParcelSchema.getMinParcelNumberField(), String.valueOf(num++));
                 result.add(finalParcelBuilder.buildFeature(Attribute.makeUniqueId()));
             }
@@ -367,12 +366,9 @@ public class ZoneDivision extends Workflow {
             OVERWRITEGEOPACKAGE = false;
         }
         // add the saved parcels
-        SimpleFeatureType schemaParcel = finalParcelBuilder.getFeatureType();
         try (SimpleFeatureIterator itSavedParcels = savedParcels.features()) {
-            while (itSavedParcels.hasNext()) {
-                SimpleFeatureBuilder parcelBuilder = ParcelSchema.setSFBMinParcelWithFeat(itSavedParcels.next(), schemaParcel);
-                result.add(parcelBuilder.buildFeature(Attribute.makeUniqueId()));
-            }
+            while (itSavedParcels.hasNext())
+                result.add(itSavedParcels.next());
         } catch (Exception problem) {
             problem.printStackTrace();
         }

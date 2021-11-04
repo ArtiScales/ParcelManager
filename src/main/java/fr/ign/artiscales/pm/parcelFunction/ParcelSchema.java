@@ -1,10 +1,10 @@
 package fr.ign.artiscales.pm.parcelFunction;
 
+import fr.ign.artiscales.tools.geoToolsFunctions.Schemas;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.collec.CollecMgmt;
 import org.geotools.feature.simple.SimpleFeatureBuilder;
 import org.geotools.feature.simple.SimpleFeatureTypeBuilder;
 import org.geotools.referencing.CRS;
-import org.locationtech.jts.geom.MultiPolygon;
 import org.locationtech.jts.geom.Polygon;
 import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.feature.simple.SimpleFeatureType;
@@ -21,6 +21,19 @@ public class ParcelSchema {
     static String minParcelCommunityField = "DEPCOM";
 
     static String epsg = "EPSG:2154";
+
+    public static SimpleFeatureBuilder getSFBWithoutSplit(SimpleFeatureType schema) {
+        if (!Schemas.isSchemaContainsAttribute(schema, MarkParcelAttributeFromPosition.getMarkFieldName()))
+            return new SimpleFeatureBuilder(schema);
+        SimpleFeatureTypeBuilder sfTypeBuilder = new SimpleFeatureTypeBuilder();
+        for (AttributeDescriptor attr : schema.getAttributeDescriptors())
+            if (!attr.getLocalName().equals(MarkParcelAttributeFromPosition.getMarkFieldName()))
+                sfTypeBuilder.add(attr);
+        sfTypeBuilder.setName(schema.getName());
+        sfTypeBuilder.setCRS(schema.getCoordinateReferenceSystem());
+        sfTypeBuilder.setDefaultGeometry(schema.getGeometryDescriptor().getLocalName());
+        return new SimpleFeatureBuilder(sfTypeBuilder.buildFeatureType());
+    }
 
     /////////////////////
     /////////////////////
@@ -46,28 +59,6 @@ public class ParcelSchema {
         sfTypeBuilder.add(minParcelSectionField, String.class);
         sfTypeBuilder.add(minParcelNumberField, String.class);
         sfTypeBuilder.add(minParcelCommunityField, String.class);
-        return new SimpleFeatureBuilder(sfTypeBuilder.buildFeatureType());
-    }
-
-    /**
-     * Get minimal builder for a parcel with a multipolygon geometry type
-     *
-     * @return the builder
-     */
-    public static SimpleFeatureBuilder getSFBMinParcelMulti() {
-        SimpleFeatureTypeBuilder sfTypeBuilder = new SimpleFeatureTypeBuilder();
-        sfTypeBuilder.setName("minParcel");
-        try {
-            sfTypeBuilder.setCRS(CRS.decode(epsg));
-        } catch (FactoryException e) {
-            e.printStackTrace();
-        }
-        sfTypeBuilder.add(CollecMgmt.getDefaultGeomName(), MultiPolygon.class);
-        sfTypeBuilder.setDefaultGeometry(CollecMgmt.getDefaultGeomName());
-        sfTypeBuilder.add(minParcelSectionField, String.class);
-        sfTypeBuilder.add(minParcelNumberField, String.class);
-        sfTypeBuilder.add(minParcelCommunityField, String.class);
-
         return new SimpleFeatureBuilder(sfTypeBuilder.buildFeatureType());
     }
 
@@ -106,43 +97,32 @@ public class ParcelSchema {
         return new SimpleFeatureBuilder(sfTypeBuilder.buildFeatureType());
     }
 
-    public static SimpleFeatureBuilder setSFBMinParcelSplitWithFeat(SimpleFeature feat, SimpleFeatureType schema) {
-        return setSFBMinParcelSplitWithFeat(feat, schema, (int) feat.getAttribute(MarkParcelAttributeFromPosition.getMarkFieldName()));
-    }
-
-    public static SimpleFeatureBuilder setSFBMinParcelSplitWithFeat(SimpleFeature feat, SimpleFeatureType schema, int isSplit) {
-        return setSFBMinParcelSplitWithFeat(feat, new SimpleFeatureBuilder(schema), schema, isSplit);
-    }
-
-    public static SimpleFeatureBuilder setSFBMinParcelSplitWithFeat(SimpleFeature feat, SimpleFeatureBuilder builder, SimpleFeatureType schema,
-                                                                    int isSplit) {
+    public static SimpleFeatureBuilder setSFBMinParcelSplitWithFeat(SimpleFeature feat, SimpleFeatureBuilder builder, SimpleFeatureType schema, int isSplit) {
         builder.set(schema.getGeometryDescriptor().getName().toString(), feat.getDefaultGeometry());
         builder.set(MarkParcelAttributeFromPosition.getMarkFieldName(), isSplit);
         builder.set(minParcelSectionField, feat.getAttribute(minParcelSectionField));
         builder.set(minParcelNumberField, feat.getAttribute(minParcelNumberField));
 
-        // setting zipcode
-        if (CollecMgmt.isSimpleFeatureContainsAttribute(feat, minParcelCommunityField))
-            builder.set(minParcelCommunityField, feat.getAttribute(minParcelCommunityField));
-            // if looks like french parcel
-        else if (CollecMgmt.isSimpleFeatureContainsAttribute(feat, "CODE_DEP"))
-            builder.set(ParcelSchema.getMinParcelCommunityField(),
-                    ((String) feat.getAttribute("CODE_DEP")).concat((String) feat.getAttribute("CODE_COM")));
+        if (CollecMgmt.isSimpleFeatureContainsAttribute(feat, minParcelCommunityField)) // setting zipcode
+            builder.set(getMinParcelCommunityField(), feat.getAttribute(minParcelCommunityField));
+        else if (CollecMgmt.isSimpleFeatureContainsAttribute(feat, "CODE_DEP")) // if looks like french parcel
+            builder.set(getMinParcelCommunityField(), ((String) feat.getAttribute("CODE_DEP")).concat((String) feat.getAttribute("CODE_COM")));
         return builder;
     }
 
     /**
-     * Create a builder out of a SimpleFeatureCollection's schema and add a mark field of type <i>int</i>. The mark name can be set with the method
-     * {@link fr.ign.artiscales.pm.parcelFunction.MarkParcelAttributeFromPosition#setMarkFieldName(String)}.
+     * Create a builder out of a SimpleFeatureCollection's schema and add a mark field of type <i>int</i>.
      *
      * @param schema input schema
      * @return a SimpleFeatureBuilder relative to the schema + a marking field
      */
-    public static SimpleFeatureBuilder addSplitField(SimpleFeatureType schema) {
+    public static SimpleFeatureBuilder addField(SimpleFeatureType schema, String fieldName) {
+        if (Schemas.isSchemaContainsAttribute(schema, fieldName))
+            return new SimpleFeatureBuilder(schema);
         SimpleFeatureTypeBuilder sfTypeBuilder = new SimpleFeatureTypeBuilder();
         for (AttributeDescriptor attr : schema.getAttributeDescriptors())
             sfTypeBuilder.add(attr);
-        sfTypeBuilder.add(MarkParcelAttributeFromPosition.getMarkFieldName(), int.class);
+        sfTypeBuilder.add(fieldName, int.class);
         sfTypeBuilder.setName(schema.getName());
         sfTypeBuilder.setCRS(schema.getCoordinateReferenceSystem());
         sfTypeBuilder.setDefaultGeometry(schema.getGeometryDescriptor().getLocalName());
