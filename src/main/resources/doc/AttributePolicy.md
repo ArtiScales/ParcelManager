@@ -25,7 +25,7 @@ Concerning division processes, only parcels with their **SPLIT** field set to 1 
 Concerning workflows, community, section and number fields are required. Their values change in the output parcels (see section above). As reshaped parcels aren't produced from a single input parcel, every of the other fields are set to *null*. It is possible to detect if a section has been changed with the *Workflow.isNewSection()* abstract method. 
 <br /> 
 <br /> 
-<img alt="schema with mandatory attributes for Parcel Manager operations" src="./attSchema.png";"/>
+<img alt="schema with mandatory attributes for Parcel Manager operations" src="./attSchema.png"/>
 
 ## Zoning plan
 
