@@ -1,7 +1,7 @@
 # Field Attributes
 
 ## Parcel Marking
-A specific attribute is required to define which parcels can be reshaped by simulation. By default, this specific atribute is set in a field named <b>SPLIT</b>. If the attribute value is set to 1, the corresponding parcel can be reshaped. Methods from the <a href="https://framagit.org/artiscales/parcelmanager/-/blob/master/src/main/java/fr/ign/artiscales/pm/parcelFunction/MarkParcelAttributeFromPosition.java">MarkParcelAttributeFromPosition</a> class can be used to automatically set the attribute values of the field <b>SPLIT</b> for all parcels. 
+A specific attribute called *markingField* is required to define which parcels can be reshaped by simulation. By default, this specific atribute is set in a field named <b>SPLIT</b>. If the attribute value is set to 1, the corresponding parcel can be reshaped. Methods from the <a href="https://framagit.org/artiscales/parcelmanager/-/blob/master/src/main/java/fr/ign/artiscales/pm/parcelFunction/MarkParcelAttributeFromPosition.java">MarkParcelAttributeFromPosition</a> class can be used to automatically set the attribute values of the field *markingField* for all parcels. 
 
 ## Parcel ID
 
@@ -20,9 +20,9 @@ It is possible to convert the basic nomemclature of Parcel Manager into another 
 ## Attributes of input parcels
 According to the schema below, input parcels are required to have specific attributes depending on the parcel operation.
 <br /> 
-Concerning division processes, only parcels with their **SPLIT** field set to 1 are reshaped. The outputs contains the same initial fields, plus a **SIMULATED** field if the reshape has proceeded successfully. 
+Concerning division processes, only parcels with their *markingField* set to 1 are reshaped. The outputs contains the same initial fields, plus a **SIMULATED** field if the reshape has proceeded successfully. 
 <br /> 
-Concerning workflows, community, section and number fields are required. Their values change in the output parcels (see section above). As reshaped parcels aren't produced from a single input parcel, every of the other fields are set to *null*. It is possible to detect if a section has been changed with the *Workflow.isNewSection()* abstract method. 
+Concerning workflows, *community*, *section*, *number* and *markingField* fields are required. As only zone provided in the **ZoneDivision** workflow will be reshaped, the *markingField* is not mandatory for this workflow. Value of fields *community*, *section* and *number* change in the output parcels (see section above). As reshaped parcels aren't produced from a single input parcel, every of the other fields are set to *null*. It is possible to detect if a section has been changed with the *Workflow.isNewSection()* abstract method. 
 <br /> 
 <br /> 
 <img alt="schema with mandatory attributes for Parcel Manager operations" src="./attSchema.png"/>
