@@ -16,9 +16,9 @@ import org.opengis.referencing.FactoryException;
  */
 public class ParcelSchema {
 
-    static String minParcelNumberField = "NUMERO";
-    static String minParcelSectionField = "SECTION";
-    static String minParcelCommunityField = "DEPCOM";
+    static String parcelNumberField = "NUMERO";
+    static String parcelSectionField = "SECTION";
+    static String parcelCommunityField = "DEPCOM";
 
     static String epsg = "EPSG:2154";
 
@@ -56,9 +56,9 @@ public class ParcelSchema {
         }
         sfTypeBuilder.add(CollecMgmt.getDefaultGeomName(), Polygon.class);
         sfTypeBuilder.setDefaultGeometry(CollecMgmt.getDefaultGeomName());
-        sfTypeBuilder.add(minParcelSectionField, String.class);
-        sfTypeBuilder.add(minParcelNumberField, String.class);
-        sfTypeBuilder.add(minParcelCommunityField, String.class);
+        sfTypeBuilder.add(parcelSectionField, String.class);
+        sfTypeBuilder.add(parcelNumberField, String.class);
+        sfTypeBuilder.add(parcelCommunityField, String.class);
         return new SimpleFeatureBuilder(sfTypeBuilder.buildFeatureType());
     }
 
@@ -68,14 +68,14 @@ public class ParcelSchema {
 
     public static SimpleFeatureBuilder setSFBMinParcelWithFeat(SimpleFeature feat, SimpleFeatureBuilder builder, SimpleFeatureType schema) {
         builder.set(schema.getGeometryDescriptor().getName().toString(), feat.getDefaultGeometry());
-        builder.set(minParcelSectionField, feat.getAttribute(minParcelSectionField));
-        builder.set(minParcelNumberField, feat.getAttribute(minParcelNumberField));
+        builder.set(parcelSectionField, feat.getAttribute(parcelSectionField));
+        builder.set(parcelNumberField, feat.getAttribute(parcelNumberField));
         // setting zipcode
-        if (CollecMgmt.isSimpleFeatureContainsAttribute(feat, minParcelCommunityField))
-            builder.set(minParcelCommunityField, feat.getAttribute(minParcelCommunityField));
+        if (CollecMgmt.isSimpleFeatureContainsAttribute(feat, parcelCommunityField))
+            builder.set(parcelCommunityField, feat.getAttribute(parcelCommunityField));
             // if looks like French parcel
         else if (CollecMgmt.isSimpleFeatureContainsAttribute(feat, "CODE_DEP"))
-            builder.set(ParcelSchema.getMinParcelCommunityField(),
+            builder.set(ParcelSchema.getParcelCommunityField(),
                     ((String) feat.getAttribute("CODE_DEP")).concat((String) feat.getAttribute("CODE_COM")));
         return builder;
     }
@@ -90,9 +90,9 @@ public class ParcelSchema {
         }
         sfTypeBuilder.add(CollecMgmt.getDefaultGeomName(), Polygon.class);
         sfTypeBuilder.setDefaultGeometry(CollecMgmt.getDefaultGeomName());
-        sfTypeBuilder.add(minParcelSectionField, String.class);
-        sfTypeBuilder.add(minParcelCommunityField, String.class);
-        sfTypeBuilder.add(minParcelNumberField, String.class);
+        sfTypeBuilder.add(parcelSectionField, String.class);
+        sfTypeBuilder.add(parcelCommunityField, String.class);
+        sfTypeBuilder.add(parcelNumberField, String.class);
         sfTypeBuilder.add(MarkParcelAttributeFromPosition.getMarkFieldName(), Integer.class);
         return new SimpleFeatureBuilder(sfTypeBuilder.buildFeatureType());
     }
@@ -100,13 +100,13 @@ public class ParcelSchema {
     public static SimpleFeatureBuilder setSFBMinParcelSplitWithFeat(SimpleFeature feat, SimpleFeatureBuilder builder, SimpleFeatureType schema, int isSplit) {
         builder.set(schema.getGeometryDescriptor().getName().toString(), feat.getDefaultGeometry());
         builder.set(MarkParcelAttributeFromPosition.getMarkFieldName(), isSplit);
-        builder.set(minParcelSectionField, feat.getAttribute(minParcelSectionField));
-        builder.set(minParcelNumberField, feat.getAttribute(minParcelNumberField));
+        builder.set(parcelSectionField, feat.getAttribute(parcelSectionField));
+        builder.set(parcelNumberField, feat.getAttribute(parcelNumberField));
 
-        if (CollecMgmt.isSimpleFeatureContainsAttribute(feat, minParcelCommunityField)) // setting zipcode
-            builder.set(getMinParcelCommunityField(), feat.getAttribute(minParcelCommunityField));
+        if (CollecMgmt.isSimpleFeatureContainsAttribute(feat, parcelCommunityField)) // setting zipcode
+            builder.set(getParcelCommunityField(), feat.getAttribute(parcelCommunityField));
         else if (CollecMgmt.isSimpleFeatureContainsAttribute(feat, "CODE_DEP")) // if looks like french parcel
-            builder.set(getMinParcelCommunityField(), ((String) feat.getAttribute("CODE_DEP")).concat((String) feat.getAttribute("CODE_COM")));
+            builder.set(getParcelCommunityField(), ((String) feat.getAttribute("CODE_DEP")).concat((String) feat.getAttribute("CODE_COM")));
         return builder;
     }
 
@@ -129,32 +129,32 @@ public class ParcelSchema {
         return new SimpleFeatureBuilder(sfTypeBuilder.buildFeatureType());
     }
 
-    public static String getMinParcelNumberField() {
-        return minParcelNumberField;
+    public static String getParcelNumberField() {
+        return parcelNumberField;
     }
 
-    public static void setMinParcelNumberField(String minParcelNumberField) {
-        ParcelSchema.minParcelNumberField = minParcelNumberField;
+    public static void setParcelNumberField(String parcelNumberField) {
+        ParcelSchema.parcelNumberField = parcelNumberField;
     }
 
-    public static String getMinParcelSectionField() {
-        return minParcelSectionField;
+    public static String getParcelSectionField() {
+        return parcelSectionField;
     }
 
-    public static void setMinParcelSectionField(String minParcelSectionField) {
-        ParcelSchema.minParcelSectionField = minParcelSectionField;
+    public static void setParcelSectionField(String parcelSectionField) {
+        ParcelSchema.parcelSectionField = parcelSectionField;
     }
 
-    public static String getMinParcelCommunityField() {
-        return minParcelCommunityField;
+    public static String getParcelCommunityField() {
+        return parcelCommunityField;
     }
 
-    public static void setMinParcelCommunityField(String minParcelCommunityField) {
-        ParcelSchema.minParcelCommunityField = minParcelCommunityField;
+    public static void setParcelCommunityField(String parcelCommunityField) {
+        ParcelSchema.parcelCommunityField = parcelCommunityField;
     }
 
     public static String getParcelID(SimpleFeature feat) {
-        return feat.getAttribute(minParcelCommunityField) + "_" + feat.getAttribute(minParcelSectionField) + "_" + feat.getAttribute(minParcelNumberField);
+        return feat.getAttribute(parcelCommunityField) + "_" + feat.getAttribute(parcelSectionField) + "_" + feat.getAttribute(parcelNumberField);
     }
 
     public static String getEpsg() {

@@ -17,6 +17,16 @@ Reshaped parcels have a new <i>section</i> value, based on the value of the <a h
 
 It is possible to convert the basic nomemclature of Parcel Manager into another nomenclature and vice versa using specific methods. See for instance <i>frenchParcelToMinParcel(...)</i> from the <a href="https://framagit.org/artiscales/parcelmanager/-/blob/master/src/main/java/fr/ign/artiscales/pm/fields/french/FrenchParcelFields.java">fields.french.FrenchParcelFields</a> class, and  <i>setOriginalFrenchParcelAttributes(...)</i>.
 
+## Attributes of input parcels
+According to the schema below, input parcels are required to have specific attributes depending on the parcel operation.
+<br /> 
+Concerning division processes, only parcels with their **SPLIT** field set to 1 are reshaped. The outputs contains the same initial fields, plus a **SIMULATED** field if the reshape has proceeded successfully. 
+<br /> 
+Concerning workflows, community, section and number fields are required. Their values change in the output parcels (see section above). As reshaped parcels aren't produced from a single input parcel, every of the other fields are set to *null*. It is possible to detect if a section has been changed with the *Workflow.isNewSection()* abstract method. 
+<br /> 
+<br /> 
+<img alt="schema with mandatory attributes for Parcel Manager operations" src="./attSchema.png";"/>
+
 ## Zoning plan
 
 The attribute table of a zoning plan must contain two fields:

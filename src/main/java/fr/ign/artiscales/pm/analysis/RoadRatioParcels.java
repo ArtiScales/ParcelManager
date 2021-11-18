@@ -85,8 +85,8 @@ public class RoadRatioParcels {
                 while (it.hasNext()) {
                     SimpleFeature feat = it.next();
                     if (zoneGeom.contains(((Geometry) feat.getDefaultGeometry()))) {
-                        sfBuilderZone.set(ParcelSchema.getMinParcelCommunityField(), FrenchParcelFields.makeDEPCOMCode(feat));
-                        sfBuilderZone.set(GeneralFields.getZonePreciseNameField(), feat.getAttribute(ParcelSchema.getMinParcelSectionField()));
+                        sfBuilderZone.set(ParcelSchema.getParcelCommunityField(), FrenchParcelFields.makeDEPCOMCode(feat));
+                        sfBuilderZone.set(GeneralFields.getZonePreciseNameField(), feat.getAttribute(ParcelSchema.getParcelSectionField()));
                         break;
                     }
                 }
@@ -117,7 +117,7 @@ public class RoadRatioParcels {
         SimpleFeatureCollection roads = CollecTransform.selectIntersection(dsRoad.getFeatureSource(dsRoad.getTypeNames()[0]).getFeatures(), zone);
         SimpleFeatureCollection blocks = CityGeneration.createUrbanBlock(cutParcel);
 
-        String[] firstLine = {"CODE", "Urban fabric type", ParcelSchema.getMinParcelCommunityField(), GeneralFields.getZonePreciseNameField(),
+        String[] firstLine = {"CODE", "Urban fabric type", ParcelSchema.getParcelCommunityField(), GeneralFields.getZonePreciseNameField(),
                 "InitialArea", "ParcelsArea", "RatioArea", "RatioParcelConnectionRoad"};
         int count = 0;
         try (SimpleFeatureIterator zones = zone.features()) {
@@ -125,7 +125,7 @@ public class RoadRatioParcels {
                 String[] tab = new String[7];
                 SimpleFeature z = zones.next();
                 tab[0] = legend;
-                tab[1] = (String) z.getAttribute(ParcelSchema.getMinParcelCommunityField());
+                tab[1] = (String) z.getAttribute(ParcelSchema.getParcelCommunityField());
                 tab[2] = (String) z.getAttribute(GeneralFields.getZonePreciseNameField());
                 DefaultFeatureCollection intersectingParcels = new DefaultFeatureCollection();
                 // get the intersecting parcels

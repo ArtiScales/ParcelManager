@@ -54,8 +54,9 @@ public class TestScenario extends UseCase {
         ProfileUrbanFabric profileSmallHouse = ProfileUrbanFabric.convertJSONtoProfile(new File(profileFolder, "smallHouse.json"));
         ProfileUrbanFabric profileMediumCollective = ProfileUrbanFabric.convertJSONtoProfile(new File(profileFolder, "mediumCollective.json"));
         StraightSkeletonDivision.setGeneratePeripheralRoad(true);
+//        for (int i = 4; i <= 4; i++) {
         for (int i = 0; i <= 4; i++) {
-            // multiple process calculation
+//          multiple process calculation
             String ext = "offset";
             Workflow.PROCESS = "SSoffset";
             if (i == 1) {

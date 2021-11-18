@@ -1,0 +1,59 @@
+val initialZone = Val[File]
+val parcelFile = Val[File]
+val parcelEvolved = Val[File]
+val outFolder = Val[File]
+val buildingFile = Val[File]
+val roadFile = Val[File]
+val maximalArea = Val[Double]
+val minimalArea = Val[Double]
+val blockShape = Val[Int]
+val streetLane = Val[Int]
+val streetWidth = Val[Double]
+val laneWidth = Val[Double]
+val lenDriveway = Val[Double]
+val maxDepth = Val[Double]
+val maxWidth = Val[Double]
+val maxDistanceForNearestRoad = Val[Double]
+val approxNumberParcelPerBlock = Val[Int]
+val processType = Val[Int]
+val minimalWidthContactRoad = Val[Double]
+val harmonyCoeff = Val[Double]
+val hausdorfDistance = Val[Double]
+val nbParcelDiff = Val[Int]
+val areaParcelDiff = Val[Double]
+val noise = Val[Double]
+
+val step1 = ScalaTask("val (hausdorfDistance,nbParcelDiff,areaParcelDiff) = withThreadClassLoader(classLoader(fr.ign.artiscales.pm.compSimuParcel))(fr.ign.artiscales.pm.compSimuParcel.ZoneDivisionOBBOM(parcelFile, initialZone, parcelEvolved, roadFile, outFolder, maximalArea, minimalArea, blockShape ,streetLane, laneWidth,streetWidth, minimalWidthContactRoad, harmonyCoeff, noise))") set (
+//val step1 = ScalaTask("val (nbParcelDiff,areaParcelDiff) = withThreadClassLoader(classLoader(fr.ign.artiscales.compSimuParcel))(fr.ign.artiscales.compSimuParcel.step1(zoneFile, parcelFile, parcelEvolved, outFolder, maximalArea, decompositionLevelWithoutStreet ,largeStreetLevel,streetWidth,largeStreetWidth, minimalWidthContactRoad , harmonyCoeff))") set (
+    plugins += pluginsOf(fr.ign.artiscales.pm.compSimuParcel),
+    initialZone := workDirectory / "donnee" / "zone.gpkg",
+    parcelFile := workDirectory / "donnee" / "parcel2003.gpkg",
+    roadFile := workDirectory / "donnee" / "road2003.gpkg",
+    parcelEvolved := workDirectory / "donnee" / "realParcel.gpkg",
+    outFolder := workDirectory / "out",
+    harmonyCoeff := 0.5,
+    inputs += (parcelFile, initialZone, parcelEvolved, roadFile, outFolder, maximalArea, minimalArea, blockShape ,streetLane, 
+    laneWidth,streetWidth, minimalWidthContactRoad, harmonyCoeff, noise), 
+    outputs += (hausdorfDistance,nbParcelDiff,areaParcelDiff)
+//      outputs += (nbParcelDiff,areaParcelDiff)
+    )
+
+val evol = NSGA2Evolution(
+  evaluation = step1,
+  objective = Seq(hausdorfDistance,nbParcelDiff,areaParcelDiff),
+//  mu = 200,
+  genome = Seq(
+    maximalArea in (80.0 to 1500.0),
+    minimalArea in (50.0 to 300),
+    minimalWidthContactRoad in (5.0 to 30.0),
+    blockShape in (0 to 6),
+    streetLane in (0 to 6),
+    laneWidth in (3.0 to 20.0),
+    streetWidth in (10.0 to 30.0),
+    noise in (0.1 to 1),
+),
+  termination = 450,
+  parallelism = 8
+) hook(workDirectory / "out" / "result")
+
+evol

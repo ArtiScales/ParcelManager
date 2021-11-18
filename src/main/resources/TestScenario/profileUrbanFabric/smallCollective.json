@@ -10,5 +10,6 @@
 	"lenDriveway": "7",
 	"maxDepth":"100",
 	"maxDistanceForNearestRoad":"30",
-	"maxWidth":"80"
+	"maxWidth":"80",
+	"approxNumberParcelPerBlock":"7"
 } 

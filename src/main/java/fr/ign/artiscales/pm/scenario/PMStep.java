@@ -294,7 +294,7 @@ public class PMStep {
                 case "zoneDivision":
                     ZoneDivision.PROCESS = parcelProcess;
                     ((DefaultFeatureCollection) parcelCut).addAll((new ZoneDivision()).zoneDivision(parcelMarkedComm,
-                            ParcelGetter.getParcelByCommunityCode(parcel, communityNumber), OUTFOLDER, profile, ROADFILE, keepExistingRoad));
+                            ParcelGetter.getParcelByCommunityCode(parcel, communityNumber), OUTFOLDER, profile, ROADFILE, BUILDINGFILE, keepExistingRoad));
                     break;
                 case "densification":
                     ((DefaultFeatureCollection) parcelCut).addAll((new Densification()).densification(parcelMarkedComm,
@@ -360,7 +360,7 @@ public class PMStep {
     public SimpleFeatureCollection getSimulationParcels(SimpleFeatureCollection parcelIn) throws IOException {
         // special case where zoneDivision will return other than parcel
         if (workflow.equals("zoneDivision"))
-            ParcelSchema.setMinParcelCommunityField(GeneralFields.getZoneCommunityCode());
+            ParcelSchema.setParcelCommunityField(GeneralFields.getZoneCommunityCode());
         // select the parcels from the interesting communities
         SimpleFeatureCollection parcel = new DefaultFeatureCollection();
         // if a community information has been set

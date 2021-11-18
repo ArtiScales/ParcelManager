@@ -189,11 +189,11 @@ public class OBBDivision extends Division {
      * @param area           Area of the current parcel
      * @param frontSideWidth width of contact between road and parcel
      * @param maximalArea    Area threshold
-     * @param maximalWidth   threshold of width of contact between road and parcel
+     * @param minimalWidthContactRoad   threshold of width of contact between road and parcel
      * @return true if the algorithm must stop
      */
-    static boolean endCondition(double area, double frontSideWidth, double maximalArea, double maximalWidth) {
-        return (area <= maximalArea) || ((frontSideWidth <= maximalWidth) && (frontSideWidth != 0.0));
+    static boolean endCondition(double area, double frontSideWidth, double maximalArea, double minimalWidthContactRoad) {
+        return (area <= maximalArea) || ((frontSideWidth <= minimalWidthContactRoad) && (frontSideWidth != 0.0));
     }
 
     /**

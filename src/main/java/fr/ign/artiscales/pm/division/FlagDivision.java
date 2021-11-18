@@ -10,6 +10,7 @@ import fr.ign.artiscales.tools.geoToolsFunctions.vectors.collec.CollecMgmt;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.collec.CollecTransform;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.geom.Lines;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.geom.Polygons;
+import fr.ign.artiscales.tools.geometryGeneration.CityGeneration;
 import fr.ign.artiscales.tools.parameter.ProfileUrbanFabric;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
@@ -75,14 +76,14 @@ public class FlagDivision extends Division {
 //        System.out.println("time : " + (System.currentTimeMillis() - start));
 //    }
 
-    /**
-     * This line represents the exterior of an urban island (it serves to determine if a parcel has road access)
-     */
+
+    public static SimpleFeatureCollection doFlagDivision(SimpleFeatureCollection inputCollection, File buildingFile, File roadFile, ProfileUrbanFabric profile) throws IOException {
+        return doFlagDivision(inputCollection, buildingFile, roadFile, profile, CityGeneration.createUrbanBlock(inputCollection), null);
+    }
 
     public static SimpleFeatureCollection doFlagDivision(SimpleFeatureCollection inputCollection, File buildingFile, File roadFile, ProfileUrbanFabric profile, SimpleFeatureCollection block, Geometry exclusionZone) throws IOException {
         return doFlagDivision(inputCollection, buildingFile, roadFile, profile.getHarmonyCoeff(), profile.getNoise(), profile.getMaximalArea(), profile.getMinimalWidthContactRoad(), profile.getLenDriveway(), block, exclusionZone);
     }
-
 
     /**
      * Main way to access to the flag parcel split algorithm for a collection. Parcels must be marked in order to be simulated.
@@ -136,15 +137,17 @@ public class FlagDivision extends Division {
      * @return the flag cut parcel if possible, the input parcel otherwise. Schema of the returned parcel is the same as input + a simulated field.
      */
     public static SimpleFeatureCollection doFlagDivision(SimpleFeature sf, SimpleFeatureCollection road, SimpleFeatureCollection building, double harmonyCoeff, double noise,
-                                                         double maximalAreaSplitParcel, double maximalWidthSplitParcel, double drivewayWidth, List<LineString> extLines, Geometry exclusionZone) {
+                                                         double maximalArea, double minimalWidthContactRoad, double drivewayWidth, List<LineString> extLines, Geometry exclusionZone) {
         if (isDEBUG())
             System.out.println("flagSplit parcel " + sf);
         DefaultFeatureCollection result = new DefaultFeatureCollection();
         Polygon p = Polygons.getPolygon((Geometry) sf.getDefaultGeometry());
         SimpleFeatureBuilder builder = ParcelSchema.addField(sf.getFeatureType(), "SIMULATED");
+        building = CollecTransform.selectIntersection(building, ((Geometry) sf.getDefaultGeometry()).buffer(20));
+        SimpleFeatureCollection r = CollecTransform.selectIntersection(road, ((Geometry) sf.getDefaultGeometry()).buffer(20));
         // End test condition
         if ((sf.getAttribute(MarkParcelAttributeFromPosition.getMarkFieldName()) != null && !sf.getAttribute(MarkParcelAttributeFromPosition.getMarkFieldName()).equals(1))
-                || endCondition(((Geometry) sf.getDefaultGeometry()).getArea(), frontSideWidth(p, road, extLines), maximalAreaSplitParcel, maximalWidthSplitParcel)) {
+                || endCondition(((Geometry) sf.getDefaultGeometry()).getArea(), frontSideWidth(p, r, extLines), maximalArea, minimalWidthContactRoad)) {
             Schemas.setFieldsToSFB(builder, sf);
             builder.set("SIMULATED", 0);
             result.add(builder.buildFeature(Attribute.makeUniqueId()));
@@ -155,12 +158,12 @@ public class FlagDivision extends Division {
         // Split into polygon
         List<Polygon> splitPolygon = OBBDivision.split(p, splittingPolygon);
         // If a parcel has no road access, there is a probability to make a flag split
-        if (splitPolygon.stream().anyMatch(x -> !hasRoadAccess(x, road, extLines, exclusionZone))) {
-            Pair<List<Polygon>, List<Polygon>> polGeneratedParcel = flagParcel(splitPolygon, p, road, building, extLines, exclusionZone, drivewayWidth);
+        if (splitPolygon.stream().anyMatch(x -> !hasRoadAccess(x, r, extLines, exclusionZone))) {
+            Pair<List<Polygon>, List<Polygon>> polGeneratedParcel = flagParcel(splitPolygon, r, building, extLines, exclusionZone, drivewayWidth);
             // We check if both parcels have road access, if false we abort the decomposition (that may be useless here...)
             for (Polygon pol1 : polGeneratedParcel.getLeft())
                 for (Polygon pol2 : polGeneratedParcel.getRight())
-                    if (!hasRoadAccess(pol2, road, extLines, exclusionZone) || !hasRoadAccess(pol1, road, extLines, exclusionZone)) {
+                    if (!hasRoadAccess(pol2, r, extLines, exclusionZone) || !hasRoadAccess(pol1, r, extLines, exclusionZone)) {
                         Schemas.setFieldsToSFB(builder, sf);
                         builder.set("SIMULATED", 0);
                         result.add(builder.buildFeature(Attribute.makeUniqueId()));
@@ -178,16 +181,15 @@ public class FlagDivision extends Division {
         for (Polygon pol : splitPolygon) {
             Schemas.setFieldsToSFB(builder, sf);
             builder.set(sf.getFeatureType().getGeometryDescriptor().getLocalName(), pol);
-            result.addAll(doFlagDivision(builder.buildFeature(Attribute.makeUniqueId()), road, building, harmonyCoeff, noise, maximalAreaSplitParcel, maximalWidthSplitParcel, drivewayWidth, extLines, exclusionZone));
+            result.addAll(doFlagDivision(builder.buildFeature(Attribute.makeUniqueId()), r, building, harmonyCoeff, noise, maximalArea, minimalWidthContactRoad, drivewayWidth, extLines, exclusionZone));
         }
         return result;
     }
 
     /**
-     * Generate flag parcels: check if parcels have access to road and if not, try to generate a road throughout other parcels
+     * Generate flag parcels: check if parcels have access to road and if not, try to generate a road throughout other parcels.
      *
      * @param splitPolygon
-     * @param iniPolygon
      * @param road          input road
      * @param building      input building
      * @param ext           outside block
@@ -198,7 +200,7 @@ public class FlagDivision extends Division {
      * <li> the right part contains parcel with added road access</li>
      * </ul>
      */
-    private static Pair<List<Polygon>, List<Polygon>> flagParcel(List<Polygon> splitPolygon, Polygon iniPolygon, SimpleFeatureCollection road, SimpleFeatureCollection building, List<LineString> ext, Geometry exclusionZone, double drivewayWidth) {
+    private static Pair<List<Polygon>, List<Polygon>> flagParcel(List<Polygon> splitPolygon, SimpleFeatureCollection road, SimpleFeatureCollection building, List<LineString> ext, Geometry exclusionZone, double drivewayWidth) {
         List<Polygon> right = new ArrayList<>();
 
         // We get the two geometries with and without road access
@@ -216,7 +218,7 @@ public class FlagDivision extends Division {
                 Geometry roadGeom = side.getKey().buffer(drivewayWidth);
                 Polygon polygon = side.getValue();
                 // The road intersects a building on the property, we do not keep it
-                if (building != null && !building.isEmpty() && !CollecTransform.selectIntersection(CollecTransform.selectIntersection(building, iniPolygon.buffer(-0.5)), road).isEmpty())
+                if (building != null && !building.isEmpty() && !CollecTransform.selectIntersection(building, roadGeom).isEmpty())
                     continue;
                 try {
                     // The first geometry is the polygon with road access and a remove of the geometry
@@ -290,13 +292,13 @@ public class FlagDivision extends Division {
      * Goes to the {@link OBBDivision} class.
      *
      * @param area           Area of the current parcel
-     * @param frontSideWidth width of contact between road and parcel
+     * @param frontSideWidth minimal width of contact between road and parcel
      * @return true if the algorithm must stop
      */
-    private static boolean endCondition(double area, double frontSideWidth, double maximalArea, double maximalWidth) {
+    private static boolean endCondition(double area, double frontSideWidth, double maximalArea, double minimalWidth) {
         if (frontSideWidth == 0.0)
             return true;
-        return OBBDivision.endCondition(area, frontSideWidth, maximalArea, maximalWidth);
+        return OBBDivision.endCondition(area, frontSideWidth, maximalArea, minimalWidth);
     }
 
     /**

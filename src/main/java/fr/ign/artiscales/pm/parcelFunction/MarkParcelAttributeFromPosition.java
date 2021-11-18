@@ -783,7 +783,7 @@ public class MarkParcelAttributeFromPosition {
      * @return the collection with marked parcels
      */
     public static SimpleFeatureCollection markParcelOfCommunityNumber(SimpleFeatureCollection parcels, String attribute) {
-        return markParcelWithAttribute(parcels, ParcelSchema.getMinParcelCommunityField(), attribute);
+        return markParcelWithAttribute(parcels, ParcelSchema.getParcelCommunityField(), attribute);
     }
 
     /**

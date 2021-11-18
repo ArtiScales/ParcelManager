@@ -5,7 +5,6 @@ import fr.ign.artiscales.pm.fields.GeneralFields;
 import fr.ign.artiscales.pm.parcelFunction.MarkParcelAttributeFromPosition;
 import fr.ign.artiscales.pm.parcelFunction.ParcelSchema;
 import fr.ign.artiscales.pm.parcelFunction.ParcelState;
-import fr.ign.artiscales.tools.geoToolsFunctions.Attribute;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.collec.CollecMgmt;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.collec.CollecTransform;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.collec.OpOnCollec;
@@ -16,17 +15,12 @@ import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.geotools.data.DataStore;
 import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.data.simple.SimpleFeatureIterator;
-import org.geotools.feature.DefaultFeatureCollection;
-import org.geotools.feature.simple.SimpleFeatureBuilder;
-import org.geotools.feature.simple.SimpleFeatureTypeBuilder;
 import org.locationtech.jts.algorithm.MinimumBoundingCircle;
 import org.locationtech.jts.algorithm.construct.MaximumInscribedCircle;
 import org.locationtech.jts.algorithm.distance.DiscreteHausdorffDistance;
 import org.locationtech.jts.algorithm.match.HausdorffSimilarityMeasure;
 import org.locationtech.jts.geom.Geometry;
-import org.locationtech.jts.geom.Polygon;
 import org.opengis.feature.simple.SimpleFeature;
-import org.opengis.feature.simple.SimpleFeatureType;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -94,7 +88,7 @@ public class SingleParcelStat {
             parcels = MarkParcelAttributeFromPosition.markAllParcel(dsParcel.getFeatureSource(dsParcel.getTypeNames()[0]).getFeatures());
         else
             parcels = dsParcel.getFeatureSource(dsParcel.getTypeNames()[0]).getFeatures();
-        if (!CollecMgmt.isCollecContainsAttribute(parcels, ParcelSchema.getMinParcelCommunityField()))
+        if (!CollecMgmt.isCollecContainsAttribute(parcels, ParcelSchema.getParcelCommunityField()))
             parcels = GeneralFields.addCommunityCode(parcels);
         if (parcelToCompare == null)
             writeStatSingleParcel(parcels, dsRoad.getFeatureSource(dsRoad.getTypeNames()[0]).getFeatures(), parcelStatCsv);
@@ -182,9 +176,9 @@ public class SingleParcelStat {
                     MinimumBoundingCircle mbc = new MinimumBoundingCircle(parcelGeom);
                     MaximumInscribedCircle mic = new MaximumInscribedCircle(parcelGeom, 1);
                     String[] line = {
-                            parcel.getAttribute(ParcelSchema.getMinParcelCommunityField()) + "-"
-                                    + parcel.getAttribute(ParcelSchema.getMinParcelSectionField()) + "-"
-                                    + parcel.getAttribute(ParcelSchema.getMinParcelNumberField()),
+                            parcel.getAttribute(ParcelSchema.getParcelCommunityField()) + "-"
+                                    + parcel.getAttribute(ParcelSchema.getParcelSectionField()) + "-"
+                                    + parcel.getAttribute(ParcelSchema.getParcelNumberField()),
                             String.valueOf(parcelGeom.getArea()), String.valueOf(parcelGeom.getLength()), String.valueOf(contactWithRoad),
                             String.valueOf(widthRoadContact),
                             String.valueOf(ParcelState.countParcelNeighborhood(parcelGeom, CollecTransform.selectIntersection(parcels, parcelGeom.buffer(2)))),
@@ -205,17 +199,15 @@ public class SingleParcelStat {
     /**
      * Calculation Hausdorff Similarity average for a set of parcels. Candidate must have been reduced before methode call
      *
-     * @param parcelInFile        The reference geo file
+     * @param parcelSFC           The reference geo file
      * @param parcelToCompareFile The geo file to compare
      * @return Hausdorff Similarity average
      * @throws IOException reading files
      */
-    public static double hausdorffSimilarityAverage(File parcelInFile, File parcelToCompareFile) throws IOException {
-        DataStore sdsParcelIn = CollecMgmt.getDataStore(parcelInFile);
+    public static double hausdorffDistance(SimpleFeatureCollection parcelSFC, File parcelToCompareFile) throws IOException {
         DataStore sdsParcelToCompareFile = CollecMgmt.getDataStore(parcelToCompareFile);
-        double result = hausdorffSimilarityAverage(sdsParcelIn.getFeatureSource(sdsParcelIn.getTypeNames()[0]).getFeatures(),
+        double result = 1 - hausdorffSimilarityAverage(parcelSFC,
                 sdsParcelToCompareFile.getFeatureSource(sdsParcelToCompareFile.getTypeNames()[0]).getFeatures());
-        sdsParcelIn.dispose();
         sdsParcelToCompareFile.dispose();
         return result;
     }
@@ -223,17 +215,15 @@ public class SingleParcelStat {
     /**
      * Calculate the difference of number of parcels between two geo files.
      *
-     * @param parcelInFile        The reference geo file
+     * @param parcelSFC           The reference feature collection
      * @param parcelToCompareFile The geo file to compare
      * @return the difference of average (absolute value)
      * @throws IOException reading files
      */
-    public static int diffNumberOfParcel(File parcelInFile, File parcelToCompareFile) throws IOException {
-        DataStore dsParcelIn = CollecMgmt.getDataStore(parcelInFile);
+    public static int diffNumberOfParcel(SimpleFeatureCollection parcelSFC, File parcelToCompareFile) throws IOException {
         DataStore dsParcelToCompareFile = CollecMgmt.getDataStore(parcelToCompareFile);
-        int result = dsParcelIn.getFeatureSource(dsParcelIn.getTypeNames()[0]).getFeatures().size()
+        int result = parcelSFC.size()
                 - dsParcelToCompareFile.getFeatureSource(dsParcelToCompareFile.getTypeNames()[0]).getFeatures().size();
-        dsParcelIn.dispose();
         dsParcelToCompareFile.dispose();
         return Math.abs(result);
     }
@@ -241,17 +231,15 @@ public class SingleParcelStat {
     /**
      * Calculate the difference between the average area of two Geopackages. Find a better indicator to compare distribution.
      *
-     * @param parcelInFile        The reference Geopackage
+     * @param parcelSFC           The reference Geopackage
      * @param parcelToCompareFile The Geopackage to compare
      * @return the difference of average (absolute value)
      * @throws IOException reading files
      */
-    public static double diffAreaAverage(File parcelInFile, File parcelToCompareFile) throws IOException {
-        DataStore dsParcelIn = CollecMgmt.getDataStore(parcelInFile);
+    public static double diffAreaAverage(SimpleFeatureCollection parcelSFC, File parcelToCompareFile) throws IOException {
         DataStore dsParcelToCompareFile = CollecMgmt.getDataStore(parcelToCompareFile);
-        double result = OpOnCollec.area(dsParcelIn.getFeatureSource(dsParcelIn.getTypeNames()[0]).getFeatures())
+        double result = OpOnCollec.area(parcelSFC)
                 - OpOnCollec.area(dsParcelToCompareFile.getFeatureSource(dsParcelToCompareFile.getTypeNames()[0]).getFeatures());
-        dsParcelIn.dispose();
         dsParcelToCompareFile.dispose();
         return Math.abs(result);
     }
@@ -280,50 +268,50 @@ public class SingleParcelStat {
         return stat.getMean();
     }
 
-    /**
-     * Generation of maps containing Hausdorf distance between a parcel plan and its matched compared parcel
-     *
-     * @param parcelIn        Reference parcel plan
-     * @param parcelToCompare parcel to build Hausdorf distance.
-     * @return A simple
-     */
-    public static SimpleFeatureCollection makeHausdorfDistanceMaps(SimpleFeatureCollection parcelIn, SimpleFeatureCollection parcelToCompare) {
-        if (!CollecMgmt.isCollecContainsAttribute(parcelIn, "CODE"))
-            GeneralFields.addParcelCode(parcelIn);
-        if (!CollecMgmt.isCollecContainsAttribute(parcelToCompare, "CODE"))
-            GeneralFields.addParcelCode(parcelToCompare);
-        SimpleFeatureType schema = parcelIn.getSchema();
-        DefaultFeatureCollection result = new DefaultFeatureCollection();
-        SimpleFeatureTypeBuilder sfTypeBuilder = new SimpleFeatureTypeBuilder();
-        sfTypeBuilder.setName("minParcel");
-        sfTypeBuilder.setCRS(schema.getCoordinateReferenceSystem());
-        sfTypeBuilder.add(schema.getGeometryDescriptor().getLocalName(), Polygon.class);
-        sfTypeBuilder.setDefaultGeometry(schema.getGeometryDescriptor().getLocalName());
-        sfTypeBuilder.add("DisHausDst", Double.class);
-        sfTypeBuilder.add("HausDist", Double.class);
-        sfTypeBuilder.add("CODE", String.class);
-        sfTypeBuilder.add("CodeAppar", String.class);
-        SimpleFeatureBuilder builder = new SimpleFeatureBuilder(sfTypeBuilder.buildFeatureType());
-        HausdorffSimilarityMeasure hausDis = new HausdorffSimilarityMeasure();
-        try (SimpleFeatureIterator parcelIt = parcelIn.features()) {
-            while (parcelIt.hasNext()) {
-                SimpleFeature parcel = parcelIt.next();
-                Geometry parcelGeom = (Geometry) parcel.getDefaultGeometry();
-                SimpleFeature parcelCompare = CollecTransform.getIntersectingSimpleFeatureFromSFC(parcelGeom, parcelToCompare);
-                if (parcelCompare != null) {
-                    Geometry parcelCompareGeom = (Geometry) parcelCompare.getDefaultGeometry();
-                    DiscreteHausdorffDistance dhd = new DiscreteHausdorffDistance(parcelGeom, parcelCompareGeom);
-                    builder.set("DisHausDst", dhd.distance());
-                    builder.set("HausDist", hausDis.measure(parcelGeom, parcelCompareGeom));
-                    builder.set("CodeAppar", makeParcelCode(parcelCompare));
-                }
-                builder.set("CODE", parcel.getAttribute("CODE"));
-                builder.set(schema.getGeometryDescriptor().getLocalName(), parcelGeom);
-                result.add(builder.buildFeature(Attribute.makeUniqueId()));
-            }
-        } catch (Exception problem) {
-            problem.printStackTrace();
-        }
-        return result;
-    }
+//    /**
+//     * Generation of maps containing Hausdorf distance between a parcel plan and its matched compared parcel
+//     *
+//     * @param parcelIn        Reference parcel plan
+//     * @param parcelToCompare parcel to build Hausdorf distance.
+//     * @return A simple
+//     */
+//    public static SimpleFeatureCollection makeHausdorfDistanceMaps(SimpleFeatureCollection parcelIn, SimpleFeatureCollection parcelToCompare) {
+//        if (!CollecMgmt.isCollecContainsAttribute(parcelIn, "CODE"))
+//            GeneralFields.addParcelCode(parcelIn);
+//        if (!CollecMgmt.isCollecContainsAttribute(parcelToCompare, "CODE"))
+//            GeneralFields.addParcelCode(parcelToCompare);
+//        SimpleFeatureType schema = parcelIn.getSchema();
+//        DefaultFeatureCollection result = new DefaultFeatureCollection();
+//        SimpleFeatureTypeBuilder sfTypeBuilder = new SimpleFeatureTypeBuilder();
+//        sfTypeBuilder.setName("minParcel");
+//        sfTypeBuilder.setCRS(schema.getCoordinateReferenceSystem());
+//        sfTypeBuilder.add(schema.getGeometryDescriptor().getLocalName(), Polygon.class);
+//        sfTypeBuilder.setDefaultGeometry(schema.getGeometryDescriptor().getLocalName());
+//        sfTypeBuilder.add("DisHausDst", Double.class);
+//        sfTypeBuilder.add("HausDist", Double.class);
+//        sfTypeBuilder.add("CODE", String.class);
+//        sfTypeBuilder.add("CodeAppar", String.class);
+//        SimpleFeatureBuilder builder = new SimpleFeatureBuilder(sfTypeBuilder.buildFeatureType());
+//        HausdorffSimilarityMeasure hausDis = new HausdorffSimilarityMeasure();
+//        try (SimpleFeatureIterator parcelIt = parcelIn.features()) {
+//            while (parcelIt.hasNext()) {
+//                SimpleFeature parcel = parcelIt.next();
+//                Geometry parcelGeom = (Geometry) parcel.getDefaultGeometry();
+//                SimpleFeature parcelCompare = CollecTransform.getIntersectingSimpleFeatureFromSFC(parcelGeom, parcelToCompare);
+//                if (parcelCompare != null) {
+//                    Geometry parcelCompareGeom = (Geometry) parcelCompare.getDefaultGeometry();
+//                    DiscreteHausdorffDistance dhd = new DiscreteHausdorffDistance(parcelGeom, parcelCompareGeom);
+//                    builder.set("DisHausDst", dhd.distance());
+//                    builder.set("HausDist", hausDis.measure(parcelGeom, parcelCompareGeom));
+//                    builder.set("CodeAppar", makeParcelCode(parcelCompare));
+//                }
+//                builder.set("CODE", parcel.getAttribute("CODE"));
+//                builder.set(schema.getGeometryDescriptor().getLocalName(), parcelGeom);
+//                result.add(builder.buildFeature(Attribute.makeUniqueId()));
+//            }
+//        } catch (Exception problem) {
+//            problem.printStackTrace();
+//        }
+//        return result;
+//    }
 }

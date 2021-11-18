@@ -20,6 +20,7 @@ import org.geotools.factory.CommonFactoryFinder;
 import org.geotools.feature.DefaultFeatureCollection;
 import org.geotools.feature.simple.SimpleFeatureBuilder;
 import org.locationtech.jts.geom.Geometry;
+import org.locationtech.jts.geom.LineString;
 import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.filter.FilterFactory2;
 
@@ -88,13 +89,14 @@ public class Densification extends Workflow {
             System.out.println("Densification : unmarked parcels");
             return GeneralFields.transformSFCToMinParcel(parcelCollection);
         }
+        checkFields(parcelCollection.getSchema());
 
         // preparation of the builder and empty collections
         final String geomName = parcelCollection.getSchema().getGeometryDescriptor().getLocalName();
         FilterFactory2 ff = CommonFactoryFinder.getFilterFactory2();
         DefaultFeatureCollection onlyCutedParcels = new DefaultFeatureCollection();
         DefaultFeatureCollection resultParcels = new DefaultFeatureCollection();
-        SimpleFeatureBuilder sFBMinParcel = ParcelSchema.getSFBWithoutSplit(parcelCollection.getSchema());
+        SimpleFeatureBuilder sFBParcel = ParcelSchema.getSFBWithoutSplit(parcelCollection.getSchema());
         DataStore roadDS = null;
         SimpleFeatureCollection road = null;
         if (roadFile != null) {
@@ -110,17 +112,17 @@ public class Densification extends Workflow {
                 if (initialParcel.getAttribute(MarkParcelAttributeFromPosition.getMarkFieldName()) != null
                         && initialParcel.getAttribute(MarkParcelAttributeFromPosition.getMarkFieldName()).equals(1)
                         && ((Geometry) initialParcel.getDefaultGeometry()).getArea() > maximalArea) {
+                    List<LineString> lines = CollecTransform.fromPolygonSFCtoListRingLines(blockCollection.subCollection(ff.bbox(ff.property(initialParcel.getFeatureType().getGeometryDescriptor().getLocalName()), initialParcel.getBounds())));
                     // we get the needed block lines
                     // we flag cut the parcel (differently regarding whether they have optional data or not)
-                    SimpleFeatureCollection unsortedFlagParcel = FlagDivision.doFlagDivision(initialParcel, road, building, harmonyCoeff, noise, maximalArea, minContactWithRoad, lenDriveway,
-                            CollecTransform.fromPolygonSFCtoListRingLines(blockCollection.subCollection(ff.bbox(ff.property(initialParcel.getFeatureType().getGeometryDescriptor().getLocalName()), initialParcel.getBounds()))), exclusionZone);
+                    SimpleFeatureCollection unsortedFlagParcel = FlagDivision.doFlagDivision(initialParcel, road, building, harmonyCoeff, noise, maximalArea, minContactWithRoad, lenDriveway, lines, exclusionZone);
                     // we check if the cut parcels are meeting the expectations
                     boolean add = true;
                     // If it returned a collection of 1, it was impossible to flag split the parcel. If allowed, we cut the parcel with regular OBB
                     if (unsortedFlagParcel.size() == 1)
                         if (allowIsolatedParcel)
                             unsortedFlagParcel = OBBDivision.splitParcels(initialParcel, maximalArea, minContactWithRoad, 0.5, noise,
-                                    CollecTransform.fromPolygonSFCtoListRingLines(blockCollection.subCollection(ff.bbox(ff.property(initialParcel.getFeatureType().getGeometryDescriptor().getLocalName()), initialParcel.getBounds()))), 0, true, 99);
+                                    lines, 0, true, 99);
                         else
                             add = false;
                     // If the flag cut parcel size is too small, we won't add anything
@@ -139,7 +141,7 @@ public class Densification extends Workflow {
                         try (SimpleFeatureIterator parcelIt = unsortedFlagParcel.features()) {
                             while (parcelIt.hasNext()) {
                                 SimpleFeature parcel = parcelIt.next();
-                                if (ParcelState.isAlreadyBuilt(buildingFile, parcel, -1, uncountedBuildingArea)) // parcel is built, we try to merge
+                                if (ParcelState.isAlreadyBuilt(CollecTransform.selectIntersection(building, parcel), parcel, -1, uncountedBuildingArea)) // parcel is built, we try to merge
                                     toMerge.add(parcel);
                             }
                         } catch (Exception problem) {
@@ -189,12 +191,12 @@ public class Densification extends Workflow {
                             while (parcelCutedIt.hasNext()) {
                                 Geometry pGeom = (Geometry) parcelCutedIt.next().getDefaultGeometry();
                                 for (int ii = 0; ii < pGeom.getNumGeometries(); ii++) {
-                                    Schemas.setFieldsToSFB(sFBMinParcel, initialParcel);
-                                    sFBMinParcel.set(geomName, pGeom.getGeometryN(ii));
-                                    sFBMinParcel.set(ParcelSchema.getMinParcelSectionField(), makeNewSection(initialParcel.getAttribute(ParcelSchema.getMinParcelSectionField()) + "-" + i++));
-                                    sFBMinParcel.set(ParcelSchema.getMinParcelNumberField(), initialParcel.getAttribute(ParcelSchema.getMinParcelNumberField()));
-                                    sFBMinParcel.set(ParcelSchema.getMinParcelCommunityField(), initialParcel.getAttribute(ParcelSchema.getMinParcelCommunityField()));
-                                    SimpleFeature cutedParcel = sFBMinParcel.buildFeature(Attribute.makeUniqueId());
+                                    Schemas.setFieldsToSFB(sFBParcel, initialParcel);
+                                    sFBParcel.set(geomName, pGeom.getGeometryN(ii));
+                                    sFBParcel.set(ParcelSchema.getParcelSectionField(), makeNewSection(initialParcel.getAttribute(ParcelSchema.getParcelSectionField()) + "-" + i++));
+                                    sFBParcel.set(ParcelSchema.getParcelNumberField(), initialParcel.getAttribute(ParcelSchema.getParcelNumberField()));
+                                    sFBParcel.set(ParcelSchema.getParcelCommunityField(), initialParcel.getAttribute(ParcelSchema.getParcelCommunityField()));
+                                    SimpleFeature cutedParcel = sFBParcel.buildFeature(Attribute.makeUniqueId());
                                     resultParcels.add(cutedParcel);
                                     if (isSAVEINTERMEDIATERESULT())
                                         onlyCutedParcels.add(cutedParcel);
@@ -204,12 +206,12 @@ public class Densification extends Workflow {
                             problem.printStackTrace();
                         }
                     } else {
-                        Schemas.setFieldsToSFB(sFBMinParcel, initialParcel);
-                        resultParcels.add(sFBMinParcel.buildFeature(Attribute.makeUniqueId()));
+                        Schemas.setFieldsToSFB(sFBParcel, initialParcel);
+                        resultParcels.add(sFBParcel.buildFeature(Attribute.makeUniqueId()));
                     }
                 } else {  // if no simulation needed, we add the normal parcel
-                    Schemas.setFieldsToSFB(sFBMinParcel, initialParcel);
-                    resultParcels.add(sFBMinParcel.buildFeature(Attribute.makeUniqueId()));
+                    Schemas.setFieldsToSFB(sFBParcel, initialParcel);
+                    resultParcels.add(sFBParcel.buildFeature(Attribute.makeUniqueId()));
                 }
             }
         } catch (Exception e) {
@@ -399,7 +401,7 @@ public class Densification extends Workflow {
      * @return true if the section field is marked with the {@link #makeNewSection(String)} method.
      */
     public boolean isNewSection(SimpleFeature feat) {
-        String field = (String) feat.getAttribute(ParcelSchema.getMinParcelSectionField());
+        String field = (String) feat.getAttribute(ParcelSchema.getParcelSectionField());
         return field != null && field.endsWith("-Densifyed");
     }
 }
