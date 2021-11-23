@@ -48,7 +48,7 @@ public class ConsolidationDivision extends Workflow {
 //        File roadFile = new File(rootFolder, "InputData/road.gpkg");
 //        File outFolder = new File("/tmp/cs");
 //        setDEBUG(false);
-//        PROCESS = "OBBThenSS";
+//        PROCESS = "OBB";
 //        setSAVEINTERMEDIATERESULT(true);
 //        SimpleFeatureCollection z = new ConsolidationDivision().consolidationDivision(MarkParcelAttributeFromPosition.markRandomParcels(parcelDS.getFeatureSource(parcelDS.getTypeNames()[0]).getFeatures(), 25, false), roadFile, outFolder, ProfileUrbanFabric.convertJSONtoProfile(new File("src/main/resources/TestScenario/profileUrbanFabric/smallHouse.json")));
 //        CollecMgmt.exportSFC(z, new File("/tmp/conso"));

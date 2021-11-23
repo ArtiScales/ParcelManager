@@ -13,7 +13,6 @@ public class Figure {
     public static void main(String[] args) throws Exception {
         long start = System.currentTimeMillis();
         // Generate parcel reshaping exemplifying the road network generation in Section 3 of Colomb et al. 2021.
-        PMStep.setGENERATEATTRIBUTES(false);
         PMScenario.setReuseSimulatedParcels(false);
         PMScenario pm = new PMScenario(new File("src/main/resources/Figure/scenarioRoadCreation.json"));
         pm.executeStep();

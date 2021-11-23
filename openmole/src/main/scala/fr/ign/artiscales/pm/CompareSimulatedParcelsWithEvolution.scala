@@ -33,7 +33,7 @@ object compSimuParcel {
                      approxNumberParcelPerBlock: Int,
                      minimalWidthContactRoad: Double,
                      harmonyCoeff: Double,
-                     noise : Double,
+                     noise: Double,
                      processType: Int
                     ): (Double, Int, Double) = {
     //             ) : (Int, Double) = {
@@ -126,7 +126,7 @@ object compSimuParcel {
                         streetWidth: Double,
                         minimalWidthContactRoad: Double,
                         harmonyCoeff: Double,
-                        noise : Double
+                        noise: Double
                        ): (Double, Int, Double) = {
     //             ) : (Int, Double) = {
     val profile = new ProfileUrbanFabric("calibration", maximalArea, minimalArea,

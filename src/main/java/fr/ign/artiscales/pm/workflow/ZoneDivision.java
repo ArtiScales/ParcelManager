@@ -398,7 +398,7 @@ public class ZoneDivision extends Workflow {
                 finalParcelBuilder.set(geomName, parcelGeom);
                 // get the section name of the corresponding zone
                 finalParcelBuilder.set(ParcelSchema.getParcelSectionField(), Arrays.stream(goOdZone.toArray(new SimpleFeature[0])).filter(z -> ((Geometry) z.getDefaultGeometry()).buffer(2).contains(parcelGeom)).map(z -> (String) z.getAttribute(ParcelSchema.getParcelSectionField())).findFirst().orElse(""));
-                finalParcelBuilder.set(ParcelSchema.getParcelCommunityField(), parcel.getAttribute(ParcelSchema.getParcelCommunityField()));
+                finalParcelBuilder.set(ParcelSchema.getParcelCommunityField(), Arrays.stream(parcels.toArray(new SimpleFeature[0])).filter(g -> ((Geometry) g.getDefaultGeometry()).intersects((Geometry) parcel.getDefaultGeometry())).findFirst().get().getAttribute(ParcelSchema.getParcelCommunityField()));
                 finalParcelBuilder.set(ParcelSchema.getParcelNumberField(), String.valueOf(num++));
                 result.add(finalParcelBuilder.buildFeature(Attribute.makeUniqueId()));
             }

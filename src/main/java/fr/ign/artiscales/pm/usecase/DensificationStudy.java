@@ -44,7 +44,6 @@ public class DensificationStudy extends UseCase {
     }
 
     public static void runDensificationStudy(File rootFile, File outFolder) throws IOException {
-        PMStep.setGENERATEATTRIBUTES(false);
         PMScenario pmScen = new PMScenario(new File(rootFile, "scenario.json"));
         pmScen.executeStep();
         for (int i = 1; i <= 4; i++)

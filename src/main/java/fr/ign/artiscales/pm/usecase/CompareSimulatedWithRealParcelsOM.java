@@ -70,7 +70,6 @@ public class CompareSimulatedWithRealParcelsOM {
 
         PMScenario.setSaveIntermediateResult(true);
         PMStep.setDEBUG(true);
-        PMStep.setGENERATEATTRIBUTES(false);
         PMScenario pm = new PMScenario(scenarioFile);
         pm.executeStep();
         System.out.println("++++++++++ Done with PMscenario ++++++++++");

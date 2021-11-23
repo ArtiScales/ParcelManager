@@ -55,7 +55,6 @@ public class CompareSimulatedWithRealParcels extends UseCase {
         // create blocks for parcel densification in case they haven't been generated before
         CityGeneration.createUrbanBlock(parcelRefFile, rootFolder);
         PMScenario.setSaveIntermediateResult(true);
-        PMStep.setGENERATEATTRIBUTES(false);
         PMStep.setAllowIsolatedParcel(true);
         PMScenario pm = new PMScenario(scenarioFile);
         pm.executeStep();

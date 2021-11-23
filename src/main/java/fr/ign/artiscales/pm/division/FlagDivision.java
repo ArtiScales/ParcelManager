@@ -138,8 +138,6 @@ public class FlagDivision extends Division {
      */
     public static SimpleFeatureCollection doFlagDivision(SimpleFeature sf, SimpleFeatureCollection road, SimpleFeatureCollection building, double harmonyCoeff, double noise,
                                                          double maximalArea, double minimalWidthContactRoad, double drivewayWidth, List<LineString> extLines, Geometry exclusionZone) {
-        if (isDEBUG())
-            System.out.println("flagSplit parcel " + sf);
         DefaultFeatureCollection result = new DefaultFeatureCollection();
         Polygon p = Polygons.getPolygon((Geometry) sf.getDefaultGeometry());
         SimpleFeatureBuilder builder = ParcelSchema.addField(sf.getFeatureType(), "SIMULATED");
@@ -153,6 +151,8 @@ public class FlagDivision extends Division {
             result.add(builder.buildFeature(Attribute.makeUniqueId()));
             return result;
         }
+        if (isDEBUG())
+            System.out.println("flagSplit parcel " + sf);
         // Determination of splitting polygon (it is a splitting line in the article)
         List<Polygon> splittingPolygon = OBBDivision.computeSplittingPolygon(p, extLines, true, harmonyCoeff, noise, 0.0, 0, 0.0, 0, 0);
         // Split into polygon

@@ -28,9 +28,10 @@ public class PMScenario {
     private List<PMStep> stepList = new ArrayList<>();
     private boolean fileSet = false;
     boolean keepExistingRoad = true, adaptAreaOfUrbanFabric = false , generatePeripheralRoad = false;
-//
+
 //	public static void main(String[] args) throws Exception {
-//		PMScenario pm = new PMScenario(new File("src/main/resources/TestScenario/scenarioOBB.json"));
+//		PMStep.setDEBUG(true);
+//        PMScenario pm = new PMScenario(new File("src/main/resources/TestScenario/scenarioOBB.json"));
 //        pm.executeStep();
 //		PMScenario pm2 = new PMScenario(new File("src/main/resources/TestScenario/scenarioStraightSkeleton.json"));
 //        pm2.executeStep();
