@@ -9,7 +9,7 @@
 
   * Simplify the attribute management (cf <a href="src/main/resources/doc/AttributePolicy.md">this updated documentation</a>).
   * Rewrite FlagParcel process
-  * Add <i>hafmonyCoeff</i> and <i>noise</i> parameters to be set everywhere
+  * Add <i>harmonyCoeff</i> and <i>noise</i> parameters to possibly be set everywhere
 
 
 # Version 1.0 : 
