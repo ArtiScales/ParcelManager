@@ -1,4 +1,9 @@
-# Version 1.1
+# Version 1.1.1
+## FIX
+
+  * Report attribute simplification to scenarios. Fix an attribute bug in ZoneDivision workflow.
+  
+  # Version 1.1
 
 ## ADD
   * Add the OBBThenSS process
