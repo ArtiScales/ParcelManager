@@ -117,8 +117,8 @@ public class GeneralFields {
      * @return the parcel code
      */
     public static String makeParcelCode(SimpleFeature feat) {
-        if (CollecMgmt.isSimpleFeatureContainsAttribute(feat, ParcelSchema.getMinParcelCommunityField()))
-            return feat.getAttribute(ParcelSchema.getMinParcelCommunityField()) + "-" + feat.getAttribute(ParcelSchema.getMinParcelSectionField()) + "-" + feat.getAttribute(ParcelSchema.getMinParcelNumberField());
+        if (CollecMgmt.isSimpleFeatureContainsAttribute(feat, ParcelSchema.getParcelCommunityField()))
+            return feat.getAttribute(ParcelSchema.getParcelCommunityField()) + "-" + feat.getAttribute(ParcelSchema.getParcelSectionField()) + "-" + feat.getAttribute(ParcelSchema.getParcelNumberField());
         else
             switch (parcelFieldType) {
                 case "french":
@@ -202,8 +202,8 @@ public class GeneralFields {
      * @return True if the parcel section looks like it has been simulated.
      */
     public static boolean isParcelLikeFrenchHasSimulatedFileds(SimpleFeature feature) {
-        return (feature.getAttribute(ParcelSchema.getMinParcelSectionField())) != null
-                && ((String) feature.getAttribute(ParcelSchema.getMinParcelSectionField())).length() > 3;
+        return (feature.getAttribute(ParcelSchema.getParcelSectionField())) != null
+                && ((String) feature.getAttribute(ParcelSchema.getParcelSectionField())).length() > 3;
     }
 
     /**
@@ -309,9 +309,9 @@ public class GeneralFields {
             while (it.hasNext()) {
                 SimpleFeature feat = it.next();
                 builder.set(builder.getFeatureType().getGeometryDescriptor().getLocalName(), feat.getDefaultGeometry());
-                builder.set(ParcelSchema.getMinParcelCommunityField(), ParcelAttribute.getCommunityCodeFromSFC(sfcWithInfo, feat));
-                builder.set(ParcelSchema.getMinParcelSectionField(), ParcelAttribute.getSectionCodeFromSFC(sfcWithInfo, feat));
-                builder.set(ParcelSchema.getMinParcelNumberField(), ParcelAttribute.getNumberCodeFromSFC(sfcWithInfo, feat));
+                builder.set(ParcelSchema.getParcelCommunityField(), ParcelAttribute.getCommunityCodeFromSFC(sfcWithInfo, feat));
+                builder.set(ParcelSchema.getParcelSectionField(), ParcelAttribute.getSectionCodeFromSFC(sfcWithInfo, feat));
+                builder.set(ParcelSchema.getParcelNumberField(), ParcelAttribute.getNumberCodeFromSFC(sfcWithInfo, feat));
                 result.add(builder.buildFeature(Attribute.makeUniqueId()));
             }
         } catch (Exception problem) {

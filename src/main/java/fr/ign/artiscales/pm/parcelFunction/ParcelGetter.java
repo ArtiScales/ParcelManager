@@ -223,7 +223,7 @@ public class ParcelGetter {
         // we check if the field for zipcodes is present, otherwise we try national types of parcels
         if (parcelIn == null || parcelIn.isEmpty())
             return null;
-        if (!CollecMgmt.isCollecContainsAttribute(parcelIn, ParcelSchema.getMinParcelCommunityField())) {
+        if (!CollecMgmt.isCollecContainsAttribute(parcelIn, ParcelSchema.getParcelCommunityField())) {
             switch (GeneralFields.getParcelFieldType()) {
                 case "french":
                     return getParcelByZip(parcelIn, val);
@@ -231,9 +231,9 @@ public class ParcelGetter {
         }
         DefaultFeatureCollection result = new DefaultFeatureCollection();
         Arrays.stream(parcelIn.toArray(new SimpleFeature[0])).forEach(feat -> {
-            if (CollecMgmt.isSimpleFeatureContainsAttribute(feat, ParcelSchema.getMinParcelCommunityField())
-                    && feat.getAttribute(ParcelSchema.getMinParcelCommunityField()) != null
-                    && feat.getAttribute(ParcelSchema.getMinParcelCommunityField()).equals(val))
+            if (CollecMgmt.isSimpleFeatureContainsAttribute(feat, ParcelSchema.getParcelCommunityField())
+                    && feat.getAttribute(ParcelSchema.getParcelCommunityField()) != null
+                    && feat.getAttribute(ParcelSchema.getParcelCommunityField()).equals(val))
                 result.add(feat);
         });
         return result;

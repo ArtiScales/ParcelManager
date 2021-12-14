@@ -2,26 +2,34 @@ package fr.ign.artiscales.pm.usecase;
 
 import com.opencsv.CSVReader;
 import fr.ign.artiscales.pm.fields.GeneralFields;
+import fr.ign.artiscales.pm.parcelFunction.MarkParcelAttributeFromPosition;
 import fr.ign.artiscales.pm.parcelFunction.ParcelCollection;
 import fr.ign.artiscales.pm.parcelFunction.ParcelSchema;
 import fr.ign.artiscales.pm.scenario.PMScenario;
 import fr.ign.artiscales.pm.scenario.PMStep;
+import fr.ign.artiscales.pm.workflow.ConsolidationDivision;
+import fr.ign.artiscales.pm.workflow.Workflow;
 import fr.ign.artiscales.pm.workflow.ZoneDivision;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.collec.CollecMgmt;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.collec.CollecTransform;
 import fr.ign.artiscales.tools.geometryGeneration.CityGeneration;
+import fr.ign.artiscales.tools.io.csv.Csv;
 import fr.ign.artiscales.tools.io.csv.CsvOp;
 import fr.ign.artiscales.tools.parameter.ProfileUrbanFabric;
 import org.geotools.data.DataStore;
 import org.geotools.data.DataUtilities;
 import org.geotools.data.simple.SimpleFeatureCollection;
+import org.geotools.data.simple.SimpleFeatureIterator;
+import org.geotools.feature.DefaultFeatureCollection;
+import org.opengis.feature.simple.SimpleFeature;
 
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 
 
 /**
@@ -31,13 +39,15 @@ import java.util.List;
  */
 public class CompareSimulatedWithRealParcelsOM {
 
-//    public static void main(String[] args) throws Exception {
-//        simulateZoneDivisionFromCSV(new File("/tmp/outOM/pop.csv"),
-//                new File("/home/thema/.openmole/thema-HP-ZBook-14/webui/projects/compare/donnee/parcel2003.gpkg"),
-//                new File("/home/thema/.openmole/thema-HP-ZBook-14/webui/projects/compare/donnee/zone.gpkg"),
-//                new File("/tmp/outOM/"));
-//        sortUniqueZoning(new File("/home/thema/.openmole/thema-HP-ZBook-14/webui/projects/compare/donnee/zone.gpkg"), new File("/home/thema/Documents/MC/workspace/ParcelManager/src/main/resources/ParcelComparison/zoning.gpkg"), new File("/tmp/out"));
-//    }
+    public static void main(String[] args) throws Exception {
+        File root = new File("/home/mc/.openmole/mc-Latitude-5410/webui/projects/donnee/");
+//        SimpleFeatureCollection parcelSimuled = (new ZoneDivision()).zoneDivision(new File(root, "zone.gpkg"), new File(root, "parcel2003.gpkg"),
+//                new File("/tmp/"), ProfileUrbanFabric.convertJSONtoProfile(new File("src/main/resources/TestScenario/profileUrbanFabric/mediumHouse.json")), new File(root, "road2003.gpkg"), new File(root, "building2003.gpkg"));
+//        double hausdorfDistance = SingleParcelStat.hausdorffDistance(parcelSimuled, new File(root, "realParcel.gpkg"));
+//        System.out.println(hausdorfDistance);
+        Csv.sep = ',';
+        simulateZoneDivisionFromCSV(new File("/home/mc/workspace/parcelmanager/openmole/exResult.csv"), new File(root, "zone.gpkg"), new File(root, "road2003.gpkg"), new File(root, "building2003.gpkg"), new File(root, "parcel2003.gpkg"), new File("/tmp/calibration"), "OBB");
+    }
 
     public static void run() throws Exception {
         // definition of the geopackages representing two set of parcel
@@ -60,7 +70,6 @@ public class CompareSimulatedWithRealParcelsOM {
 
         PMScenario.setSaveIntermediateResult(true);
         PMStep.setDEBUG(true);
-        PMStep.setGENERATEATTRIBUTES(false);
         PMScenario pm = new PMScenario(scenarioFile);
         pm.executeStep();
         System.out.println("++++++++++ Done with PMscenario ++++++++++");
@@ -69,7 +78,7 @@ public class CompareSimulatedWithRealParcelsOM {
         List<File> lF = new ArrayList<>();
 
         //get the intermediate files resulting of the PM steps and merge them together
-        for (File f : outFolder.listFiles())
+        for (File f : Objects.requireNonNull(outFolder.listFiles()))
             if ((f.getName().contains(("Only")) && f.getName().contains(".gpkg")))
                 lF.add(f);
         File simulatedFile = new File(outFolder, "simulatedParcels.gpkg");
@@ -78,21 +87,43 @@ public class CompareSimulatedWithRealParcelsOM {
         PMStep.setPOLYGONINTERSECTION(null);
     }
 
+    public static void setProcess(int processNb) {
+        switch (processNb) {
+            case 0:
+                Workflow.PROCESS = "SSoffset";
+                break;
+            case 1:
+                Workflow.PROCESS = "SS";
+                break;
+            case 2:
+                Workflow.PROCESS = "SSThenOBB";
+                break;
+            case 3:
+                Workflow.PROCESS = "OBB";
+                break;
+            case 4:
+                Workflow.PROCESS = "FlagDivision";
+                break;
+            default:
+                throw new IllegalArgumentException("setProcess : not supposed to have upper values");
+        }
+    }
+
     /**
      * Simulate the Zone Division workflow from parameters contained in a CSV file (which could be an output of OpenMole)
      */
-    public static void simulateZoneDivisionFromCSV(File csvIn, File zoneFile, File parcelFile, File outFolder) throws IOException {
+    public static void simulateZoneDivisionFromCSV(File csvIn, File zoneFile, File roadFile, File buildingFile, File parcelFile, File outFolder, String process) throws IOException {
         CSVReader r = new CSVReader(new FileReader(csvIn));
         outFolder.mkdir();
-        ZoneDivision.setDEBUG(false);
         String[] firstLine = r.readNext();
-        List<Integer> listId = new ArrayList<>();
-        for (int i = 0; i < firstLine.length; i++)
-            if (firstLine[i].startsWith("Out-"))
-                listId.add(i);
+        List<Integer> listId = Arrays.asList(0, 12);
         int i = 0;
-        for (String[] line : r.readAll())
-            Files.copy((new ZoneDivision()).zoneDivision(zoneFile, parcelFile, new ProfileUrbanFabric(firstLine, line), true, outFolder).toPath(), new File(outFolder, i++ + CsvOp.makeLine(listId, line)).toPath());
+        for (String[] line : r.readAll()) {
+            Workflow.PROCESS =process;
+            CollecMgmt.exportSFC((new ZoneDivision()).zoneDivision(zoneFile, parcelFile, outFolder, new ProfileUrbanFabric(firstLine, line), roadFile, buildingFile),
+                    new File(outFolder, i++ + CsvOp.makeLine(listId, line)));
+
+        }
         r.close();
     }
 
@@ -102,15 +133,14 @@ public class CompareSimulatedWithRealParcelsOM {
      * @param toSortFile Geopackage file to sort (zones or parcels)
      * @param zoningFile the zoning plan in a geopackage format (field names are set in the {@link GeneralFields} class)
      * @param outFolder  the folder which will contain the exported geopackages
-     * @return A folder (the same as the outFolder parameter) containing the exported Geopackages
      * @throws IOException Reading and writing files
      */
-    public static File sortUniqueZoning(File toSortFile, File zoningFile, File outFolder) throws IOException {
+    public static void sortUniqueZone(File toSortFile, File zoningFile, File outFolder) throws IOException {
         DataStore dsToSort = CollecMgmt.getDataStore(toSortFile);
         DataStore dsZoning = CollecMgmt.getDataStore(zoningFile);
         SimpleFeatureCollection zoning = DataUtilities.collection(dsZoning.getFeatureSource(dsZoning.getTypeNames()[0]).getFeatures());
         SimpleFeatureCollection toSort = DataUtilities.collection(dsToSort.getFeatureSource(dsToSort.getTypeNames()[0]).getFeatures());
-        String[] vals = {ParcelSchema.getMinParcelCommunityField(), GeneralFields.getZonePreciseNameField()};
+        String[] vals = {ParcelSchema.getParcelCommunityField(), GeneralFields.getZonePreciseNameField()};
         for (String uniquePreciseName : CollecMgmt.getEachUniqueFieldFromSFC(zoning, vals)) {
             SimpleFeatureCollection eachZoning = CollecTransform.getSFCfromSFCIntersection(toSort, CollecTransform.getSFCPart(zoning, vals, uniquePreciseName.split("-")));
             if (eachZoning == null || eachZoning.isEmpty())
@@ -119,7 +149,40 @@ public class CompareSimulatedWithRealParcelsOM {
         }
         dsToSort.dispose();
         dsZoning.dispose();
-        return outFolder;
     }
 
+//    public static void doConsolidationDivision(SimpleFeatureCollection parcels, File roadFile, File buildingFile, List<LineString> extLines, Geometry exclusionZone, File outFolder, ProfileUrbanFabric profile, int processType) throws IOException {
+//        setProcess(processType);
+//        (new ConsolidationDivision()).consolidationDivision(parcels, roadFile, buildingFile,extLines,  exclusionZone, outFolder,  profile);
+//
+//}
+
+    /**
+     * Method to create different geopackages of each zoning type and community of an input Geopackage.
+     *
+     * @param toSortFile Geopackage file to sort (zones or parcels)
+     * @param outFolder  the folder which will contain the exported geopackages
+     * @throws IOException Reading and writing files
+     */
+    public static void sortConsolidatedZone(File toSortFile, File outFolder) throws IOException {
+        DataStore dsToSort = CollecMgmt.getDataStore(toSortFile);
+        SimpleFeatureCollection toSort = DataUtilities.collection(dsToSort.getFeatureSource(dsToSort.getTypeNames()[0]).getFeatures());
+        DefaultFeatureCollection parcelToMerge = new DefaultFeatureCollection();
+        Arrays.stream(toSort.toArray(new SimpleFeature[0])).forEach(parcel -> {
+            if (parcel.getAttribute(MarkParcelAttributeFromPosition.getMarkFieldName()) != null
+                    && (String.valueOf(parcel.getAttribute(MarkParcelAttributeFromPosition.getMarkFieldName()))).equals("1")) {
+                parcelToMerge.add(parcel);
+            }
+        });
+        DefaultFeatureCollection consolidatedZone = ConsolidationDivision.consolidation(toSort, parcelToMerge, outFolder);
+        int i = 0;
+        try (SimpleFeatureIterator it = consolidatedZone.features()) {
+            while (it.hasNext()) {
+                SimpleFeature eachZone = it.next();
+                if (eachZone != null)
+                    CollecMgmt.exportSFC(Arrays.asList(eachZone), new File(outFolder, "z " + i++));
+            }
+        }
+        dsToSort.dispose();
+    }
 }

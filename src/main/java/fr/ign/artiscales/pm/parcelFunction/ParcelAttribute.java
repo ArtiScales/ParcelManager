@@ -45,7 +45,7 @@ public class ParcelAttribute {
      * @return the most represented city code from the SimpleFeatureCollection
      */
     public static String getCommunityCodeFromSFC(SimpleFeatureCollection sFCWithCommunityCode, SimpleFeature feat) {
-        if (!CollecMgmt.isCollecContainsAttribute(sFCWithCommunityCode, ParcelSchema.getMinParcelCommunityField())) {
+        if (!CollecMgmt.isCollecContainsAttribute(sFCWithCommunityCode, ParcelSchema.getParcelCommunityField())) {
             switch (GeneralFields.getParcelFieldType()) {
                 case ("french"):
                     return FrenchParcelFields.makeDEPCOMCode(CollecTransform.getIntersectingSimpleFeatureFromSFC((Geometry) feat.getDefaultGeometry(), sFCWithCommunityCode));
@@ -53,37 +53,37 @@ public class ParcelAttribute {
                     return "";
             }
         } else {
-            return CollecTransform.getIntersectingFieldFromSFC((Geometry) feat.getDefaultGeometry(), sFCWithCommunityCode, ParcelSchema.getMinParcelCommunityField());
+            return CollecTransform.getIntersectingFieldFromSFC((Geometry) feat.getDefaultGeometry(), sFCWithCommunityCode, ParcelSchema.getParcelCommunityField());
         }
     }
 
     /**
      * get the Section code from a {@link SimpleFeature} (that is most of the time, a parcel or building)
      *
-     * @param sFCWithCommunityCode Collection of cities. The default field name is <i>SECTION</i> an can be changed with the function {@link ParcelSchema#setMinParcelSectionField(String)}
+     * @param sFCWithCommunityCode Collection of cities. The default field name is <i>SECTION</i> an can be changed with the function {@link ParcelSchema#setParcelSectionField(String)}
      * @param feat                 Collection of parcels to get city codes from.
      * @return the most represented city code from the SimpleFeatureCollection
      */
     public static String getSectionCodeFromSFC(SimpleFeatureCollection sFCWithCommunityCode, SimpleFeature feat) {
-        return CollecTransform.getIntersectingFieldFromSFC((Geometry) feat.getDefaultGeometry(), sFCWithCommunityCode, ParcelSchema.getMinParcelSectionField());
+        return CollecTransform.getIntersectingFieldFromSFC((Geometry) feat.getDefaultGeometry(), sFCWithCommunityCode, ParcelSchema.getParcelSectionField());
     }
 
     /**
      * get the Number from a {@link SimpleFeature} (that is most of the time, a parcel or building)
      *
-     * @param sFCWithCommunityCode Collection of cities. The default field name is <i>NUMERO</i> an can be changed with the function {@link ParcelSchema#setMinParcelNumberField(String)}
+     * @param sFCWithCommunityCode Collection of cities. The default field name is <i>NUMERO</i> an can be changed with the function {@link ParcelSchema#setParcelNumberField(String)}
      * @param feat                 Collection of parcels to get city codes from.
      * @return the most represented city code from the SimpleFeatureCollection
      */
     public static String getNumberCodeFromSFC(SimpleFeatureCollection sFCWithCommunityCode, SimpleFeature feat) {
-        return CollecTransform.getIntersectingFieldFromSFC((Geometry) feat.getDefaultGeometry(), sFCWithCommunityCode, ParcelSchema.getMinParcelNumberField());
+        return CollecTransform.getIntersectingFieldFromSFC((Geometry) feat.getDefaultGeometry(), sFCWithCommunityCode, ParcelSchema.getParcelNumberField());
     }
 
     /**
      * Get the type of community from a Simplefeature (that is most of the time, a parcel or building).
      *
      * @param sfc  Collection of cities. The default field name is <i>armature</i> an can be changed with the
-     *             {@link fr.ign.artiscales.pm.parcelFunction.ParcelSchema#setMinParcelCommunityField(String)} method
+     *             {@link fr.ign.artiscales.pm.parcelFunction.ParcelSchema#setParcelCommunityField(String)} method
      * @param feat Feature to get city codes from.
      * @return the type of community in which is the feature.
      */
@@ -93,7 +93,7 @@ public class ParcelAttribute {
 
     /**
      * Get a list of all the <i>city code numbers</i> of the given collection. The city code field name is <i>DEPCOM</i> by default and can be changed with the method
-     * {@link fr.ign.artiscales.pm.parcelFunction.ParcelSchema#setMinParcelCommunityField(String)}. If no code is found, we try to generate it (only for the French Parcels)
+     * {@link fr.ign.artiscales.pm.parcelFunction.ParcelSchema#setParcelCommunityField(String)}. If no code is found, we try to generate it (only for the French Parcels)
      *
      * @param parcels Input {@link SimpleFeatureCollection} of parcels
      * @return The list of every <i>city code numbers</i> from the input parcels.
@@ -101,7 +101,7 @@ public class ParcelAttribute {
     public static List<String> getCityCodesOfParcels(SimpleFeatureCollection parcels) {
         List<String> result = new ArrayList<>();
         Arrays.stream(parcels.toArray(new SimpleFeature[0])).forEach(feat -> {
-            String code = ((String) feat.getAttribute(ParcelSchema.getMinParcelCommunityField()));
+            String code = ((String) feat.getAttribute(ParcelSchema.getParcelCommunityField()));
             if (code != null && !code.isEmpty()) {
                 if (!result.contains(code)) {
                     result.add(code);
@@ -121,7 +121,7 @@ public class ParcelAttribute {
 
     /**
      * Get the most represented <i>city code numbers</i> of the given collection. The city code field name is <i>DEPCOM</i> by default and can be changed with the method
-     * {@link fr.ign.artiscales.pm.parcelFunction.ParcelSchema#setMinParcelCommunityField(String)}. If no code is found, we try to generate it (only for the French Parcels).
+     * {@link fr.ign.artiscales.pm.parcelFunction.ParcelSchema#setParcelCommunityField(String)}. If no code is found, we try to generate it (only for the French Parcels).
      *
      * @param parcels Input {@link SimpleFeatureCollection} of parcels
      * @return the most represented <i>city code numbers</i>
@@ -131,7 +131,7 @@ public class ParcelAttribute {
         try (SimpleFeatureIterator it = parcels.features()) {
             while (it.hasNext()) {
                 SimpleFeature feat = it.next();
-                String code = ((String) feat.getAttribute(ParcelSchema.getMinParcelCommunityField()));
+                String code = ((String) feat.getAttribute(ParcelSchema.getParcelCommunityField()));
                 if (code != null && !code.isEmpty()) {
                     result.put(code, result.getOrDefault(code, 1));
                 } else {

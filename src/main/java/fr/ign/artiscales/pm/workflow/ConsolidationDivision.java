@@ -1,9 +1,14 @@
 package fr.ign.artiscales.pm.workflow;
 
+import fr.ign.artiscales.pm.division.FlagDivision;
 import fr.ign.artiscales.pm.division.OBBDivision;
+import fr.ign.artiscales.pm.division.OBBThenSS;
 import fr.ign.artiscales.pm.division.StraightSkeletonDivision;
-import fr.ign.artiscales.pm.parcelFunction.*;
+import fr.ign.artiscales.pm.parcelFunction.MarkParcelAttributeFromPosition;
+import fr.ign.artiscales.pm.parcelFunction.ParcelCollection;
+import fr.ign.artiscales.pm.parcelFunction.ParcelSchema;
 import fr.ign.artiscales.tools.geoToolsFunctions.Attribute;
+import fr.ign.artiscales.tools.geoToolsFunctions.Schemas;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Geom;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.collec.CollecMgmt;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.collec.CollecTransform;
@@ -18,13 +23,14 @@ import org.geotools.factory.CommonFactoryFinder;
 import org.geotools.feature.DefaultFeatureCollection;
 import org.geotools.feature.simple.SimpleFeatureBuilder;
 import org.locationtech.jts.geom.Geometry;
+import org.locationtech.jts.geom.LineString;
 import org.opengis.feature.simple.SimpleFeature;
-import org.opengis.feature.simple.SimpleFeatureType;
 import org.opengis.filter.FilterFactory2;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.List;
 
 /**
  * Simulation following this workflow merge together the contiguous marked parcels to create zones. The chosen parcel division process (OBB by default) is then applied on each created
@@ -33,13 +39,42 @@ import java.util.Arrays;
  * @author Maxime Colomb
  */
 public class ConsolidationDivision extends Workflow {
-
     public ConsolidationDivision() {
+    }
+
+//    public static void main(String[] args) throws Exception {
+//        File rootFolder = new File("src/main/resources/TestScenario/");
+//        DataStore parcelDS = CollecMgmt.getDataStore(new File(rootFolder, "InputData/parcel.gpkg"));
+//        File roadFile = new File(rootFolder, "InputData/road.gpkg");
+//        File outFolder = new File("/tmp/cs");
+//        setDEBUG(false);
+//        PROCESS = "OBB";
+//        setSAVEINTERMEDIATERESULT(true);
+//        SimpleFeatureCollection z = new ConsolidationDivision().consolidationDivision(MarkParcelAttributeFromPosition.markRandomParcels(parcelDS.getFeatureSource(parcelDS.getTypeNames()[0]).getFeatures(), 25, false), roadFile, outFolder, ProfileUrbanFabric.convertJSONtoProfile(new File("src/main/resources/TestScenario/profileUrbanFabric/smallHouse.json")));
+//        CollecMgmt.exportSFC(z, new File("/tmp/conso"));
+//    }
+
+    public static DefaultFeatureCollection consolidation(SimpleFeatureCollection parcels, SimpleFeatureCollection parcelToMerge, File tmpFolder) throws IOException {
+        DefaultFeatureCollection mergedParcels = new DefaultFeatureCollection();
+        SimpleFeatureBuilder sfBuilder = ParcelSchema.getSFBMinParcelSplit();
+        Geometry multiGeom = Geom.unionSFC(parcelToMerge);
+        for (int i = 0; i < multiGeom.getNumGeometries(); i++) {
+            sfBuilder.add(multiGeom.getGeometryN(i));
+            sfBuilder.set(ParcelSchema.getParcelSectionField(), String.valueOf(i));
+            sfBuilder.set(ParcelSchema.getParcelCommunityField(),
+                    CollecTransform.getIntersectingFieldFromSFC(multiGeom.getGeometryN(i), parcels, ParcelSchema.getParcelCommunityField()));
+            sfBuilder.set(MarkParcelAttributeFromPosition.getMarkFieldName(), 1);
+            mergedParcels.add(sfBuilder.buildFeature(Attribute.makeUniqueId()));
+        }
+        if (isDEBUG()) {
+            CollecMgmt.exportSFC(mergedParcels.collection(), new File(tmpFolder, "step2"));
+            System.out.println("done step 2");
+        }
+        return mergedParcels;
     }
 
     /**
      * Method that merges the contiguous marked parcels into zones and then split those zones with a given parcel division algorithm (by default, the Oriented Bounding Box).
-     * Without PolygonItersection used to operate a final selection
      *
      * @param parcels   The parcels to be merged and cut. Must be marked with the SPLIT filed (see markParcelIntersectMUPOutput for example, with the method concerning MUP-City's output)
      * @param outFolder The folder where will be saved intermediate results and temporary files for debug
@@ -48,27 +83,31 @@ public class ConsolidationDivision extends Workflow {
      * @throws IOException Writing files in debug modes
      */
     public SimpleFeatureCollection consolidationDivision(SimpleFeatureCollection parcels, File roadFile, File outFolder, ProfileUrbanFabric profile) throws IOException {
-        return consolidationDivision(parcels, roadFile, outFolder, profile, null);
+        return consolidationDivision(parcels, roadFile, null, null, null, outFolder, profile);
     }
 
     /**
      * Method that merges the contiguous marked parcels into zones and then split those zones with a given parcel division algorithm (by default, the Oriented Bounding Box).
+     * Overload with FlagDivision data
      *
-     * @param parcels             The parcels to be merged and cut. Must be marked with the SPLIT filed (see markParcelIntersectMUPOutput for example, with the method concerning MUP-City's output)
-     * @param roadFile            Geopackages of the road segments. Can be null.
-     * @param outFolder           The folder where will be saved intermediate results and temporary files for debug
-     * @param profile             {@link ProfileUrbanFabric} contains the parameters of the wanted urban scene
-     * @param polygonIntersection Optional polygon layer that was used to process to the selection of parcels with their intersection. Used to keep only the intersecting simulated parcels. CAn be null
+     * @param parcels   The parcels to be merged and cut. Must be marked with the SPLIT filed (see markParcelIntersectMUPOutput for example, with the method concerning MUP-City's output)
+     * @param outFolder The folder where will be saved intermediate results and temporary files for debug
+     * @param profile   {@link ProfileUrbanFabric} contains the parameters of the wanted urban scene
      * @return the set of parcel with decomposition
      * @throws IOException Writing files in debug modes
      */
-    public SimpleFeatureCollection consolidationDivision(SimpleFeatureCollection parcels, File roadFile, File outFolder, ProfileUrbanFabric profile, File polygonIntersection) throws IOException {
+    public SimpleFeatureCollection consolidationDivision(SimpleFeatureCollection parcels, File roadFile, File buildingFile, List<LineString> extLines, Geometry exclusionZone, File outFolder, ProfileUrbanFabric profile) throws IOException {
+        if (!CollecMgmt.isCollecContainsAttribute(parcels, MarkParcelAttributeFromPosition.getMarkFieldName()) || MarkParcelAttributeFromPosition.isNoParcelMarked(parcels)) {
+            if (isDEBUG())
+                System.out.println("consolidationDivision: no parcel marked");
+            return parcels;
+        }
+        checkFields(parcels.getSchema());
+
         File tmpFolder = new File(outFolder, "tmp");
         if (isDEBUG())
             tmpFolder.mkdirs();
-        DefaultFeatureCollection parcelSaved = new DefaultFeatureCollection();
-        parcelSaved.addAll(parcels);
-        DefaultFeatureCollection parcelToMerge = new DefaultFeatureCollection();
+        DefaultFeatureCollection parcelSaved = new DefaultFeatureCollection(parcels);
         if (isDEBUG()) {
             CollecMgmt.exportSFC(parcels, new File(tmpFolder, "step0"));
             System.out.println("done step 0");
@@ -76,6 +115,7 @@ public class ConsolidationDivision extends Workflow {
         ////////////////
         // first step : round of selection of the intersected parcels
         ////////////////
+        DefaultFeatureCollection parcelToMerge = new DefaultFeatureCollection();
         Arrays.stream(parcels.toArray(new SimpleFeature[0])).forEach(parcel -> {
             if (parcel.getAttribute(MarkParcelAttributeFromPosition.getMarkFieldName()) != null
                     && (String.valueOf(parcel.getAttribute(MarkParcelAttributeFromPosition.getMarkFieldName()))).equals("1")) {
@@ -90,126 +130,104 @@ public class ConsolidationDivision extends Workflow {
         ////////////////
         // second step : merge of the parcel that touches themselves by block
         ////////////////
-        DefaultFeatureCollection mergedParcels = new DefaultFeatureCollection();
-        SimpleFeatureBuilder sfBuilder = ParcelSchema.getSFBMinParcelSplit();
-        Geometry multiGeom = Geom.unionSFC(parcelToMerge);
-        for (int i = 0; i < multiGeom.getNumGeometries(); i++) {
-            sfBuilder.add(multiGeom.getGeometryN(i));
-            sfBuilder.set(ParcelSchema.getMinParcelSectionField(), Integer.toString(i));
-            sfBuilder.set(ParcelSchema.getMinParcelCommunityField(),
-                    CollecTransform.getIntersectingFieldFromSFC(multiGeom.getGeometryN(i), parcels, ParcelSchema.getMinParcelCommunityField()));
-            mergedParcels.add(sfBuilder.buildFeature(Attribute.makeUniqueId()));
-        }
-        if (isDEBUG()) {
-            CollecMgmt.exportSFC(mergedParcels.collection(), new File(tmpFolder, "step2"));
-            System.out.println("done step 2");
-        }
+        DefaultFeatureCollection mergedParcels = consolidation(parcels, parcelToMerge, tmpFolder);
+
         ////////////////
-        // third step : cuting of the parcels
+        // third step : cut the parcels
         ////////////////
         SimpleFeatureCollection roads;
         if (roadFile != null && roadFile.exists()) {
-            DataStore sdsRoad = CollecMgmt.getDataStore(roadFile);
-            roads = DataUtilities.collection(CollecTransform.selectIntersection(sdsRoad.getFeatureSource(sdsRoad.getTypeNames()[0]).getFeatures(), Geom.unionSFC(mergedParcels).buffer(30)));
+            DataStore dsRoad = CollecMgmt.getDataStore(roadFile);
+            roads = DataUtilities.collection(CollecTransform.selectIntersection(dsRoad.getFeatureSource(dsRoad.getTypeNames()[0]).getFeatures(), Geom.unionSFC(mergedParcels).buffer(30)));
             if (isDEBUG())
                 CollecMgmt.exportSFC(roads, new File(tmpFolder, "roads"));
-            sdsRoad.dispose();
+            dsRoad.dispose();
         } else
             roads = null;
-        SimpleFeatureBuilder sfBuilderFinalParcel = ParcelSchema.getSFBMinParcel();
-        DefaultFeatureCollection cutParcels = new DefaultFeatureCollection();
+
+        //setting final schema. If no split field at first, we don't add it in the final collection.
+        SimpleFeatureBuilder sfBuilderFinalParcel = ParcelSchema.getSFBWithoutSplit(parcels.getSchema());
+
         SimpleFeatureCollection blockCollection = CityGeneration.createUrbanBlock(parcels);
         FilterFactory2 ff = CommonFactoryFinder.getFilterFactory2();
-        Arrays.stream(mergedParcels.toArray(new SimpleFeature[0])).forEach(feat -> {
-            if (((Geometry) feat.getDefaultGeometry()).getArea() > profile.getMaximalArea()) {
-                // Parcel big enough, we cut it
-                feat.setAttribute(MarkParcelAttributeFromPosition.getMarkFieldName(), 1);
-                try {
-                    SimpleFeatureCollection freshCutParcel = new DefaultFeatureCollection();
-                    switch (PROCESS) {
-                        case "OBB":
-                            freshCutParcel = OBBDivision.splitParcel(feat,
-                                    roads == null || roads.isEmpty() ? null : CollecTransform.selectIntersection(roads, ((Geometry) feat.getDefaultGeometry()).buffer(30)),
-                                    profile.getMaximalArea(), profile.getMinimalWidthContactRoad(), profile.getHarmonyCoeff(), profile.getNoise(),
-                                    CollecTransform.fromPolygonSFCtoListRingLines(blockCollection.subCollection(ff.bbox(ff.property(feat.getFeatureType().getGeometryDescriptor().getLocalName()), feat.getBounds()))),
-                                    profile.getLaneWidth(), profile.getStreetLane(), profile.getStreetWidth(), true, profile.getBlockShape());
-                            break;
-                        case "SS":
-                        case "SSoffset":
-                            StraightSkeletonDivision.FOLDER_OUT_DEBUG = tmpFolder;
-                            freshCutParcel = StraightSkeletonDivision.runTopologicalStraightSkeletonParcelDecomposition(feat, roads, "NOM_VOIE_G", "IMPORTANCE", PROCESS.equals("SSoffset") ? profile.getMaxDepth() : 0,
-                                    profile.getMaxDistanceForNearestRoad(), profile.getMinimalArea(), profile.getMinimalWidthContactRoad(), profile.getMaxWidth(),
-                                    (profile.getNoise() == 0) ? 0.1 : profile.getNoise(), new MersenneTwister(1), profile.getLaneWidth(), ParcelSchema.getParcelID(feat));
-                            break;
-                    }
-                    if (!freshCutParcel.isEmpty() && freshCutParcel.size() > 0) {
-                        SimpleFeatureIterator it = freshCutParcel.features();
-                        // every single parcel goes into new collection
-                        int i = 0;
-                        while (it.hasNext()) {
-                            SimpleFeature freshCut = it.next();
-                            // that takes time but it's the best way I've found to set a correct section number (to look at the step 2 polygons)
-                            String sec = "Default";
-                            try (SimpleFeatureIterator ilotIt = mergedParcels.features()) {
-                                while (ilotIt.hasNext()) {
-                                    SimpleFeature ilot = ilotIt.next();
-                                    if (((Geometry) ilot.getDefaultGeometry()).intersects((Geometry) freshCut.getDefaultGeometry())) {
-                                        sec = (String) ilot.getAttribute(ParcelSchema.getMinParcelSectionField());
-                                        break;
-                                    }
-                                }
-                            } catch (Exception problem) {
-                                problem.printStackTrace();
-                            }
-                            sfBuilderFinalParcel.set(CollecMgmt.getDefaultGeomName(), freshCut.getDefaultGeometry());
-                            sfBuilderFinalParcel.set(ParcelSchema.getMinParcelSectionField(), makeNewSection(sec));
-                            sfBuilderFinalParcel.set(ParcelSchema.getMinParcelNumberField(), String.valueOf(i++));
-                            sfBuilderFinalParcel.set(ParcelSchema.getMinParcelCommunityField(),
-                                    feat.getAttribute(ParcelSchema.getMinParcelCommunityField()));
-                            cutParcels.add(sfBuilderFinalParcel.buildFeature(Attribute.makeUniqueId()));
+        SimpleFeatureCollection result = new DefaultFeatureCollection();
+        try (SimpleFeatureIterator itInitialParcel = mergedParcels.features()) {
+            while (itInitialParcel.hasNext()) {
+                SimpleFeature feat = itInitialParcel.next();
+                int i = 0;
+                if (((Geometry) feat.getDefaultGeometry()).getArea() > profile.getMaximalArea()) { // Parcel big enough, we cut it
+                    try {
+                        SimpleFeatureCollection freshCutParcel = new DefaultFeatureCollection();
+                        switch (PROCESS) {
+                            case "OBB":
+                                freshCutParcel = OBBDivision.splitParcel(feat,
+                                        roads == null || roads.isEmpty() ? null : CollecTransform.selectIntersection(roads, ((Geometry) feat.getDefaultGeometry()).buffer(profile.getMaxDistanceForNearestRoad())),
+                                        profile.getMaximalArea(), profile.getMinimalWidthContactRoad(), profile.getHarmonyCoeff(), profile.getNoise(),
+                                        CollecTransform.fromPolygonSFCtoListRingLines(blockCollection.subCollection(ff.bbox(ff.property(feat.getFeatureType().getGeometryDescriptor().getLocalName()), feat.getBounds()))),
+                                        profile.getLaneWidth(), profile.getStreetLane(), profile.getStreetWidth(), true, profile.getBlockShape());
+                                break;
+                            case "SS":
+                            case "SSoffset":
+                                StraightSkeletonDivision.FOLDER_OUT_DEBUG = tmpFolder;
+                                freshCutParcel = StraightSkeletonDivision.runTopologicalStraightSkeletonParcelDecomposition(feat, roads, "NOM_VOIE_G", "IMPORTANCE", PROCESS.equals("SSoffset") ? profile.getMaxDepth() : 0,
+                                        profile.getMaxDistanceForNearestRoad(), profile.getMinimalArea(), profile.getMinimalWidthContactRoad(), profile.getMaxWidth(),
+                                        (profile.getNoise() == 0) ? 0.1 : profile.getNoise(), new MersenneTwister(1), profile.getLaneWidth(), ParcelSchema.getParcelID(feat));
+                                break;
+                            case "OBBThenSS":
+                                freshCutParcel = OBBThenSS.applyOBBThenSS(feat,
+                                        roads == null || roads.isEmpty() ? null : CollecTransform.selectIntersection(roads, ((Geometry) feat.getDefaultGeometry()).buffer(profile.getMaxDistanceForNearestRoad())),
+                                        profile, CollecTransform.fromPolygonSFCtoListRingLines(blockCollection.subCollection(ff.bbox(ff.property(feat.getFeatureType().getGeometryDescriptor().getLocalName()), feat.getBounds()))));
+                                break;
+                            case "FlagDivision":
+                                DataStore dsBuilding = CollecMgmt.getDataStore(buildingFile);
+                                freshCutParcel = FlagDivision.doFlagDivision(feat, roads, dsBuilding.getFeatureSource(dsBuilding.getTypeNames()[0]).getFeatures(), profile.getHarmonyCoeff(), profile.getNoise(),
+                                        profile.getMaximalArea(), profile.getMinimalWidthContactRoad(), profile.getLenDriveway(), extLines, exclusionZone);
+                                dsBuilding.dispose();
+                                break;
                         }
-                        it.close();
+                        if (!freshCutParcel.isEmpty() && freshCutParcel.size() > 0) {
+                            try (SimpleFeatureIterator it = freshCutParcel.features()) {
+                                // every single parcel goes into new collection
+                                while (it.hasNext()) {
+                                    SimpleFeature freshCut = it.next();
+                                    sfBuilderFinalParcel.set(CollecMgmt.getDefaultGeomName(), freshCut.getDefaultGeometry());
+                                    sfBuilderFinalParcel.set(ParcelSchema.getParcelSectionField(), makeNewSection((String) feat.getAttribute(ParcelSchema.getParcelSectionField())));
+                                    sfBuilderFinalParcel.set(ParcelSchema.getParcelNumberField(), String.valueOf(i++));
+                                    sfBuilderFinalParcel.set(ParcelSchema.getParcelCommunityField(), feat.getAttribute(ParcelSchema.getParcelCommunityField()));
+                                    ((DefaultFeatureCollection) result).add(sfBuilderFinalParcel.buildFeature(Attribute.makeUniqueId()));
+                                }
+                            }
+                        }
+                    } catch (Exception e) {
+                        e.printStackTrace();
                     }
-                } catch (Exception e) {
-                    e.printStackTrace();
+                } else {// parcel not big enough, we directly put it in the collection
+                    sfBuilderFinalParcel.set(CollecMgmt.getDefaultGeomName(), feat.getDefaultGeometry());
+                    sfBuilderFinalParcel.set(ParcelSchema.getParcelSectionField(), makeNewSection((String) feat.getAttribute(ParcelSchema.getParcelSectionField())));
+                    sfBuilderFinalParcel.set(ParcelSchema.getParcelNumberField(), String.valueOf(i++));
+                    sfBuilderFinalParcel.set(ParcelSchema.getParcelCommunityField(), feat.getAttribute(ParcelSchema.getParcelCommunityField()));
+                    ((DefaultFeatureCollection) result).add(sfBuilderFinalParcel.buildFeature(Attribute.makeUniqueId()));
                 }
-            } else {
-                // parcel not big enough, we directly put it in the collection
-                cutParcels.add(sfBuilderFinalParcel.buildFeature(Attribute.makeUniqueId(), new Object[]{feat.getDefaultGeometry()}));
             }
-        });
-        DefaultFeatureCollection result = new DefaultFeatureCollection();
-        if (isDEBUG()) {
-            CollecMgmt.exportSFC(cutParcels, new File(tmpFolder, "step3"));
-            System.out.println("done step 3");
         }
         // merge small parcels
-        SimpleFeatureCollection cutBigParcels = ParcelCollection.mergeTooSmallParcels(cutParcels, (int) profile.getMinimalArea(), PROCESS.equals("SS"));
-        SimpleFeatureType schema = ParcelSchema.getSFBMinParcel().getFeatureType();
-        Arrays.stream(cutBigParcels.toArray(new SimpleFeature[0])).forEach(feat -> {
-            SimpleFeatureBuilder SFBParcel = ParcelSchema.setSFBMinParcelWithFeat(feat, schema);
-            result.add(SFBParcel.buildFeature(Attribute.makeUniqueId()));
-        });
-        if (isSAVEINTERMEDIATERESULT()) {
+        result = ParcelCollection.mergeTooSmallParcels(result, (int) profile.getMinimalArea(), PROCESS.equals("SS"));
+
+        if (isSAVEINTERMEDIATERESULT() && !result.isEmpty()) {
             CollecMgmt.exportSFC(result, new File(outFolder, "parcelConsolidationOnly"), OVERWRITEGEOPACKAGE);
             OVERWRITEGEOPACKAGE = false;
         }
-        // add initial non cut parcel to final parcels
-        Arrays.stream(parcelSaved.toArray(new SimpleFeature[0])).forEach(feat -> {
-            SimpleFeatureBuilder SFBParcel = ParcelSchema.setSFBMinParcelWithFeat(feat, schema);
-            result.add(SFBParcel.buildFeature(Attribute.makeUniqueId()));
-        });
-        if (isDEBUG()) {
-            CollecMgmt.exportSFC(result, new File(tmpFolder, "step4"));
-            System.out.println("done step 4");
+        sfBuilderFinalParcel = ParcelSchema.getSFBWithoutSplit(result.getSchema());
+        try (SimpleFeatureIterator it = parcelSaved.features()) {
+            while (it.hasNext()) {
+                Schemas.setFieldsToSFB(sfBuilderFinalParcel, it.next());
+                ((DefaultFeatureCollection) result).add(sfBuilderFinalParcel.buildFeature(Attribute.makeUniqueId()));
+            }
         }
-        // //If the selection of parcel was based on a polygon intersection file, we keep only the intersection parcels
-        // //TODO avec une emprise plus large que juste les parcelles : regarder du côté de morpholim pour un calculer un buffer suffisant ?)
-        // if (polygonIntersection != null && polygonIntersection.exists()) {
-        // ShapefileDataStore sdsInter = new ShapefileDataStore(polygonIntersection.toURI().toURL());
-        // SimpleFeatureCollection sfc = sdsInter.getFeatureSource().getFeatures();
-        // sdsInter.dispose();
-        // }
+        if (isDEBUG()) {
+            CollecMgmt.exportSFC(result, new File(tmpFolder, "step3"));
+            System.out.println("done step 3");
+        }
         return result;
     }
 
@@ -230,7 +248,7 @@ public class ConsolidationDivision extends Workflow {
      * @return true if the section field is marked with the {@link #makeNewSection(String)} method.
      */
     public boolean isNewSection(SimpleFeature feat) {
-        String section = (String) feat.getAttribute(ParcelSchema.getMinParcelSectionField());
+        String section = (String) feat.getAttribute(ParcelSchema.getParcelSectionField());
         return section.startsWith("newSection") && section.endsWith("ConsolidationDivision");
     }
 }

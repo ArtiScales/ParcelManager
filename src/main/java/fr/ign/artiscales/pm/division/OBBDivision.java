@@ -1,8 +1,10 @@
 package fr.ign.artiscales.pm.division;
 
 import fr.ign.artiscales.pm.parcelFunction.MarkParcelAttributeFromPosition;
+import fr.ign.artiscales.pm.parcelFunction.ParcelSchema;
 import fr.ign.artiscales.pm.parcelFunction.ParcelState;
 import fr.ign.artiscales.tools.geoToolsFunctions.Attribute;
+import fr.ign.artiscales.tools.geoToolsFunctions.Schemas;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Geom;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.MinimalBoundingRectangle;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Tree;
@@ -38,19 +40,78 @@ import java.util.stream.Collectors;
 /**
  * Oriented Bounding Box algorithm implementation with methods to generate road network
  */
-public class OBBDivision {
+public class OBBDivision extends Division {
 
-//	public static void main(String[] args) throws Exception {
-//		DataStore ds = CollecMgmt.getDataStore(new File(""));
-//		SimpleFeatureCollection p = ds.getFeatureSource(ds.getTypeNames()[0]).getFeatures();
-//		SimpleFeatureCollection split = splitParcels(p, null, 1000, 15, 0.5, 0, CollecTransform.fromPolygonSFCtoListRingLines(CityGeneration.createUrbanBlock(p)), 2, 3, 5, true, 1);
-//		CollecMgmt.exportSFC(split, new File(""));
-//		ds.dispose();
-//	}
+//    public static void main(String[] args) throws Exception {
+//        setDEBUG(true);
+//        File rootFolder = new File("src/main/resources/TestScenario/");
+//        DataStore ds = CollecMgmt.getDataStore(new File(rootFolder, "InputData/parcel.gpkg"));
+//        SimpleFeatureCollection p = MarkParcelAttributeFromPosition.markRandomParcels(ds.getFeatureSource(ds.getTypeNames()[0]).getFeatures(),15,false);
+//        SimpleFeatureCollection split = splitParcels(p, null, 1000, 15, 0.5, 0, CollecTransform.fromPolygonSFCtoListRingLines(CityGeneration.createUrbanBlock(p)), 2, 3, 5, true, 1);
+//        CollecMgmt.exportSFC(split, new File("/tmp/obbDiv.gpkg"));
+//        ds.dispose();
+//    }
 
     /**
      * Split the parcels into sub parcels. The parcel that are going to be cut must have a field matching the {@link MarkParcelAttributeFromPosition#getMarkFieldName()} field or
-     * "SPLIT" by default with the value of 1.
+     * "SPLIT" by default with the value of 1. Add a <i>SIMULATED</i> field.
+     *
+     * @param toSplit           {@link SimpleFeatureCollection} of parcels
+     * @param roadFile          road file layer (can be null)
+     * @param profile           chosen {@link ProfileUrbanFabric}
+     * @param forceStreetAccess Is the polygon should be turned in order to assure the connection with the road ? Also regarding the <i>harmony coeff</i>. Most of cases, it's yes
+     * @return a collection of subdivided parcels
+     * @throws IOException reading geo files
+     */
+    public static SimpleFeatureCollection splitParcels(SimpleFeatureCollection toSplit, File roadFile, ProfileUrbanFabric profile, boolean forceStreetAccess) throws IOException {
+        SimpleFeatureCollection result;
+        DataStore roadDS = null;
+        if (roadFile != null)
+            roadDS = CollecMgmt.getDataStore(roadFile);
+        result = splitParcels(toSplit, roadFile != null ? roadDS.getFeatureSource(roadDS.getTypeNames()[0]).getFeatures() : null, profile.getMaximalArea(), profile.getMinimalWidthContactRoad(), profile.getHarmonyCoeff(), profile.getNoise(),
+                CollecTransform.fromPolygonSFCtoListRingLines(CityGeneration.createUrbanBlock(toSplit)), profile.getLaneWidth(), profile.getStreetLane(), profile.getStreetWidth(), forceStreetAccess, profile.getBlockShape());
+        if (roadFile != null)
+            roadDS.dispose();
+        return result;
+    }
+
+    /**
+     * Split the parcels into sub parcels. The parcel that are going to be cut must have a field matching the {@link MarkParcelAttributeFromPosition#getMarkFieldName()} field or
+     * "SPLIT" by default with the value of 1. Add a <i>SIMULATED</i> field.
+     *
+     * @param inputCollection   {@link SimpleFeatureCollection} of parcels. Must have been marked in order to be simulated
+     * @param roads             Road layer (can be null)
+     * @param maximalArea       Area of the parcel under which the parcel won't be anymore cut
+     * @param maximalWidth      Width of the parcel under which the parcel won't be anymore cut
+     * @param harmonyCoeff      intensity of the forcing of a parcel to be connected with a road
+     * @param noise             irregularity into parcel shape
+     * @param extBlock          outside of the parcels (representing road or public space)
+     * @param laneWidth         Width of the small streets
+     * @param streetLane        Level of decomposition in which large streets are generated
+     * @param streetWidth       Width of the large streets
+     * @param forceStreetAccess Is the polygon should be turned in order to assure the connection with the road ? Also regarding the <i>harmony coeff</i>. Most of cases, it's yes
+     * @param blockShape        Number of last iteration row for which no street network is generated
+     * @return a collection of subdivised parcels
+     */
+    public static SimpleFeatureCollection splitParcels(SimpleFeatureCollection inputCollection, SimpleFeatureCollection roads, double maximalArea, double maximalWidth, double harmonyCoeff, double noise, List<LineString> extBlock,
+                                                       double laneWidth, int streetLane, double streetWidth, boolean forceStreetAccess, int blockShape) {
+        if (!CollecMgmt.isCollecContainsAttribute(inputCollection, MarkParcelAttributeFromPosition.getMarkFieldName()) || MarkParcelAttributeFromPosition.isNoParcelMarked(inputCollection)) {
+            if (isDEBUG())
+                System.out.println("doFlagDivision: no parcel marked");
+            return inputCollection;
+        }
+        DefaultFeatureCollection result = new DefaultFeatureCollection();
+        try (SimpleFeatureIterator featIt = inputCollection.features()) {
+            while (featIt.hasNext())
+                result.addAll(splitParcel(featIt.next(), roads, maximalArea, maximalWidth, harmonyCoeff, noise, extBlock,
+                        laneWidth, streetLane, streetWidth, forceStreetAccess, blockShape));
+        }
+        return result;
+    }
+
+    /**
+     * Split the parcels into sub parcels. The parcel that are going to be cut must have a field matching the {@link MarkParcelAttributeFromPosition#getMarkFieldName()} field or
+     * "SPLIT" by default with the value of 1. Add a <i>SIMULATED</i> field.
      * <p>
      * Overload to split a single parcel.
      *
@@ -72,7 +133,7 @@ public class OBBDivision {
 
     /**
      * Split the parcels into sub parcels. The parcel that are going to be cut must have a field matching the {@link MarkParcelAttributeFromPosition#getMarkFieldName()} field or
-     * "SPLIT" by default with the value of 1.
+     * "SPLIT" by default with the value of 1. Add a <i>SIMULATED</i> field.
      * <p>
      * Overload to split a single parcel.
      *
@@ -80,7 +141,7 @@ public class OBBDivision {
      * @param maximalArea       Area of the parcel under which the parcel won't be anymore cut
      * @param maximalWidth      Width of the parcel under which the parcel won't be anymore cut
      * @param harmonyCoeff      intensity of the forcing of a parcel to be connected with a road
-     * @param extBlock          outside of the parcels (representing road or public space)
+     * @param extBlock          outside the parcels (representing road or public space)
      * @param laneWidth         With of the street composing the street network
      * @param blockShape        Number of last iteration row for which no street network is generated
      * @param forceStreetAccess Is the polygon should be turned in order to assure the connection with the road ? Also regarding the <i>harmony coeff</i>. Most of cases, it's yes
@@ -93,82 +154,31 @@ public class OBBDivision {
     public static SimpleFeatureCollection splitParcel(SimpleFeature featToSplit, SimpleFeatureCollection roads, double maximalArea, double maximalWidth, double harmonyCoeff, double noise,
                                                       List<LineString> extBlock, double laneWidth, int streetLane, double streetWidth, boolean forceStreetAccess, int blockShape) {
         DefaultFeatureCollection result = new DefaultFeatureCollection();
-        SimpleFeatureBuilder builder = new SimpleFeatureBuilder(featToSplit.getFeatureType());
-        Object mark = featToSplit.getAttribute(MarkParcelAttributeFromPosition.getMarkFieldName());
-        // // if the parcel is not to be split, we add it on the final result and continue to iterate through the parcels.
-        if (mark == null || (int) mark != 1) {
-            result.add(featToSplit);
+        SimpleFeatureBuilder builder = ParcelSchema.addField(featToSplit.getFeatureType(), "SIMULATED");
+        // if the parcel is not to be split, we add it on the final result and continue to iterate through the parcels.
+        if (featToSplit.getAttribute(MarkParcelAttributeFromPosition.getMarkFieldName()) == null
+                || (int) featToSplit.getAttribute(MarkParcelAttributeFromPosition.getMarkFieldName()) != 1) {
+            Schemas.setFieldsToSFB(builder, featToSplit);
+            builder.set("SIMULATED", 0);
+            result.add(builder.buildFeature(Attribute.makeUniqueId()));
         } else {
+            if (isDEBUG())
+                System.out.println("OBB division of " + featToSplit);
             Polygon polygon = Polygons.getPolygon((Geometry) featToSplit.getDefaultGeometry());
             DescriptiveStatistics dS = new DescriptiveStatistics();
-            OBBDivision.decompose(polygon, extBlock,
-                    (roads != null && !roads.isEmpty()) ? CollecTransform.selectIntersection(roads, (Geometry) featToSplit.getDefaultGeometry()) : null,
-                    maximalArea, maximalWidth, noise, harmonyCoeff, laneWidth, streetLane, streetWidth, forceStreetAccess, 0,
-                    blockShape).stream().forEach(c -> dS.addValue(c.getValue()));
+            OBBDivision.decompose(polygon, extBlock, (roads != null && !roads.isEmpty()) ? CollecTransform.selectIntersection(roads, (Geometry) featToSplit.getDefaultGeometry()) : null,
+                            maximalArea, maximalWidth, noise, harmonyCoeff, laneWidth, streetLane, streetWidth, forceStreetAccess, 0, blockShape)
+                    .stream().forEach(c -> dS.addValue(c.getValue()));
             int decompositionLevelWithLane = (int) dS.getPercentile(50) - blockShape;
             int decompositionLevelWithStreet = (int) dS.getPercentile(50) - streetLane;
-            OBBDivision.decompose(polygon, extBlock,
-                    (roads != null && !roads.isEmpty()) ? CollecTransform.selectIntersection(roads, (Geometry) featToSplit.getDefaultGeometry()) : null,
-                    maximalArea, maximalWidth, noise, harmonyCoeff, laneWidth, decompositionLevelWithStreet, streetWidth,
-                    forceStreetAccess, decompositionLevelWithLane, blockShape).childrenStream().forEach(p -> {
-                SimpleFeature newFeature = builder.buildFeature(Attribute.makeUniqueId());
-                newFeature.setDefaultGeometry(p.getKey());
-                result.add(newFeature);
-            });
-        }
-        return result;
-    }
-
-    /**
-     * Split the parcels into sub parcels. The parcel that are going to be cut must have a field matching the {@link MarkParcelAttributeFromPosition#getMarkFieldName()} field or
-     * "SPLIT" by default with the value of 1.
-     *
-     * @param toSplit           {@link SimpleFeatureCollection} of parcels
-     * @param roadFile          road file layer (can be null)
-     * @param profile           chosen {@link ProfileUrbanFabric}
-     * @param forceStreetAccess Is the polygon should be turned in order to assure the connection with the road ? Also regarding the <i>harmony coeff</i>. Most of cases, it's yes
-     * @return a collection of subdivided parcels
-     * @throws IOException reading geo files
-     */
-    public static SimpleFeatureCollection splitParcels(SimpleFeatureCollection toSplit, File roadFile, ProfileUrbanFabric profile, boolean forceStreetAccess) throws IOException {
-        SimpleFeatureCollection result;
-        if (roadFile == null) {
-            result = splitParcels(toSplit, null, profile.getMaximalArea(), profile.getMinimalWidthContactRoad(), profile.getHarmonyCoeff(), profile.getNoise(),
-                    CollecTransform.fromPolygonSFCtoListRingLines(CityGeneration.createUrbanBlock(toSplit)), profile.getLaneWidth(), profile.getStreetLane(), profile.getStreetWidth(), forceStreetAccess, profile.getBlockShape());
-        } else {
-            DataStore roadDS = CollecMgmt.getDataStore(roadFile);
-            result = splitParcels(toSplit, roadDS.getFeatureSource(roadDS.getTypeNames()[0]).getFeatures(), profile.getMaximalArea(), profile.getMinimalWidthContactRoad(), profile.getHarmonyCoeff(), profile.getNoise(),
-                    CollecTransform.fromPolygonSFCtoListRingLines(CityGeneration.createUrbanBlock(toSplit)), profile.getLaneWidth(), profile.getStreetLane(), profile.getStreetWidth(), forceStreetAccess, profile.getBlockShape());
-            roadDS.dispose();
-        }
-        return result;
-    }
-
-    /**
-     * Split the parcels into sub parcels. The parcel that are going to be cut must have a field matching the {@link MarkParcelAttributeFromPosition#getMarkFieldName()} field or
-     * "SPLIT" by default with the value of 1.
-     *
-     * @param toSplit           {@link SimpleFeatureCollection} of parcels. Must have been marked in order to be simulated
-     * @param roads             Road layer (can be null)
-     * @param maximalArea       Area of the parcel under which the parcel won't be anymore cut
-     * @param maximalWidth      Width of the parcel under which the parcel won't be anymore cut
-     * @param harmonyCoeff      intensity of the forcing of a parcel to be connected with a road
-     * @param noise             irregularity into parcel shape
-     * @param extBlock          outside of the parcels (representing road or public space)
-     * @param laneWidth         Width of the small streets
-     * @param streetLane        Level of decomposition in which large streets are generated
-     * @param streetWidth       Width of the large streets
-     * @param forceStreetAccess Is the polygon should be turned in order to assure the connection with the road ? Also regarding the <i>harmony coeff</i>. Most of cases, it's yes
-     * @param blockShape        Number of last iteration row for which no street network is generated
-     * @return a collection of subdivised parcels
-     */
-    public static SimpleFeatureCollection splitParcels(SimpleFeatureCollection toSplit, SimpleFeatureCollection roads, double maximalArea, double maximalWidth, double harmonyCoeff, double noise, List<LineString> extBlock,
-                                                       double laneWidth, int streetLane, double streetWidth, boolean forceStreetAccess, int blockShape) {
-        DefaultFeatureCollection result = new DefaultFeatureCollection();
-        try (SimpleFeatureIterator featIt = toSplit.features()) {
-            while (featIt.hasNext())
-                result.addAll(splitParcel(featIt.next(), roads, maximalArea, maximalWidth, harmonyCoeff, noise, extBlock,
-                        laneWidth, streetLane, streetWidth, forceStreetAccess, blockShape));
+            OBBDivision.decompose(polygon, extBlock, (roads != null && !roads.isEmpty()) ? CollecTransform.selectIntersection(roads, (Geometry) featToSplit.getDefaultGeometry()) : null,
+                            maximalArea, maximalWidth, noise, harmonyCoeff, laneWidth, decompositionLevelWithStreet, streetWidth, forceStreetAccess, decompositionLevelWithLane, blockShape)
+                    .childrenStream().forEach(p -> {
+                        Schemas.setFieldsToSFB(builder, featToSplit);
+                        builder.set("SIMULATED", 1);
+                        builder.set(featToSplit.getFeatureType().getGeometryDescriptor().getLocalName(), p.getKey());
+                        result.add(builder.buildFeature(Attribute.makeUniqueId()));
+                    });
         }
         return result;
     }
@@ -176,14 +186,14 @@ public class OBBDivision {
     /**
      * End condition : either the area is below a threshold or width to road (which is ultimately allowed to be 0)
      *
-     * @param area           Area of the current parcel
-     * @param frontSideWidth width of contact between road and parcel
-     * @param maximalArea    Area threshold
-     * @param maximalWidth   threshold of width of contact between road and parcel
+     * @param area                    Area of the current parcel
+     * @param frontSideWidth          width of contact between road and parcel
+     * @param maximalArea             Area threshold
+     * @param minimalWidthContactRoad threshold of width of contact between road and parcel
      * @return true if the algorithm must stop
      */
-    static boolean endCondition(double area, double frontSideWidth, double maximalArea, double maximalWidth) {
-        return (area <= maximalArea) || ((frontSideWidth <= maximalWidth) && (frontSideWidth != 0.0));
+    static boolean endCondition(double area, double frontSideWidth, double maximalArea, double minimalWidthContactRoad) {
+        return (area <= maximalArea) || ((frontSideWidth <= minimalWidthContactRoad) && (frontSideWidth != 0.0));
     }
 
     /**

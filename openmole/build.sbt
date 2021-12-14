@@ -2,9 +2,9 @@ name := "ParcelManagerPlugin"
 
 version := "1.0"
 
-scalaVersion := "2.13.2"
+scalaVersion := "2.13.7"
 
-val parcelManagerVersion = "0.2-SNAPSHOT"
+val parcelManagerVersion = "1.1-SNAPSHOT"
 
 enablePlugins(SbtOsgi)
 
@@ -20,10 +20,10 @@ OsgiKeys.requireCapability := """osgi.ee; osgi.ee="JavaSE";version:List="1.8,1.9
 
 resolvers += Resolver.mavenLocal
 
-libraryDependencies += "fr.ign.cogit" % "ParcelManager" % parcelManagerVersion  excludeAll(ExclusionRule(organization = "org.geotools"))
+libraryDependencies += "fr.ign.artiscales.pm" % "ParcelManager" % parcelManagerVersion  excludeAll(ExclusionRule(organization = "org.geotools"))
 
 val geotoolsGridVersion = "21.0"
-val geotoolsVersion = "23.0"
+val geotoolsVersion = "23.5"
 
 libraryDependencies ++= Seq (
   "org.geotools" % "gt-grid" % geotoolsGridVersion,
@@ -34,9 +34,9 @@ libraryDependencies ++= Seq (
   "org.geotools" % "gt-geopkg" % geotoolsVersion,
   "org.geotools" % "gt-opengis" % geotoolsVersion,
   "org.geotools" % "gt-main" % geotoolsVersion,
-  "javax.media" % "jai_core" % "1.1.3" from "http://download.osgeo.org/webdav/geotools/javax/media/jai_core/1.1.3/jai_core-1.1.3.jar",
-  "javax.media" % "jai_codec" % "1.1.3",
-  "javax.media" % "jai_imageio" % "1.1"
+ // "javax.media" % "jai_core" % "1.1.3" from "http://download.osgeo.org/webdav/geotools/javax/media/jai_core/1.1.3/jai_core-1.1.3.jar",
+ // "javax.media" % "jai_codec" % "1.1.3",
+ // "javax.media" % "jai_imageio" % "1.1"
 )
 
 OsgiKeys.embeddedJars := (Keys.externalDependencyClasspath in Compile).value map (_.data) filter (f=> (f.getName startsWith "gt-"))

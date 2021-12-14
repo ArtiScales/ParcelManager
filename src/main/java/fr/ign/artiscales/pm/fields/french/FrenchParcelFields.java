@@ -79,7 +79,7 @@ public class FrenchParcelFields {
                 String insee;
                 if (GeneralFields.isParcelLikeFrenchHasSimulatedFileds(parcel)) {
                     iniParcel = parcel;
-                    insee = (String) iniParcel.getAttribute(ParcelSchema.getMinParcelCommunityField());
+                    insee = (String) iniParcel.getAttribute(ParcelSchema.getParcelCommunityField());
                 } else {
                     iniParcel = CollecTransform.getIntersectingSimpleFeatureFromSFC((Geometry) parcel.getDefaultGeometry(), initialParcels);
                     try {
@@ -91,9 +91,9 @@ public class FrenchParcelFields {
                     }
                 }
                 featureBuilder.set(CollecMgmt.getDefaultGeomName(), parcel.getDefaultGeometry());
-                String section = (String) iniParcel.getAttribute(ParcelSchema.getMinParcelSectionField());
+                String section = (String) iniParcel.getAttribute(ParcelSchema.getParcelSectionField());
                 featureBuilder.set("SECTION", section);
-                String numero = (String) iniParcel.getAttribute(ParcelSchema.getMinParcelNumberField());
+                String numero = (String) iniParcel.getAttribute(ParcelSchema.getParcelNumberField());
                 featureBuilder.set("NUMERO", numero);
                 featureBuilder.set("CODE_DEP", Objects.requireNonNull(insee).substring(0, 2));
                 featureBuilder.set("CODE_COM", insee.substring(2, 5));

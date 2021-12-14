@@ -3,7 +3,6 @@ package fr.ign.artiscales.pm.scenario;
 import fr.ign.artiscales.pm.analysis.RealUrbanFabricParameters;
 import fr.ign.artiscales.pm.division.StraightSkeletonDivision;
 import fr.ign.artiscales.pm.fields.GeneralFields;
-import fr.ign.artiscales.pm.fields.french.FrenchParcelFields;
 import fr.ign.artiscales.pm.parcelFunction.MarkParcelAttributeFromPosition;
 import fr.ign.artiscales.pm.parcelFunction.ParcelAttribute;
 import fr.ign.artiscales.pm.parcelFunction.ParcelGetter;
@@ -43,10 +42,6 @@ public class PMStep {
      * Geographic files
      */
     private static File PARCELFILE, ZONINGFILE, BUILDINGFILE, ROADFILE, PREDICATEFILE, POLYGONINTERSECTION, ZONE, OUTFOLDER, PROFILEFOLDER;
-    /**
-     * If true, run method to re-assign fields value
-     */
-    private static boolean GENERATEATTRIBUTES = true;
     /**
      * If true, save a geopackage containing only the simulated parcels in the temporary folder for every workflow simulated.
      */
@@ -159,24 +154,6 @@ public class PMStep {
     }
 
     /**
-     * If true, run method to re-assign fields value.
-     *
-     * @return GENERATEATTRIBUTES
-     */
-    public static boolean isGENERATEATTRIBUTES() {
-        return GENERATEATTRIBUTES;
-    }
-
-    /**
-     * If true, run method to re-assign fields value.
-     *
-     * @param gENERATEATTRIBUTES true for attribute generation, false otherwise
-     */
-    public static void setGENERATEATTRIBUTES(boolean gENERATEATTRIBUTES) {
-        GENERATEATTRIBUTES = gENERATEATTRIBUTES;
-    }
-
-    /**
      * If true, will save all the intermediate results in the temporary folder
      *
      * @return DEBUG
@@ -244,11 +221,6 @@ public class PMStep {
         SimpleFeatureCollection parcel = DataUtilities.collection(dSParcel.getFeatureSource(dSParcel.getTypeNames()[0]).getFeatures());
         dSParcel.dispose();
 
-        switch (GeneralFields.getParcelFieldType()) {
-            case "french":
-                parcel = FrenchParcelFields.frenchParcelToMinParcel(parcel);
-                break;
-        }
         // mark (select) the parcels
         SimpleFeatureCollection parcelMarked;
         //if we work with zones, we put them as parcel input
@@ -257,12 +229,12 @@ public class PMStep {
         else
             parcelMarked = getSimulationParcels(parcel);
         if (DEBUG) {
-            System.out.println("parcels marked with " + MarkParcelAttributeFromPosition.countMarkedParcels(parcelMarked) +" marks");
+            System.out.println("parcels marked with " + MarkParcelAttributeFromPosition.countMarkedParcels(parcelMarked) + " marks");
             File tmpFolder = new File(OUTFOLDER, "tmp");
             tmpFolder.mkdirs();
-            CollecMgmt.exportSFC(parcelMarked, new File(tmpFolder, "parcelMarked" + this.workflow + "-" + this.parcelProcess + this.preciseZone), false);
+            CollecMgmt.exportSFC(parcelMarked, new File(tmpFolder, "parcelMarked" + this.workflow + "-" + this.parcelProcess + this.preciseZone));
         }
-        SimpleFeatureCollection parcelCut = new DefaultFeatureCollection(null, ParcelSchema.getSFBMinParcel().getFeatureType());
+        SimpleFeatureCollection parcelCut = new DefaultFeatureCollection();
         // get the wanted building profile
         ProfileUrbanFabric profile = ProfileUrbanFabric.convertJSONtoProfile(new File(PROFILEFOLDER + "/" + urbanFabricType + ".json"));
         // in case of lot of cities to simulate, we separate the execution of PM simulations for each community
@@ -294,7 +266,7 @@ public class PMStep {
                 case "zoneDivision":
                     ZoneDivision.PROCESS = parcelProcess;
                     ((DefaultFeatureCollection) parcelCut).addAll((new ZoneDivision()).zoneDivision(parcelMarkedComm,
-                            ParcelGetter.getParcelByCommunityCode(parcel, communityNumber), OUTFOLDER, profile, ROADFILE, keepExistingRoad));
+                            ParcelGetter.getParcelByCommunityCode(parcel, communityNumber), OUTFOLDER, profile, ROADFILE, BUILDINGFILE, keepExistingRoad));
                     break;
                 case "densification":
                     ((DefaultFeatureCollection) parcelCut).addAll((new Densification()).densification(parcelMarkedComm,
@@ -323,17 +295,10 @@ public class PMStep {
             if (communityNumbers.contains(communityCode))
                 continue;
             ((DefaultFeatureCollection) parcelCut)
-                    .addAll(GeneralFields.transformSFCToMinParcel(ParcelGetter.getParcelByCommunityCode(parcel, communityCode)));
+                    .addAll(ParcelGetter.getParcelByCommunityCode(parcel, communityCode));
         }
         lastOutput = makeFileName();
-        //Attribute generation (optional)
-        if (GENERATEATTRIBUTES) {
-            switch (GeneralFields.getParcelFieldType()) {
-                case "french":
-                    parcelCut = FrenchParcelFields.setOriginalFrenchParcelAttributes(parcelCut, parcel);
-                    break;
-            }
-        }
+
         CollecMgmt.exportSFC(parcelCut, lastOutput);
         //if the step produces no output, we return the input parcels
         if (!lastOutput.exists()) {
@@ -359,8 +324,9 @@ public class PMStep {
      */
     public SimpleFeatureCollection getSimulationParcels(SimpleFeatureCollection parcelIn) throws IOException {
         // special case where zoneDivision will return other than parcel
+        String iniZoneCommunityName = ParcelSchema.getParcelCommunityField();
         if (workflow.equals("zoneDivision"))
-            ParcelSchema.setMinParcelCommunityField(GeneralFields.getZoneCommunityCode());
+            ParcelSchema.setParcelCommunityField(GeneralFields.getZoneCommunityCode());
         // select the parcels from the interesting communities
         SimpleFeatureCollection parcel = new DefaultFeatureCollection();
         // if a community information has been set
@@ -476,6 +442,9 @@ public class PMStep {
             else
                 result = MarkParcelAttributeFromPosition.getOnlyMarkedParcels(parcel);
         }
+
+        if (workflow.equals("zoneDivision"))
+            ParcelSchema.setParcelCommunityField(iniZoneCommunityName);
         return result;
     }
 
@@ -519,9 +488,8 @@ public class PMStep {
         // If no zone have been set, it means we have to use the zoning plan.
         else {
             DataStore dsZoning = CollecMgmt.getDataStore(ZONINGFILE);
-            SimpleFeatureCollection zoning = DataUtilities.collection((dsZoning.getFeatureSource(dsZoning.getTypeNames()[0]).getFeatures()));
+            zoneIn = ZoneDivision.createZoneToCut(genericZone, preciseZone, dsZoning.getFeatureSource(dsZoning.getTypeNames()[0]).getFeatures(), parcel);
             dsZoning.dispose();
-            zoneIn = ZoneDivision.createZoneToCut(genericZone, preciseZone, zoning, ZONINGFILE, parcel);
         }
         return zoneIn;
     }
