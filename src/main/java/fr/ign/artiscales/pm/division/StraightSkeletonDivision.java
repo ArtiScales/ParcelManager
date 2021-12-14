@@ -452,6 +452,7 @@ public class StraightSkeletonDivision {
     public static List<MultiLineString> dividePeripheralRoadInParts(LinearRing lr) {
         List<MultiLineString> ls = new ArrayList<>();
         double maxLength = lr.getLength() / 2;
+        double minLength =  2;
         Coordinate[] coordinates = lr.getCoordinates();
         List<LineString> oneRoad = new ArrayList<>();
         double cumulateLength = 0;
@@ -462,7 +463,7 @@ public class StraightSkeletonDivision {
                 // get last (must be long enough to represent a real road segment, not a buffer angle part)
                 LineString last = null;
                 for (int l = oneRoad.size() - 1; l >= 0; l--) {
-                    if (oneRoad.get(l).getLength() > 2 && segment.getLength() > 2) { // if the length of a segment is superior to two meters, we consider it's a real segment
+                    if (oneRoad.get(l).getLength() > minLength && segment.getLength() > minLength) { // if the length of a segment is superior to two meters, we consider it's a real segment
                         last = oneRoad.get(l);
                         break;
                     }
