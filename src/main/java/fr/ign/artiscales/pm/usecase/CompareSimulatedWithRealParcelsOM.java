@@ -1,6 +1,7 @@
 package fr.ign.artiscales.pm.usecase;
 
 import com.opencsv.CSVReader;
+import fr.ign.artiscales.pm.division.DivisionType;
 import fr.ign.artiscales.pm.fields.GeneralFields;
 import fr.ign.artiscales.pm.parcelFunction.MarkParcelAttributeFromPosition;
 import fr.ign.artiscales.pm.parcelFunction.ParcelCollection;
@@ -13,7 +14,7 @@ import fr.ign.artiscales.pm.workflow.ZoneDivision;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.collec.CollecMgmt;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.collec.CollecTransform;
 import fr.ign.artiscales.tools.geometryGeneration.CityGeneration;
-import fr.ign.artiscales.tools.io.csv.Csv;
+
 import fr.ign.artiscales.tools.io.csv.CsvOp;
 import fr.ign.artiscales.tools.parameter.ProfileUrbanFabric;
 import org.geotools.data.DataStore;
@@ -39,15 +40,15 @@ import java.util.Objects;
  */
 public class CompareSimulatedWithRealParcelsOM {
 
-    public static void main(String[] args) throws Exception {
-        File root = new File("/home/mc/.openmole/mc-Latitude-5410/webui/projects/donnee/");
-//        SimpleFeatureCollection parcelSimuled = (new ZoneDivision()).zoneDivision(new File(root, "zone.gpkg"), new File(root, "parcel2003.gpkg"),
-//                new File("/tmp/"), ProfileUrbanFabric.convertJSONtoProfile(new File("src/main/resources/TestScenario/profileUrbanFabric/mediumHouse.json")), new File(root, "road2003.gpkg"), new File(root, "building2003.gpkg"));
-//        double hausdorfDistance = SingleParcelStat.hausdorffDistance(parcelSimuled, new File(root, "realParcel.gpkg"));
-//        System.out.println(hausdorfDistance);
-        Csv.sep = ',';
-        simulateZoneDivisionFromCSV(new File("/home/mc/workspace/parcelmanager/openmole/exResult.csv"), new File(root, "zone.gpkg"), new File(root, "road2003.gpkg"), new File(root, "building2003.gpkg"), new File(root, "parcel2003.gpkg"), new File("/tmp/calibration"), "OBB");
-    }
+//    public static void main(String[] args) throws Exception {
+//        File root = new File("/home/mc/.openmole/mc-Latitude-5410/webui/projects/donnee/");
+////        SimpleFeatureCollection parcelSimuled = (new ZoneDivision()).zoneDivision(new File(root, "zone.gpkg"), new File(root, "parcel2003.gpkg"),
+////                new File("/tmp/"), ProfileUrbanFabric.convertJSONtoProfile(new File("src/main/resources/TestScenario/profileUrbanFabric/mediumHouse.json")), new File(root, "road2003.gpkg"), new File(root, "building2003.gpkg"));
+////        double hausdorfDistance = SingleParcelStat.hausdorffDistance(parcelSimuled, new File(root, "realParcel.gpkg"));
+////        System.out.println(hausdorfDistance);
+//        Csv.sep = ',';
+//        simulateZoneDivisionFromCSV(new File("/home/mc/workspace/parcelmanager/openmole/exResult.csv"), new File(root, "zone.gpkg"), new File(root, "road2003.gpkg"), new File(root, "building2003.gpkg"), new File(root, "parcel2003.gpkg"), new File("/tmp/calibration"), "OBB");
+//    }
 
     public static void run() throws Exception {
         // definition of the geopackages representing two set of parcel
@@ -69,7 +70,7 @@ public class CompareSimulatedWithRealParcelsOM {
         CityGeneration.createUrbanBlock(fileParcelPast, rootFolder);
 
         PMScenario.setSaveIntermediateResult(true);
-        PMStep.setDEBUG(true);
+        PMScenario.setDEBUG(true);
         PMScenario pm = new PMScenario(scenarioFile);
         pm.executeStep();
         System.out.println("++++++++++ Done with PMscenario ++++++++++");
@@ -90,19 +91,19 @@ public class CompareSimulatedWithRealParcelsOM {
     public static void setProcess(int processNb) {
         switch (processNb) {
             case 0:
-                Workflow.PROCESS = "SSoffset";
+                Workflow.PROCESS = DivisionType.SSoffset;
                 break;
             case 1:
-                Workflow.PROCESS = "SS";
+                Workflow.PROCESS = DivisionType.SS;
                 break;
             case 2:
-                Workflow.PROCESS = "SSThenOBB";
+                Workflow.PROCESS = DivisionType.OBBThenSS;
                 break;
             case 3:
-                Workflow.PROCESS = "OBB";
+                Workflow.PROCESS = DivisionType.OBB;
                 break;
             case 4:
-                Workflow.PROCESS = "FlagDivision";
+                Workflow.PROCESS = DivisionType.FlagDivision;
                 break;
             default:
                 throw new IllegalArgumentException("setProcess : not supposed to have upper values");
@@ -119,7 +120,7 @@ public class CompareSimulatedWithRealParcelsOM {
         List<Integer> listId = Arrays.asList(0, 12);
         int i = 0;
         for (String[] line : r.readAll()) {
-            Workflow.PROCESS =process;
+            Workflow.PROCESS = DivisionType.valueOf(process);
             CollecMgmt.exportSFC((new ZoneDivision()).zoneDivision(zoneFile, parcelFile, outFolder, new ProfileUrbanFabric(firstLine, line), roadFile, buildingFile),
                     new File(outFolder, i++ + CsvOp.makeLine(listId, line)));
 
@@ -174,7 +175,7 @@ public class CompareSimulatedWithRealParcelsOM {
                 parcelToMerge.add(parcel);
             }
         });
-        DefaultFeatureCollection consolidatedZone = ConsolidationDivision.consolidation(toSort, parcelToMerge, outFolder);
+        DefaultFeatureCollection consolidatedZone = ConsolidationDivision.consolidation(toSort, parcelToMerge);
         int i = 0;
         try (SimpleFeatureIterator it = consolidatedZone.features()) {
             while (it.hasNext()) {

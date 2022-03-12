@@ -33,7 +33,7 @@ public class CompareSimulatedWithRealParcels extends UseCase {
         File rootFolder = new File("src/main/resources/ParcelShapeComparison/");
         File outFolder = new File(rootFolder, "OutputResults");
         outFolder.mkdirs();
-        setDEBUG(false);
+        setDEBUG(true);
         compareSimulatedParcelsWithEvolutionWorkflow(rootFolder, outFolder);
         System.out.println(Duration.between(start, Instant.now()));
     }
@@ -48,13 +48,12 @@ public class CompareSimulatedWithRealParcels extends UseCase {
         compareSimulatedParcelsWithEvolutionWorkflow(rootFolder, parcelRefFile, parcelCompFile, roadFile, scenarioFile, outFolder);
     }
 
-    public static void compareSimulatedParcelsWithEvolutionWorkflow(File rootFolder, File parcelRefFile, File parcelCompFile, File roadFile,
-                                                                    File scenarioFile, File outFolder) throws IOException {
+    public static void compareSimulatedParcelsWithEvolutionWorkflow(File rootFolder, File parcelRefFile, File parcelCompFile, File roadFile, File scenarioFile, File outFolder) throws IOException {
         // Mark and export the parcels that have changed between the two set of time
         ParcelCollection.sortDifferentParcel(parcelRefFile, parcelCompFile, outFolder);
         // create blocks for parcel densification in case they haven't been generated before
         CityGeneration.createUrbanBlock(parcelRefFile, rootFolder);
-        PMScenario.setSaveIntermediateResult(true);
+        PMScenario.setSaveIntermediateResult(false);
         PMStep.setAllowIsolatedParcel(true);
         PMScenario pm = new PMScenario(scenarioFile);
         pm.executeStep();

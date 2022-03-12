@@ -1,6 +1,6 @@
 package fr.ign.artiscales.pm.usecase;
 
-import fr.ign.artiscales.pm.scenario.PMStep;
+import fr.ign.artiscales.pm.scenario.PMScenario;
 
 /**
  * Super class for complete studies of Parcel Manager
@@ -18,7 +18,7 @@ public abstract class UseCase {
 
     public static void setSAVEINTERMEDIATERESULT(boolean SAVEINTERMEDIATERESULT) {
         UseCase.SAVEINTERMEDIATERESULT = SAVEINTERMEDIATERESULT;
-        PMStep.setSaveIntermediateResult(SAVEINTERMEDIATERESULT);
+        PMScenario.setSaveIntermediateResult(SAVEINTERMEDIATERESULT);
     }
 
     public static boolean isDEBUG() {
@@ -26,7 +26,7 @@ public abstract class UseCase {
     }
 
     public static void setDEBUG(boolean DEBUG) {
-        PMStep.setDEBUG(DEBUG);
         UseCase.DEBUG = DEBUG;
+        PMScenario.setDEBUG(DEBUG);
     }
 }

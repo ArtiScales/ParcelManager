@@ -2,6 +2,7 @@ package fr.ign.artiscales.pm.usecase;
 
 import fr.ign.artiscales.pm.analysis.RoadRatioParcels;
 import fr.ign.artiscales.pm.analysis.SingleParcelStat;
+import fr.ign.artiscales.pm.division.DivisionType;
 import fr.ign.artiscales.pm.division.StraightSkeletonDivision;
 import fr.ign.artiscales.pm.parcelFunction.MarkParcelAttributeFromPosition;
 import fr.ign.artiscales.pm.parcelFunction.ParcelGetter;
@@ -30,12 +31,12 @@ public class TestScenario extends UseCase {
     /////////////////////////
     public static void main(String[] args) throws Exception {
         // org.geotools.util.logging.Logging.getLogger("org.hsqldb.persist.Logger").setLevel(Level.OFF);
-//        org.geotools.util.logging.Logging.getLogger("org.geotools.jdbc.JDBCDataStore").setLevel(Level.OFF);
+        // org.geotools.util.logging.Logging.getLogger("org.geotools.jdbc.JDBCDataStore").setLevel(Level.OFF);
         long start = System.currentTimeMillis();
         File rootFolder = new File("src/main/resources/TestScenario/");
         File outFolder = new File(rootFolder, "OutputResults");
         setDEBUG(false);
-        Workflow.setSAVEINTERMEDIATERESULT(true);
+        setSAVEINTERMEDIATERESULT(false);
         doTestScenario(outFolder, new File(rootFolder, "InputData"));
         System.out.println("time: " + ((System.currentTimeMillis() - start) / 1000) + " sec");
     }
@@ -58,19 +59,19 @@ public class TestScenario extends UseCase {
         for (int i = 0; i <= 4; i++) {
 //          multiple process calculation
             String ext = "offset";
-            Workflow.PROCESS = "SSoffset";
+            Workflow.PROCESS = DivisionType.SSoffset;
             if (i == 1) {
-                Workflow.PROCESS = "SS";
+                Workflow.PROCESS = DivisionType.SS;
                 ext = "StraightSkeletonPeripheralRoad";
             } else if (i == 2) {
-                Workflow.PROCESS = "SS";
+                Workflow.PROCESS = DivisionType.SS;
                 ext = "StraightSkeleton";
                 StraightSkeletonDivision.setGeneratePeripheralRoad(false);
             } else if (i == 3) {
-                Workflow.PROCESS = "OBB";
+                Workflow.PROCESS = DivisionType.OBB;
                 ext = "OBB";
             } else if (i == 4) {
-                Workflow.PROCESS = "OBBThenSS";
+                Workflow.PROCESS = DivisionType.OBBThenSS;
                 ext = "OBBThenSS";
             }
             System.out.println("PROCESS: " + ext);

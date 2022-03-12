@@ -1,6 +1,7 @@
 package fr.ign.artiscales.pm.workflow;
 
 import fr.ign.artiscales.pm.division.Division;
+import fr.ign.artiscales.pm.division.DivisionType;
 import fr.ign.artiscales.pm.division.StraightSkeletonDivision;
 import fr.ign.artiscales.pm.parcelFunction.ParcelSchema;
 import fr.ign.artiscales.tools.geoToolsFunctions.Schemas;
@@ -14,7 +15,7 @@ public abstract class Workflow {
     /**
      * The process used to divide the parcels
      */
-    public static String PROCESS = "OBB";
+    public static DivisionType PROCESS = DivisionType.OBB;
     /**
      * If true, overwrite the output saved Geopackages. If false, append the simulated parcels to a potential already existing Geopackage.
      */
@@ -46,6 +47,11 @@ public abstract class Workflow {
         Workflow.DEBUG = DEBUG;
     }
 
+    /**
+     * Check if every fields required for a workflow task are present. If not, it will write something in the console.
+     *
+     * @param parcelInput schema of the input collection.
+     */
     public static void checkFields(SimpleFeatureType parcelInput) {
         if (!Schemas.isSchemaContainsAttribute(parcelInput, ParcelSchema.getParcelCommunityField()))
             System.out.println("Parcel collection doesn't contain the needed Community Field. Set a " + ParcelSchema.getParcelCommunityField() + " field or change the default name");

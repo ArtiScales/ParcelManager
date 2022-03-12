@@ -20,7 +20,6 @@ import org.geotools.feature.simple.SimpleFeatureBuilder;
 import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.geom.TopologyException;
 import org.opengis.feature.simple.SimpleFeature;
-import org.opengis.feature.simple.SimpleFeatureType;
 import org.opengis.feature.type.AttributeDescriptor;
 import org.opengis.filter.FilterFactory2;
 import org.opengis.filter.expression.PropertyName;
@@ -41,10 +40,10 @@ import java.util.stream.Collectors;
  */
 public class ParcelCollection {
 
-    public static void main(String[] args) throws IOException {
-        File rootFile = new File("src/main/resources/ParcelComparison/");
-        sortDifferentParcel(new File(rootFile, "parcel2003.gpkg"), new File(rootFile, "parcel2018.gpkg"), new File("/tmp/Correct/"), 550, 175, true);
-    }
+//    public static void main(String[] args) throws IOException {
+//        File rootFile = new File("src/main/resources/ParcelComparison/");
+//        sortDifferentParcel(new File(rootFile, "parcel2003.gpkg"), new File(rootFile, "parcel2018.gpkg"), new File("/tmp/Correct/"), 550, 175, true);
+//    }
 
     /**
      * Method that compares two set of parcel plans and sort the reference parcel plan with the ones that changed and the ones that doesn't. We compare the parcels area of the
@@ -283,8 +282,7 @@ public class ParcelCollection {
     }
 
 
-    // public static SimpleFeatureCollection
-    // completeParcelMissing(SimpleFeatureCollection parcelTot,
+    // public static SimpleFeatureCollection completeParcelMissing(SimpleFeatureCollection parcelTot,
     // SimpleFeatureCollection parcelCuted)
     // throws NoSuchAuthorityCodeException, FactoryException {
     // DefaultFeatureCollection result = new DefaultFeatureCollection();
@@ -339,7 +337,7 @@ public class ParcelCollection {
     // }
 
 //	/**
-//	 * @FIXME fix that 
+//	 * fix that
 //	 * @param parcelToComplete
 //	 * @param originalParcel
 //	 * @return
@@ -408,58 +406,51 @@ public class ParcelCollection {
 //
 //		return result;
 //	}
-
-    /**
-     * WARNING: NOT SURE IT'S WORKING
-     *
-     * @param parcelTot
-     * @param parcelCuted
-     * @param parcelToNotAdd
-     * @return completed parcel collection
-     * @throws IOException
-     * @deprecated
-     */
-    public static SimpleFeatureCollection completeParcelMissing(SimpleFeatureCollection parcelTot, SimpleFeatureCollection parcelCuted,
-                                                                List<String> parcelToNotAdd) throws IOException {
-        DefaultFeatureCollection result = new DefaultFeatureCollection();
-        SimpleFeatureType schema = parcelTot.features().next().getFeatureType();
-        // result.addAll(parcelCuted);
-        try (SimpleFeatureIterator parcelCutedIt = parcelCuted.features()) {
-            while (parcelCutedIt.hasNext()) {
-                SimpleFeature featCut = parcelCutedIt.next();
-                SimpleFeatureBuilder fit = ArtiScalesSchemas.setSFBParcelAsASWithFeat(featCut, schema);
-                result.add(fit.buildFeature(null));
-            }
-        } catch (Exception problem) {
-            problem.printStackTrace();
-        }
-        try (SimpleFeatureIterator totIt = parcelTot.features()) {
-            while (totIt.hasNext()) {
-                SimpleFeature featTot = totIt.next();
-                boolean add = true;
-                for (String code : parcelToNotAdd) {
-                    if (featTot.getAttribute("CODE").equals(code)) {
-                        add = false;
-                        break;
-                    }
-                }
-                if (add) {
-                    SimpleFeatureBuilder fit = ArtiScalesSchemas.setSFBParcelAsASWithFeat(featTot, schema);
-                    result.add(fit.buildFeature(null));
-                }
-            }
-        } catch (Exception problem) {
-            problem.printStackTrace();
-        }
-        return result.collection();
-    }
+//
+//    /**
+//     * @return completed parcel collection
+//     * @deprecated WARNING: NOT SURE IT'S WORKING
+//     */
+//    public static SimpleFeatureCollection completeParcelMissing(SimpleFeatureCollection parcelTot, SimpleFeatureCollection parcelCuted, List<String> parcelToNotAdd) throws IOException {
+//        DefaultFeatureCollection result = new DefaultFeatureCollection();
+//        SimpleFeatureType schema = parcelTot.features().next().getFeatureType();
+//        // result.addAll(parcelCuted);
+//        try (SimpleFeatureIterator parcelCutedIt = parcelCuted.features()) {
+//            while (parcelCutedIt.hasNext()) {
+//                SimpleFeature featCut = parcelCutedIt.next();
+//                SimpleFeatureBuilder fit = ArtiScalesSchemas.setSFBParcelAsASWithFeat(featCut, schema);
+//                result.add(fit.buildFeature(null));
+//            }
+//        } catch (Exception problem) {
+//            problem.printStackTrace();
+//        }
+//        try (SimpleFeatureIterator totIt = parcelTot.features()) {
+//            while (totIt.hasNext()) {
+//                SimpleFeature featTot = totIt.next();
+//                boolean add = true;
+//                for (String code : parcelToNotAdd) {
+//                    if (featTot.getAttribute("CODE").equals(code)) {
+//                        add = false;
+//                        break;
+//                    }
+//                }
+//                if (add) {
+//                    SimpleFeatureBuilder fit = ArtiScalesSchemas.setSFBParcelAsASWithFeat(featTot, schema);
+//                    result.add(fit.buildFeature(null));
+//                }
+//            }
+//        } catch (Exception problem) {
+//            problem.printStackTrace();
+//        }
+//        return result.collection();
+//    }
 
     /**
      * Sort a parcel collection by the feature's sizes in two collections : the ones that are less a threshold and the ones that are above that threshold
      *
-     * @param parcelIn
-     * @param size
-     * @return a pair
+     * @param parcelIn input parcel collection
+     * @param size     area of the threshold to sort the parcels
+     * @return a pair with parcel smaller than the threshold at left and higher than threshold at right
      */
     public static Pair<SimpleFeatureCollection, SimpleFeatureCollection> sortParcelsBySize(SimpleFeatureCollection parcelIn, double size) {
         DefaultFeatureCollection less = new DefaultFeatureCollection();
@@ -473,23 +464,20 @@ public class ParcelCollection {
         return new ImmutablePair<>(less, more);
     }
 
-    /**
-     * WARNING not tested (maybe not needed)
-     *
-     * @param parcelToNotAdd
-     * @param bigZoned
-     * @return A LIST
-     */
-    public static List<String> dontAddParcel(List<String> parcelToNotAdd, SimpleFeatureCollection bigZoned) {
-        try (SimpleFeatureIterator feat = bigZoned.features()) {
-            while (feat.hasNext())
-                parcelToNotAdd.add((String) feat.next().getAttribute("CODE"));
-        } catch (Exception problem) {
-            problem.printStackTrace();
-        }
-        return parcelToNotAdd;
-    }
-
+//    /**
+//     * @return A LIST
+//     * @deprecated WARNING not tested (maybe not needed)
+//     */
+//    public static List<String> dontAddParcel(List<String> parcelToNotAdd, SimpleFeatureCollection bigZoned) {
+//        try (SimpleFeatureIterator feat = bigZoned.features()) {
+//            while (feat.hasNext())
+//                parcelToNotAdd.add((String) feat.next().getAttribute("CODE"));
+//        } catch (Exception problem) {
+//            problem.printStackTrace();
+//        }
+//        return parcelToNotAdd;
+//    }
+//
 //	/**
 //	 * this method aims to select the simulated parcels, the parcel that haven't been selected and if no building have been simulated on the selected and/or cuted parcel, get the
 //	 * older ones. This is not finished nor working TODO finish to have beautiful results

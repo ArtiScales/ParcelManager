@@ -3,6 +3,7 @@ package fr.ign.artiscales.pm.scenario;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonToken;
+import fr.ign.artiscales.pm.workflow.Workflow;
 
 import java.io.File;
 import java.io.IOException;
@@ -24,25 +25,21 @@ public class PMScenario {
      * If true, save a geopackage containing only the simulated parcels in the temporary folder for every workflow simulated.
      */
     private static boolean SAVEINTERMEDIATERESULT = false;
+    /**
+     * If true, will save all the intermediate results in the temporary folder
+     */
+    private static boolean DEBUG = false;
+    boolean keepExistingRoad = true, adaptAreaOfUrbanFabric = false, generatePeripheralRoad = false;
     private File zoningFile, buildingFile, roadFile, polygonIntersection, zone, predicateFile, parcelFile, profileFolder, outFolder;
     private List<PMStep> stepList = new ArrayList<>();
     private boolean fileSet = false;
-    boolean keepExistingRoad = true, adaptAreaOfUrbanFabric = false , generatePeripheralRoad = false;
 
-//	public static void main(String[] args) throws Exception {
-//		PMStep.setDEBUG(true);
-//        PMScenario pm = new PMScenario(new File("src/main/resources/TestScenario/scenarioOBB.json"));
-//        pm.executeStep();
-//		PMScenario pm2 = new PMScenario(new File("src/main/resources/TestScenario/scenarioStraightSkeleton.json"));
-//        pm2.executeStep();
-//		PMScenario pm3 = new PMScenario(new File("src/main/resources/TestScenario/scenarioStraightSkeletonPeripheralRoad.json"));
-//        pm3.executeStep();
-//		PMScenario pm4 = new PMScenario(new File("src/main/resources/TestScenario/scenarioOffset.json"));
-//        pm4.executeStep();
-//	}
-
+    /**
+     * Create new Scenario
+     * @param jSON json file containing every scenario's parameter and list of steps
+     * @throws IOException tons of geo files reading.
+     */
     public PMScenario(File jSON) throws IOException {
-        PMStep.setSaveIntermediateResult(SAVEINTERMEDIATERESULT);
         JsonFactory factory = new JsonFactory();
         JsonParser parser = factory.createParser(jSON);
         JsonToken token = parser.nextToken();
@@ -128,7 +125,7 @@ public class PMScenario {
                                     adaptAreaOfUrbanFabric = true;
                                     break;
                                 case "peripheralRoad:true":
-                                    generatePeripheralRoad =true;
+                                    generatePeripheralRoad = true;
                                     break;
                                 case "peripheralRoad:false":
                                     generatePeripheralRoad = false;
@@ -138,7 +135,7 @@ public class PMScenario {
                     }
                     if (token == JsonToken.END_OBJECT) {
                         List<PMStep> list = getStepList();
-                        PMStep step = new PMStep(workflow, parcelProcess, genericZone, preciseZone, communityNumber, communityType, urbanFabric, generatePeripheralRoad,  keepExistingRoad,  adaptAreaOfUrbanFabric);
+                        PMStep step = new PMStep(workflow, parcelProcess, genericZone, preciseZone, communityNumber, communityType, urbanFabric, generatePeripheralRoad, keepExistingRoad, adaptAreaOfUrbanFabric);
                         list.add(step);
                         setStepList(list);
                         workflow = parcelProcess = genericZone = preciseZone = communityNumber = communityType = urbanFabric = "";
@@ -215,18 +212,62 @@ public class PMScenario {
                 profileFolder);
     }
 
+    public static void main(String[] args) throws Exception {
+        PMScenario.setDEBUG(false);
+        PMScenario.setSaveIntermediateResult(false);
+        PMScenario pm = new PMScenario(new File("src/main/resources/TestScenario/scenarioOBB.json"));
+        pm.executeStep();
+        PMScenario pm2 = new PMScenario(new File("src/main/resources/TestScenario/scenarioStraightSkeleton.json"));
+        pm2.executeStep();
+        PMScenario pm3 = new PMScenario(new File("src/main/resources/TestScenario/scenarioStraightSkeletonPeripheralRoad.json"));
+        pm3.executeStep();
+        PMScenario pm4 = new PMScenario(new File("src/main/resources/TestScenario/scenarioOffset.json"));
+        pm4.executeStep();
+    }
+
+    /**
+     * Are we exporting the intermediate results ? Will also set this statut to {@link Workflow} and {@link fr.ign.artiscales.pm.division.Division}.
+     *
+     * @return are we exporting the intermediate results ?
+     */
     public static boolean isSaveIntermediateResult() {
         return SAVEINTERMEDIATERESULT;
     }
 
+    /**
+     * Set if we save every intermediate results of scenarios, workflows and division processes. Will also set this status to {@link Workflow} and {@link fr.ign.artiscales.pm.division.Division}.
+     *
+     * @param saveIntermediateResult if true, export every intermediate results into a temporary folder.
+     */
     public static void setSaveIntermediateResult(boolean saveIntermediateResult) {
+        Workflow.setSAVEINTERMEDIATERESULT(saveIntermediateResult);
         SAVEINTERMEDIATERESULT = saveIntermediateResult;
     }
 
-    public static boolean isReuseSimulatedParcels() {
-        return REUSESIMULATEDPARCELS;
+    /**
+     * If true, will save all the intermediate results in the temporary folder
+     *
+     * @return DEBUG
+     */
+    public static boolean isDEBUG() {
+        return DEBUG;
     }
 
+    /**
+     * If true, will save all the intermediate results in the temporary folder
+     *
+     * @param dEBUG true for debug mode
+     */
+    public static void setDEBUG(boolean dEBUG) {
+        Workflow.setDEBUG(dEBUG);
+        DEBUG = dEBUG;
+    }
+
+    /**
+     * Sometimes, we want to apply multiple processes on the same input parcels, i.e. in order to check which division process is the best or which urbanFabric parameters.
+     *
+     * @param reuseSimulatedParcel If true, the parcels simulated for each steps will be the input of the next step. If false, the simulation will operate on the input parcel for each steps
+     */
     public static void setReuseSimulatedParcels(boolean reuseSimulatedParcel) {
         REUSESIMULATEDPARCELS = reuseSimulatedParcel;
     }
@@ -234,12 +275,12 @@ public class PMScenario {
     /**
      * Run every step that are present in the stepList
      *
-     * @throws IOException
+     * @throws IOException tons of reading and writing
      */
     public void executeStep() throws IOException {
         for (PMStep pmstep : getStepList()) {
             System.out.println("try " + pmstep);
-            if (PMStep.isDEBUG())
+            if (isDEBUG())
                 System.out.println(this);
             if (REUSESIMULATEDPARCELS)
                 PMStep.setParcel(pmstep.execute());
@@ -248,10 +289,20 @@ public class PMScenario {
         }
     }
 
+    /**
+     * Get the scenario's list of steps
+     *
+     * @return current ordered list of step
+     */
     public List<PMStep> getStepList() {
         return stepList;
     }
 
+    /**
+     * Define a new list of steps for the scenario
+     *
+     * @param stepList new ordered list of steps
+     */
     public void setStepList(List<PMStep> stepList) {
         this.stepList = stepList;
     }
@@ -261,5 +312,4 @@ public class PMScenario {
         return "PMScenario [zoningFile=" + zoningFile + ", buildingFile=" + buildingFile + ", roadFile=" + roadFile + ", polygonIntersection="
                 + polygonIntersection + ", zone=" + zone + ", predicateFile=" + predicateFile + ", parcelFile=" + parcelFile + ", outFolder=" + outFolder + ", stepList=" + stepList + ", fileSet=" + fileSet + ", profileFolder=" + profileFolder + "]";
     }
-
 }

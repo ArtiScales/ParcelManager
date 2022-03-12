@@ -61,9 +61,34 @@ public class Densification extends Workflow {
 //        System.out.println(System.currentTimeMillis() - start);
 //    }
 
+//    public static void main(String[] args) throws IOException {
+//        File root = new File("/home/mc/workspace/parcelmanager/src/main/resources/TestScenario/");
+//        File ini = new File(root, "InputData/parcel.gpkg");
+//        DataStore ds = CollecMgmt.getDataStore(ini);
+//        Workflow.setDEBUG(true);
+//        SimpleFeatureCollection parcel = MarkParcelAttributeFromPosition.markRandomParcels(ds.getFeatureSource(ds.getTypeNames()[0]).getFeatures(), 50, false);
+//        CollecMgmt.exportSFC(parcel, new File("/tmp/ini.gpkg"));
+//        new Densification().densificationOrNeighborhood(parcel, CityGeneration.createUrbanBlock(parcel),
+//                new File("/tmp/"), new File(root, "InputData/building.gpkg"), new File(root, "InputData/road.gpkg"),
+//                ProfileUrbanFabric.convertJSONtoProfile(new File(root, "profileUrbanFabric/smallHouse.json")), false, null, 3);
+//
+//    }
+
+    //    public static void main(String[] args) throws IOException {
+//        File ReMarked = new File("/home/mc/workspace/parcelmanager/src/main/resources/ParcelShapeComparison/OutputResults/densificationOrNeighborhood-ReMarked.gpkg");
+//        DataStore ds = CollecMgmt.getDataStore(ReMarked);
+//        File base = new File("/home/mc/workspace/parcelmanager/src/main/resources/ParcelShapeComparison/OutputResults/parcelCuted-consolidationDivision-smallHouse-NC_.gpkg");
+//        DataStore dsBase = CollecMgmt.getDataStore(base);
+//        DefaultFeatureCollection dfc = new DefaultFeatureCollection(dsBase.getFeatureSource(dsBase.getTypeNames()[0]).getFeatures());
+//        dfc.addAll(ds.getFeatureSource(ds.getTypeNames()[0]).getFeatures());
+//        System.out.println("wicked " + ds.getFeatureSource(ds.getTypeNames()[0]).getFeatures().getSchema());
+//        System.out.println("normal " + dsBase.getFeatureSource(dsBase.getTypeNames()[0]).getFeatures().getSchema());
+//        CollecMgmt.exportSFC(dfc, new File("/tmp/fefe"));
+//    }
+
     /**
-     * Apply the densification workflow on a set of marked parcels. TODO improvements: if a densification is impossible (mainly for building constructed on the both cut parcel
-     * reason), reiterate the flag cut division with noise. The cut may work better !
+     * Apply the densification workflow on a set of marked parcels.
+     * TODO improvements: if a densification is impossible (mainly for building constructed on the both cut parcel reason), reiterate the flag cut division with noise. The cut may work better !
      *
      * @param parcelCollection    {@link SimpleFeatureCollection} of marked parcels.
      * @param blockCollection     {@link SimpleFeatureCollection} containing the morphological block. Can be generated with the
@@ -121,8 +146,7 @@ public class Densification extends Workflow {
                     // If it returned a collection of 1, it was impossible to flag split the parcel. If allowed, we cut the parcel with regular OBB
                     if (unsortedFlagParcel.size() == 1)
                         if (allowIsolatedParcel)
-                            unsortedFlagParcel = OBBDivision.splitParcels(initialParcel, maximalArea, minContactWithRoad, 0.5, noise,
-                                    lines, 0, true, 99);
+                            unsortedFlagParcel = OBBDivision.splitParcels(initialParcel, maximalArea, minContactWithRoad, 0.5, noise, lines, 0, true, 99);
                         else
                             add = false;
                     // If the flag cut parcel size is too small, we won't add anything
@@ -241,7 +265,7 @@ public class Densification extends Workflow {
      * @param roadFile                Geopackage representing the roads
      * @param maximalAreaSplitParcel  threshold of parcel area above which the OBB algorithm stops to decompose parcels
      * @param minimalAreaSplitParcel  threshold under which the parcels is not kept. If parcel simulated is under this workflow will keep the unsimulated parcel.
-     * @param maximalWidthSplitParcel threshold of parcel connection to road under which the OBB algorithm stops to decompose parcels
+     * @param minimalWidthContactRoad threshold of parcel contact to road under which the OBB algorithm stops to decompose parcels
      * @param lenDriveway             length of the driveway to connect a parcel through another parcel to the road
      * @param allowIsolatedParcel     true if the simulated parcels have the right to be isolated from the road, false otherwise.
      * @return The input parcel {@link SimpleFeatureCollection} with the marked parcels replaced by the simulated parcels. All parcels have the
@@ -249,9 +273,9 @@ public class Densification extends Workflow {
      */
     public SimpleFeatureCollection densification(SimpleFeatureCollection parcelCollection, SimpleFeatureCollection blockCollection, File outFolder,
                                                  File buildingFile, File roadFile, double harmonyCoeff, double noise, double maximalAreaSplitParcel, double minimalAreaSplitParcel,
-                                                 double maximalWidthSplitParcel, double lenDriveway, boolean allowIsolatedParcel) throws Exception {
+                                                 double minimalWidthContactRoad, double lenDriveway, boolean allowIsolatedParcel) throws Exception {
         return densification(parcelCollection, blockCollection, outFolder, buildingFile, roadFile, harmonyCoeff, noise, maximalAreaSplitParcel,
-                minimalAreaSplitParcel, maximalWidthSplitParcel, lenDriveway, allowIsolatedParcel, null);
+                minimalAreaSplitParcel, minimalWidthContactRoad, lenDriveway, allowIsolatedParcel, null);
     }
 
     /**
@@ -266,7 +290,7 @@ public class Densification extends Workflow {
      * @param buildingFile            Geopackage representing the buildings
      * @param maximalAreaSplitParcel  threshold of parcel area above which the OBB algorithm stops to decompose parcels
      * @param minimalAreaSplitParcel  threshold under which the parcels is not kept. If parcel simulated is under this workflow will keep the unsimulated parcel.
-     * @param maximalWidthSplitParcel threshold of parcel connection to road under which the OBB algorithm stops to decompose parcels
+     * @param minimalWidthContactRoad threshold of parcel connection to road under which the OBB algorithm stops to decompose parcels
      * @param lenDriveway             lenght of the driveway to connect a parcel through another parcel to the road
      * @param allowIsolatedParcel     true if the simulated parcels have the right to be isolated from the road, false otherwise.
      * @return The input parcel {@link SimpleFeatureCollection} with the marked parcels replaced by the simulated parcels. All parcels have the
@@ -274,9 +298,9 @@ public class Densification extends Workflow {
      */
     public SimpleFeatureCollection densification(SimpleFeatureCollection parcelCollection, SimpleFeatureCollection blockCollection, File outFolder,
                                                  File buildingFile, double harmonyCoeff, double noise, double maximalAreaSplitParcel, double minimalAreaSplitParcel,
-                                                 double maximalWidthSplitParcel, double lenDriveway, boolean allowIsolatedParcel) throws Exception {
+                                                 double minimalWidthContactRoad, double lenDriveway, boolean allowIsolatedParcel) throws Exception {
         return densification(parcelCollection, blockCollection, outFolder, buildingFile, null, harmonyCoeff, noise, maximalAreaSplitParcel,
-                minimalAreaSplitParcel, maximalWidthSplitParcel, lenDriveway, allowIsolatedParcel);
+                minimalAreaSplitParcel, minimalWidthContactRoad, lenDriveway, allowIsolatedParcel);
     }
 
     /**
@@ -294,7 +318,7 @@ public class Densification extends Workflow {
      * @param allowIsolatedParcel true if the simulated parcels have the right to be isolated from the road, false otherwise.
      * @return The input parcel {@link SimpleFeatureCollection} with the marked parcels replaced by the simulated parcels. All parcels have the
      * {@link fr.ign.artiscales.pm.parcelFunction.ParcelSchema#getSFBMinParcel()} schema.
-     * @throws IOException
+     * @throws IOException Writing files in debug modes
      */
     public SimpleFeatureCollection densification(SimpleFeatureCollection parcelCollection, SimpleFeatureCollection blockCollection, File outFolder,
                                                  File buildingFile, File roadFile, ProfileUrbanFabric profile, boolean allowIsolatedParcel) throws IOException {
@@ -317,7 +341,7 @@ public class Densification extends Workflow {
      * @param exclusionZone       Exclude a zone that won't be considered as a potential road connection. Useful to represent border of the parcel plan. Can be null.
      * @return The input parcel {@link SimpleFeatureCollection} with the marked parcels replaced by the simulated parcels. All parcels have the
      * {@link fr.ign.artiscales.pm.parcelFunction.ParcelSchema#getSFBMinParcel()} schema. * @throws Exception
-     * @throws IOException
+     * @throws IOException Writing files in debug modes
      */
     public SimpleFeatureCollection densification(SimpleFeatureCollection parcelCollection, SimpleFeatureCollection blockCollection, File outFolder,
                                                  File buildingFile, File roadFile, ProfileUrbanFabric profile, boolean allowIsolatedParcel, Geometry exclusionZone) throws IOException {
@@ -344,45 +368,41 @@ public class Densification extends Workflow {
      *                                  {@link fr.ign.artiscales.pm.workflow.ConsolidationDivision#consolidationDivision(SimpleFeatureCollection, File, File, ProfileUrbanFabric)} method.
      * @return The input parcel {@link SimpleFeatureCollection} with the marked parcels replaced by the simulated parcels. All parcels have the
      * {@link fr.ign.artiscales.pm.parcelFunction.ParcelSchema#getSFBMinParcel()} schema.
-     * @throws IOException
+     * @throws IOException Writing files in debug modes
      */
-    public SimpleFeatureCollection densificationOrNeighborhood(SimpleFeatureCollection parcelCollection, SimpleFeatureCollection blockCollection,
-                                                               File outFolder, File buildingFile, File roadFile, ProfileUrbanFabric profile, boolean allowIsolatedParcel, Geometry exclusionZone,
-                                                               int factorOflargeZoneCreation) throws IOException {
-        // TODO stupid hack but I can't figure out how those SimpleFeatuceCollection's attributes are changed if not wrote in hard
-//        SimpleFeatureCollection parcelCollectionMerged = MarkParcelAttributeFromPosition.unionTouchingMarkedGeometries(parcelCollection);
-        File tmp = new File(outFolder, "tmp");
-        tmp.mkdirs();
-//        File tmpDens = CollecMgmt.exportSFC(parcelCollectionMerged, new File(tmp, "Dens"));
-        File tmpDens = CollecMgmt.exportSFC(parcelCollection, new File(tmp, "Dens"));
+    public SimpleFeatureCollection densificationOrNeighborhood(SimpleFeatureCollection parcelCollection, SimpleFeatureCollection blockCollection, File outFolder, File buildingFile, File roadFile,
+                                                               ProfileUrbanFabric profile, boolean allowIsolatedParcel, Geometry exclusionZone, int factorOflargeZoneCreation) throws IOException {
         // We flagcut the parcels which size is inferior to 4x the max parcel size
-        SimpleFeatureCollection parcelDensified = densification(
-//              MarkParcelAttributeFromPosition.markParcelsInf(parcelCollectionMerged, profile.getMaximalArea() * factorOflargeZoneCreation),
-                MarkParcelAttributeFromPosition.markParcelsInf(parcelCollection, profile.getMaximalArea() * factorOflargeZoneCreation),
+        parcelCollection = DataUtilities.collection(parcelCollection); //load into memory
+        SimpleFeatureCollection infParcels = MarkParcelAttributeFromPosition.markParcelsInf(parcelCollection, profile.getMaximalArea() * factorOflargeZoneCreation);
+        if (isDEBUG())
+            CollecMgmt.exportSFC(infParcels, new File(outFolder, "densificationOrNeighborhood-Marked"));
+        SimpleFeatureCollection parcelDensified = densification(infParcels,
                 blockCollection, outFolder, buildingFile, roadFile, profile.getHarmonyCoeff(), profile.getNoise(), profile.getMaximalArea(),
                 profile.getMinimalArea(), profile.getMinimalWidthContactRoad(), profile.getLenDriveway(), allowIsolatedParcel, exclusionZone);
         if (isDEBUG())
             CollecMgmt.exportSFC(parcelDensified, new File(outFolder, "densificationOrNeighborhood-Dens"));
+
         // if parcels are too big, we try to create neighborhoods inside them with the consolidation algorithm
         // We first re-mark the parcels that were marked.
-        DataStore ds = CollecMgmt.getDataStore(tmpDens);
-        SimpleFeatureCollection supParcels = MarkParcelAttributeFromPosition.markParcelsSup(
-                MarkParcelAttributeFromPosition.markAlreadyMarkedParcels(parcelDensified, DataUtilities.collection(ds.getFeatureSource(ds.getTypeNames()[0]).getFeatures())),
+        SimpleFeatureCollection alreadyMarkedParcels = MarkParcelAttributeFromPosition.markAlreadyMarkedParcels(parcelDensified, parcelCollection);
+        if (isDEBUG())
+            CollecMgmt.exportSFC(alreadyMarkedParcels, new File(outFolder, "densificationOrNeighborhood-alreadyMarked"));
+
+        SimpleFeatureCollection supParcels = MarkParcelAttributeFromPosition.markParcelsSup(alreadyMarkedParcels,
                 profile.getMaximalArea() * factorOflargeZoneCreation);
         if (isDEBUG())
             CollecMgmt.exportSFC(supParcels, new File(outFolder, "densificationOrNeighborhood-ReMarked"));
 
-        if (!MarkParcelAttributeFromPosition.isNoParcelMarked(supParcels)) {
+//        if (!MarkParcelAttributeFromPosition.isNoParcelMarked(supParcels)) {
             profile.setStreetWidth(profile.getLaneWidth());
             parcelDensified = (new ConsolidationDivision()).consolidationDivision(supParcels, roadFile, outFolder, profile);
             if (isDEBUG())
                 CollecMgmt.exportSFC(parcelDensified, new File(outFolder, "densificationOrNeighborhood-Neigh"));
-        }
-
-        ds.dispose();
-        tmp.delete();
+//        }
         return parcelDensified;
     }
+
 
     /**
      * Create a new section name following a precise rule.

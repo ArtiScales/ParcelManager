@@ -8,16 +8,18 @@ import org.geotools.feature.simple.SimpleFeatureTypeBuilder;
 import org.geotools.referencing.CRS;
 import org.locationtech.jts.geom.Polygon;
 import org.opengis.feature.simple.SimpleFeature;
-import org.opengis.feature.simple.SimpleFeatureType;
 import org.opengis.referencing.FactoryException;
 
 /**
  * ArtiScale schemas and nomenclature of parcel implementation.
+ *
+ * @deprecated
  */
 public class ArtiScalesSchemas {
 
     /**
      * Get Artiscales's parcel {@link SimpleFeatureBuilder}. Not updated with recent code change
+     *
      * @return parcel builder
      */
     public static SimpleFeatureBuilder getSFBParcelAsAS() {
@@ -47,16 +49,15 @@ public class ArtiScalesSchemas {
         return new SimpleFeatureBuilder(sfTypeBuilder.buildFeatureType());
     }
 
+    /**
+     * Set builder with existing feature
+     *
+     * @param feat input feature
+     * @return pre-filled builder
+     */
     public static SimpleFeatureBuilder setSFBParcelAsASWithFeat(SimpleFeature feat) {
-        return setSFBParcelAsASWithFeat(feat, feat.getFeatureType());
-    }
-
-    public static SimpleFeatureBuilder setSFBParcelAsASWithFeat(SimpleFeature feat, SimpleFeatureType schema) {
-        return fillSFBParcelAsASWithFeat(feat, new SimpleFeatureBuilder(schema), schema);
-    }
-
-    public static SimpleFeatureBuilder fillSFBParcelAsASWithFeat(SimpleFeature feat, SimpleFeatureBuilder builder, SimpleFeatureType schema) {
-        builder.set(schema.getGeometryDescriptor().getName().toString(), feat.getDefaultGeometry());
+        SimpleFeatureBuilder builder = new SimpleFeatureBuilder(feat.getFeatureType());
+        builder.set(feat.getFeatureType().getGeometryDescriptor().getName().toString(), feat.getDefaultGeometry());
         builder.set("CODE", feat.getAttribute("CODE"));
         builder.set("CODE_DEP", feat.getAttribute("CODE_DEP"));
         builder.set("CODE_COM", feat.getAttribute("CODE_COM"));
@@ -73,17 +74,15 @@ public class ArtiScalesSchemas {
         return builder;
     }
 
+    /**
+     * Set builder with existing feature
+     *
+     * @param feat input feature
+     * @return pre-filled builder
+     */
     public static SimpleFeatureBuilder setSFBParcelAsASWithFrenchParcelFeat(SimpleFeature feat) {
-        return setSFBParcelAsASWithFrenchParcelFeat(feat, feat.getFeatureType(), feat.getFeatureType().getGeometryDescriptor().getName().toString());
-    }
-
-    public static SimpleFeatureBuilder setSFBParcelAsASWithFrenchParcelFeat(SimpleFeature feat, SimpleFeatureType schema) {
-        return setSFBParcelAsASWithFrenchParcelFeat(feat, schema, schema.getGeometryDescriptor().getName().toString());
-    }
-
-    public static SimpleFeatureBuilder setSFBParcelAsASWithFrenchParcelFeat(SimpleFeature feat, SimpleFeatureType schema, String geometryOutputName) {
-        SimpleFeatureBuilder finalParcelBuilder = new SimpleFeatureBuilder(schema);
-        finalParcelBuilder.set(geometryOutputName, feat.getDefaultGeometry());
+        SimpleFeatureBuilder finalParcelBuilder = new SimpleFeatureBuilder(feat.getFeatureType());
+        finalParcelBuilder.set(feat.getFeatureType().getGeometryDescriptor().getName().toString(), feat.getDefaultGeometry());
         finalParcelBuilder.set("CODE", FrenchParcelFields.makeFrenchParcelCode(feat));
         finalParcelBuilder.set("CODE_DEP", feat.getAttribute("CODE_DEP"));
         finalParcelBuilder.set("CODE_COM", feat.getAttribute("CODE_COM"));
@@ -101,7 +100,34 @@ public class ArtiScalesSchemas {
     }
 
     /**
+     * Set builder with existing feature
+     *
+     * @param feat input feature
+     * @return pre-filled builder
+     */
+    public static SimpleFeatureBuilder setSFBParcelAsASSplitWithFeat(SimpleFeature feat) {
+        SimpleFeatureBuilder builder = new SimpleFeatureBuilder(feat.getFeatureType());
+        builder.set(feat.getFeatureType().getGeometryDescriptor().getName().toString(), feat.getDefaultGeometry());
+        builder.set("CODE", feat.getAttribute("CODE"));
+        builder.set("CODE_DEP", feat.getAttribute("CODE_DEP"));
+        builder.set("CODE_COM", feat.getAttribute("CODE_COM"));
+        builder.set("COM_ABS", feat.getAttribute("COM_ABS"));
+        builder.set("SECTION", feat.getAttribute("SECTION"));
+        builder.set("NUMERO", feat.getAttribute("NUMERO"));
+        builder.set("INSEE", feat.getAttribute("INSEE"));
+        builder.set("eval", feat.getAttribute("eval"));
+        builder.set("DoWeSimul", feat.getAttribute("DoWeSimul"));
+        builder.set("SPLIT", feat.getAttribute("SPLIT"));
+        builder.set("IsBuild", feat.getAttribute("IsBuild"));
+        builder.set("U", feat.getAttribute("U"));
+        builder.set("AU", feat.getAttribute("AU"));
+        builder.set("NC", feat.getAttribute("NC"));
+        return builder;
+    }
+
+    /**
      * parcels schema used in ArtiScales for marking which parcel is cut (or merged) on parcel reshaping process
+     *
      * @return parcel schema
      */
     public static SimpleFeatureBuilder getSFBParcelAsASSplit() {
@@ -131,30 +157,5 @@ public class ArtiScalesSchemas {
         return new SimpleFeatureBuilder(sfTypeBuilder.buildFeatureType());
     }
 
-    public static SimpleFeatureBuilder setSFBParcelAsASSplitWithFeat(SimpleFeature feat, SimpleFeatureType schema) {
-        return fillSFBParcelAsASSplitWithFeat(feat, new SimpleFeatureBuilder(schema), schema);
-    }
 
-    public static SimpleFeatureBuilder fillSFBParcelAsASSplitWithFeat(SimpleFeature feat, SimpleFeatureBuilder builder, SimpleFeatureType schema) {
-        return fillSFBParcelAsASSplitWithFeat(feat, builder, schema.getGeometryDescriptor().getName().toString(), (int) feat.getAttribute("SPLIT"));
-    }
-
-    public static SimpleFeatureBuilder fillSFBParcelAsASSplitWithFeat(SimpleFeature feat, SimpleFeatureBuilder builder, String geomName, int split) {
-        builder.set(geomName, feat.getDefaultGeometry());
-        builder.set("CODE", feat.getAttribute("CODE"));
-        builder.set("CODE_DEP", feat.getAttribute("CODE_DEP"));
-        builder.set("CODE_COM", feat.getAttribute("CODE_COM"));
-        builder.set("COM_ABS", feat.getAttribute("COM_ABS"));
-        builder.set("SECTION", feat.getAttribute("SECTION"));
-        builder.set("NUMERO", feat.getAttribute("NUMERO"));
-        builder.set("INSEE", feat.getAttribute("INSEE"));
-        builder.set("eval", feat.getAttribute("eval"));
-        builder.set("DoWeSimul", feat.getAttribute("DoWeSimul"));
-        builder.set("SPLIT", split);
-        builder.set("IsBuild", feat.getAttribute("IsBuild"));
-        builder.set("U", feat.getAttribute("U"));
-        builder.set("AU", feat.getAttribute("AU"));
-        builder.set("NC", feat.getAttribute("NC"));
-        return builder;
-    }
 }

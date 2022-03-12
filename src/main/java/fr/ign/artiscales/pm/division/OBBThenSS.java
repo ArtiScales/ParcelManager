@@ -20,6 +20,9 @@ import java.util.List;
 
 import static fr.ign.artiscales.pm.workflow.Workflow.PROCESS;
 
+/**
+ * apply SS division on OBB blocks.
+ */
 public class OBBThenSS extends Division {
 
 //    public static void main(String[] args) throws IOException {
@@ -32,6 +35,15 @@ public class OBBThenSS extends Division {
 //        dsP.dispose();
 //    }
 
+    /**
+     * Apply SS on OBB blocks from
+     *
+     * @param sfcIn    List of marked parcels to be divided.
+     * @param roadFile List of road. Must have required attributes for {@link StraightSkeletonDivision}.
+     * @param profile  Description of the urban fabric profile planed to be simulated on this zone.
+     * @return Collection of divided parcels
+     * @throws IOException reading road file
+     */
     public static SimpleFeatureCollection applyOBBThenSS(SimpleFeatureCollection sfcIn, File roadFile, ProfileUrbanFabric profile) throws IOException {
         DefaultFeatureCollection result = new DefaultFeatureCollection();
         List<LineString> block = CollecTransform.fromPolygonSFCtoListRingLines(CityGeneration.createUrbanBlock(sfcIn));
@@ -46,27 +58,33 @@ public class OBBThenSS extends Division {
         return result;
     }
 
-    public static SimpleFeatureCollection applyOBBThenSS(SimpleFeature feat, SimpleFeatureCollection roads, ProfileUrbanFabric profile, List<LineString> block) throws IOException {
+    /**
+     * @param feat    parcel to divide
+     * @param roads   Collection of road. Must have required attributes for {@link StraightSkeletonDivision}.
+     * @param profile Description of the urban fabric profile planed to be simulated on this zone.
+     * @param block   SimpleFeatureCollection containing the morphological block.
+     * @return Collection of divided parcels
+     */
+    public static SimpleFeatureCollection applyOBBThenSS(SimpleFeature feat, SimpleFeatureCollection roads, ProfileUrbanFabric profile, List<LineString> block) {
         DefaultFeatureCollection result = new DefaultFeatureCollection();
 //        if (((Geometry) feat.getDefaultGeometry()).getArea() > profile.getMaximalArea()) {
         SimpleFeatureCollection obbSplit = OBBDivision.splitParcel(feat, roads, profile.getMaximalArea() * profile.getApproxNumberParcelPerBlock(), profile.getMaxWidth(), 0.2, 0.1
                 , block, Math.max(profile.getLaneWidth() - 2 * profile.getStreetWidth(), 1), 0, Math.max(profile.getLaneWidth() - 2 * profile.getStreetWidth(), 1), true, 0);
         if (isDEBUG())
-            CollecMgmt.exportSFC(obbSplit, new File("/tmp/obb" + feat.getFeatureType().getTypeName() + Math.random()));
+            try {
+                CollecMgmt.exportSFC(obbSplit, new File("/tmp/obb" + feat.getFeatureType().getTypeName() + Math.random()));
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         MarkParcelAttributeFromPosition.setMarkFieldName("SIMULATED");
         StraightSkeletonDivision.setGeneratePeripheralRoad(true);
         try (SimpleFeatureIterator it = obbSplit.features()) {
             while (it.hasNext())
-                result.addAll(StraightSkeletonDivision.runTopologicalStraightSkeletonParcelDecomposition(it.next(), roads, "NOM_VOIE_G", "IMPORTANCE", PROCESS.equals("SSoffset") ? profile.getMaxDepth() : 0,
+                result.addAll(StraightSkeletonDivision.runTopologicalStraightSkeletonParcelDecomposition(it.next(), roads, "NOM_VOIE_G", "IMPORTANCE", PROCESS.equals(DivisionType.SSoffset) ? profile.getMaxDepth() : 0,
                         profile.getMaxDistanceForNearestRoad(), profile.getMinimalArea(), profile.getMinimalWidthContactRoad(), profile.getMaxWidth(),
                         (profile.getNoise() == 0) ? 0.1 : profile.getNoise(), new MersenneTwister(1), profile.getLaneWidth(), "finalState"));
         }
         MarkParcelAttributeFromPosition.setMarkFieldName("SPLIT");
-//        } else {
-//            SimpleFeatureBuilder sfb =ParcelSchema.addField(feat.getFeatureType(), "SIMULATED");
-//            Schemas.setFieldsToSFB(sfb, feat);
-//            result.add(sfb.buildFeature(Attribute.makeUniqueId()));
-//        }
         return result;
     }
 }
