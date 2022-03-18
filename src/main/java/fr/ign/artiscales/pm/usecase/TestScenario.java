@@ -137,6 +137,7 @@ public class TestScenario extends UseCase {
 //            MakeStatisticGraphs.makeWidthContactRoadGraph(densifiedParcels, CityGeneration.createUrbanBlock(finalNormalZone, true), roadFile, new File(statFolder, "contact"), "Densification - small-sized houses");
 
             SingleParcelStat.writeStatSingleParcel(MarkParcelAttributeFromPosition.markSimulatedParcel(parcelDensified), roadFile, new File(statFolder, "statParcel.csv"));
+            CollecMgmt.exportSFC(MarkParcelAttributeFromPosition.markParcelsNotConnectedToRoad(parcelDensified, CityGeneration.createUrbanBlock(parcelDensified), roadFile, null), new File(outFolder,"/parcelNotConnectedToRoad"));
         }
     }
 }

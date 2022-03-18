@@ -103,10 +103,15 @@ public class ConsolidationDivision extends Workflow {
      * @throws IOException Writing files in debug modes
      */
     public SimpleFeatureCollection consolidationDivision(SimpleFeatureCollection parcels, File roadFile, File buildingFile, List<LineString> extLines, Geometry exclusionZone, File outFolder, ProfileUrbanFabric profile) throws IOException {
-        if (!CollecMgmt.isCollecContainsAttribute(parcels, MarkParcelAttributeFromPosition.getMarkFieldName()) || MarkParcelAttributeFromPosition.isNoParcelMarked(parcels)) {
+        if (!CollecMgmt.isCollecContainsAttribute(parcels, MarkParcelAttributeFromPosition.getMarkFieldName())) {
+            if (isDEBUG())
+                System.out.println("consolidationDivision: no marking ("+MarkParcelAttributeFromPosition.getMarkFieldName()+") field/");
+            return parcels;
+        }
+        if (MarkParcelAttributeFromPosition.isNoParcelMarked(parcels)) {
             if (isDEBUG())
                 System.out.println("consolidationDivision: no parcel marked");
-            return parcels;
+            return ParcelCollection.getParcelWithoutSplitField(parcels);
         }
         checkFields(parcels.getSchema());
 

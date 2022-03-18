@@ -45,6 +45,18 @@ public class ParcelCollection {
 //        sortDifferentParcel(new File(rootFile, "parcel2003.gpkg"), new File(rootFile, "parcel2018.gpkg"), new File("/tmp/Correct/"), 550, 175, true);
 //    }
 
+    public static SimpleFeatureCollection getParcelWithoutSplitField(SimpleFeatureCollection parcels){
+        DefaultFeatureCollection df = new DefaultFeatureCollection();
+        SimpleFeatureBuilder builder = ParcelSchema.getSFBWithoutSplit(parcels.getSchema());
+        try(SimpleFeatureIterator it = parcels.features()) {
+            while (it.hasNext()) {
+                Schemas.setFieldsToSFB(builder, it.next());
+                df.add(builder.buildFeature(Attribute.makeUniqueId()));
+            }
+        }
+        return df;
+    }
+
     /**
      * Method that compares two set of parcel plans and sort the reference parcel plan with the ones that changed and the ones that doesn't. We compare the parcels area of the
      * reference parcel to the ones that are intersected. If they are similar with a 3% error rate, we conclude that they are the same.

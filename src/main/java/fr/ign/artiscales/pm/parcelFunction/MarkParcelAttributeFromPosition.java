@@ -53,12 +53,14 @@ public class MarkParcelAttributeFromPosition {
 
 //    public static void main(String[] args) throws Exception {
 //        long startTime = System.currentTimeMillis();
-//        File parcelsMarkedF = new File("src/main/resources/TestScenario/OutputResults/offset/ParcelConsolidation.gpkg");
-//        File zoningFile = new File("src/main/resources/TestScenario/InputData/zoning.gpkg");
+//        File parcelsMarkedF = new File("src/main/resources/TestScenario/OutputResults/OBB/parcelDensification.gpkg");
+//        File roadF = new File("src/main/resources/TestScenario/InputData/road.gpkg");
 //        DataStore dsParcel = CollecMgmt.getDataStore(parcelsMarkedF);
+//        DataStore dsRoad = CollecMgmt.getDataStore(roadF);
+//
 //        SimpleFeatureCollection parcels = dsParcel.getFeatureSource(dsParcel.getTypeNames()[0]).getFeatures();
-//        SimpleFeatureCollection markedZone = MarkParcelAttributeFromPosition.markParcelIntersectPreciseZoningType(parcels, "AU", "AU2", zoningFile);
-//        CollecMgmt.exportSFC(markedZone, new File("/tmp/outMarked"));
+//        SimpleFeatureCollection markedZone = MarkParcelAttributeFromPosition.markParcelsNotConnectedToRoad(parcels, CityGeneration.createUrbanBlock(parcels), dsRoad.getFeatureSource(dsRoad.getTypeNames()[0]).getFeatures(), null);
+//        CollecMgmt.exportSFC(markedZone, new File("/tmp/parcelNotConnectedToRoad"));
 //        dsParcel.dispose();
 //        long stopTime = System.currentTimeMillis();
 //        System.out.println(stopTime - startTime);
@@ -129,6 +131,57 @@ public class MarkParcelAttributeFromPosition {
                 Schemas.setFieldsToSFB(builder, feat);
                 if (isAlreadyMarked(feat) != 0
                         && ParcelState.isParcelHasRoadAccess(Polygons.getPolygon(geomFeat), CollecTransform.selectIntersection(roads, geomFeat),
+                        CollecTransform.fromPolygonSFCtoRingMultiLines(CollecTransform.selectIntersection(block, geomFeat)), exclusionZone))
+                    builder.set(markFieldName, 1);
+                else
+                    builder.set(markFieldName, 0);
+                result.add(builder.buildFeature(Attribute.makeUniqueId()));
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        signalIfNoParcelMarked(result, "markParcelsConnectedToRoad");
+        return result;
+    }
+
+    /**
+     * Mark the parcels that have no connection to the road network, represented either by the void of parcels or road lines (optional).
+     *
+     * @param parcels       Input parcel {@link SimpleFeatureCollection}
+     * @param block         {@link SimpleFeatureCollection} containing the morphological block. Can be generated with the
+     *                      {@link fr.ign.artiscales.tools.geometryGeneration.CityGeneration#createUrbanBlock(SimpleFeatureCollection)} method.
+     * @param roadFile      road File
+     * @param exclusionZone Zone to be excluded for not counting an empty parcel as a road
+     * @return {@link SimpleFeatureCollection} of the input parcels with marked parcels on the {@link #markFieldName} field.
+     */
+    public static SimpleFeatureCollection markParcelsNotConnectedToRoad(SimpleFeatureCollection parcels, SimpleFeatureCollection block, File roadFile, Geometry exclusionZone) throws IOException {
+        DataStore ds = CollecMgmt.getDataStore(roadFile);
+        SimpleFeatureCollection result = markParcelsNotConnectedToRoad(parcels, block, ds.getFeatureSource(ds.getTypeNames()[0]).getFeatures(), exclusionZone);
+        ds.dispose();
+        return result;
+    }
+
+    /**
+     * Mark the parcels that have no connection to the road network, represented either by the void of parcels or road lines (optional).
+     *
+     * @param parcels       Input parcel {@link SimpleFeatureCollection}
+     * @param block         {@link SimpleFeatureCollection} containing the morphological block. Can be generated with the
+     *                      {@link fr.ign.artiscales.tools.geometryGeneration.CityGeneration#createUrbanBlock(SimpleFeatureCollection)} method.
+     * @param road          road segments
+     * @param exclusionZone Zone to be excluded for not counting an empty parcel as a road
+     * @return {@link SimpleFeatureCollection} of the input parcels with marked parcels on the {@link #markFieldName} field.
+     */
+    public static SimpleFeatureCollection markParcelsNotConnectedToRoad(SimpleFeatureCollection parcels, SimpleFeatureCollection block, SimpleFeatureCollection road, Geometry exclusionZone) {
+        SimpleFeatureCollection roads = CollecTransform.selectIntersection(road, parcels);
+        SimpleFeatureBuilder builder = ParcelSchema.addMarkField(parcels.getSchema());
+        DefaultFeatureCollection result = new DefaultFeatureCollection();
+        try (SimpleFeatureIterator it = parcels.features()) {
+            while (it.hasNext()) {
+                SimpleFeature feat = it.next();
+                Geometry geomFeat = (Geometry) feat.getDefaultGeometry();
+                Schemas.setFieldsToSFB(builder, feat);
+                if (isAlreadyMarked(feat) != 0
+                        && !ParcelState.isParcelHasRoadAccess(Polygons.getPolygon(geomFeat), CollecTransform.selectIntersection(roads, geomFeat),
                         CollecTransform.fromPolygonSFCtoRingMultiLines(CollecTransform.selectIntersection(block, geomFeat)), exclusionZone))
                     builder.set(markFieldName, 1);
                 else

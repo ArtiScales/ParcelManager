@@ -36,6 +36,7 @@ public class PMScenario {
 
     /**
      * Create new Scenario
+     *
      * @param jSON json file containing every scenario's parameter and list of steps
      * @throws IOException tons of geo files reading.
      */
@@ -71,6 +72,7 @@ public class PMScenario {
                 String communityNumber = "";
                 String communityType = "";
                 String urbanFabric = "";
+                String selection = "";
                 while (token != JsonToken.END_ARRAY) {
                     token = parser.nextToken();
                     if (token == JsonToken.FIELD_NAME && parser.getCurrentName().equals("workflow")) {
@@ -108,6 +110,11 @@ public class PMScenario {
                         if (token == JsonToken.VALUE_STRING)
                             urbanFabric = parser.getText();
                     }
+                    if (token == JsonToken.FIELD_NAME && parser.getCurrentName().equals("selection")) {
+                        token = parser.nextToken();
+                        if (token == JsonToken.VALUE_STRING)
+                            selection = parser.getText();
+                    }
                     //specific options concerning workflows can be parsed here
                     if (token == JsonToken.FIELD_NAME && "optional".equals(parser.getCurrentName())) {
                         token = parser.nextToken();
@@ -135,10 +142,10 @@ public class PMScenario {
                     }
                     if (token == JsonToken.END_OBJECT) {
                         List<PMStep> list = getStepList();
-                        PMStep step = new PMStep(workflow, parcelProcess, genericZone, preciseZone, communityNumber, communityType, urbanFabric, generatePeripheralRoad, keepExistingRoad, adaptAreaOfUrbanFabric);
+                        PMStep step = new PMStep(workflow, parcelProcess, genericZone, preciseZone, communityNumber, communityType, urbanFabric, selection, generatePeripheralRoad, keepExistingRoad, adaptAreaOfUrbanFabric);
                         list.add(step);
                         setStepList(list);
-                        workflow = parcelProcess = genericZone = preciseZone = communityNumber = communityType = urbanFabric = "";
+                        workflow = parcelProcess = genericZone = preciseZone = communityNumber = communityType = urbanFabric = selection = "";
                     }
                 }
             }

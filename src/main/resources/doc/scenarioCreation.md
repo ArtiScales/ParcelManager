@@ -60,10 +60,13 @@ If a <b><i>genericZone</i></b> is set without <b><i>preciseZone</i></b>, all zon
 If we define a step for a <b><i>preciseZone</i></b> and a second step for the rest of its <b><i>genericZone</i></b>, the results of the <b><i>preciseZone</i></b> step will not be part of the second step simulation.
 Though, make sure that the <b><i>preciseZone</i></b> step is declared before the <b><i>genericZone</i></b>.
 
-
 It is possible to hack this method by using another kind of Geopackage and call it in the <b><i>zoningFile</i></b>, to change the default value of the <b><i>genericZone</i></b> field name with the <i>fields.GeneralFields.setZoneGenericNameField(String)</i> method, and to set a <b><i>genericZone</i></b> value. 
 
 Once a parcel has been simulated, its attribute field <i>SECTION</i> (see attribute policy) is marked with a long value, depending on the <b><i>workflow</i></b> used. By default, parcels cannot be marked again if they have been already simulated. It is possible to change this through the setting of the static boolean <b>MarkParcelAttributeFromPosition.postMark</b> to <b>true</b>.
+
+Other marking instructions can be set using parameter named <i>selection</i>. Implemented marking functions are :
+* ***parcelSmallerRatio, parcelBiggerRatio*** : will mark every parcels which area is under (respectively above) the maximal area of parcels from the Urban Fabric Profile * a given ratio. The given ratio must be wrote after this parameter, separated by a coma (i.e. <i>"selection":"parcelSmallerRatio,5"</i> will mark every parcels which area is under 5 times the maximal area for cuted parcels).
+* ***parcelSmaller, parcelBigger*** : will mark every parcels which area is under (respectively above) a fix area threshold.
 
 <h3>Workflows</h3>
 

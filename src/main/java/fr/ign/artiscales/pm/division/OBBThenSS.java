@@ -18,8 +18,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.List;
 
-import static fr.ign.artiscales.pm.workflow.Workflow.PROCESS;
-
 /**
  * apply SS division on OBB blocks.
  */
@@ -68,8 +66,8 @@ public class OBBThenSS extends Division {
     public static SimpleFeatureCollection applyOBBThenSS(SimpleFeature feat, SimpleFeatureCollection roads, ProfileUrbanFabric profile, List<LineString> block) {
         DefaultFeatureCollection result = new DefaultFeatureCollection();
 //        if (((Geometry) feat.getDefaultGeometry()).getArea() > profile.getMaximalArea()) {
-        SimpleFeatureCollection obbSplit = OBBDivision.splitParcel(feat, roads, profile.getMaximalArea() * profile.getApproxNumberParcelPerBlock(), profile.getMaxWidth(), 0.2, 0.1
-                , block, Math.max(profile.getLaneWidth() - 2 * profile.getStreetWidth(), 1), 0, Math.max(profile.getLaneWidth() - 2 * profile.getStreetWidth(), 1), true, 0);
+        SimpleFeatureCollection obbSplit = OBBDivision.splitParcel(feat, roads, profile.getMaximalArea() * profile.getApproxNumberParcelPerBlock(), profile.getMaxWidth(), 0.2, 0.1,
+                block, Math.max(profile.getStreetWidth() - 2 * profile.getLaneWidth(), 1), 0, Math.max(profile.getStreetWidth() - 2 * profile.getLaneWidth(), 1), true, 0);
         if (isDEBUG())
             try {
                 CollecMgmt.exportSFC(obbSplit, new File("/tmp/obb" + feat.getFeatureType().getTypeName() + Math.random()));
@@ -80,9 +78,9 @@ public class OBBThenSS extends Division {
         StraightSkeletonDivision.setGeneratePeripheralRoad(true);
         try (SimpleFeatureIterator it = obbSplit.features()) {
             while (it.hasNext())
-                result.addAll(StraightSkeletonDivision.runTopologicalStraightSkeletonParcelDecomposition(it.next(), roads, "NOM_VOIE_G", "IMPORTANCE", PROCESS.equals(DivisionType.SSoffset) ? profile.getMaxDepth() : 0,
-                        profile.getMaxDistanceForNearestRoad(), profile.getMinimalArea(), profile.getMinimalWidthContactRoad(), profile.getMaxWidth(),
-                        (profile.getNoise() == 0) ? 0.1 : profile.getNoise(), new MersenneTwister(1), profile.getLaneWidth(), "finalState"));
+                result.addAll(StraightSkeletonDivision.runTopologicalStraightSkeletonParcelDecomposition(it.next(), roads, "NOM_VOIE_G", "IMPORTANCE", 0,
+                        profile.getMaxDistanceForNearestRoad(), profile.getMinimalArea(), 12, profile.getMaxWidth(),
+                        (profile.getNoise() == 0) ? 0.1 : profile.getNoise(), new MersenneTwister(1), profile.getLaneWidth() , "finalState"));
         }
         MarkParcelAttributeFromPosition.setMarkFieldName("SPLIT");
         return result;
