@@ -33,13 +33,13 @@ object compSimuParcel {
                      approxNumberParcelPerBlock: Int,
                      minimalWidthContactRoad: Double,
                      harmonyCoeff: Double,
-                     noise: Double,
+                     irregularityCoeff: Double,
                      processType: Int
                     ): (Double, Int, Double) = {
     //             ) : (Int, Double) = {
     val profile = new ProfileUrbanFabric("calibration", maximalArea, minimalArea, minimalWidthContactRoad,
       laneWidth, streetWidth, streetLane, blockShape, lenDriveway,
-      maxDepth, maxDistanceForNearestRoad, maxWidth, approxNumberParcelPerBlock, harmonyCoeff, noise)
+      maxDepth, maxDistanceForNearestRoad, maxWidth, approxNumberParcelPerBlock, harmonyCoeff, irregularityCoeff)
     CompareSimulatedWithRealParcelsOM.setProcess(processType)
     val parcelSimuled = (new ZoneDivision()).zoneDivision(initialZone: File, parcelFile: File, outFolder: File, profile: ProfileUrbanFabric, roadFile: File, buildingFile: File)
 
@@ -63,11 +63,11 @@ object compSimuParcel {
                        maxWidth: Double,
                        maxDistanceForNearestRoad: Double,
                        minimalWidthContactRoad: Double,
-                       noise: Double
+                       irregularityCoeff: Double
                       ): (Double, Int, Double) = {
     //             ) : (Int, Double) = {
     val profile = new ProfileUrbanFabric("calibration", minimalArea, maxDepth, maxDistanceForNearestRoad,
-      minimalWidthContactRoad, maxWidth, laneWidth, noise)
+      minimalWidthContactRoad, maxWidth, laneWidth, irregularityCoeff)
     Workflow.PROCESS = "SS"
     val parcelSimuled = (new ZoneDivision()).zoneDivision(initialZone: File, parcelFile: File, outFolder: File, profile: ProfileUrbanFabric, roadFile: File, buildingFile: File)
 
@@ -97,11 +97,11 @@ object compSimuParcel {
                                     approxNumberParcelPerBlock: Int,
                                     minimalWidthContactRoad: Double,
                                     harmonyCoeff: Double,
-                                    noise: Double,
+                                    irregularityCoeff: Double,
                                    ): (Double, Int, Double) = {
     val profile = new ProfileUrbanFabric("calibration", maximalArea, minimalArea, minimalWidthContactRoad,
       laneWidth, streetWidth, streetLane, blockShape, 0,
-      maxDepth, maxDistanceForNearestRoad, maxWidth, approxNumberParcelPerBlock, harmonyCoeff, noise)
+      maxDepth, maxDistanceForNearestRoad, maxWidth, approxNumberParcelPerBlock, harmonyCoeff, irregularityCoeff)
     Workflow.PROCESS = "OBBThenSS"
     val parcelSimuled = (new ZoneDivision()).zoneDivision(initialZone: File, parcelFile: File, outFolder: File, profile: ProfileUrbanFabric, roadFile: File, buildingFile: File)
 
@@ -126,11 +126,11 @@ object compSimuParcel {
                         streetWidth: Double,
                         minimalWidthContactRoad: Double,
                         harmonyCoeff: Double,
-                        noise: Double
+                        irregularityCoeff: Double
                        ): (Double, Int, Double) = {
     //             ) : (Int, Double) = {
     val profile = new ProfileUrbanFabric("calibration", maximalArea, minimalArea,
-      minimalWidthContactRoad, streetWidth, streetLane, laneWidth, blockShape, harmonyCoeff, noise)
+      minimalWidthContactRoad, streetWidth, streetLane, laneWidth, blockShape, harmonyCoeff, irregularityCoeff)
     Workflow.PROCESS = "OBB"
     val parcelSimuled = (new ZoneDivision()).zoneDivision(initialZone: File, parcelFile: File, outFolder: File, profile: ProfileUrbanFabric, roadFile: File, null)
 

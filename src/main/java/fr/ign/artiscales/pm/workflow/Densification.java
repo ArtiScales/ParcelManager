@@ -47,14 +47,14 @@ public class Densification extends Workflow {
 //    public static void main(String[] args) throws Exception {
 //        long start = System.currentTimeMillis();
 //        File rootFolder = new File("src/main/resources/TestScenario/");
-//        File parcelFile = new File(rootFolder, "InputData/parcel.gpkg");
+//        File parcelFile = new File("/tmp/parcels.gpkg");
 //        File buildingFile = new File(rootFolder, "InputData/building.gpkg");
 //        File roadFile = new File(rootFolder, "InputData/road.gpkg");
 //        File outFolder = new File("/tmp/densification");
 //        outFolder.mkdirs();
-//        ParcelSchema.setMinParcelCommunityField("CODE_COM");
+//        ParcelSchema.setParcelCommunityField("CODE_COM");
 //        DataStore pDS = CollecMgmt.getDataStore(parcelFile);
-//        SimpleFeatureCollection parcels = MarkParcelAttributeFromPosition.markRandomParcels(pDS.getFeatureSource(pDS.getTypeNames()[0]).getFeatures(), 20, false);
+//        SimpleFeatureCollection parcels = MarkParcelAttributeFromPosition.markParcelsSup(pDS.getFeatureSource(pDS.getTypeNames()[0]).getFeatures(), 2000);
 //        CollecMgmt.exportSFC((new Densification()).densification(parcels, CityGeneration.createUrbanBlock(parcels), outFolder, buildingFile, roadFile,
 //                        ProfileUrbanFabric.convertJSONtoProfile(new File("src/main/resources/TestScenario/profileUrbanFabric/smallHouse.json")), false),
 //                new File(outFolder, "result"));
@@ -88,7 +88,7 @@ public class Densification extends Workflow {
 
     /**
      * Apply the densification workflow on a set of marked parcels.
-     * TODO improvements: if a densification is impossible (mainly for building constructed on the both cut parcel reason), reiterate the flag cut division with noise. The cut may work better !
+     * TODO improvements: if a densification is impossible (mainly for building constructed on the both cut parcel reason), reiterate the flag cut division with irregularityCoeff. The cut may work better !
      *
      * @param parcelCollection    {@link SimpleFeatureCollection} of marked parcels.
      * @param blockCollection     {@link SimpleFeatureCollection} containing the morphological block. Can be generated with the
@@ -107,7 +107,7 @@ public class Densification extends Workflow {
      * @throws IOException Reading and writing geo files
      */
     public SimpleFeatureCollection densification(SimpleFeatureCollection parcelCollection, SimpleFeatureCollection blockCollection, File outFolder,
-                                                 File buildingFile, File roadFile, double harmonyCoeff, double noise, double maximalArea, double minimalArea,
+                                                 File buildingFile, File roadFile, double harmonyCoeff, double irregularityCoeff, double maximalArea, double minimalArea,
                                                  double minContactWithRoad, double lenDriveway, boolean allowIsolatedParcel, Geometry exclusionZone) throws IOException {
         // if parcels doesn't contains the markParcelAttribute field or have no marked parcels
         if (MarkParcelAttributeFromPosition.isNoParcelMarked(parcelCollection)) {
@@ -140,13 +140,13 @@ public class Densification extends Workflow {
                     List<LineString> lines = CollecTransform.fromPolygonSFCtoListRingLines(blockCollection.subCollection(ff.bbox(ff.property(initialParcel.getFeatureType().getGeometryDescriptor().getLocalName()), initialParcel.getBounds())));
                     // we get the needed block lines
                     // we flag cut the parcel (differently regarding whether they have optional data or not)
-                    SimpleFeatureCollection unsortedFlagParcel = FlagDivision.doFlagDivision(initialParcel, road, building, harmonyCoeff, noise, maximalArea, minContactWithRoad, lenDriveway, lines, exclusionZone);
+                    SimpleFeatureCollection unsortedFlagParcel = FlagDivision.doFlagDivision(initialParcel, road, building, harmonyCoeff, irregularityCoeff, maximalArea, minContactWithRoad, lenDriveway, lines, exclusionZone);
                     // we check if the cut parcels are meeting the expectations
                     boolean add = true;
                     // If it returned a collection of 1, it was impossible to flag split the parcel. If allowed, we cut the parcel with regular OBB
                     if (unsortedFlagParcel.size() == 1)
                         if (allowIsolatedParcel)
-                            unsortedFlagParcel = OBBDivision.splitParcels(initialParcel, maximalArea, minContactWithRoad, 0.5, noise, lines, 0, true, 99);
+                            unsortedFlagParcel = OBBDivision.splitParcels(initialParcel, maximalArea, minContactWithRoad, 0.5, irregularityCoeff, lines, 0, true, 99);
                         else
                             add = false;
                     // If the flag cut parcel size is too small, we won't add anything
@@ -272,9 +272,9 @@ public class Densification extends Workflow {
      * {@link fr.ign.artiscales.pm.parcelFunction.ParcelSchema#getSFBMinParcel()} schema. * @throws Exception
      */
     public SimpleFeatureCollection densification(SimpleFeatureCollection parcelCollection, SimpleFeatureCollection blockCollection, File outFolder,
-                                                 File buildingFile, File roadFile, double harmonyCoeff, double noise, double maximalAreaSplitParcel, double minimalAreaSplitParcel,
+                                                 File buildingFile, File roadFile, double harmonyCoeff, double irregularityCoeff, double maximalAreaSplitParcel, double minimalAreaSplitParcel,
                                                  double minimalWidthContactRoad, double lenDriveway, boolean allowIsolatedParcel) throws Exception {
-        return densification(parcelCollection, blockCollection, outFolder, buildingFile, roadFile, harmonyCoeff, noise, maximalAreaSplitParcel,
+        return densification(parcelCollection, blockCollection, outFolder, buildingFile, roadFile, harmonyCoeff, irregularityCoeff, maximalAreaSplitParcel,
                 minimalAreaSplitParcel, minimalWidthContactRoad, lenDriveway, allowIsolatedParcel, null);
     }
 
@@ -297,9 +297,9 @@ public class Densification extends Workflow {
      * {@link fr.ign.artiscales.pm.parcelFunction.ParcelSchema#getSFBMinParcel()} schema. * @throws Exception
      */
     public SimpleFeatureCollection densification(SimpleFeatureCollection parcelCollection, SimpleFeatureCollection blockCollection, File outFolder,
-                                                 File buildingFile, double harmonyCoeff, double noise, double maximalAreaSplitParcel, double minimalAreaSplitParcel,
+                                                 File buildingFile, double harmonyCoeff, double irregularityCoeff, double maximalAreaSplitParcel, double minimalAreaSplitParcel,
                                                  double minimalWidthContactRoad, double lenDriveway, boolean allowIsolatedParcel) throws Exception {
-        return densification(parcelCollection, blockCollection, outFolder, buildingFile, null, harmonyCoeff, noise, maximalAreaSplitParcel,
+        return densification(parcelCollection, blockCollection, outFolder, buildingFile, null, harmonyCoeff, irregularityCoeff, maximalAreaSplitParcel,
                 minimalAreaSplitParcel, minimalWidthContactRoad, lenDriveway, allowIsolatedParcel);
     }
 
@@ -345,7 +345,7 @@ public class Densification extends Workflow {
      */
     public SimpleFeatureCollection densification(SimpleFeatureCollection parcelCollection, SimpleFeatureCollection blockCollection, File outFolder,
                                                  File buildingFile, File roadFile, ProfileUrbanFabric profile, boolean allowIsolatedParcel, Geometry exclusionZone) throws IOException {
-        return densification(parcelCollection, blockCollection, outFolder, buildingFile, roadFile, profile.getHarmonyCoeff(), profile.getNoise(),
+        return densification(parcelCollection, blockCollection, outFolder, buildingFile, roadFile, profile.getHarmonyCoeff(), profile.getIrregularityCoeff(),
                 profile.getMaximalArea(), profile.getMinimalArea(), profile.getMinimalWidthContactRoad(), profile.getLenDriveway(),
                 allowIsolatedParcel, exclusionZone);
     }
@@ -378,7 +378,7 @@ public class Densification extends Workflow {
         if (isDEBUG())
             CollecMgmt.exportSFC(infParcels, new File(outFolder, "densificationOrNeighborhood-Marked"));
         SimpleFeatureCollection parcelDensified = densification(infParcels,
-                blockCollection, outFolder, buildingFile, roadFile, profile.getHarmonyCoeff(), profile.getNoise(), profile.getMaximalArea(),
+                blockCollection, outFolder, buildingFile, roadFile, profile.getHarmonyCoeff(), profile.getIrregularityCoeff(), profile.getMaximalArea(),
                 profile.getMinimalArea(), profile.getMinimalWidthContactRoad(), profile.getLenDriveway(), allowIsolatedParcel, exclusionZone);
         if (isDEBUG())
             CollecMgmt.exportSFC(parcelDensified, new File(outFolder, "densificationOrNeighborhood-Dens"));
@@ -395,10 +395,10 @@ public class Densification extends Workflow {
             CollecMgmt.exportSFC(supParcels, new File(outFolder, "densificationOrNeighborhood-ReMarked"));
 
 //        if (!MarkParcelAttributeFromPosition.isNoParcelMarked(supParcels)) {
-            profile.setStreetWidth(profile.getLaneWidth());
-            parcelDensified = (new ConsolidationDivision()).consolidationDivision(supParcels, roadFile, outFolder, profile);
-            if (isDEBUG())
-                CollecMgmt.exportSFC(parcelDensified, new File(outFolder, "densificationOrNeighborhood-Neigh"));
+        profile.setStreetWidth(profile.getLaneWidth());
+        parcelDensified = (new ConsolidationDivision()).consolidationDivision(supParcels, roadFile, outFolder, profile);
+        if (isDEBUG())
+            CollecMgmt.exportSFC(parcelDensified, new File(outFolder, "densificationOrNeighborhood-Neigh"));
 //        }
         return parcelDensified;
     }

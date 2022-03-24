@@ -350,7 +350,7 @@ public class ZoneDivision extends Workflow {
                 switch (PROCESS) {
                     case OBB:
                         ((DefaultFeatureCollection) splitParcels)
-                                .addAll(OBBDivision.splitParcel(zone, roads, profile.getMaximalArea(), profile.getMinimalWidthContactRoad(), profile.getHarmonyCoeff(), profile.getNoise(),
+                                .addAll(OBBDivision.splitParcel(zone, roads, profile.getMaximalArea(), profile.getMinimalWidthContactRoad(), profile.getHarmonyCoeff(), profile.getIrregularityCoeff(),
                                         CollecTransform.fromPolygonSFCtoListRingLines(CollecTransform.selectIntersection(blockCollection, (Geometry) zone.getDefaultGeometry())),
                                         profile.getLaneWidth(), profile.getStreetLane(), profile.getStreetWidth(), true, profile.getBlockShape()));
                         break;
@@ -360,7 +360,7 @@ public class ZoneDivision extends Workflow {
                         ((DefaultFeatureCollection) splitParcels)
                                 .addAll(StraightSkeletonDivision.runTopologicalStraightSkeletonParcelDecomposition(zone, roads,
                                         "NOM_VOIE_G", "IMPORTANCE", PROCESS.equals(DivisionType.SSoffset) ? profile.getMaxDepth() : 0, profile.getMaxDistanceForNearestRoad(), profile.getMinimalArea(), profile.getMinimalWidthContactRoad(), profile.getMaxWidth(),
-                                        profile.getNoise() == 0 ? 0.1 : profile.getNoise(), new MersenneTwister(42), profile.getLaneWidth(), ParcelSchema.getParcelID(zone)));
+                                        profile.getIrregularityCoeff() == 0 ? 0.1 : profile.getIrregularityCoeff(), new MersenneTwister(42), profile.getLaneWidth(), ParcelSchema.getParcelID(zone)));
                         break;
                     case OBBThenSS:
                         ((DefaultFeatureCollection) splitParcels)
@@ -370,7 +370,7 @@ public class ZoneDivision extends Workflow {
                         break;
                     case FlagDivision:
                         ((DefaultFeatureCollection) splitParcels)
-                                .addAll(FlagDivision.doFlagDivision(zone, roads, buildings, profile.getHarmonyCoeff(), profile.getNoise(),
+                                .addAll(FlagDivision.doFlagDivision(zone, roads, buildings, profile.getHarmonyCoeff(), profile.getIrregularityCoeff(),
                                         profile.getMaximalArea(), profile.getMinimalWidthContactRoad(), profile.getLenDriveway(), extLines, exclusionZone));
                         break;
                     case MS:
@@ -394,6 +394,7 @@ public class ZoneDivision extends Workflow {
             while (itParcel.hasNext()) {
                 SimpleFeature parcel = itParcel.next();
                 Geometry parcelGeom = (Geometry) parcel.getDefaultGeometry();
+                Schemas.setFieldsToSFB(finalParcelBuilder, CollecTransform.selectWhichIntersectMost(parcels, parcelGeom));
                 finalParcelBuilder.set(geomName, parcelGeom);
                 // get the section name of the corresponding zone
                 finalParcelBuilder.set(ParcelSchema.getParcelSectionField(), Arrays.stream(goOdZone.toArray(new SimpleFeature[0])).filter(z -> ((Geometry) z.getDefaultGeometry()).buffer(2).contains(parcelGeom)).map(z -> (String) z.getAttribute(ParcelSchema.getParcelSectionField())).findFirst().orElse(""));

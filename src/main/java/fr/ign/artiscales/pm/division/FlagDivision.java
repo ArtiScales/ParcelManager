@@ -104,7 +104,7 @@ public class FlagDivision extends Division {
      * @throws IOException reading buildingFile
      */
     public static SimpleFeatureCollection doFlagDivision(SimpleFeatureCollection inputCollection, File buildingFile, File roadFile, ProfileUrbanFabric profile, SimpleFeatureCollection block, Geometry exclusionZone) throws IOException {
-        return doFlagDivision(inputCollection, buildingFile, roadFile, profile.getHarmonyCoeff(), profile.getNoise(), profile.getMaximalArea(), profile.getMinimalWidthContactRoad(), profile.getLenDriveway(), block, exclusionZone);
+        return doFlagDivision(inputCollection, buildingFile, roadFile, profile.getHarmonyCoeff(), profile.getIrregularityCoeff(), profile.getMaximalArea(), profile.getMinimalWidthContactRoad(), profile.getLenDriveway(), block, exclusionZone);
     }
 
     /**
@@ -114,7 +114,7 @@ public class FlagDivision extends Division {
      * @param buildingFile            building that could stop the creation of a driveway
      * @param roadFile                complementary roads (as line and not as parcel void)
      * @param harmony                 OBB algorithm parameter to allow the rotation of the bounding box if the ratio between the box's length and width is higher to this coefficient. Must be between 0 and 1.
-     * @param noise                   irregularity into parcel division
+     * @param irregularityCoeff       irregularity into parcel division
      * @param maximalArea             threshold of parcel area above which the OBB algorithm stops to decompose parcels*
      * @param exclusionZone           Exclude a zone that won't be considered as a potential road connection. Useful to represent border of the parcel plan. Can be null.
      * @param block                   SimpleFeatureCollection containing the morphological block. Can be generated with the {@link fr.ign.artiscales.tools.geometryGeneration.CityGeneration#createUrbanBlock(SimpleFeatureCollection)} method.
@@ -123,7 +123,7 @@ public class FlagDivision extends Division {
      * @return collection of cut parcels
      * @throws IOException reading buildingFile
      */
-    public static SimpleFeatureCollection doFlagDivision(SimpleFeatureCollection inputCollection, File buildingFile, File roadFile, double harmony, double noise, double maximalArea, double minimalWidthContactRoad, double drivewayWidth, SimpleFeatureCollection block, Geometry exclusionZone) throws IOException {
+    public static SimpleFeatureCollection doFlagDivision(SimpleFeatureCollection inputCollection, File buildingFile, File roadFile, double harmony, double irregularityCoeff, double maximalArea, double minimalWidthContactRoad, double drivewayWidth, SimpleFeatureCollection block, Geometry exclusionZone) throws IOException {
         if (!CollecMgmt.isCollecContainsAttribute(inputCollection, MarkParcelAttributeFromPosition.getMarkFieldName()) || MarkParcelAttributeFromPosition.isNoParcelMarked(inputCollection)) {
             if (isDEBUG())
                 System.out.println("doFlagDivision: no parcel marked");
@@ -144,7 +144,7 @@ public class FlagDivision extends Division {
                 result.addAll(doFlagDivision(feat,
                         roadFile != null ? DataUtilities.collection(CollecTransform.selectIntersection(roadDS.getFeatureSource(roadDS.getTypeNames()[0]).getFeatures(), ((Geometry) feat.getDefaultGeometry()).buffer(10))) : null,
                         buildingFile != null ? DataUtilities.collection(CollecTransform.selectIntersection(buildingDS.getFeatureSource(buildingDS.getTypeNames()[0]).getFeatures(), ((Geometry) feat.getDefaultGeometry()).buffer(10))) : null,
-                        harmony, noise, maximalArea, minimalWidthContactRoad, drivewayWidth, CollecTransform.fromPolygonSFCtoListRingLines(block.subCollection(ff.bbox(
+                        harmony, irregularityCoeff, maximalArea, minimalWidthContactRoad, drivewayWidth, CollecTransform.fromPolygonSFCtoListRingLines(block.subCollection(ff.bbox(
                                 ff.property(inputCollection.getSchema().getGeometryDescriptor().getLocalName()), inputCollection.getBounds()))), exclusionZone));
             }
         }
@@ -163,7 +163,7 @@ public class FlagDivision extends Division {
      * @param sf                      input parcel to flag split
      * @param building                buildings that could stop the creation of a driveway
      * @param harmony                 OBB algorithm parameter to allow the rotation of the bounding box if the ratio between the box's length and width is higher to this coefficient. Must be between 0 and 1.
-     * @param noise                   irregularity into parcel division
+     * @param irregularityCoeff       irregularity into parcel division
      * @param maximalArea             threshold of parcel area above which the OBB algorithm stops to decompose parcels
      * @param road                    complementary roads (as line and not as parcel void)
      * @param exclusionZone           Exclude a zone that won't be considered as a potential road connection. Useful to represent border of the parcel plan. Can be null.
@@ -172,7 +172,7 @@ public class FlagDivision extends Division {
      * @param minimalWidthContactRoad Width of the contact between parcel and road under which the parcel won't be cut anymore
      * @return the flag cut parcel if possible, the input parcel otherwise. Schema of the returned parcel is the same as input + a simulated field.
      */
-    public static SimpleFeatureCollection doFlagDivision(SimpleFeature sf, SimpleFeatureCollection road, SimpleFeatureCollection building, double harmony, double noise,
+    public static SimpleFeatureCollection doFlagDivision(SimpleFeature sf, SimpleFeatureCollection road, SimpleFeatureCollection building, double harmony, double irregularityCoeff,
                                                          double maximalArea, double minimalWidthContactRoad, double drivewayWidth, List<LineString> extLines, Geometry exclusionZone) {
         DefaultFeatureCollection result = new DefaultFeatureCollection();
         Polygon p = Polygons.getPolygon((Geometry) sf.getDefaultGeometry());
@@ -190,7 +190,7 @@ public class FlagDivision extends Division {
         if (isDEBUG())
             System.out.println("flagSplit parcel " + sf);
         // Determination of splitting polygon (it is a splitting line in the article)
-        List<Polygon> splittingPolygon = OBBDivision.computeSplittingPolygon(p, extLines, true, harmony, noise, 0.0, 0, 0.0, 0, 0);
+        List<Polygon> splittingPolygon = OBBDivision.computeSplittingPolygon(p, extLines, true, harmony, irregularityCoeff, 0.0, 0, 0.0, 0, 0);
         // Split into polygon
         List<Polygon> splitPolygon = OBBDivision.split(p, splittingPolygon);
         // If a parcel has no road access, there is a probability to make a flag split
@@ -217,7 +217,7 @@ public class FlagDivision extends Division {
         for (Polygon pol : splitPolygon) {
             Schemas.setFieldsToSFB(builder, sf);
             builder.set(sf.getFeatureType().getGeometryDescriptor().getLocalName(), pol);
-            result.addAll(doFlagDivision(builder.buildFeature(Attribute.makeUniqueId()), r, building, harmony, noise, maximalArea, minimalWidthContactRoad, drivewayWidth, extLines, exclusionZone));
+            result.addAll(doFlagDivision(builder.buildFeature(Attribute.makeUniqueId()), r, building, harmony, irregularityCoeff, maximalArea, minimalWidthContactRoad, drivewayWidth, extLines, exclusionZone));
         }
         return result;
     }
@@ -298,6 +298,7 @@ public class FlagDivision extends Division {
     /**
      * Generate a list of candidate for creating roads. The pair is composed of a linestring that may be used to generate the road and the parcel on which it may be built.
      * todo replace buffers and contains with dwithin ?!
+     *
      * @param currentPoly           Polygon to link to the road
      * @param lPolygonWithRoadAcces other polygons surrounding the #currentPoly
      * @return A list of pairs:<ul>
@@ -318,7 +319,6 @@ public class FlagDivision extends Division {
             Lines.regroupLineStrings(Lines.getSegments(polyWithRoadAcces.getExteriorRing()).stream()
                     .filter(x -> (!buffer.contains(x)) && !Lines.getListLineStringAsMultiLS(ext, currentPoly.getFactory()).buffer(0.1).contains(x) && !isRoadPolygonIntersectsLine(roads, x))
                     .collect(Collectors.toList()), currentPoly.getFactory()).forEach(x -> listMap.add(new ImmutablePair<>(x, polyWithRoadAcces)));
-
         }
         return listMap;
     }

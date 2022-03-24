@@ -21,9 +21,9 @@ val harmonyCoeff = Val[Double]
 val hausdorfDistance = Val[Double]
 val nbParcelDiff = Val[Int]
 val areaParcelDiff = Val[Double]
-val noise = Val[Double]
+val irregularityCoeff = Val[Double]
 
-val step1 = ScalaTask("val (hausdorfDistance,nbParcelDiff,areaParcelDiff) = withThreadClassLoader(classLoader(fr.ign.artiscales.pm.compSimuParcel))(fr.ign.artiscales.pm.compSimuParcel.ZoneDivisionOBBOM(parcelFile, initialZone, parcelEvolved, roadFile, outFolder, maximalArea, minimalArea, blockShape ,streetLane, laneWidth,streetWidth, minimalWidthContactRoad, harmonyCoeff, noise))") set (
+val step1 = ScalaTask("val (hausdorfDistance,nbParcelDiff,areaParcelDiff) = withThreadClassLoader(classLoader(fr.ign.artiscales.pm.compSimuParcel))(fr.ign.artiscales.pm.compSimuParcel.ZoneDivisionOBBOM(parcelFile, initialZone, parcelEvolved, roadFile, outFolder, maximalArea, minimalArea, blockShape ,streetLane, laneWidth,streetWidth, minimalWidthContactRoad, harmonyCoeff, irregularityCoeff))") set (
 //val step1 = ScalaTask("val (nbParcelDiff,areaParcelDiff) = withThreadClassLoader(classLoader(fr.ign.artiscales.compSimuParcel))(fr.ign.artiscales.compSimuParcel.step1(zoneFile, parcelFile, parcelEvolved, outFolder, maximalArea, decompositionLevelWithoutStreet ,largeStreetLevel,streetWidth,largeStreetWidth, minimalWidthContactRoad , harmonyCoeff))") set (
     plugins += pluginsOf(fr.ign.artiscales.pm.compSimuParcel),
     initialZone := workDirectory / "donnee" / "zone.gpkg",
@@ -33,7 +33,7 @@ val step1 = ScalaTask("val (hausdorfDistance,nbParcelDiff,areaParcelDiff) = with
     outFolder := workDirectory / "out",
     harmonyCoeff := 0.5,
     inputs += (parcelFile, initialZone, parcelEvolved, roadFile, outFolder, maximalArea, minimalArea, blockShape ,streetLane, 
-    laneWidth,streetWidth, minimalWidthContactRoad, harmonyCoeff, noise), 
+    laneWidth,streetWidth, minimalWidthContactRoad, harmonyCoeff, irregularityCoeff),
     outputs += (hausdorfDistance,nbParcelDiff,areaParcelDiff)
 //      outputs += (nbParcelDiff,areaParcelDiff)
     )
@@ -50,7 +50,7 @@ val evol = NSGA2Evolution(
     streetLane in (0 to 6),
     laneWidth in (3.0 to 20.0),
     streetWidth in (10.0 to 30.0),
-    noise in (0.1 to 1),
+    irregularityCoeff in (0.1 to 1),
 ),
   termination = 450,
   parallelism = 8

@@ -89,8 +89,8 @@ public class CompareSimulatedWithRealParcels extends UseCase {
         DataStore dsRoad = CollecMgmt.getDataStore(roadFile);
 
         SingleParcelStat.writeStatSingleParcel(
-                MarkParcelAttributeFromPosition.markWorkflowSimulatedParcel(dsSimu.getFeatureSource(dsSimu.getTypeNames()[0]).getFeatures(), "densification")
-                , dsRoad.getFeatureSource(dsRoad.getTypeNames()[0]).getFeatures(), dsReal.getFeatureSource(dsReal.getTypeNames()[0]).getFeatures(), new File(outFolder, "DensifiedParcelStats.csv"));
+                MarkParcelAttributeFromPosition.markWorkflowSimulatedParcel(dsSimu.getFeatureSource(dsSimu.getTypeNames()[0]).getFeatures(), "densification"),
+                dsRoad.getFeatureSource(dsRoad.getTypeNames()[0]).getFeatures(), dsReal.getFeatureSource(dsReal.getTypeNames()[0]).getFeatures(), new File(outFolder, "DensifiedParcelStats.csv"));
 
         dsReal.dispose();
         dsSimu.dispose();

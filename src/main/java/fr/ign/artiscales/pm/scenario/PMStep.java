@@ -245,7 +245,7 @@ public class PMStep {
                 case densification:
                     parcelCut.addAll((new Densification()).densification(parcelMarkedComm,
                             CityGeneration.createUrbanBlock(parcelMarkedComm), OUTFOLDER, BUILDINGFILE, ROADFILE, profile.getHarmonyCoeff(),
-                            profile.getNoise(), profile.getMaximalArea(), profile.getMinimalArea(), profile.getMinimalWidthContactRoad(),
+                            profile.getIrregularityCoeff(), profile.getMaximalArea(), profile.getMinimalArea(), profile.getMinimalWidthContactRoad(),
                             profile.getLenDriveway(), isAllowIsolatedParcel(), CityGeneration.createBufferBorder(parcelMarkedComm)));
                     break;
                 case consolidationDivision:

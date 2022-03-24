@@ -219,18 +219,18 @@ public class PMScenario {
                 profileFolder);
     }
 
-    public static void main(String[] args) throws Exception {
-        PMScenario.setDEBUG(false);
-        PMScenario.setSaveIntermediateResult(false);
-        PMScenario pm = new PMScenario(new File("src/main/resources/TestScenario/scenarioOBB.json"));
-        pm.executeStep();
-        PMScenario pm2 = new PMScenario(new File("src/main/resources/TestScenario/scenarioStraightSkeleton.json"));
-        pm2.executeStep();
-        PMScenario pm3 = new PMScenario(new File("src/main/resources/TestScenario/scenarioStraightSkeletonPeripheralRoad.json"));
-        pm3.executeStep();
-        PMScenario pm4 = new PMScenario(new File("src/main/resources/TestScenario/scenarioOffset.json"));
-        pm4.executeStep();
-    }
+//    public static void main(String[] args) throws Exception {
+//        PMScenario.setDEBUG(false);
+//        PMScenario.setSaveIntermediateResult(false);
+//        PMScenario pm = new PMScenario(new File("src/main/resources/TestScenario/scenarioOBB.json"));
+//        pm.executeStep();
+//        PMScenario pm2 = new PMScenario(new File("src/main/resources/TestScenario/scenarioStraightSkeleton.json"));
+//        pm2.executeStep();
+//        PMScenario pm3 = new PMScenario(new File("src/main/resources/TestScenario/scenarioStraightSkeletonPeripheralRoad.json"));
+//        pm3.executeStep();
+//        PMScenario pm4 = new PMScenario(new File("src/main/resources/TestScenario/scenarioOffset.json"));
+//        pm4.executeStep();
+//    }
 
     /**
      * Are we exporting the intermediate results ? Will also set this statut to {@link Workflow} and {@link fr.ign.artiscales.pm.division.Division}.

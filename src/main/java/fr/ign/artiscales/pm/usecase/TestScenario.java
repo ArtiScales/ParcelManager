@@ -129,7 +129,7 @@ public class TestScenario extends UseCase {
             SimpleFeatureCollection parcelDensified = (new Densification()).densification(
                     MarkParcelAttributeFromPosition.markParcelIntersectPreciseZoningType(cutedNormalZone, "U", "UB", zoningFile),
                     CityGeneration.createUrbanBlock(cutedNormalZone, true), outFolder, buildingFile, roadFile, profileSmallHouse.getHarmonyCoeff(),
-                    profileSmallHouse.getNoise(), profileSmallHouse.getMaximalArea(), profileSmallHouse.getMinimalArea(),
+                    profileSmallHouse.getIrregularityCoeff(), profileSmallHouse.getMaximalArea(), profileSmallHouse.getMinimalArea(),
                     profileSmallHouse.getLenDriveway(), profileSmallHouse.getLenDriveway(), allowIsolatedParcel);
             CollecMgmt.exportSFC(parcelDensified, new File(outFolder, "parcelDensification.gpkg"));
 //            List<SimpleFeature> densifiedParcels = Arrays.stream(parcelDensified.toArray(new SimpleFeature[0])).filter(sf -> (new Densification()).isNewSection(sf)).collect(Collectors.toList());
