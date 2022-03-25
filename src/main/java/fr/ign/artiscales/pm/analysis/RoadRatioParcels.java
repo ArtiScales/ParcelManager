@@ -34,8 +34,6 @@ import java.util.HashMap;
  */
 public class RoadRatioParcels {
 
-    private static boolean overwrite = true;
-
     // public static void main(String[] args) throws IOException {
     // long start = System.currentTimeMillis();
     // File rootFolder = new File("src/main/resources/TestScenario/");
@@ -53,7 +51,7 @@ public class RoadRatioParcels {
 
     /**
      * Calculate the ratio between the parcel area and the total area of a zone. It express the quantity of not parcel land, which could be either streets or public spaces.
-     * Calculate zones and then send the whole to the {@link #roadRatioZone(SimpleFeatureCollection, SimpleFeatureCollection, String, File, File)} method.
+     * Calculate zones and then send the whole to the {@link #roadRatioZone(SimpleFeatureCollection, SimpleFeatureCollection, String, File, boolean, File)} method.
      *
      * @param initialMarkedParcel {@link SimpleFeatureCollection} of the initial set of parcels which are marked if they had to simulated. Marks could be made with the methods contained in the
      *                            class {@link fr.ign.artiscales.pm.parcelFunction.MarkParcelAttributeFromPosition}. The field attribute is named <i>SPLIT</i> by default. It is possible to change
@@ -62,9 +60,10 @@ public class RoadRatioParcels {
      * @param folderOutStat       folder to store the results
      * @param roadFile            the road geo file
      * @param legend              name of the zone
+     * @param overwrite           Overwrite the created statistical tab
      * @throws IOException reading geo files and exporting csv
      */
-    public static void roadRatioParcels(SimpleFeatureCollection initialMarkedParcel, SimpleFeatureCollection cutParcel, String legend, File folderOutStat, File roadFile) throws IOException {
+    public static void roadRatioParcels(SimpleFeatureCollection initialMarkedParcel, SimpleFeatureCollection cutParcel, String legend, File folderOutStat, boolean overwrite, File roadFile) throws IOException {
         // We construct zones to analyze the street ratio for each operations.
         DefaultFeatureCollection zone = new DefaultFeatureCollection();
         FilterFactory2 ff = CommonFactoryFinder.getFilterFactory2();
@@ -94,7 +93,7 @@ public class RoadRatioParcels {
             }
             zone.add(sfBuilderZone.buildFeature(Attribute.makeUniqueId()));
         }
-        roadRatioZone(zone, cutParcel, legend, folderOutStat, roadFile);
+        roadRatioZone(zone, cutParcel, legend, folderOutStat, overwrite, roadFile);
     }
 
     /**
@@ -104,11 +103,12 @@ public class RoadRatioParcels {
      * @param zone          {@link SimpleFeatureCollection} of initial zones
      * @param cutParcel     {@link SimpleFeatureCollection} of the cuted parcels
      * @param folderOutStat folder to store the results
+     * @param overwrite     Overwrite the created statistical tab
      * @param roadFile      the road geo file
      * @param legend        name of the zone
      * @throws IOException reading geo files and exporting csv
      */
-    public static void roadRatioZone(SimpleFeatureCollection zone, SimpleFeatureCollection cutParcel, String legend, File folderOutStat, File roadFile) throws IOException {
+    public static void roadRatioZone(SimpleFeatureCollection zone, SimpleFeatureCollection cutParcel, String legend, File folderOutStat, boolean overwrite, File roadFile) throws IOException {
         System.out.println("++++++++++Road Ratios++++++++++");
         HashMap<String, String[]> stat = new HashMap<>();
 
@@ -158,8 +158,7 @@ public class RoadRatioParcels {
             problem.printStackTrace();
         }
         dsRoad.dispose();
-        CsvExport.generateCsvFile(stat, folderOutStat, "streetRatioParcelZone", !overwrite, firstLine);
-        overwrite = false;
+        CsvExport.generateCsvFile(stat, folderOutStat, "streetRatioParcelZone", !overwrite, overwrite ? firstLine : null);
         CsvExport.needFLine = true;
     }
 

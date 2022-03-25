@@ -99,7 +99,7 @@ public class TestScenario extends UseCase {
             rDS.dispose();
             CollecMgmt.exportSFC(parcelCuted, new File(outFolder, "parcelZoneDivision.gpkg"));
             CollecMgmt.exportSFC(zone, new File(outFolder, "zone.gpkg"));
-            RoadRatioParcels.roadRatioZone(zone, parcelCuted, profileMediumCollective.getNameBuildingType().replace(" ", "_"), statFolder, roadFile);
+            RoadRatioParcels.roadRatioZone(zone, parcelCuted, profileMediumCollective.getNameBuildingType().replace(" ", "_"), statFolder, true, roadFile);
 //            List<SimpleFeature> parcelSimulatedZone = Arrays.stream(finaux.toArray(new SimpleFeature[0])).filter(sf -> (new ZoneDivision()).isNewSection(sf)).collect(Collectors.toList());
 //            MakeStatisticGraphs.makeAreaGraph(parcelSimulatedZone, statFolder, "Zone division - medium-sized blocks of flats");
 //            MakeStatisticGraphs.makeWidthContactRoadGraph(parcelSimulatedZone, CityGeneration.createUrbanBlock(finaux, true), roadFile, new File(statFolder, "contact"), "Zone division - medium-sized blocks of flats");
@@ -114,7 +114,7 @@ public class TestScenario extends UseCase {
 //            SimpleFeatureCollection markedZone = MarkParcelAttributeFromPosition.markParcelIntersectPreciseZoningType(parcelCuted, "AU", "AU2", zoningFile);
             SimpleFeatureCollection cutedNormalZone = (new ConsolidationDivision()).consolidationDivision(markedZone, roadFile, outFolder, profileMediumHouse);
             CollecMgmt.exportSFC(cutedNormalZone, new File(outFolder, "ParcelConsolidation.gpkg"));
-            RoadRatioParcels.roadRatioParcels(markedZone, cutedNormalZone, profileMediumHouse.getNameBuildingType().replace(" ", "_"), statFolder, roadFile);
+            RoadRatioParcels.roadRatioParcels(markedZone, cutedNormalZone, profileMediumHouse.getNameBuildingType().replace(" ", "_"), statFolder, false, roadFile);
 //            List<SimpleFeature> parcelSimulatedConsolid = Arrays.stream(finalNormalZone.toArray(new SimpleFeature[0]))
 //                    .filter(sf -> (new ConsolidationDivision()).isNewSection(sf)).collect(Collectors.toList());
 //            MakeStatisticGraphs.makeAreaGraph(parcelSimulatedConsolid, statFolder, "Zone consolidation - medium-sized houses");

@@ -53,14 +53,14 @@ public class MarkParcelAttributeFromPosition {
 
 //    public static void main(String[] args) throws Exception {
 //        long startTime = System.currentTimeMillis();
-//        File parcelsMarkedF = new File("src/main/resources/TestScenario/OutputResults/OBB/parcelDensification.gpkg");
-//        File roadF = new File("src/main/resources/TestScenario/InputData/road.gpkg");
+//        File parcelsMarkedF = new File("src/main/resources/TestScenario/InputData/parcel.gpkg");
+//        File zoningFile = new File("src/main/resources/TestScenario/InputData/zoning.gpkg");
 //        DataStore dsParcel = CollecMgmt.getDataStore(parcelsMarkedF);
-//        DataStore dsRoad = CollecMgmt.getDataStore(roadF);
+//        DataStore dsRoad = CollecMgmt.getDataStore(zoningFile);
 //
 //        SimpleFeatureCollection parcels = dsParcel.getFeatureSource(dsParcel.getTypeNames()[0]).getFeatures();
-//        SimpleFeatureCollection markedZone = MarkParcelAttributeFromPosition.markParcelsNotConnectedToRoad(parcels, CityGeneration.createUrbanBlock(parcels), dsRoad.getFeatureSource(dsRoad.getTypeNames()[0]).getFeatures(), null);
-//        CollecMgmt.exportSFC(markedZone, new File("/tmp/parcelNotConnectedToRoad"));
+//        SimpleFeatureCollection markedZone = MarkParcelAttributeFromPosition.markParcelIntersectPreciseZoningType(parcels, "U", "UB", dsRoad.getFeatureSource(dsRoad.getTypeNames()[0]).getFeatures());
+//        CollecMgmt.exportSFC(markedZone, new File("src/main/resources/TestScenario/parcelU"));
 //        dsParcel.dispose();
 //        long stopTime = System.currentTimeMillis();
 //        System.out.println(stopTime - startTime);
@@ -578,17 +578,32 @@ public class MarkParcelAttributeFromPosition {
      * @param parcels     Input parcel {@link SimpleFeatureCollection}
      * @param genericZone The generic type the zoning (either not constructible (NC), urbanizable (U) or to be urbanize (TBU). Other keywords can be tolerate
      * @param preciseZone The precise zoning type. Can be anything.
-     * @param zoningFile  A geo file containing the zoning plan
+     * @param zoningFile  A geo file containing the zoning plan.
      * @return {@link SimpleFeatureCollection} of the input parcels with marked parcels on the {@link #markFieldName} field.
      * @throws IOException reading zoningFile
      */
     public static SimpleFeatureCollection markParcelIntersectPreciseZoningType(SimpleFeatureCollection parcels, String genericZone, String preciseZone, File zoningFile) throws IOException {
+        DataStore dsZone = CollecMgmt.getDataStore(zoningFile);
+        SimpleFeatureCollection result = markParcelIntersectPreciseZoningType(parcels, genericZone, preciseZone, dsZone.getFeatureSource(dsZone.getTypeNames()[0]).getFeatures());
+        dsZone.dispose();
+        return result;
+    }
+
+    /**
+     * Mark parcels that intersects a certain type of Generic zoning.
+     *
+     * @param parcels     Input parcel {@link SimpleFeatureCollection}
+     * @param genericZone The generic type the zoning (either not constructible (NC), urbanizable (U) or to be urbanize (TBU). Other keywords can be tolerate
+     * @param preciseZone The precise zoning type. Can be anything.
+     * @param zoningSFC   Collection of zoning. An interesection trim with parcels is made.
+     * @return {@link SimpleFeatureCollection} of the input parcels with marked parcels on the {@link #markFieldName} field.
+     */
+    public static SimpleFeatureCollection markParcelIntersectPreciseZoningType(SimpleFeatureCollection parcels, String genericZone, String preciseZone, SimpleFeatureCollection zoningSFC) {
         SimpleFeatureBuilder builder = ParcelSchema.addMarkField(parcels.getSchema());
         // Get the zoning usual names
         List<String> genericZoneUsualNames = GeneralFields.getGenericZoneUsualNames(genericZone);
         DefaultFeatureCollection result = new DefaultFeatureCollection();
-        DataStore dsZone = CollecMgmt.getDataStore(zoningFile);
-        SimpleFeatureCollection zoningSFC = CollecTransform.selectIntersection(dsZone.getFeatureSource(dsZone.getTypeNames()[0]).getFeatures(), parcels);
+        zoningSFC = CollecTransform.selectIntersection(zoningSFC, parcels);
         try (SimpleFeatureIterator it = parcels.features()) {
             while (it.hasNext()) {
                 SimpleFeature feat = it.next();
@@ -604,7 +619,6 @@ public class MarkParcelAttributeFromPosition {
         } catch (Exception e) {
             e.printStackTrace();
         }
-        dsZone.dispose();
         signalIfNoParcelMarked(result, "markParcelIntersectPreciseZoningType with " + preciseZone);
         return result;
     }

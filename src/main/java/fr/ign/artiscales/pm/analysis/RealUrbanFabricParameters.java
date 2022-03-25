@@ -275,7 +275,7 @@ public class RealUrbanFabricParameters {
             MakeStatisticGraphs.roadGraph(roadsSelected, "Characteristics of the roads from the " + getZoneEnglishName(scaleZone, zoneName),
                     "Type of road", "Total lenght of road", outFolder);
         DataStore parcelDS = CollecMgmt.getDataStore(parcelFile);
-        RoadRatioParcels.roadRatioZone(zoneCollection, CollecTransform.selectIntersection(parcelDS.getFeatureSource(parcelDS.getTypeNames()[0]).getFeatures(), Geom.unionSFC(zoneCollection).buffer(buffer)), zoneName, outFolder, roadFile);
+        RoadRatioParcels.roadRatioZone(zoneCollection, CollecTransform.selectIntersection(parcelDS.getFeatureSource(parcelDS.getTypeNames()[0]).getFeatures(), Geom.unionSFC(zoneCollection).buffer(buffer)), zoneName, outFolder,true, roadFile);
         parcelDS.dispose();
     }
 

@@ -43,7 +43,7 @@ public class Densification extends Workflow {
 
     public Densification() {
     }
-
+//
 //    public static void main(String[] args) throws Exception {
 //        long start = System.currentTimeMillis();
 //        File rootFolder = new File("src/main/resources/TestScenario/");
@@ -54,7 +54,7 @@ public class Densification extends Workflow {
 //        outFolder.mkdirs();
 //        ParcelSchema.setParcelCommunityField("CODE_COM");
 //        DataStore pDS = CollecMgmt.getDataStore(parcelFile);
-//        SimpleFeatureCollection parcels = MarkParcelAttributeFromPosition.markParcelsSup(pDS.getFeatureSource(pDS.getTypeNames()[0]).getFeatures(), 2000);
+//        SimpleFeatureCollection parcels = MarkParcelAttributeFromPosition.markParcelsSup(pDS.getFeatureSource(pDS.getTypeNames()[0]).getFeatures(), 3000);
 //        CollecMgmt.exportSFC((new Densification()).densification(parcels, CityGeneration.createUrbanBlock(parcels), outFolder, buildingFile, roadFile,
 //                        ProfileUrbanFabric.convertJSONtoProfile(new File("src/main/resources/TestScenario/profileUrbanFabric/smallHouse.json")), false),
 //                new File(outFolder, "result"));
@@ -115,7 +115,6 @@ public class Densification extends Workflow {
             return GeneralFields.transformSFCToMinParcel(parcelCollection);
         }
         checkFields(parcelCollection.getSchema());
-
         // preparation of the builder and empty collections
         final String geomName = parcelCollection.getSchema().getGeometryDescriptor().getLocalName();
         FilterFactory2 ff = CommonFactoryFinder.getFilterFactory2();
@@ -218,7 +217,7 @@ public class Densification extends Workflow {
                                     Schemas.setFieldsToSFB(sFBParcel, initialParcel);
                                     sFBParcel.set(geomName, pGeom.getGeometryN(ii));
                                     sFBParcel.set(ParcelSchema.getParcelSectionField(), makeNewSection(initialParcel.getAttribute(ParcelSchema.getParcelSectionField()) + "-" + i++));
-                                    sFBParcel.set(ParcelSchema.getParcelNumberField(), initialParcel.getAttribute(ParcelSchema.getParcelNumberField()));
+                                    sFBParcel.set(ParcelSchema.getParcelNumberField(), initialParcel.getAttribute(ParcelSchema.getParcelNumberField()+ "-" + i));
                                     sFBParcel.set(ParcelSchema.getParcelCommunityField(), initialParcel.getAttribute(ParcelSchema.getParcelCommunityField()));
                                     SimpleFeature cutedParcel = sFBParcel.buildFeature(Attribute.makeUniqueId());
                                     resultParcels.add(cutedParcel);
