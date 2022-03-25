@@ -4,6 +4,7 @@ import fr.ign.artiscales.pm.fields.GeneralFields;
 import fr.ign.artiscales.pm.fields.french.FrenchZoningSchemas;
 import fr.ign.artiscales.pm.workflow.ConsolidationDivision;
 import fr.ign.artiscales.pm.workflow.Densification;
+import fr.ign.artiscales.pm.workflow.WorkflowType;
 import fr.ign.artiscales.pm.workflow.ZoneDivision;
 import fr.ign.artiscales.tools.geoToolsFunctions.Attribute;
 import fr.ign.artiscales.tools.geoToolsFunctions.Schemas;
@@ -834,19 +835,9 @@ public class MarkParcelAttributeFromPosition {
      *                     </ul>
      * @return {@link SimpleFeatureCollection} of the input parcels with marked parcels on the {@link #markFieldName} field.
      */
-    public static SimpleFeatureCollection markWorkflowSimulatedParcel(SimpleFeatureCollection parcels, String workflowName) {
+    public static SimpleFeatureCollection markWorkflowSimulatedParcel(SimpleFeatureCollection parcels, WorkflowType workflowName) {
         SimpleFeatureBuilder builder = ParcelSchema.addMarkField(parcels.getSchema());
         DefaultFeatureCollection result = new DefaultFeatureCollection();
-        if (builder.getFeatureType().equals(parcels.getSchema())) {
-            Arrays.stream(parcels.toArray(new SimpleFeature[0])).forEach(feat -> {
-                if (markWorkflowSimulatedParcelCondition(feat, workflowName))
-                    feat.setAttribute(markFieldName, 1);
-                else
-                    feat.setAttribute(markFieldName, 0);
-                result.add(feat);
-            });
-            return result;
-        }
         try (SimpleFeatureIterator it = parcels.features()) {
             while (it.hasNext()) {
                 SimpleFeature feat = it.next();
@@ -864,19 +855,13 @@ public class MarkParcelAttributeFromPosition {
         return result;
     }
 
-    private static boolean markWorkflowSimulatedParcelCondition(SimpleFeature feat, String workflowName) {
-        switch (workflowName) {
-            case "densification":
-                if ((new Densification()).isNewSection(feat))
-                    return true;
-            case "zone":
-                if ((new ZoneDivision()).isNewSection(feat))
-                    return true;
-            case "consolidation":
-                if ((new ConsolidationDivision()).isNewSection(feat))
-                    return true;
-        }
-        throw new IllegalArgumentException("Workflow unknown");
+    private static boolean markWorkflowSimulatedParcelCondition(SimpleFeature feat, WorkflowType workflow) {
+        return switch (workflow) {
+            case densification -> ((new Densification()).isNewSection(feat));
+            case zoneDivision -> ((new ZoneDivision()).isNewSection(feat));
+            case consolidationDivision -> ((new ConsolidationDivision()).isNewSection(feat));
+            default -> throw new IllegalArgumentException("Workflow unknown");
+        };
     }
 
     /**
