@@ -1,3 +1,15 @@
+# Version 1.2
+Version submited in Colomb & al. revision
+
+## ADD
+  * More selection options in scenarios  
+
+## FIX
+
+  * Perf improved
+  * Fix densOrNeighborhood workflow and replace them in decomposed tasks in current useCases 
+  * correct a bug on OBB+SS
+
 # Version 1.1.1
 ## FIX
 
