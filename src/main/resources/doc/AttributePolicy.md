@@ -18,9 +18,9 @@ Reshaped parcels have a new <i>section</i> value, based on the value of the <a h
 It is possible to convert the basic nomemclature of Parcel Manager into another nomenclature and vice versa using specific methods. See for instance <i>frenchParcelToMinParcel(...)</i> from the <a href="https://framagit.org/artiscales/parcelmanager/-/blob/master/src/main/java/fr/ign/artiscales/pm/fields/french/FrenchParcelFields.java">fields.french.FrenchParcelFields</a> class, and  <i>setOriginalFrenchParcelAttributes(...)</i>.
 
 ## Attributes of input parcels
-As shonw on to the diagram below, input parcels must have some specific attributes.
+As shown on to the diagram below, input parcels must have some specific attributes.
 <br /> 
-Only the  parcels with their *markingField* set to 1 can be reshaped. The output attributes of the reshaped parcels contain the same initial fields, plus a **SIMULATED** field that is created once the parcels have been reshaped. 
+Only the parcels with their *markingField* set to 1 can be reshaped. The output attributes of the reshaped parcels contain the same initial fields, plus a **SIMULATED** field that is created once the parcels have been reshaped. 
 <br /> 
 *community*, *section*, *number* and *markingField* fields must be completed in order to apply a workflow. In case of the **ZoneDivision** workflow, the *markingField* attribute is not mandatory. Value of fields *community*, *section* and *number* change once a parcel is reshaped (see section above). As a reshaped parcel is not the children of one unique parent parcel, all other fields are set to *null*. It is possible to detect if a section has changed with the *Workflow.isNewSection()* abstract method. 
 <br /> 
