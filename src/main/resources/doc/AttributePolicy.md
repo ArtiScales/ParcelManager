@@ -22,7 +22,7 @@ As shonw on to the diagram below, input parcels must have some specific attribut
 <br /> 
 Only the  parcels with their *markingField* set to 1 can be reshaped. The output attributes of the reshaped parcels contain the same initial fields, plus a **SIMULATED** field that is created once the parcels have been reshaped. 
 <br /> 
-*community*, *section*, *number* and *markingField* fields must be completed in order to apply a workflow. As only the zones concerned by the **ZoneDivision** workflow will be reshaped, the *markingField* is not mandatory for this workflow. Value of fields *community*, *section* and *number* change once a parcel is reshaped (see section above). As a reshaped parcel is not the children of one unique parent parcel, all other fields are set to *null*. It is possible to detect if a section has changed with the *Workflow.isNewSection()* abstract method. 
+*community*, *section*, *number* and *markingField* fields must be completed in order to apply a workflow. In case of the **ZoneDivision** workflow, the *markingField* attribute is not mandatory. Value of fields *community*, *section* and *number* change once a parcel is reshaped (see section above). As a reshaped parcel is not the children of one unique parent parcel, all other fields are set to *null*. It is possible to detect if a section has changed with the *Workflow.isNewSection()* abstract method. 
 <br /> 
 <br /> 
 <img alt="schema with mandatory attributes for Parcel Manager operations" src="./attSchema.png"/>
