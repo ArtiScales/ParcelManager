@@ -102,8 +102,7 @@ public class Densification extends Workflow {
      * @param lenDriveway         lenght of the driveway to connect a parcel through another parcel to the road
      * @param allowIsolatedParcel true if the simulated parcels have the right to be isolated from the road, false otherwise.
      * @param exclusionZone       Exclude a zone that won't be considered as a potential road connection. Useful to represent border of the parcel plan. Can be null.
-     * @return The input parcel {@link SimpleFeatureCollection} with the marked parcels replaced by the simulated parcels. All parcels have the
-     * {@link fr.ign.artiscales.pm.parcelFunction.ParcelSchema#getSFBMinParcel()} schema.
+     * @return The input {@link SimpleFeatureCollection} with each marked parcel replaced by simulated parcels.
      * @throws IOException Reading and writing geo files
      */
     public SimpleFeatureCollection densification(SimpleFeatureCollection parcelCollection, SimpleFeatureCollection blockCollection, File outFolder,
@@ -217,7 +216,7 @@ public class Densification extends Workflow {
                                     Schemas.setFieldsToSFB(sFBParcel, initialParcel);
                                     sFBParcel.set(geomName, pGeom.getGeometryN(ii));
                                     sFBParcel.set(ParcelSchema.getParcelSectionField(), makeNewSection(initialParcel.getAttribute(ParcelSchema.getParcelSectionField()) + "-" + i++));
-                                    sFBParcel.set(ParcelSchema.getParcelNumberField(), initialParcel.getAttribute(ParcelSchema.getParcelNumberField()+ "-" + i));
+                                    sFBParcel.set(ParcelSchema.getParcelNumberField(), initialParcel.getAttribute(ParcelSchema.getParcelNumberField() + "-" + i));
                                     sFBParcel.set(ParcelSchema.getParcelCommunityField(), initialParcel.getAttribute(ParcelSchema.getParcelCommunityField()));
                                     SimpleFeature cutedParcel = sFBParcel.buildFeature(Attribute.makeUniqueId());
                                     resultParcels.add(cutedParcel);
@@ -267,12 +266,12 @@ public class Densification extends Workflow {
      * @param minimalWidthContactRoad threshold of parcel contact to road under which the OBB algorithm stops to decompose parcels
      * @param lenDriveway             length of the driveway to connect a parcel through another parcel to the road
      * @param allowIsolatedParcel     true if the simulated parcels have the right to be isolated from the road, false otherwise.
-     * @return The input parcel {@link SimpleFeatureCollection} with the marked parcels replaced by the simulated parcels. All parcels have the
-     * {@link fr.ign.artiscales.pm.parcelFunction.ParcelSchema#getSFBMinParcel()} schema. * @throws Exception
+     * @return The input {@link SimpleFeatureCollection} with each marked parcel replaced by simulated parcels.
+     * @throws IOException Reading and writing geo files
      */
     public SimpleFeatureCollection densification(SimpleFeatureCollection parcelCollection, SimpleFeatureCollection blockCollection, File outFolder,
                                                  File buildingFile, File roadFile, double harmonyCoeff, double irregularityCoeff, double maximalAreaSplitParcel, double minimalAreaSplitParcel,
-                                                 double minimalWidthContactRoad, double lenDriveway, boolean allowIsolatedParcel) throws Exception {
+                                                 double minimalWidthContactRoad, double lenDriveway, boolean allowIsolatedParcel) throws IOException {
         return densification(parcelCollection, blockCollection, outFolder, buildingFile, roadFile, harmonyCoeff, irregularityCoeff, maximalAreaSplitParcel,
                 minimalAreaSplitParcel, minimalWidthContactRoad, lenDriveway, allowIsolatedParcel, null);
     }
@@ -292,12 +291,12 @@ public class Densification extends Workflow {
      * @param minimalWidthContactRoad threshold of parcel connection to road under which the OBB algorithm stops to decompose parcels
      * @param lenDriveway             lenght of the driveway to connect a parcel through another parcel to the road
      * @param allowIsolatedParcel     true if the simulated parcels have the right to be isolated from the road, false otherwise.
-     * @return The input parcel {@link SimpleFeatureCollection} with the marked parcels replaced by the simulated parcels. All parcels have the
-     * {@link fr.ign.artiscales.pm.parcelFunction.ParcelSchema#getSFBMinParcel()} schema. * @throws Exception
+     * @return The input {@link SimpleFeatureCollection} with each marked parcel replaced by simulated parcels.
+     * @throws IOException Reading and writing geo files
      */
     public SimpleFeatureCollection densification(SimpleFeatureCollection parcelCollection, SimpleFeatureCollection blockCollection, File outFolder,
                                                  File buildingFile, double harmonyCoeff, double irregularityCoeff, double maximalAreaSplitParcel, double minimalAreaSplitParcel,
-                                                 double minimalWidthContactRoad, double lenDriveway, boolean allowIsolatedParcel) throws Exception {
+                                                 double minimalWidthContactRoad, double lenDriveway, boolean allowIsolatedParcel) throws IOException {
         return densification(parcelCollection, blockCollection, outFolder, buildingFile, null, harmonyCoeff, irregularityCoeff, maximalAreaSplitParcel,
                 minimalAreaSplitParcel, minimalWidthContactRoad, lenDriveway, allowIsolatedParcel);
     }
@@ -315,8 +314,7 @@ public class Densification extends Workflow {
      * @param roadFile            Geopackage representing the roads (optional).
      * @param profile             Description of the urban fabric profile planed to be simulated on this zone.
      * @param allowIsolatedParcel true if the simulated parcels have the right to be isolated from the road, false otherwise.
-     * @return The input parcel {@link SimpleFeatureCollection} with the marked parcels replaced by the simulated parcels. All parcels have the
-     * {@link fr.ign.artiscales.pm.parcelFunction.ParcelSchema#getSFBMinParcel()} schema.
+     * @return The input {@link SimpleFeatureCollection} with each marked parcel replaced by simulated parcels.
      * @throws IOException Writing files in debug modes
      */
     public SimpleFeatureCollection densification(SimpleFeatureCollection parcelCollection, SimpleFeatureCollection blockCollection, File outFolder,
@@ -338,8 +336,7 @@ public class Densification extends Workflow {
      * @param profile             Description of the urban fabric profile planed to be simulated on this zone.
      * @param allowIsolatedParcel true if the simulated parcels have the right to be isolated from the road, false otherwise.
      * @param exclusionZone       Exclude a zone that won't be considered as a potential road connection. Useful to represent border of the parcel plan. Can be null.
-     * @return The input parcel {@link SimpleFeatureCollection} with the marked parcels replaced by the simulated parcels. All parcels have the
-     * {@link fr.ign.artiscales.pm.parcelFunction.ParcelSchema#getSFBMinParcel()} schema. * @throws Exception
+     * @return The input {@link SimpleFeatureCollection} with each marked parcel replaced by simulated parcels.
      * @throws IOException Writing files in debug modes
      */
     public SimpleFeatureCollection densification(SimpleFeatureCollection parcelCollection, SimpleFeatureCollection blockCollection, File outFolder,
@@ -365,8 +362,7 @@ public class Densification extends Workflow {
      * @param exclusionZone             Exclude a zone that won't be considered as a potential road connection. Useful to represent border of the parcel plan. Can be null.
      * @param factorOflargeZoneCreation If the area of the parcel to be simulated is superior to the maximal size of parcels multiplied by this factor, the simulation will be done with the
      *                                  {@link fr.ign.artiscales.pm.workflow.ConsolidationDivision#consolidationDivision(SimpleFeatureCollection, File, File, ProfileUrbanFabric)} method.
-     * @return The input parcel {@link SimpleFeatureCollection} with the marked parcels replaced by the simulated parcels. All parcels have the
-     * {@link fr.ign.artiscales.pm.parcelFunction.ParcelSchema#getSFBMinParcel()} schema.
+     * @return The input {@link SimpleFeatureCollection} with each marked parcel replaced by simulated parcels.
      * @throws IOException Writing files in debug modes
      */
     public SimpleFeatureCollection densificationOrNeighborhood(SimpleFeatureCollection parcelCollection, SimpleFeatureCollection blockCollection, File outFolder, File buildingFile, File roadFile,

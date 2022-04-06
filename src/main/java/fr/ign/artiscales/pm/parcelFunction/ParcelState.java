@@ -201,18 +201,26 @@ public class ParcelState {
     }
 
     /**
-     * This algorithm looks if a parcel is overlapped by a building and returns true if they are.
+     * This method looks if a parcel is overlapped by a building and returns true if they are.
      *
-     * @param batiSFC building collection
+     * @param buildingSFC building collection
      * @param parcel  input parcel
      * @return True if a building is really intersecting the parcel
      */
-    public static boolean isAlreadyBuilt(SimpleFeatureCollection batiSFC, SimpleFeature parcel) {
-        return isAlreadyBuilt(batiSFC, parcel, 0.0, 0.0);
+    public static boolean isAlreadyBuilt(SimpleFeatureCollection buildingSFC, SimpleFeature parcel) {
+        return isAlreadyBuilt(buildingSFC, parcel, 0.0, 0.0);
     }
-
-    public static boolean isAlreadyBuilt(File buildingFile, SimpleFeature parcel, Geometry emprise) throws IOException {
-        return isAlreadyBuilt(buildingFile, parcel, emprise, 0);
+    /**
+     * This method looks if a parcel is overlapped by a building and returns true if they are.
+     *
+     * @param buildingFile building collection
+     * @param parcel  input parcel
+     * @param mask polygon with mask which will select every overlapping features
+     * @return True if a building is really intersecting the parcel
+     * @throws IOException reading building file
+     */
+    public static boolean isAlreadyBuilt(File buildingFile, SimpleFeature parcel, Geometry mask) throws IOException {
+        return isAlreadyBuilt(buildingFile, parcel, mask, 0);
     }
 
     /**
@@ -221,14 +229,14 @@ public class ParcelState {
      *
      * @param buildingFile          geo file containing building
      * @param parcel                parcel feature
-     * @param emprise               geographical bounding representing our zone. Features outside this zone won't be considered. Can be null.
+     * @param mask               geographical bounding representing our zone. Features outside this zone won't be considered. Can be null.
      * @param uncountedBuildingArea threshold under where a building is not considered
      * @return True if a building is really intersecting the parcel
      * @throws IOException reading building file
      */
-    public static boolean isAlreadyBuilt(File buildingFile, SimpleFeature parcel, Geometry emprise, double uncountedBuildingArea) throws IOException {
+    public static boolean isAlreadyBuilt(File buildingFile, SimpleFeature parcel, Geometry mask, double uncountedBuildingArea) throws IOException {
         DataStore batiDS = CollecMgmt.getDataStore(buildingFile);
-        boolean result = isAlreadyBuilt(emprise == null ? batiDS.getFeatureSource(batiDS.getTypeNames()[0]).getFeatures() : CollecTransform.selectIntersection(batiDS.getFeatureSource(batiDS.getTypeNames()[0]).getFeatures(), emprise),
+        boolean result = isAlreadyBuilt(mask == null ? batiDS.getFeatureSource(batiDS.getTypeNames()[0]).getFeatures() : CollecTransform.selectIntersection(batiDS.getFeatureSource(batiDS.getTypeNames()[0]).getFeatures(), mask),
                 parcel, 0.0, uncountedBuildingArea);
         batiDS.dispose();
         return result;

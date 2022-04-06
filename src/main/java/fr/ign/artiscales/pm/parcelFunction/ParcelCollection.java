@@ -45,6 +45,11 @@ public class ParcelCollection {
 //        sortDifferentParcel(new File(rootFile, "parcel2003.gpkg"), new File(rootFile, "parcel2018.gpkg"), new File("/tmp/Correct/"), 550, 175, true);
 //    }
 
+    /**
+     * Return the same parcel collection without it <i>SPLIT</i> field (if this field has a new name, it will be adapted).
+     * @param parcels parcel collection
+     * @return same parcel collection without the field attribute.
+     */
     public static SimpleFeatureCollection getParcelWithoutSplitField(SimpleFeatureCollection parcels){
         DefaultFeatureCollection df = new DefaultFeatureCollection();
         SimpleFeatureBuilder builder = ParcelSchema.getSFBWithoutSplit(parcels.getSchema());

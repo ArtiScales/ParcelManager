@@ -49,7 +49,7 @@ public class MakeStatisticGraphs {
      */
     public static void makeAreaGraph(File parcelFile, File outFolder, String name) throws IOException {
         DataStore ds = CollecMgmt.getDataStore(parcelFile);
-        makeGraphHisto(sortValuesAreaAndCategorize(GeneralFields.getParcelWithSimulatedFileds(ds.getFeatureSource(ds.getTypeNames()[0]).getFeatures()), "area"), outFolder,
+        makeGraphHisto(sortValuesAreaAndCategorize(GeneralFields.getParcelWithSimulatedFields(ds.getFeatureSource(ds.getTypeNames()[0]).getFeatures()), "area"), outFolder,
                 name, "parcels area (m2)", "Number of parcels", 10);
         ds.dispose();
     }

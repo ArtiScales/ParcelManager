@@ -71,8 +71,7 @@ public class ParcelSchema {
         // setting zipcode
         if (CollecMgmt.isSimpleFeatureContainsAttribute(feat, parcelCommunityField))
             builder.set(parcelCommunityField, feat.getAttribute(parcelCommunityField));
-            // if looks like French parcel
-        else if (CollecMgmt.isSimpleFeatureContainsAttribute(feat, "CODE_DEP"))
+        else if (CollecMgmt.isSimpleFeatureContainsAttribute(feat, "CODE_DEP")) // if it looks like French parcel
             builder.set(ParcelSchema.getParcelCommunityField(),
                     ((String) feat.getAttribute("CODE_DEP")).concat((String) feat.getAttribute("CODE_COM")));
         return builder;
@@ -103,7 +102,7 @@ public class ParcelSchema {
 
         if (CollecMgmt.isSimpleFeatureContainsAttribute(feat, parcelCommunityField)) // setting zipcode
             builder.set(getParcelCommunityField(), feat.getAttribute(parcelCommunityField));
-        else if (CollecMgmt.isSimpleFeatureContainsAttribute(feat, "CODE_DEP")) // if looks like french parcel
+        else if (CollecMgmt.isSimpleFeatureContainsAttribute(feat, "CODE_DEP")) // if it looks like french parcel
             builder.set(getParcelCommunityField(), ((String) feat.getAttribute("CODE_DEP")).concat((String) feat.getAttribute("CODE_COM")));
         return builder;
     }
@@ -153,7 +152,13 @@ public class ParcelSchema {
         ParcelSchema.parcelCommunityField = parcelCommunityField;
     }
 
+    /**
+     * Parcel ID is composed of its {@link #parcelCommunityField}, {@link #parcelSectionField} and {@link #parcelNumberField}, separated by '_' character.
+     *
+     * @param feat parcel feature with minimal values
+     * @return new parcel's id.
+     */
     public static String getParcelID(SimpleFeature feat) {
-        return feat.getAttribute(parcelCommunityField) + "_" + feat.getAttribute(parcelSectionField) + "_" + feat.getAttribute(parcelNumberField);
+        return String.valueOf(feat.getAttribute(parcelCommunityField)) + '_' + feat.getAttribute(parcelSectionField) + '_' + feat.getAttribute(parcelNumberField);
     }
 }

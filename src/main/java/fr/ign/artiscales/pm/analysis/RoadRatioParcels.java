@@ -1,5 +1,6 @@
 package fr.ign.artiscales.pm.analysis;
 
+import fr.ign.artiscales.pm.division.DivisionType;
 import fr.ign.artiscales.pm.fields.GeneralFields;
 import fr.ign.artiscales.pm.fields.french.FrenchParcelFields;
 import fr.ign.artiscales.pm.parcelFunction.MarkParcelAttributeFromPosition;
@@ -50,10 +51,11 @@ public class RoadRatioParcels {
     // }
 
     /**
-     * Calculate the ratio between the parcel area and the total area of a zone. It express the quantity of not parcel land, which could be either streets or public spaces.
+     * Calculate the ratio between the parcel area and the total area of a zone. It expresses the quantity of not parcel land, which could be either streets or public spaces.
      * Calculate zones and then send the whole to the {@link #roadRatioZone(SimpleFeatureCollection, SimpleFeatureCollection, String, File, boolean, File)} method.
+     * If the {@link DivisionType} is a {@link DivisionType#SSoffset}, the patio is not counted in the ratio.
      *
-     * @param initialMarkedParcel {@link SimpleFeatureCollection} of the initial set of parcels which are marked if they had to simulated. Marks could be made with the methods contained in the
+     * @param initialMarkedParcel {@link SimpleFeatureCollection} of the initial set of parcels which are marked if they were simulated. Marks could be made with the methods contained in the
      *                            class {@link fr.ign.artiscales.pm.parcelFunction.MarkParcelAttributeFromPosition}. The field attribute is named <i>SPLIT</i> by default. It is possible to change
      *                            it with the {@link fr.ign.artiscales.pm.parcelFunction.MarkParcelAttributeFromPosition#setMarkFieldName(String)} function.
      * @param cutParcel           A collection of parcels after a Parcel Manager simulation
@@ -70,6 +72,7 @@ public class RoadRatioParcels {
         Geometry multiGeom;
         if (CollecMgmt.isCollecContainsAttribute(initialMarkedParcel, MarkParcelAttributeFromPosition.getMarkFieldName()))
             multiGeom = Geom.unionSFC(initialMarkedParcel.subCollection(ff.like(ff.property(MarkParcelAttributeFromPosition.getMarkFieldName()), "1")));
+
         else {
             System.out.println("Parcels haven't been previously marked : stop StatParcelStreetRatio");
             return;

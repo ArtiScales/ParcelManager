@@ -131,7 +131,7 @@ public class ParcelGetter {
 
     /**
      * Write parcels out of a parcel collection corresponding to a list of zipcodes in a new geo file.
-     * Zipcodes are not directly contained in a field of the collection but is composed of two fields. Their values are set by default but it's possible to change them with the methods {@link #setCodeComFieldName(String) setCodeComFiled} and {@link #setCodeDepFieldName(String) setCodeDepFiled}
+     * Zipcodes are not directly contained in a field of the collection but is composed of two fields. Their values are set by default but it's possible to change them with the methods {@link #setCodeComFieldName(String)} and {@link #setCodeDepFieldName(String)}
      *
      * @param parcelIn input parcel collection
      * @param vals     a list of zipcode values
@@ -148,7 +148,7 @@ public class ParcelGetter {
 
     /**
      * Get parcels out of a parcel collection corresponding to a list of zipcodes
-     * Zipcodes are not directly contained in a field of the collection but is composed of two fields. Their values are set by default but it's possible to change them with the methods {@link #setCodeComFieldName(String) setCodeComFiled} and {@link #setCodeDepFieldName(String) setCodeDepFiled}
+     * Zipcodes are not directly contained in a field of the collection but is composed of two fields. Their values are set by default but it's possible to change them with the methods {@link #setCodeComFieldName(String)} and {@link #setCodeDepFieldName(String)}
      *
      * @param parcelIn input parcel collection
      * @param vals     a list of zipcode values

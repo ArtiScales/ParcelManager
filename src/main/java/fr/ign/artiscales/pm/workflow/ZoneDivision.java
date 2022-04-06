@@ -169,8 +169,7 @@ public class ZoneDivision extends Workflow {
      * @param parcels           {@link SimpleFeatureCollection} of the unmarked parcels.
      * @param outFolder         folder to write {@link Workflow#isDEBUG()} and {@link Workflow#isSAVEINTERMEDIATERESULT()} geofile if concerned
      * @param profile           {@link ProfileUrbanFabric} contains the parameters of the wanted urban scene
-     * @return The input parcel {@link SimpleFeatureCollection} with the marked parcels replaced by the simulated parcels. All parcels have the
-     * {@link fr.ign.artiscales.pm.parcelFunction.ParcelSchema#getSFBMinParcel()} schema.
+     * @return The input parcel {@link SimpleFeatureCollection} with the marked parcels replaced by the simulated parcels.
      * @throws IOException from marking parcel
      */
     public SimpleFeatureCollection zoneDivision(SimpleFeatureCollection initialZone, SimpleFeatureCollection parcels, File outFolder, ProfileUrbanFabric profile, boolean keepExistingRoads) throws IOException {
@@ -187,8 +186,8 @@ public class ZoneDivision extends Workflow {
      * @param parcels           {@link SimpleFeatureCollection} of the unmarked parcels.
      * @param outFolder         folder to write {@link Workflow#isDEBUG()} and {@link Workflow#isSAVEINTERMEDIATERESULT()} geofile if concerned
      * @param profile           {@link ProfileUrbanFabric} contains the parameters of the wanted urban scene
-     * @return The input parcel {@link SimpleFeatureCollection} with the marked parcels replaced by the simulated parcels. All parcels have the
-     * {@link fr.ign.artiscales.pm.parcelFunction.ParcelSchema#getSFBMinParcel()} schema.
+     * @return The input parcel {@link SimpleFeatureCollection} with the marked parcels replaced by the simulated parcels.
+     * All parcels have the same schema with a .
      * @throws IOException from marking parcel
      */
     public SimpleFeatureCollection zoneDivision(SimpleFeatureCollection initialZone, SimpleFeatureCollection parcels, File outFolder, ProfileUrbanFabric profile, File roadFile, File buildingFile, boolean keepExistingRoads) throws IOException {
@@ -211,8 +210,7 @@ public class ZoneDivision extends Workflow {
      * @param keepExistingRoads If true, existing raod (lack of parcel in the parcel plan) will be kept. If not, the whole zone is simulated regardless of its content.
      * @param outFolder         folder to write {@link Workflow#isDEBUG()} and {@link Workflow#isSAVEINTERMEDIATERESULT()} geofile if concerned
      * @param profile           {@link ProfileUrbanFabric} contains the parameters of the wanted urban scene
-     * @return The input parcel {@link SimpleFeatureCollection} with the marked parcels replaced by the simulated parcels. All parcels have the
-     * {@link fr.ign.artiscales.pm.parcelFunction.ParcelSchema#getSFBMinParcel()} schema.
+     * @return The input parcel {@link SimpleFeatureCollection} with the marked parcels replaced by the simulated parcels.
      * @throws IOException from marking parcel
      */
     public SimpleFeatureCollection zoneDivision(SimpleFeatureCollection initialZone, SimpleFeatureCollection parcels, SimpleFeatureCollection roads, File outFolder, ProfileUrbanFabric profile, boolean keepExistingRoads) throws IOException {
@@ -233,8 +231,8 @@ public class ZoneDivision extends Workflow {
      * @param buildings         for densification only (can be null)
      * @param exclusionZone     for densification only (can be null)
      * @param extLines          for densification only (can be null)
-     * @return The input parcel {@link SimpleFeatureCollection} with the marked parcels replaced by the simulated parcels. All parcels have the
-     * {@link fr.ign.artiscales.pm.parcelFunction.ParcelSchema#getSFBMinParcel()} schema.
+     * @return The input parcel {@link SimpleFeatureCollection} with the marked parcels replaced by the simulated parcels.
+     * All parcels have the same schema as input parcels.
      * @throws IOException from marking parcel
      */
     public SimpleFeatureCollection zoneDivision(SimpleFeatureCollection initialZone, SimpleFeatureCollection parcels, SimpleFeatureCollection roads, SimpleFeatureCollection buildings, File outFolder, ProfileUrbanFabric profile, boolean keepExistingRoads, List<LineString> extLines, Geometry exclusionZone) throws IOException {

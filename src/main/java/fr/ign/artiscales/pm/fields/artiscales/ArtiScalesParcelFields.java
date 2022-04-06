@@ -25,9 +25,9 @@ public class ArtiScalesParcelFields {
      * @param parcels                 Whole set of parcels
      * @param buildingFile            geo file containing the builings of the zone.
      * @param polygonIntersectionFile geo file containing outputs of MUP-City. Can be empty
-     * @param originalParcels Parcel before any cut
-     * @param zoningFile geofile containing the zoning file
-     * @param allOrCell do we mark every parcels or only the ones that intersects MUP-City's cells ?
+     * @param originalParcels         Parcel before any cut
+     * @param zoningFile              geofile containing the zoning file
+     * @param allOrCell               do we mark every parcels or only the ones that intersects MUP-City's cells ?
      * @return The parcel set with the right attributes
      * @throws IOException reading geofiles
      */
@@ -103,6 +103,6 @@ public class ArtiScalesParcelFields {
             problem.printStackTrace();
         }
         dsCells.dispose();
-        return parcelFinal.collection();
+        return parcelFinal;
     }
 }

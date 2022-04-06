@@ -67,9 +67,8 @@ public class FrenchParcelFields {
      * @param parcels        {@link SimpleFeatureCollection} containing parcels which to fix attributes
      * @param initialParcels {@link SimpleFeatureCollection} containing the original parcels which their original attributes
      * @return A {@link SimpleFeatureCollection} with their original attributes
-     * @throws IOException
      */
-    public static SimpleFeatureCollection setOriginalFrenchParcelAttributes(SimpleFeatureCollection parcels, SimpleFeatureCollection initialParcels) throws IOException {
+    public static SimpleFeatureCollection setOriginalFrenchParcelAttributes(SimpleFeatureCollection parcels, SimpleFeatureCollection initialParcels){
         DefaultFeatureCollection parcelFinal = new DefaultFeatureCollection();
         SimpleFeatureBuilder featureBuilder = FrenchParcelSchemas.getSFBFrenchParcel();
         try (SimpleFeatureIterator parcelIt = parcels.features()) {
@@ -77,7 +76,7 @@ public class FrenchParcelFields {
                 SimpleFeature parcel = parcelIt.next();
                 SimpleFeature iniParcel;
                 String insee;
-                if (GeneralFields.isParcelLikeFrenchHasSimulatedFileds(parcel)) {
+                if (GeneralFields.isParcelLikeFrenchHasSimulatedFields(parcel)) {
                     iniParcel = parcel;
                     insee = (String) iniParcel.getAttribute(ParcelSchema.getParcelCommunityField());
                 } else {
@@ -107,7 +106,7 @@ public class FrenchParcelFields {
         } catch (Exception problem) {
             problem.printStackTrace();
         }
-        return parcelFinal.collection();
+        return parcelFinal;
     }
 
     /**

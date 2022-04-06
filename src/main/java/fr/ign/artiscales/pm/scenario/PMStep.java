@@ -93,6 +93,16 @@ public class PMStep {
     /**
      * Set the path of the different files for a PMStep to be executed. The method is used by PMScenario in a static way because it has no reasons to change within a PM simulation,
      * except for the parcel file that must be updated after each PMStep to make the new PMStep simulation on an already simulated parcel plan.
+     *
+     * @param parcelFile          geofiles containing parcel plan for the whole scenario
+     * @param zoningFile          geofiles containing zoning plan for the whole scenario
+     * @param buildingFile        geofiles containing buildings for the whole scenario
+     * @param roadFile            geofiles containing roads for the whole scenario
+     * @param predicateFile       particular urban rules which could be applied on specific processes. Can be null.
+     * @param polygonIntersection polygons used for parcel selection. Can be null.
+     * @param zone                specific zones to simulate the reshaping as a whole. Can ben null
+     * @param outFolder           folder where every result are written.
+     * @param profileFolder       folder containing parameter rules
      */
     public static void setFiles(File parcelFile, File zoningFile, File buildingFile, File roadFile, File predicateFile, File polygonIntersection, File zone, File outFolder, File profileFolder) {
         PARCELFILE = parcelFile;
@@ -163,10 +173,18 @@ public class PMStep {
         return PROFILEFOLDER;
     }
 
+    /**
+     * Are we generating peripheral road around zones to be reshaped in the {@link StraightSkeletonDivision} process ?
+     *
+     * @return true if we do the generation
+     */
     public boolean isPeripheralRoad() {
         return peripheralRoad;
     }
 
+    /**
+     * @param newPeripheralRoad Do we need to generate peripheral road around zones to be reshaped in the {@link StraightSkeletonDivision} process ?
+     */
     public void setPeripheralRoad(boolean newPeripheralRoad) {
         peripheralRoad = newPeripheralRoad;
     }
@@ -179,6 +197,9 @@ public class PMStep {
         adaptAreaOfUrbanFabric = newAdaptAreaOfUrbanFabric;
     }
 
+    /**
+     * @return the name of the urbanFabricType used by this current step.
+     */
     public String getUrbanFabricType() {
         return urbanFabricType;
     }
@@ -286,6 +307,7 @@ public class PMStep {
      * It returns every parcels selected. Split field name in "SPLIT" by default and can be changed with the method {@link fr.ign.artiscales.pm.parcelFunction.MarkParcelAttributeFromPosition#setMarkFieldName(String)}.
      * If none of this information are set, the algorithm selects all parcels and mark nothing.
      *
+     * @param parcelIn total input parcel
      * @return The parcel collection with a mark for the interesting parcels to simulate.
      * @throws IOException reading a lot of files
      */
@@ -490,6 +512,11 @@ public class PMStep {
         this.keepExistingRoad = keepExistingRoad;
     }
 
+    /**
+     * creates a name for a geo file to be written
+     *
+     * @return every parameter is parsed into the returned string
+     */
     public File makeFileName() {
         return new File(OUTFOLDER, "parcelCuted-" + workflow + "-" + urbanFabricType + "-" + genericZone + "_" + preciseZone + CollecMgmt.getDefaultGISFileType());
     }

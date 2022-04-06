@@ -51,11 +51,11 @@ public class GeneralFields {
      * @param sfc Parcel {@link SimpleFeatureCollection} to sort
      * @return The parcel {@link SimpleFeatureCollection} with only the simulated parcels
      */
-    public static SimpleFeatureCollection getParcelWithSimulatedFileds(SimpleFeatureCollection sfc) {
+    public static SimpleFeatureCollection getParcelWithSimulatedFields(SimpleFeatureCollection sfc) {
         DefaultFeatureCollection result = new DefaultFeatureCollection();
         Arrays.stream(sfc.toArray(new SimpleFeature[0])).forEach(parcel -> {
             if (parcelFieldType.equals("french"))
-                if (isParcelLikeFrenchHasSimulatedFileds(parcel))
+                if (isParcelLikeFrenchHasSimulatedFields(parcel))
                     result.add(parcel);
         });
         return result;
@@ -184,7 +184,7 @@ public class GeneralFields {
     public static boolean isParcelHasSimulatedFields(SimpleFeature feature) {
         switch (parcelFieldType) {
             case "french":
-                return isParcelLikeFrenchHasSimulatedFileds(feature);
+                return isParcelLikeFrenchHasSimulatedFields(feature);
             case "every":
                 return true;
             default:
@@ -201,7 +201,7 @@ public class GeneralFields {
      * @param feature {@link SimpleFeature} input parcel
      * @return True if the parcel section looks like it has been simulated.
      */
-    public static boolean isParcelLikeFrenchHasSimulatedFileds(SimpleFeature feature) {
+    public static boolean isParcelLikeFrenchHasSimulatedFields(SimpleFeature feature) {
         return (feature.getAttribute(ParcelSchema.getParcelSectionField())) != null
                 && ((String) feature.getAttribute(ParcelSchema.getParcelSectionField())).length() > 3;
     }
