@@ -20,8 +20,6 @@ public class ParcelSchema {
     static String parcelSectionField = "SECTION";
     static String parcelCommunityField = "DEPCOM";
 
-    static String epsg = "EPSG:2154";
-
     public static SimpleFeatureBuilder getSFBWithoutSplit(SimpleFeatureType schema) {
         if (!Schemas.isSchemaContainsAttribute(schema, MarkParcelAttributeFromPosition.getMarkFieldName()))
             return new SimpleFeatureBuilder(schema);
@@ -50,7 +48,7 @@ public class ParcelSchema {
         SimpleFeatureTypeBuilder sfTypeBuilder = new SimpleFeatureTypeBuilder();
         sfTypeBuilder.setName("minParcel");
         try {
-            sfTypeBuilder.setCRS(CRS.decode(epsg));
+            sfTypeBuilder.setCRS(CRS.decode(Schemas.getEpsg()));
         } catch (FactoryException e) {
             e.printStackTrace();
         }
@@ -73,8 +71,7 @@ public class ParcelSchema {
         // setting zipcode
         if (CollecMgmt.isSimpleFeatureContainsAttribute(feat, parcelCommunityField))
             builder.set(parcelCommunityField, feat.getAttribute(parcelCommunityField));
-            // if looks like French parcel
-        else if (CollecMgmt.isSimpleFeatureContainsAttribute(feat, "CODE_DEP"))
+        else if (CollecMgmt.isSimpleFeatureContainsAttribute(feat, "CODE_DEP")) // if it looks like French parcel
             builder.set(ParcelSchema.getParcelCommunityField(),
                     ((String) feat.getAttribute("CODE_DEP")).concat((String) feat.getAttribute("CODE_COM")));
         return builder;
@@ -84,7 +81,7 @@ public class ParcelSchema {
         SimpleFeatureTypeBuilder sfTypeBuilder = new SimpleFeatureTypeBuilder();
         sfTypeBuilder.setName("minParcelSplit");
         try {
-            sfTypeBuilder.setCRS(CRS.decode(epsg));
+            sfTypeBuilder.setCRS(CRS.decode(Schemas.getEpsg()));
         } catch (FactoryException e) {
             e.printStackTrace();
         }
@@ -105,7 +102,7 @@ public class ParcelSchema {
 
         if (CollecMgmt.isSimpleFeatureContainsAttribute(feat, parcelCommunityField)) // setting zipcode
             builder.set(getParcelCommunityField(), feat.getAttribute(parcelCommunityField));
-        else if (CollecMgmt.isSimpleFeatureContainsAttribute(feat, "CODE_DEP")) // if looks like french parcel
+        else if (CollecMgmt.isSimpleFeatureContainsAttribute(feat, "CODE_DEP")) // if it looks like french parcel
             builder.set(getParcelCommunityField(), ((String) feat.getAttribute("CODE_DEP")).concat((String) feat.getAttribute("CODE_COM")));
         return builder;
     }
@@ -116,17 +113,19 @@ public class ParcelSchema {
      * @param schema input schema
      * @return a SimpleFeatureBuilder relative to the schema + a marking field
      */
-    public static SimpleFeatureBuilder addField(SimpleFeatureType schema, String fieldName) {
-        if (Schemas.isSchemaContainsAttribute(schema, fieldName))
-            return new SimpleFeatureBuilder(schema);
-        SimpleFeatureTypeBuilder sfTypeBuilder = new SimpleFeatureTypeBuilder();
-        for (AttributeDescriptor attr : schema.getAttributeDescriptors())
-            sfTypeBuilder.add(attr);
-        sfTypeBuilder.add(fieldName, int.class);
-        sfTypeBuilder.setName(schema.getName());
-        sfTypeBuilder.setCRS(schema.getCoordinateReferenceSystem());
-        sfTypeBuilder.setDefaultGeometry(schema.getGeometryDescriptor().getLocalName());
-        return new SimpleFeatureBuilder(sfTypeBuilder.buildFeatureType());
+    public static SimpleFeatureBuilder addMarkField(SimpleFeatureType schema) {
+        return Schemas.addFieldToSFB(schema, MarkParcelAttributeFromPosition.getMarkFieldName(), int.class);
+    }
+
+    /**
+     * Create a builder out of a SimpleFeatureCollection's schema and add a <i>SIMULATED</i> field of type <i>int</i>.
+     *
+     * @param schema input schema
+     * @return a SimpleFeatureBuilder relative to the schema + a marking field
+     */
+    public static SimpleFeatureBuilder addSimulatedField(SimpleFeatureType schema) {
+        return Schemas.addFieldToSFB(schema, "SIMULATED", int.class);
+
     }
 
     public static String getParcelNumberField() {
@@ -153,15 +152,13 @@ public class ParcelSchema {
         ParcelSchema.parcelCommunityField = parcelCommunityField;
     }
 
+    /**
+     * Parcel ID is composed of its {@link #parcelCommunityField}, {@link #parcelSectionField} and {@link #parcelNumberField}, separated by '_' character.
+     *
+     * @param feat parcel feature with minimal values
+     * @return new parcel's id.
+     */
     public static String getParcelID(SimpleFeature feat) {
-        return feat.getAttribute(parcelCommunityField) + "_" + feat.getAttribute(parcelSectionField) + "_" + feat.getAttribute(parcelNumberField);
-    }
-
-    public static String getEpsg() {
-        return epsg;
-    }
-
-    public static void setEpsg(String epsg) {
-        ParcelSchema.epsg = epsg;
+        return String.valueOf(feat.getAttribute(parcelCommunityField)) + '_' + feat.getAttribute(parcelSectionField) + '_' + feat.getAttribute(parcelNumberField);
     }
 }

@@ -1,5 +1,6 @@
 package fr.ign.artiscales.pm.workflow;
 
+import fr.ign.artiscales.pm.division.DivisionType;
 import fr.ign.artiscales.pm.division.FlagDivision;
 import fr.ign.artiscales.pm.division.OBBDivision;
 import fr.ign.artiscales.pm.division.OBBThenSS;
@@ -55,13 +56,13 @@ public class ZoneDivision extends Workflow {
 //        DataStore parcelDS = CollecMgmt.getDataStore(new File(rootFolder, "InputData/parcel.gpkg"));
 //        DataStore zoningDS = CollecMgmt.getDataStore(new File(rootFolder, "InputData/zoning.gpkg"));
 //        DataStore roadDS = CollecMgmt.getDataStore(new File(rootFolder, "InputData/road.gpkg"));
-//        File outFolder = new File("/tmp/zone");
+//        File outFolder = new File("/tmp");
 //        setDEBUG(false);
-//        Workflow.PROCESS = "OBBThenSS";
+//        Workflow.PROCESS = DivisionType.OBBThenSS;
 //        SimpleFeatureCollection zone = createZoneToCut("AU", "AU1", zoningDS.getFeatureSource(zoningDS.getTypeNames()[0]).getFeatures(), parcelDS.getFeatureSource(parcelDS.getTypeNames()[0]).getFeatures());
 //        CollecMgmt.exportSFC(zone, new File(outFolder, "zone"));
 //        SimpleFeatureCollection z = new ZoneDivision().zoneDivision(zone, parcelDS.getFeatureSource(parcelDS.getTypeNames()[0]).getFeatures(), roadDS.getFeatureSource(roadDS.getTypeNames()[0]).getFeatures(), outFolder,
-//                ProfileUrbanFabric.convertJSONtoProfile(new File("/home/mc/workspace/parcelmanagergui/tmp/mediumHouse.json")),
+//                ProfileUrbanFabric.convertJSONtoProfile(new File("src/main/resources/TestScenario/profileUrbanFabric/mediumHouse.json")),
 ////                ProfileUrbanFabric.convertJSONtoProfile(new File("src/main/resources/TestScenario/profileUrbanFabric/smallHouse.json")),
 //                true);
 //        CollecMgmt.exportSFC(z, new File(outFolder, "result"));
@@ -77,9 +78,8 @@ public class ZoneDivision extends Workflow {
      * @param inputSFC    Geopackage of zones to extract the wanted zone from (usually a zoning plan)
      * @param boundingSFC {@link SimpleFeatureCollection} to bound the process on a wanted location
      * @return An extraction of the zoning collection
-     * @throws IOException from marking parcel
      */
-    public static SimpleFeatureCollection createZoneToCut(String genericZone, SimpleFeatureCollection inputSFC, SimpleFeatureCollection boundingSFC) throws IOException {
+    public static SimpleFeatureCollection createZoneToCut(String genericZone, SimpleFeatureCollection inputSFC, SimpleFeatureCollection boundingSFC) {
         return createZoneToCut(genericZone, null, inputSFC, boundingSFC);
     }
 
@@ -94,9 +94,8 @@ public class ZoneDivision extends Workflow {
      * @param inputSFC    Geopackage of zones to extract the wanted zone from (usually a zoning plan)
      * @param boundingSFC {@link SimpleFeatureCollection} to bound the process on a wanted location
      * @return An extraction of the zoning collection
-     * @throws IOException from marking parcel
      */
-    public static SimpleFeatureCollection createZoneToCut(String genericZone, String preciseZone, SimpleFeatureCollection inputSFC, SimpleFeatureCollection boundingSFC) throws IOException {
+    public static SimpleFeatureCollection createZoneToCut(String genericZone, String preciseZone, SimpleFeatureCollection inputSFC, SimpleFeatureCollection boundingSFC) {
         // get the wanted zones from the zoning file
         SimpleFeatureCollection finalZone;
         if (genericZone != null && !genericZone.equals(""))
@@ -170,8 +169,7 @@ public class ZoneDivision extends Workflow {
      * @param parcels           {@link SimpleFeatureCollection} of the unmarked parcels.
      * @param outFolder         folder to write {@link Workflow#isDEBUG()} and {@link Workflow#isSAVEINTERMEDIATERESULT()} geofile if concerned
      * @param profile           {@link ProfileUrbanFabric} contains the parameters of the wanted urban scene
-     * @return The input parcel {@link SimpleFeatureCollection} with the marked parcels replaced by the simulated parcels. All parcels have the
-     * {@link fr.ign.artiscales.pm.parcelFunction.ParcelSchema#getSFBMinParcel()} schema.
+     * @return The input parcel {@link SimpleFeatureCollection} with the marked parcels replaced by the simulated parcels.
      * @throws IOException from marking parcel
      */
     public SimpleFeatureCollection zoneDivision(SimpleFeatureCollection initialZone, SimpleFeatureCollection parcels, File outFolder, ProfileUrbanFabric profile, boolean keepExistingRoads) throws IOException {
@@ -188,8 +186,8 @@ public class ZoneDivision extends Workflow {
      * @param parcels           {@link SimpleFeatureCollection} of the unmarked parcels.
      * @param outFolder         folder to write {@link Workflow#isDEBUG()} and {@link Workflow#isSAVEINTERMEDIATERESULT()} geofile if concerned
      * @param profile           {@link ProfileUrbanFabric} contains the parameters of the wanted urban scene
-     * @return The input parcel {@link SimpleFeatureCollection} with the marked parcels replaced by the simulated parcels. All parcels have the
-     * {@link fr.ign.artiscales.pm.parcelFunction.ParcelSchema#getSFBMinParcel()} schema.
+     * @return The input parcel {@link SimpleFeatureCollection} with the marked parcels replaced by the simulated parcels.
+     * All parcels have the same schema with a .
      * @throws IOException from marking parcel
      */
     public SimpleFeatureCollection zoneDivision(SimpleFeatureCollection initialZone, SimpleFeatureCollection parcels, File outFolder, ProfileUrbanFabric profile, File roadFile, File buildingFile, boolean keepExistingRoads) throws IOException {
@@ -212,8 +210,7 @@ public class ZoneDivision extends Workflow {
      * @param keepExistingRoads If true, existing raod (lack of parcel in the parcel plan) will be kept. If not, the whole zone is simulated regardless of its content.
      * @param outFolder         folder to write {@link Workflow#isDEBUG()} and {@link Workflow#isSAVEINTERMEDIATERESULT()} geofile if concerned
      * @param profile           {@link ProfileUrbanFabric} contains the parameters of the wanted urban scene
-     * @return The input parcel {@link SimpleFeatureCollection} with the marked parcels replaced by the simulated parcels. All parcels have the
-     * {@link fr.ign.artiscales.pm.parcelFunction.ParcelSchema#getSFBMinParcel()} schema.
+     * @return The input parcel {@link SimpleFeatureCollection} with the marked parcels replaced by the simulated parcels.
      * @throws IOException from marking parcel
      */
     public SimpleFeatureCollection zoneDivision(SimpleFeatureCollection initialZone, SimpleFeatureCollection parcels, SimpleFeatureCollection roads, File outFolder, ProfileUrbanFabric profile, boolean keepExistingRoads) throws IOException {
@@ -234,8 +231,8 @@ public class ZoneDivision extends Workflow {
      * @param buildings         for densification only (can be null)
      * @param exclusionZone     for densification only (can be null)
      * @param extLines          for densification only (can be null)
-     * @return The input parcel {@link SimpleFeatureCollection} with the marked parcels replaced by the simulated parcels. All parcels have the
-     * {@link fr.ign.artiscales.pm.parcelFunction.ParcelSchema#getSFBMinParcel()} schema.
+     * @return The input parcel {@link SimpleFeatureCollection} with the marked parcels replaced by the simulated parcels.
+     * All parcels have the same schema as input parcels.
      * @throws IOException from marking parcel
      */
     public SimpleFeatureCollection zoneDivision(SimpleFeatureCollection initialZone, SimpleFeatureCollection parcels, SimpleFeatureCollection roads, SimpleFeatureCollection buildings, File outFolder, ProfileUrbanFabric profile, boolean keepExistingRoads, List<LineString> extLines, Geometry exclusionZone) throws IOException {
@@ -349,32 +346,32 @@ public class ZoneDivision extends Workflow {
             while (it.hasNext()) {
                 SimpleFeature zone = it.next();
                 switch (PROCESS) {
-                    case "OBB":
+                    case OBB:
                         ((DefaultFeatureCollection) splitParcels)
-                                .addAll(OBBDivision.splitParcel(zone, roads, profile.getMaximalArea(), profile.getMinimalWidthContactRoad(), profile.getHarmonyCoeff(), profile.getNoise(),
+                                .addAll(OBBDivision.splitParcel(zone, roads, profile.getMaximalArea(), profile.getMinimalWidthContactRoad(), profile.getHarmonyCoeff(), profile.getIrregularityCoeff(),
                                         CollecTransform.fromPolygonSFCtoListRingLines(CollecTransform.selectIntersection(blockCollection, (Geometry) zone.getDefaultGeometry())),
                                         profile.getLaneWidth(), profile.getStreetLane(), profile.getStreetWidth(), true, profile.getBlockShape()));
                         break;
-                    case "SS":
-                    case "SSoffset":
+                    case SS:
+                    case SSoffset:
                         StraightSkeletonDivision.FOLDER_OUT_DEBUG = tmpFolder;
                         ((DefaultFeatureCollection) splitParcels)
                                 .addAll(StraightSkeletonDivision.runTopologicalStraightSkeletonParcelDecomposition(zone, roads,
-                                        "NOM_VOIE_G", "IMPORTANCE", profile.getMaxDepth(), profile.getMaxDistanceForNearestRoad(), profile.getMinimalArea(), profile.getMinimalWidthContactRoad(), PROCESS.equals("SSoffset") ? profile.getMaxDepth() : 0,
-                                        profile.getNoise() == 0 ? 0.1 : profile.getNoise(), new MersenneTwister(42), profile.getLaneWidth(), ParcelSchema.getParcelID(zone)));
+                                        "NOM_VOIE_G", "IMPORTANCE", PROCESS.equals(DivisionType.SSoffset) ? profile.getMaxDepth() : 0, profile.getMaxDistanceForNearestRoad(), profile.getMinimalArea(), profile.getMinimalWidthContactRoad(), profile.getMaxWidth(),
+                                        profile.getIrregularityCoeff() == 0 ? 0.1 : profile.getIrregularityCoeff(), new MersenneTwister(42), profile.getLaneWidth(), ParcelSchema.getParcelID(zone)));
                         break;
-                    case "OBBThenSS":
+                    case OBBThenSS:
                         ((DefaultFeatureCollection) splitParcels)
                                 .addAll(OBBThenSS.applyOBBThenSS(zone,
                                         roads == null || roads.isEmpty() ? null : CollecTransform.selectIntersection(roads, ((Geometry) zone.getDefaultGeometry()).buffer(30))
                                         , profile, CollecTransform.fromPolygonSFCtoListRingLines(CollecTransform.selectIntersection(blockCollection, (Geometry) zone.getDefaultGeometry()))));
                         break;
-                    case "FlagDivision":
+                    case FlagDivision:
                         ((DefaultFeatureCollection) splitParcels)
-                                .addAll(FlagDivision.doFlagDivision(zone, roads, buildings, profile.getHarmonyCoeff(), profile.getNoise(),
+                                .addAll(FlagDivision.doFlagDivision(zone, roads, buildings, profile.getHarmonyCoeff(), profile.getIrregularityCoeff(),
                                         profile.getMaximalArea(), profile.getMinimalWidthContactRoad(), profile.getLenDriveway(), extLines, exclusionZone));
                         break;
-                    case "MS":
+                    case MS:
                         System.out.println("not implemented yet");
                         break;
                 }
@@ -387,7 +384,7 @@ public class ZoneDivision extends Workflow {
             System.out.println("fresh cuted parcels exported");
         }
         // merge the small parcels to bigger ones
-        splitParcels = ParcelCollection.mergeTooSmallParcels(splitParcels, profile.getMinimalArea(), PROCESS.equals("SS"));
+        splitParcels = ParcelCollection.mergeTooSmallParcels(splitParcels, profile.getMinimalArea(), PROCESS.equals(DivisionType.SS));
         DefaultFeatureCollection result = new DefaultFeatureCollection();
         int num = 0;
         // set attribute for the simulated parcels
@@ -395,6 +392,7 @@ public class ZoneDivision extends Workflow {
             while (itParcel.hasNext()) {
                 SimpleFeature parcel = itParcel.next();
                 Geometry parcelGeom = (Geometry) parcel.getDefaultGeometry();
+                Schemas.setFieldsToSFB(finalParcelBuilder, CollecTransform.selectWhichIntersectMost(parcels, parcelGeom));
                 finalParcelBuilder.set(geomName, parcelGeom);
                 // get the section name of the corresponding zone
                 finalParcelBuilder.set(ParcelSchema.getParcelSectionField(), Arrays.stream(goOdZone.toArray(new SimpleFeature[0])).filter(z -> ((Geometry) z.getDefaultGeometry()).buffer(2).contains(parcelGeom)).map(z -> (String) z.getAttribute(ParcelSchema.getParcelSectionField())).findFirst().orElse(""));

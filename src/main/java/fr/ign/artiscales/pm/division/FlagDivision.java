@@ -34,6 +34,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
+//todo change lenDriveway everywhere
 
 /**
  * Re-implementation of block decomposition into parcels with flag shape. The algorithm is an adaptation from :
@@ -76,13 +77,18 @@ public class FlagDivision extends Division {
 //        System.out.println("time : " + (System.currentTimeMillis() - start));
 //    }
 
-
+    /**
+     * Main way to access to the flag parcel split algorithm for a collection. Parcels must be marked in order to be simulated.
+     *
+     * @param inputCollection feature to decompose
+     * @param buildingFile    building that could stop the creation of a driveway
+     * @param roadFile        complementary roads (as line and not as parcel void)
+     * @param profile         Description of the urban fabric profile planed to be simulated on this zone.
+     * @return collection of cut parcels
+     * @throws IOException reading buildingFile
+     */
     public static SimpleFeatureCollection doFlagDivision(SimpleFeatureCollection inputCollection, File buildingFile, File roadFile, ProfileUrbanFabric profile) throws IOException {
         return doFlagDivision(inputCollection, buildingFile, roadFile, profile, CityGeneration.createUrbanBlock(inputCollection), null);
-    }
-
-    public static SimpleFeatureCollection doFlagDivision(SimpleFeatureCollection inputCollection, File buildingFile, File roadFile, ProfileUrbanFabric profile, SimpleFeatureCollection block, Geometry exclusionZone) throws IOException {
-        return doFlagDivision(inputCollection, buildingFile, roadFile, profile.getHarmonyCoeff(), profile.getNoise(), profile.getMaximalArea(), profile.getMinimalWidthContactRoad(), profile.getLenDriveway(), block, exclusionZone);
     }
 
     /**
@@ -91,10 +97,33 @@ public class FlagDivision extends Division {
      * @param inputCollection feature to decompose
      * @param buildingFile    building that could stop the creation of a driveway
      * @param roadFile        complementary roads (as line and not as parcel void)
+     * @param profile         Description of the urban fabric profile planed to be simulated on this zone.
+     * @param block           SimpleFeatureCollection containing the morphological block. Can be generated with the {@link fr.ign.artiscales.tools.geometryGeneration.CityGeneration#createUrbanBlock(SimpleFeatureCollection)} method.
+     * @param exclusionZone   Exclude a zone that won't be considered as a potential road connection. Useful to represent border of the parcel plan. Can be null.
      * @return collection of cut parcels
      * @throws IOException reading buildingFile
      */
-    public static SimpleFeatureCollection doFlagDivision(SimpleFeatureCollection inputCollection, File buildingFile, File roadFile, double harmony, double noise, double maximalArea, double minimalWidthContact, double lenDriveway, SimpleFeatureCollection block, Geometry exclusionZone) throws IOException {
+    public static SimpleFeatureCollection doFlagDivision(SimpleFeatureCollection inputCollection, File buildingFile, File roadFile, ProfileUrbanFabric profile, SimpleFeatureCollection block, Geometry exclusionZone) throws IOException {
+        return doFlagDivision(inputCollection, buildingFile, roadFile, profile.getHarmonyCoeff(), profile.getIrregularityCoeff(), profile.getMaximalArea(), profile.getMinimalWidthContactRoad(), profile.getLenDriveway(), block, exclusionZone);
+    }
+
+    /**
+     * Main way to access to the flag parcel split algorithm for a collection. Parcels must be marked in order to be simulated.
+     *
+     * @param inputCollection         feature to decompose
+     * @param buildingFile            building that could stop the creation of a driveway
+     * @param roadFile                complementary roads (as line and not as parcel void)
+     * @param harmony                 OBB algorithm parameter to allow the rotation of the bounding box if the ratio between the box's length and width is higher to this coefficient. Must be between 0 and 1.
+     * @param irregularityCoeff       irregularity into parcel division
+     * @param maximalArea             threshold of parcel area above which the OBB algorithm stops to decompose parcels*
+     * @param exclusionZone           Exclude a zone that won't be considered as a potential road connection. Useful to represent border of the parcel plan. Can be null.
+     * @param block                   SimpleFeatureCollection containing the morphological block. Can be generated with the {@link fr.ign.artiscales.tools.geometryGeneration.CityGeneration#createUrbanBlock(SimpleFeatureCollection)} method.
+     * @param drivewayWidth           Width of the driveway to connect a parcel through another parcel to the road
+     * @param minimalWidthContactRoad Width of the contact between parcel and road under which the parcel won't be cut anymore
+     * @return collection of cut parcels
+     * @throws IOException reading buildingFile
+     */
+    public static SimpleFeatureCollection doFlagDivision(SimpleFeatureCollection inputCollection, File buildingFile, File roadFile, double harmony, double irregularityCoeff, double maximalArea, double minimalWidthContactRoad, double drivewayWidth, SimpleFeatureCollection block, Geometry exclusionZone) throws IOException {
         if (!CollecMgmt.isCollecContainsAttribute(inputCollection, MarkParcelAttributeFromPosition.getMarkFieldName()) || MarkParcelAttributeFromPosition.isNoParcelMarked(inputCollection)) {
             if (isDEBUG())
                 System.out.println("doFlagDivision: no parcel marked");
@@ -115,7 +144,7 @@ public class FlagDivision extends Division {
                 result.addAll(doFlagDivision(feat,
                         roadFile != null ? DataUtilities.collection(CollecTransform.selectIntersection(roadDS.getFeatureSource(roadDS.getTypeNames()[0]).getFeatures(), ((Geometry) feat.getDefaultGeometry()).buffer(10))) : null,
                         buildingFile != null ? DataUtilities.collection(CollecTransform.selectIntersection(buildingDS.getFeatureSource(buildingDS.getTypeNames()[0]).getFeatures(), ((Geometry) feat.getDefaultGeometry()).buffer(10))) : null,
-                        harmony, noise, maximalArea, minimalWidthContact, lenDriveway, CollecTransform.fromPolygonSFCtoListRingLines(block.subCollection(ff.bbox(
+                        harmony, irregularityCoeff, maximalArea, minimalWidthContactRoad, drivewayWidth, CollecTransform.fromPolygonSFCtoListRingLines(block.subCollection(ff.bbox(
                                 ff.property(inputCollection.getSchema().getGeometryDescriptor().getLocalName()), inputCollection.getBounds()))), exclusionZone));
             }
         }
@@ -129,18 +158,25 @@ public class FlagDivision extends Division {
 
     /**
      * Flag split a single parcel. Main way to access to the flag parcel split algorithm.
-     * Add a fied <i>SIMULATED</i> and
+     * Add a field <i>SIMULATED</i> with the 1 value if simulation has been done, 0 otherwise.
      *
-     * @param sf           input feature
-     * @param harmonyCoeff OBB algorithm parameter to check if the bounding box could be rotated accordingly to the ratio between the box's length and width
-     * @param noise        irregularity into parcel shape
+     * @param sf                      input parcel to flag split
+     * @param building                buildings that could stop the creation of a driveway
+     * @param harmony                 OBB algorithm parameter to allow the rotation of the bounding box if the ratio between the box's length and width is higher to this coefficient. Must be between 0 and 1.
+     * @param irregularityCoeff       irregularity into parcel division
+     * @param maximalArea             threshold of parcel area above which the OBB algorithm stops to decompose parcels
+     * @param road                    complementary roads (as line and not as parcel void)
+     * @param exclusionZone           Exclude a zone that won't be considered as a potential road connection. Useful to represent border of the parcel plan. Can be null.
+     * @param extLines                Lines representing the morphological block.
+     * @param drivewayWidth           lenght of the driveway to connect a parcel through another parcel to the road
+     * @param minimalWidthContactRoad Width of the contact between parcel and road under which the parcel won't be cut anymore
      * @return the flag cut parcel if possible, the input parcel otherwise. Schema of the returned parcel is the same as input + a simulated field.
      */
-    public static SimpleFeatureCollection doFlagDivision(SimpleFeature sf, SimpleFeatureCollection road, SimpleFeatureCollection building, double harmonyCoeff, double noise,
+    public static SimpleFeatureCollection doFlagDivision(SimpleFeature sf, SimpleFeatureCollection road, SimpleFeatureCollection building, double harmony, double irregularityCoeff,
                                                          double maximalArea, double minimalWidthContactRoad, double drivewayWidth, List<LineString> extLines, Geometry exclusionZone) {
         DefaultFeatureCollection result = new DefaultFeatureCollection();
         Polygon p = Polygons.getPolygon((Geometry) sf.getDefaultGeometry());
-        SimpleFeatureBuilder builder = ParcelSchema.addField(sf.getFeatureType(), "SIMULATED");
+        SimpleFeatureBuilder builder = ParcelSchema.addSimulatedField(sf.getFeatureType());
         building = CollecTransform.selectIntersection(building, ((Geometry) sf.getDefaultGeometry()).buffer(20));
         SimpleFeatureCollection r = CollecTransform.selectIntersection(road, ((Geometry) sf.getDefaultGeometry()).buffer(20));
         // End test condition
@@ -154,7 +190,7 @@ public class FlagDivision extends Division {
         if (isDEBUG())
             System.out.println("flagSplit parcel " + sf);
         // Determination of splitting polygon (it is a splitting line in the article)
-        List<Polygon> splittingPolygon = OBBDivision.computeSplittingPolygon(p, extLines, true, harmonyCoeff, noise, 0.0, 0, 0.0, 0, 0);
+        List<Polygon> splittingPolygon = OBBDivision.computeSplittingPolygon(p, extLines, true, harmony, irregularityCoeff, 0.0, 0, 0.0, 0, 0);
         // Split into polygon
         List<Polygon> splitPolygon = OBBDivision.split(p, splittingPolygon);
         // If a parcel has no road access, there is a probability to make a flag split
@@ -181,7 +217,7 @@ public class FlagDivision extends Division {
         for (Polygon pol : splitPolygon) {
             Schemas.setFieldsToSFB(builder, sf);
             builder.set(sf.getFeatureType().getGeometryDescriptor().getLocalName(), pol);
-            result.addAll(doFlagDivision(builder.buildFeature(Attribute.makeUniqueId()), r, building, harmonyCoeff, noise, maximalArea, minimalWidthContactRoad, drivewayWidth, extLines, exclusionZone));
+            result.addAll(doFlagDivision(builder.buildFeature(Attribute.makeUniqueId()), r, building, harmony, irregularityCoeff, maximalArea, minimalWidthContactRoad, drivewayWidth, extLines, exclusionZone));
         }
         return result;
     }
@@ -189,7 +225,7 @@ public class FlagDivision extends Division {
     /**
      * Generate flag parcels: check if parcels have access to road and if not, try to generate a road throughout other parcels.
      *
-     * @param splitPolygon
+     * @param splitPolygon  Polygon to split
      * @param road          input road
      * @param building      input building
      * @param ext           outside block
@@ -261,6 +297,7 @@ public class FlagDivision extends Division {
 
     /**
      * Generate a list of candidate for creating roads. The pair is composed of a linestring that may be used to generate the road and the parcel on which it may be built.
+     * todo replace buffers and contains with dwithin ?!
      *
      * @param currentPoly           Polygon to link to the road
      * @param lPolygonWithRoadAcces other polygons surrounding the #currentPoly
@@ -278,11 +315,10 @@ public class FlagDivision extends Division {
             if (!polyWithRoadAcces.intersects(buffer))
                 continue;
             // We list the segments of the polygon with road access and keep the ones that does not intersect the buffer of new no-road-access polygon and the
-            // Then regroup the lines according to their connectivity. We finally add elements to list the correspondance between pears
-            Lines.regroupLineStrings(Lines.getSegments(polyWithRoadAcces.getExteriorRing()).stream().filter(
-                            x -> (!buffer.contains(x)) && !Lines.getListLineStringAsMultiLS(ext, currentPoly.getFactory()).buffer(0.1).contains(x) && !isRoadPolygonIntersectsLine(roads, x))
-                    .collect(Collectors.toList()), currentPoly.getFactory()).stream().forEach(x -> listMap.add(new ImmutablePair<>(x, polyWithRoadAcces)));
-
+            // Then regroup the lines according to their connectivity. We finally add elements to list the correspondence between pears
+            Lines.regroupLineStrings(Lines.getSegments(polyWithRoadAcces.getExteriorRing()).stream()
+                    .filter(x -> (!buffer.contains(x)) && !Lines.getListLineStringAsMultiLS(ext, currentPoly.getFactory()).buffer(0.1).contains(x) && !isRoadPolygonIntersectsLine(roads, x))
+                    .collect(Collectors.toList()), currentPoly.getFactory()).forEach(x -> listMap.add(new ImmutablePair<>(x, polyWithRoadAcces)));
         }
         return listMap;
     }
@@ -291,14 +327,16 @@ public class FlagDivision extends Division {
      * End condition : either the area or the contact width to road is below a threshold (0 value is not allowed for contact width to road, as opposite to straight OBB).
      * Goes to the {@link OBBDivision} class.
      *
-     * @param area           Area of the current parcel
-     * @param frontSideWidth minimal width of contact between road and parcel
+     * @param area                    Area of the current parcel
+     * @param frontSideWidth          minimal width of contact between road and parcel
+     * @param maximalArea             threshold of parcel area above which the OBB algorithm stops to decompose parcels
+     * @param minimalWidthContactRoad Width of the parcel under which the parcel won't be anymore cut
      * @return true if the algorithm must stop
      */
-    private static boolean endCondition(double area, double frontSideWidth, double maximalArea, double minimalWidth) {
+    private static boolean endCondition(double area, double frontSideWidth, double maximalArea, double minimalWidthContactRoad) {
         if (frontSideWidth == 0.0)
             return true;
-        return OBBDivision.endCondition(area, frontSideWidth, maximalArea, minimalWidth);
+        return OBBDivision.endCondition(area, frontSideWidth, maximalArea, minimalWidthContactRoad);
     }
 
     /**
@@ -319,7 +357,7 @@ public class FlagDivision extends Division {
      * @param poly parcel's polygon
      */
     private static boolean hasRoadAccess(Polygon poly, SimpleFeatureCollection roads, List<LineString> ext, Geometry exclusionZone) {
-        return ParcelState.isParcelHasRoadAccess(poly, roads, poly.getFactory().createMultiLineString(ext.toArray(new LineString[ext.size()])), exclusionZone);
+        return ParcelState.isParcelHasRoadAccess(poly, roads, poly.getFactory().createMultiLineString(ext.toArray(new LineString[0])), exclusionZone);
     }
 
     static boolean isRoadPolygonIntersectsLine(SimpleFeatureCollection roads, LineString ls) {

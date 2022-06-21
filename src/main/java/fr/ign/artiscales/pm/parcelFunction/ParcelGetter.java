@@ -10,7 +10,6 @@ import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.data.simple.SimpleFeatureIterator;
 import org.geotools.factory.CommonFactoryFinder;
 import org.geotools.feature.DefaultFeatureCollection;
-import org.geotools.util.factory.GeoTools;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.CoordinateXY;
 import org.locationtech.jts.geom.Geometry;
@@ -24,13 +23,13 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- * Methods to get parcels from collections regarding to specific criterion
+ * Methods to get parcels from collections regarding specific criterion
  */
 public class ParcelGetter {
 
-    static String codeDepFiled = "CODE_DEP";
-    static String codeComFiled = "CODE_COM";
-    static String typologyField = "typo";
+    private static String codeDepFieldName = "CODE_DEP";
+    private static String codeComFieldName = "CODE_COM";
+    private static String typologyFieldName = "typo";
 //	public static void main(String[] args) throws Exception {
 //		
 //	}
@@ -52,7 +51,7 @@ public class ParcelGetter {
         try (SimpleFeatureIterator itZonez = zonesSFC.features()) {
             while (itZonez.hasNext()) {
                 SimpleFeature zones = itZonez.next();
-                if (listZones.contains(zones.getAttribute(GeneralFields.getZoneGenericNameField())))
+                if (listZones.contains((String) zones.getAttribute(GeneralFields.getZoneGenericNameField())))
                     zoneSelected.add(zones);
             }
         } catch (Exception problem) {
@@ -86,7 +85,7 @@ public class ParcelGetter {
     }
 
     /**
-     * Get parcels by their typology. Default typology field name is "typo" and can be changed using method {@link #setTypologyField(String)}.
+     * Get parcels by their typology. Default typology field name is "typo" and can be changed using method {@link #setTypologyFieldName(String)}.
      *
      * @param typo       Name of the searched typology
      * @param parcels    Collection of parcels
@@ -97,8 +96,8 @@ public class ParcelGetter {
     public static SimpleFeatureCollection getParcelByTypo(String typo, SimpleFeatureCollection parcels, File zoningFile) throws IOException {
         DataStore zoningDS = CollecMgmt.getDataStore(zoningFile);
         SimpleFeatureCollection zoningSFC = CollecTransform.selectIntersection(zoningDS.getFeatureSource(zoningDS.getTypeNames()[0]).getFeatures(), parcels);
-        FilterFactory2 ff = CommonFactoryFinder.getFilterFactory2(GeoTools.getDefaultHints());
-        Filter filter = ff.like(ff.property(typologyField), typo);
+        FilterFactory2 ff = CommonFactoryFinder.getFilterFactory2();
+        Filter filter = ff.like(ff.property(typologyFieldName), typo);
         DefaultFeatureCollection result = new DefaultFeatureCollection();
         try (SimpleFeatureIterator itParcel = parcels.features()) {
             while (itParcel.hasNext()) {
@@ -132,7 +131,7 @@ public class ParcelGetter {
 
     /**
      * Write parcels out of a parcel collection corresponding to a list of zipcodes in a new geo file.
-     * Zipcodes are not directly contained in a field of the collection but is composed of two fields. Their values are set by default but it's possible to change them with the methods {@link #setCodeComFiled(String) setCodeComFiled} and {@link #setCodeDepFiled(String) setCodeDepFiled}
+     * Zipcodes are not directly contained in a field of the collection but is composed of two fields. Their values are set by default but it's possible to change them with the methods {@link #setCodeComFieldName(String)} and {@link #setCodeDepFieldName(String)}
      *
      * @param parcelIn input parcel collection
      * @param vals     a list of zipcode values
@@ -149,7 +148,7 @@ public class ParcelGetter {
 
     /**
      * Get parcels out of a parcel collection corresponding to a list of zipcodes
-     * Zipcodes are not directly contained in a field of the collection but is composed of two fields. Their values are set by default but it's possible to change them with the methods {@link #setCodeComFiled(String) setCodeComFiled} and {@link #setCodeDepFiled(String) setCodeDepFiled}
+     * Zipcodes are not directly contained in a field of the collection but is composed of two fields. Their values are set by default but it's possible to change them with the methods {@link #setCodeComFieldName(String)} and {@link #setCodeDepFieldName(String)}
      *
      * @param parcelIn input parcel collection
      * @param vals     a list of zipcode values
@@ -165,7 +164,7 @@ public class ParcelGetter {
 
     /**
      * Get parcels out of a parcel collection with the zip code of them parcels. Zipcodes are not directly contained in a field of the collection but is composed of two fields.
-     * Their values are set by default but it's possible to change them with the methods {@link #setCodeComFiled(String)} and {@link #setCodeDepFiled(String)}
+     * Their values are set by default but it's possible to change them with the methods {@link #setCodeComFieldName(String)} and {@link #setCodeDepFieldName(String)}
      *
      * @param parcelIn Input parcel collection
      * @param val      Value of the zipcode. Can contain comma separated values
@@ -174,12 +173,13 @@ public class ParcelGetter {
     public static SimpleFeatureCollection getParcelByZip(SimpleFeatureCollection parcelIn, String val) {
         if (val.contains(","))
             return getParcelByZip(parcelIn, Arrays.asList(val.split(",")));
-        return getParcelByZip(parcelIn, val, codeDepFiled, codeComFiled);
+        return getParcelByZip(parcelIn, val, codeDepFieldName, codeComFieldName);
     }
 
     /**
      * Get parcels out of a parcel collection with the zip code of them parcels. zipcode is not directly contained in a field of the collection but is composed of two fields
      * (usually a state-like code and a community code).
+     * todo why are we working on geometries like that ??
      *
      * @param parcelIn        Input parcel collection
      * @param val             Value of the zipcode
@@ -230,36 +230,70 @@ public class ParcelGetter {
             }
         }
         DefaultFeatureCollection result = new DefaultFeatureCollection();
-        Arrays.stream(parcelIn.toArray(new SimpleFeature[0])).forEach(feat -> {
-            if (CollecMgmt.isSimpleFeatureContainsAttribute(feat, ParcelSchema.getParcelCommunityField())
-                    && feat.getAttribute(ParcelSchema.getParcelCommunityField()) != null
-                    && feat.getAttribute(ParcelSchema.getParcelCommunityField()).equals(val))
-                result.add(feat);
-        });
+        try (SimpleFeatureIterator it = parcelIn.features()) {
+            while (it.hasNext()) {
+                SimpleFeature feat = it.next();
+                if (CollecMgmt.isSimpleFeatureContainsAttribute(feat, ParcelSchema.getParcelCommunityField())
+                        && feat.getAttribute(ParcelSchema.getParcelCommunityField()) != null
+                        && feat.getAttribute(ParcelSchema.getParcelCommunityField()).equals(val))
+                    result.add(feat);
+            }
+        }
+
         return result;
     }
 
-    public static String getCodeDepFiled() {
-        return codeDepFiled;
+    /**
+     * Get the department code field name that later forms the zipcode.
+     *
+     * @return department code field name (<i>CODE_DEP</i> by default)
+     */
+    public static String getCodeDepFieldName() {
+        return codeDepFieldName;
     }
 
-    public static void setCodeDepFiled(String codeDepFiled) {
-        ParcelGetter.codeDepFiled = codeDepFiled;
+    /**
+     * Set a new department code field name that later forms the zipcode.
+     *
+     * @param codeDepFieldName new department code field name.
+     */
+    public static void setCodeDepFieldName(String codeDepFieldName) {
+        ParcelGetter.codeDepFieldName = codeDepFieldName;
     }
 
-    public static String getCodeComFiled() {
-        return codeComFiled;
+    /**
+     * Get a new community field name that later forms the zipcode.
+     *
+     * @return current community code field name (<i>CODE_COM</i> by default).
+     */
+    public static String getCodeComFieldName() {
+        return codeComFieldName;
     }
 
-    public static void setCodeComFiled(String codeComFiled) {
-        ParcelGetter.codeComFiled = codeComFiled;
+    /**
+     * Set a new community field name that later forms the zipcode.
+     *
+     * @param codeComFieldName new community code field name.
+     */
+    public static void setCodeComFieldName(String codeComFieldName) {
+        ParcelGetter.codeComFieldName = codeComFieldName;
     }
 
-    public static String getTypologyField() {
-        return typologyField;
+    /**
+     * Get the field that sets a typology.
+     *
+     * @return topology field name (<i>typo</i> by default).
+     */
+    public static String getTypologyFieldName() {
+        return typologyFieldName;
     }
 
-    public static void setTypologyField(String typologyField) {
-        ParcelGetter.typologyField = typologyField;
+    /**
+     * Set the field that sets a typology.
+     *
+     * @param typologyFieldName new typology field name
+     */
+    public static void setTypologyFieldName(String typologyFieldName) {
+        ParcelGetter.typologyFieldName = typologyFieldName;
     }
 }

@@ -8,11 +8,21 @@
 	"outFolder": "src/main/resources/ParcelShapeComparison/OutputResults/",
 	"steps": [
 		{
-			"workflow": "densificationOrNeighborhood",
+			"workflow": "densification",
 			"genericZone": "U",
 			"urbanFabricType": "smallHouse",
-			"optional": "adaptAreaOfUrbanFabric"
+			"optional": "adaptAreaOfUrbanFabric",
+			"selection":"parcelSmallerRatio,5"
+		},
+		{
+			"workflow": "consolidationDivision",
+			"parcelProcess": "OBB",
+			"genericZone": "U",
+			"urbanFabricType": "smallHouse",
+			"optional": "adaptAreaOfUrbanFabric",
+			"selection":"parcelBiggerRatio,5"
 		},		
+		
 		{
 			"workflow": "consolidationDivision",
 			"parcelProcess": "OBB",

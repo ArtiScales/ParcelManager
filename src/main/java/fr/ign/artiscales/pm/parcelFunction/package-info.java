@@ -1,4 +1,4 @@
 /**
- * Diverse primitive methods to apply on parcels
+ * Basic methods that apply to parcels
  */
 package fr.ign.artiscales.pm.parcelFunction;

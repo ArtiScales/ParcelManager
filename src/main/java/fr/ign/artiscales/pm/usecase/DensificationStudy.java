@@ -5,7 +5,6 @@ import fr.ign.artiscales.pm.fields.french.FrenchZoningSchemas;
 import fr.ign.artiscales.pm.parcelFunction.MarkParcelAttributeFromPosition;
 import fr.ign.artiscales.pm.parcelFunction.ParcelAttribute;
 import fr.ign.artiscales.pm.scenario.PMScenario;
-import fr.ign.artiscales.pm.scenario.PMStep;
 import fr.ign.artiscales.pm.workflow.Densification;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.Geom;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.collec.CollecMgmt;
@@ -74,22 +73,22 @@ public class DensificationStudy extends UseCase {
                                              File outFolder, boolean isParcelWithoutStreetAllowed, ProfileUrbanFabric profile) throws IOException {
         outFolder.mkdir();
         parcels = DataUtilities.collection(parcels);
-        SimpleFeatureCollection block = CityGeneration.createUrbanBlock(parcels,true);
+        SimpleFeatureCollection block = CityGeneration.createUrbanBlock(parcels, true);
         Geometry buffer = CityGeneration.createBufferBorder(parcels);
         Geometry maskZone = Geom.unionSFC(block);
         // building crop and export
         DataStore buildingDS = CollecMgmt.getDataStore(buildingFile);
-        SimpleFeatureCollection building = DataUtilities.collection(CollecTransform.selectIntersection(buildingDS.getFeatureSource(buildingDS.getTypeNames()[0]).getFeatures(),maskZone)) ;
+        SimpleFeatureCollection building = DataUtilities.collection(CollecTransform.selectIntersection(buildingDS.getFeatureSource(buildingDS.getTypeNames()[0]).getFeatures(), maskZone));
         File buildingFileExported = CollecMgmt.exportSFC(building, new File(outFolder, "building"));
         buildingDS.dispose();
         // road crop and export
         DataStore roadDS = CollecMgmt.getDataStore(roadFile);
-        SimpleFeatureCollection road = DataUtilities.collection(CollecTransform.selectIntersection(roadDS.getFeatureSource(roadDS.getTypeNames()[0]).getFeatures(),maskZone) );
+        SimpleFeatureCollection road = DataUtilities.collection(CollecTransform.selectIntersection(roadDS.getFeatureSource(roadDS.getTypeNames()[0]).getFeatures(), maskZone));
         File roadFileExported = CollecMgmt.exportSFC(road, new File(outFolder, "road"));
         roadDS.dispose();
         // zoning crop and export
         DataStore zoningDS = CollecMgmt.getDataStore(zoningFile);
-        SimpleFeatureCollection zoning = DataUtilities.collection(CollecTransform.selectIntersection(zoningDS.getFeatureSource(zoningDS.getTypeNames()[0]).getFeatures(),maskZone));
+        SimpleFeatureCollection zoning = DataUtilities.collection(CollecTransform.selectIntersection(zoningDS.getFeatureSource(zoningDS.getTypeNames()[0]).getFeatures(), maskZone));
         zoningDS.dispose();
 
         String splitField = MarkParcelAttributeFromPosition.getMarkFieldName();
@@ -134,7 +133,7 @@ public class DensificationStudy extends UseCase {
         // If the parcels have to be connected to the road, we mark them
         if (!isParcelWithoutStreetAllowed) {
             parcelsVacantLotCreated = MarkParcelAttributeFromPosition.markParcelsConnectedToRoad(parcelsVacantLotCreated, CityGeneration.createUrbanBlock(parcelsVacantLotCreated), road, buffer);
-            parcelsDensifCreated = MarkParcelAttributeFromPosition.markParcelsConnectedToRoad(parcelsDensifCreated, CityGeneration.createUrbanBlock(parcelsDensifCreated,true), road, buffer);
+            parcelsDensifCreated = MarkParcelAttributeFromPosition.markParcelsConnectedToRoad(parcelsDensifCreated, CityGeneration.createUrbanBlock(parcelsDensifCreated, true), road, buffer);
         }
         // exporting output geopackages and countings
         List<SimpleFeature> vacantParcelU = Arrays.stream(parcelsDensifCreated.toArray(new SimpleFeature[0]))

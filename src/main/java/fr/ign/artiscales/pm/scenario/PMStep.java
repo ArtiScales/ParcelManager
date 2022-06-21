@@ -1,6 +1,7 @@
 package fr.ign.artiscales.pm.scenario;
 
 import fr.ign.artiscales.pm.analysis.RealUrbanFabricParameters;
+import fr.ign.artiscales.pm.division.DivisionType;
 import fr.ign.artiscales.pm.division.StraightSkeletonDivision;
 import fr.ign.artiscales.pm.fields.GeneralFields;
 import fr.ign.artiscales.pm.parcelFunction.MarkParcelAttributeFromPosition;
@@ -11,7 +12,7 @@ import fr.ign.artiscales.pm.parcelFunction.ParcelState;
 import fr.ign.artiscales.pm.usecase.DensificationStudy;
 import fr.ign.artiscales.pm.workflow.ConsolidationDivision;
 import fr.ign.artiscales.pm.workflow.Densification;
-import fr.ign.artiscales.pm.workflow.Workflow;
+import fr.ign.artiscales.pm.workflow.WorkflowType;
 import fr.ign.artiscales.pm.workflow.ZoneDivision;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.collec.CollecMgmt;
 import fr.ign.artiscales.tools.geometryGeneration.CityGeneration;
@@ -28,6 +29,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -42,19 +44,14 @@ public class PMStep {
      * Geographic files
      */
     private static File PARCELFILE, ZONINGFILE, BUILDINGFILE, ROADFILE, PREDICATEFILE, POLYGONINTERSECTION, ZONE, OUTFOLDER, PROFILEFOLDER;
-    /**
-     * If true, save a geopackage containing only the simulated parcels in the temporary folder for every workflow simulated.
-     */
-    private static boolean SAVEINTERMEDIATERESULT = false;
-    /**
-     * If true, will save all the intermediate results in the temporary folder
-     */
-    private static boolean DEBUG = false;
-    private static boolean allowIsolatedParcel = false;
 
-    final private String workflow, parcelProcess, communityNumber, communityType, urbanFabricType, genericZone, preciseZone;
-    private final boolean peripheralRoad;
+    private static boolean allowIsolatedParcel = false;
+    private static boolean peripheralRoad;
+    final private WorkflowType workflow;
+    final private DivisionType parcelProcess;
+    final private String communityNumber, communityType, urbanFabricType, genericZone, preciseZone, selection;
     List<String> communityNumbers = new ArrayList<>();
+    private ProfileUrbanFabric profile;
     /**
      * If true, will look at the community built parcel's area to adapt the maximal and minimal area (set with the 1st and the 9th decile of the built area's distribution). False by default.
      */
@@ -68,19 +65,21 @@ public class PMStep {
      */
     private File lastOutput;
 
-    public PMStep(String workflow, String parcelProcess, String genericZone, String preciseZone, String communityNumber, String communityType, String urbanFabricType, boolean peripheralRoad, boolean keepExistingRoad, boolean adaptUrbanFabric) {
-        this.workflow = workflow;
-        this.parcelProcess = parcelProcess;
+    public PMStep(String workflow, String parcelProcess, String genericZone, String preciseZone, String communityNumber, String communityType, String urbanFabricType, String selection, boolean peripheralRoad, boolean keepExistingRoad, boolean adaptUrbanFabric) {
+        this.workflow = WorkflowType.valueOf(workflow);
+        if (this.workflow.equals(WorkflowType.densification) || this.workflow.equals(WorkflowType.densificationStudy) || this.workflow.equals(WorkflowType.densificationOrNeighborhood)) //needless to say but for compilation
+            this.parcelProcess = DivisionType.FlagDivision;
+        else
+            this.parcelProcess = DivisionType.valueOf(parcelProcess);
         this.genericZone = genericZone;
         this.preciseZone = preciseZone;
         this.communityNumber = communityNumber;
         this.communityType = communityType;
         this.urbanFabricType = urbanFabricType;
-        this.adaptAreaOfUrbanFabric = adaptUrbanFabric;
-        this.keepExistingRoad = keepExistingRoad;
-        this.peripheralRoad = peripheralRoad;
-        setSaveIntermediateResult(SAVEINTERMEDIATERESULT);
-        setDEBUG(DEBUG);
+        this.selection = selection;
+        setAdaptAreaOfUrbanFabric(adaptUrbanFabric);
+        setKeepExistingRoad(keepExistingRoad);
+        setPeripheralRoad(peripheralRoad);
     }
 
     public static File getOUTFOLDER() {
@@ -93,7 +92,17 @@ public class PMStep {
 
     /**
      * Set the path of the different files for a PMStep to be executed. The method is used by PMScenario in a static way because it has no reasons to change within a PM simulation,
-     * except for the parcel file that must be updated after each PMStep to make the new PMStep simulation on an already simulated parcel plan
+     * except for the parcel file that must be updated after each PMStep to make the new PMStep simulation on an already simulated parcel plan.
+     *
+     * @param parcelFile          geofiles containing parcel plan for the whole scenario
+     * @param zoningFile          geofiles containing zoning plan for the whole scenario
+     * @param buildingFile        geofiles containing buildings for the whole scenario
+     * @param roadFile            geofiles containing roads for the whole scenario
+     * @param predicateFile       particular urban rules which could be applied on specific processes. Can be null.
+     * @param polygonIntersection polygons used for parcel selection. Can be null.
+     * @param zone                specific zones to simulate the reshaping as a whole. Can ben null
+     * @param outFolder           folder where every result are written.
+     * @param profileFolder       folder containing parameter rules
      */
     public static void setFiles(File parcelFile, File zoningFile, File buildingFile, File roadFile, File predicateFile, File polygonIntersection, File zone, File outFolder, File profileFolder) {
         PARCELFILE = parcelFile;
@@ -117,25 +126,6 @@ public class PMStep {
     }
 
     /**
-     * If true, save a geopackage containing only the simulated parcels in the temporary folder for every workflow simulated.
-     *
-     * @return SAVEINTERMEDIATERESULT
-     */
-    public static boolean isSaveIntermediateResult() {
-        return SAVEINTERMEDIATERESULT;
-    }
-
-    /**
-     * If true, save a geopackage containing only the simulated parcels in the temporary folder for every workflow simulated.
-     *
-     * @param sAVEINTERMEDIATERESULT true if we save, false otherwise
-     */
-    public static void setSaveIntermediateResult(boolean sAVEINTERMEDIATERESULT) {
-        Workflow.setSAVEINTERMEDIATERESULT(sAVEINTERMEDIATERESULT);
-        SAVEINTERMEDIATERESULT = sAVEINTERMEDIATERESULT;
-    }
-
-    /**
      * Get the intersection polygon geographic file.
      *
      * @return POLYGONINTERSECTION
@@ -154,27 +144,19 @@ public class PMStep {
     }
 
     /**
-     * If true, will save all the intermediate results in the temporary folder
+     * Question if the flag division process allows the creation of porch or flag parcels isolated from the kown road network.
      *
-     * @return DEBUG
+     * @return Is the simulation of new parcels isolated from the road allowed ?
      */
-    public static boolean isDEBUG() {
-        return DEBUG;
-    }
-
-    /**
-     * If true, will save all the intermediate results in the temporary folder
-     *
-     * @param dEBUG true for debug mode
-     */
-    public static void setDEBUG(boolean dEBUG) {
-        Workflow.setDEBUG(dEBUG);
-        DEBUG = dEBUG;
-    }
-
     public static boolean isAllowIsolatedParcel() {
         return allowIsolatedParcel;
     }
+
+    /**
+     * Set if the flag division process allows the creation of porch or flag parcels isolated from the kown road network.
+     *
+     * @param allowIsolatedParcel Can we simulate new parcels isolated from the road ?
+     */
 
     public static void setAllowIsolatedParcel(boolean allowIsolatedParcel) {
         PMStep.allowIsolatedParcel = allowIsolatedParcel;
@@ -191,8 +173,20 @@ public class PMStep {
         return PROFILEFOLDER;
     }
 
+    /**
+     * Are we generating peripheral road around zones to be reshaped in the {@link StraightSkeletonDivision} process ?
+     *
+     * @return true if we do the generation
+     */
     public boolean isPeripheralRoad() {
         return peripheralRoad;
+    }
+
+    /**
+     * @param newPeripheralRoad Do we need to generate peripheral road around zones to be reshaped in the {@link StraightSkeletonDivision} process ?
+     */
+    public void setPeripheralRoad(boolean newPeripheralRoad) {
+        peripheralRoad = newPeripheralRoad;
     }
 
     public boolean isAdaptAreaOfUrbanFabric() {
@@ -203,6 +197,9 @@ public class PMStep {
         adaptAreaOfUrbanFabric = newAdaptAreaOfUrbanFabric;
     }
 
+    /**
+     * @return the name of the urbanFabricType used by this current step.
+     */
     public String getUrbanFabricType() {
         return urbanFabricType;
     }
@@ -215,7 +212,9 @@ public class PMStep {
      */
     public File execute() throws IOException {
         OUTFOLDER.mkdirs();
-        StraightSkeletonDivision.setGeneratePeripheralRoad(peripheralRoad);
+        // get the wanted building profile
+        profile = ProfileUrbanFabric.convertJSONtoProfile(new File(PROFILEFOLDER + "/" + urbanFabricType + ".json"));
+        StraightSkeletonDivision.setGeneratePeripheralRoad(isPeripheralRoad());
         //convert the parcel to a common type
         DataStore dSParcel = CollecMgmt.getDataStore(PARCELFILE);
         SimpleFeatureCollection parcel = DataUtilities.collection(dSParcel.getFeatureSource(dSParcel.getTypeNames()[0]).getFeatures());
@@ -224,19 +223,17 @@ public class PMStep {
         // mark (select) the parcels
         SimpleFeatureCollection parcelMarked;
         //if we work with zones, we put them as parcel input
-        if (workflow.equals("zoneDivision"))
+        if (workflow.equals(WorkflowType.zoneDivision))
             parcelMarked = getSimulationParcels(getZone(parcel));
         else
             parcelMarked = getSimulationParcels(parcel);
-        if (DEBUG) {
+        if (PMScenario.isDEBUG()) {
             System.out.println("parcels marked with " + MarkParcelAttributeFromPosition.countMarkedParcels(parcelMarked) + " marks");
             File tmpFolder = new File(OUTFOLDER, "tmp");
             tmpFolder.mkdirs();
-            CollecMgmt.exportSFC(parcelMarked, new File(tmpFolder, "parcelMarked" + this.workflow + "-" + this.parcelProcess + this.preciseZone));
+            CollecMgmt.exportSFC(parcelMarked, new File(tmpFolder, "parcelMarked" + this.workflow + "-" + this.parcelProcess.toString() + this.preciseZone));
         }
-        SimpleFeatureCollection parcelCut = new DefaultFeatureCollection();
-        // get the wanted building profile
-        ProfileUrbanFabric profile = ProfileUrbanFabric.convertJSONtoProfile(new File(PROFILEFOLDER + "/" + urbanFabricType + ".json"));
+        DefaultFeatureCollection parcelCut = new DefaultFeatureCollection();
         // in case of lot of cities to simulate, we separate the execution of PM simulations for each community
         for (String communityNumber : communityNumbers) {
             System.out.println("for community " + communityNumber);
@@ -246,7 +243,7 @@ public class PMStep {
                 continue;
             }
             //if we adapt parcel's area to the community
-            if (adaptAreaOfUrbanFabric) {
+            if (isAdaptAreaOfUrbanFabric()) {
                 RealUrbanFabricParameters rufp = new RealUrbanFabricParameters(parcelMarkedComm, BUILDINGFILE);
                 DescriptiveStatistics stat = rufp.getAreaBuilt();
                 double max = stat.getPercentile(75);
@@ -257,46 +254,41 @@ public class PMStep {
                 profile.setMinimalArea(min);
             }
             // If a predicate file has been set
-            if (PREDICATEFILE != null && PREDICATEFILE.exists()) {
-                allowIsolatedParcel = ParcelState.isArt3AllowsIsolatedParcel(parcel.features().next(), PREDICATEFILE);
-                System.out.println("allowIsolatedParcel finally " + allowIsolatedParcel);
-            }
+            if (PREDICATEFILE != null && PREDICATEFILE.exists())
+                setAllowIsolatedParcel(ParcelState.isArt3AllowsIsolatedParcel(parcel.features().next(), PREDICATEFILE));
             // we choose one of the different workflows
             switch (workflow) {
-                case "zoneDivision":
+                case zoneDivision:
                     ZoneDivision.PROCESS = parcelProcess;
-                    ((DefaultFeatureCollection) parcelCut).addAll((new ZoneDivision()).zoneDivision(parcelMarkedComm,
-                            ParcelGetter.getParcelByCommunityCode(parcel, communityNumber), OUTFOLDER, profile, ROADFILE, BUILDINGFILE, keepExistingRoad));
+                    parcelCut.addAll((new ZoneDivision()).zoneDivision(parcelMarkedComm,
+                            ParcelGetter.getParcelByCommunityCode(parcel, communityNumber), OUTFOLDER, profile, ROADFILE, BUILDINGFILE, isKeepExistingRoad()));
                     break;
-                case "densification":
-                    ((DefaultFeatureCollection) parcelCut).addAll((new Densification()).densification(parcelMarkedComm,
+                case densification:
+                    parcelCut.addAll((new Densification()).densification(parcelMarkedComm,
                             CityGeneration.createUrbanBlock(parcelMarkedComm), OUTFOLDER, BUILDINGFILE, ROADFILE, profile.getHarmonyCoeff(),
-                            profile.getNoise(), profile.getMaximalArea(), profile.getMinimalArea(), profile.getMinimalWidthContactRoad(),
-                            profile.getLenDriveway(), allowIsolatedParcel, CityGeneration.createBufferBorder(parcelMarkedComm)));
+                            profile.getIrregularityCoeff(), profile.getMaximalArea(), profile.getMinimalArea(), profile.getMinimalWidthContactRoad(),
+                            profile.getLenDriveway(), isAllowIsolatedParcel(), CityGeneration.createBufferBorder(parcelMarkedComm)));
                     break;
-                case "densificationOrNeighborhood":
-                    ((DefaultFeatureCollection) parcelCut).addAll(
-                            (new Densification()).densificationOrNeighborhood(parcelMarkedComm, CityGeneration.createUrbanBlock(parcelMarkedComm), OUTFOLDER,
-                                    BUILDINGFILE, ROADFILE, profile, allowIsolatedParcel, CityGeneration.createBufferBorder(parcelMarkedComm), 5));
-                    break;
-                case "consolidationDivision":
+                case consolidationDivision:
                     ConsolidationDivision.PROCESS = parcelProcess;
-                    ((DefaultFeatureCollection) parcelCut).addAll((new ConsolidationDivision()).consolidationDivision(parcelMarkedComm, ROADFILE, OUTFOLDER, profile));
+                    //there was a problem here when adding different collections - hack to use my custom method
+                    SimpleFeatureCollection cut = (new ConsolidationDivision()).consolidationDivision(parcelMarkedComm, ROADFILE, OUTFOLDER, profile);
+                    List<SimpleFeatureCollection> lCol = parcelCut.isEmpty() ? Collections.singletonList(cut) : Arrays.asList(parcelCut, cut);
+                    parcelCut = (DefaultFeatureCollection) CollecMgmt.mergeSFC(lCol, true, null);
+//                    parcelCut.addAll((new ConsolidationDivision()).consolidationDivision(parcelMarkedComm, ROADFILE, OUTFOLDER, profile));
                     break;
-                case "densificationStudy":
-                    DensificationStudy.runDensificationStudy(parcelMarkedComm, BUILDINGFILE, ROADFILE, ZONINGFILE, OUTFOLDER, allowIsolatedParcel, profile);
+                case densificationStudy:
+                    DensificationStudy.runDensificationStudy(parcelMarkedComm, BUILDINGFILE, ROADFILE, ZONINGFILE, OUTFOLDER, isAllowIsolatedParcel(), profile);
                     break;
                 default:
                     System.out.println(workflow + ": unrecognized workflow");
             }
         }
         // we add the parcels from the communities that haven't been simulated
-        for (String communityCode : ParcelAttribute.getCityCodesOfParcels(parcel)) {
-            if (communityNumbers.contains(communityCode))
-                continue;
-            ((DefaultFeatureCollection) parcelCut)
-                    .addAll(ParcelGetter.getParcelByCommunityCode(parcel, communityCode));
-        }
+        for (String communityCode : ParcelAttribute.getCityCodesOfParcels(parcel))
+            if (!communityNumbers.contains(communityCode))
+                parcelCut.addAll(ParcelGetter.getParcelByCommunityCode(parcel, communityCode));
+
         lastOutput = makeFileName();
 
         CollecMgmt.exportSFC(parcelCut, lastOutput);
@@ -309,120 +301,104 @@ public class PMStep {
     }
 
     /**
-     * Mark the parcels that must be simulated within a collection of parcels.
-     * <p>
-     * It first select the parcel of the zone studied, whether by a city code or by a zone type. The fields can be set with the setters of the
-     * {@link fr.ign.artiscales.pm.parcelFunction.ParcelGetter} class.
-     * <p>
-     * Then it marks the interesting parcels that either cross a given polygon collection or intersects a zoning type. It return even the parcels that won't be simulated. Split
-     * field name in "SPLIT" by default and can be changed with the method {@link fr.ign.artiscales.pm.parcelFunction.MarkParcelAttributeFromPosition#setMarkFieldName(String)}.
-     * <p>
-     * If none of this informations are set, the algorithm selects all the parcels.
+     * Select and mark the parcels that must be simulated within a collection of parcels.
+     * It first selects the parcel of the zone studied, whether by a city code or by a zone type. The fields can be set with the setters of the {@link fr.ign.artiscales.pm.parcelFunction.ParcelGetter} class.
+     * Then it marks the interesting parcels that either cross a given polygon collection, intersects a zoning type, or any other variable defined in the {@link #selection} field.
+     * It returns every parcels selected. Split field name in "SPLIT" by default and can be changed with the method {@link fr.ign.artiscales.pm.parcelFunction.MarkParcelAttributeFromPosition#setMarkFieldName(String)}.
+     * If none of this information are set, the algorithm selects all parcels and mark nothing.
      *
+     * @param parcelIn total input parcel
      * @return The parcel collection with a mark for the interesting parcels to simulate.
      * @throws IOException reading a lot of files
      */
     public SimpleFeatureCollection getSimulationParcels(SimpleFeatureCollection parcelIn) throws IOException {
-        // special case where zoneDivision will return other than parcel
-        String iniZoneCommunityName = ParcelSchema.getParcelCommunityField();
-        if (workflow.equals("zoneDivision"))
+        if (workflow.equals(WorkflowType.zoneDivision))
             ParcelSchema.setParcelCommunityField(GeneralFields.getZoneCommunityCode());
         // select the parcels from the interesting communities
         SimpleFeatureCollection parcel = new DefaultFeatureCollection();
-        // if a community information has been set
-        if (communityNumber != null && !communityNumber.equals("")) {
-            // if a list of community has been set, the numbers must be separated with
-            if (communityNumber.contains(",")) {
-                // we select parcels from every zipcodes
-                for (String z : communityNumber.split(",")) {
+        if (communityNumber != null && !communityNumber.equals("")) { // if a community information has been set
+            if (communityNumber.contains(",")) { // if a list of community has been set, the numbers must be separated with
+                for (String z : communityNumber.split(",")) { // we select parcels from every zipcode
                     communityNumbers.add(z);
                     ((DefaultFeatureCollection) parcel).addAll(ParcelGetter.getParcelByCommunityCode(parcelIn, z));
                 }
-            }
-            // if a single community number is set
-            else {
+            } else { // if a single community number is set
                 communityNumbers.add(communityNumber);
                 parcel = ParcelGetter.getParcelByCommunityCode(parcelIn, communityNumber);
             }
-        }
-        // if multiple communities are present in the parcel collection
-        else if (ParcelAttribute.getCityCodesOfParcels(parcelIn).size() > 1) {
-            communityNumbers.addAll(ParcelAttribute.getCityCodesOfParcels(parcelIn));
-            ((DefaultFeatureCollection) parcel).addAll(parcelIn);
-        }
-        // if a type of community has been set
-        else if (communityType != null && !communityType.equals("")) {
+        } else if (communityType != null && !communityType.equals("")) {        // if a type of community has been set
             communityNumbers.addAll(ParcelAttribute.getCityCodesOfParcels(parcelIn));
             parcel = ParcelGetter.getParcelByTypo(communityType, parcelIn, ZONINGFILE);
-        }
-        // if the input parcel is just what needs to be simulated
-        else {
+        } else { // if the input parcel is just what needs to be simulated, we put them all
             communityNumbers.addAll(ParcelAttribute.getCityCodesOfParcels(parcelIn));
             parcel = parcelIn;
         }
-        if (DEBUG)
+        if (PMScenario.isDEBUG())
             CollecMgmt.exportSFC(parcel, new File(OUTFOLDER, "selectedParcels"));
         // parcels have been selected - now is time to mark them
+        // parcel marking with a special rule
+        if (selection != null && selection != "" && !workflow.equals(WorkflowType.zoneDivision))
+            switch (selection.split(",")[0]) {
+                case "parcelSmallerRatio":
+                    parcel = MarkParcelAttributeFromPosition.markParcelsInf(parcel, profile.getMaximalArea() * Double.parseDouble(selection.split(",")[1]));
+                    break;
+                case "parcelSmaller":
+                    parcel = MarkParcelAttributeFromPosition.markParcelsInf(parcel, Double.parseDouble(selection.split(",")[1]));
+                    break;
+                case "parcelBiggerRatio":
+                    parcel = MarkParcelAttributeFromPosition.markParcelsSup(parcel, profile.getMaximalArea() * Double.parseDouble(selection.split(",")[1]));
+                    break;
+                case "parcelBigger":
+                    parcel = MarkParcelAttributeFromPosition.markParcelsSup(parcel, Double.parseDouble(selection.split(",")[1]));
+                    break;
+                default:
+                    System.out.println("getSimulationParcels() : selection type not implemented (yet)");
+            }
         // parcel marking with input polygons (disabled if we use a specific zone)
-        if (POLYGONINTERSECTION != null && POLYGONINTERSECTION.exists() && !workflow.equals("zoneDivision"))
+        if (POLYGONINTERSECTION != null && POLYGONINTERSECTION.exists() && !workflow.equals(WorkflowType.zoneDivision))
             parcel = MarkParcelAttributeFromPosition.markParcelIntersectPolygonIntersection(parcel, POLYGONINTERSECTION);
         SimpleFeatureCollection result = new DefaultFeatureCollection();
         // parcel marking with a zoning plan (possible to be hacked for any attribute feature selection by setting the field name to the genericZoning scenario parameter)
         if (ZONINGFILE != null && ZONINGFILE.exists() && genericZone != null && !genericZone.equals(""))
-            // genericZone = FrenchZoningSchemas.normalizeNameFrenchBigZone(genericZone);
-            // we proceed for each cities
-            for (String communityNumber : communityNumbers) {
+            for (String communityNumber : communityNumbers) { // we proceed for each city
                 SimpleFeatureCollection parcelCity = ParcelGetter.getParcelByCommunityCode(parcel, communityNumber);
                 boolean alreadySimuled = false;
                 String place = communityNumber + "-" + genericZone;
-                // check the cache to see if zone have already been simulated
-                for (String cachePlaceSimulates : cachePlacesSimulates)
+                for (String cachePlaceSimulates : cachePlacesSimulates) // check the cache to see if zone have already been simulated
                     if (cachePlaceSimulates.startsWith(place)) {
                         System.out.println("Warning: " + place + " already simulated");
                         alreadySimuled = true;
                         break;
                     }
-                // if that zone has never been simulated, we proceed as usual
-                if (!alreadySimuled)
-                    // if a generic zone is set
-                    //If no precise zone set
-                    if (preciseZone == null || preciseZone.equals("")) {
+                if (!alreadySimuled) // if that zone has never been simulated, we proceed as usual
+                    if (preciseZone == null || preciseZone.equals("")) { // if a generic zone is set and no precise zone set
                         ((DefaultFeatureCollection) result).addAll(MarkParcelAttributeFromPosition.markParcelIntersectGenericZoningType(parcelCity, genericZone, ZONINGFILE));
                         cachePlacesSimulates.add(place);
-                    }
-                    // if a specific zone is also set
-                    else {
+                    } else { // if a generic zone and a precise zone are set
                         ((DefaultFeatureCollection) result).addAll(MarkParcelAttributeFromPosition.markParcelIntersectPreciseZoningType(parcelCity, genericZone, preciseZone, ZONINGFILE));
                         cachePlacesSimulates.add(place + "-" + preciseZone);
                     }
-                    // the zone has already been simulated : must be a small part defined by the preciseZone field
-                else {
-                    // if a precise zone hasn't been specified
-                    if (preciseZone == null || preciseZone.equals("")) {
+                else { // the zone has already been simulated, we isolate a small part defined by the preciseZone field
+                    if (preciseZone == null || preciseZone.equals("")) { // if a precise zone hasn't been specified
                         // if previous zones have had a precise zone calculated, we list them
                         List<String> preciseZones = new ArrayList<>();
-                        for (String pl : cachePlacesSimulates) {
+                        for (String pl : cachePlacesSimulates)
                             if (pl.startsWith(place)) {
                                 String[] p = pl.split("-");
-                                if (p.length == 3 && pl.startsWith(place))
+                                if (p.length == 3)
                                     preciseZones.add(p[2]);
                             }
-                        }
-                        // if we found specific precise zones, we exclude them from the marking session
-                        if (!preciseZones.isEmpty()) {
-                            ((DefaultFeatureCollection) result).addAll(MarkParcelAttributeFromPosition
-                                    .markParcelIntersectZoningWithoutPreciseZonings(parcelCity, genericZone, preciseZones, ZONINGFILE));
-                            System.out.println("sparedPreciseZones: " + preciseZones);
-                        }
-                        // if no precise zones have been found - this shouldn't happen - but we select zones with generic zoning
-                        else {
-                            System.out.println("no precise zones have been found - this shouldn't happend");
+                        if (!preciseZones.isEmpty()) { // if we found specific precise zones that has been simulated, we exclude them from the marking session
+                            ((DefaultFeatureCollection) result).addAll(MarkParcelAttributeFromPosition.markParcelIntersectZoningWithoutPreciseZonings(parcelCity, genericZone, preciseZones, ZONINGFILE));
+                            if (PMScenario.isDEBUG())
+                                System.out.println("sparedPreciseZones: " + preciseZones);
+                        } else { // if no precise zones have been found - this shouldn't happen - but we select zones with generic zoning
                             ((DefaultFeatureCollection) result).addAll(MarkParcelAttributeFromPosition.markParcelIntersectGenericZoningType(parcelCity, genericZone, ZONINGFILE));
+                            if (PMScenario.isDEBUG())
+                                System.out.println("no precise zones have been found and generic zone " + genericZone + " has already been simulated - this shouldn't happen");
                         }
                         cachePlacesSimulates.add(place);
-                    }
-                    // a precise zone has been specified : we mark them parcels
-                    else {
+                    } else { // a precise zone has been specified : we mark them parcels
                         ((DefaultFeatureCollection) result).addAll(MarkParcelAttributeFromPosition.markParcelIntersectPreciseZoningType(parcelCity, genericZone, preciseZone, ZONINGFILE));
                         cachePlacesSimulates.add(place + "-" + preciseZone);
                     }
@@ -436,15 +412,15 @@ public class PMStep {
         else
             result = parcel;
         // if the result is only zones, we return only the marked ones
-        if (workflow.equals("zoneDivision")) {
+        if (workflow.equals(WorkflowType.zoneDivision)) {
             if (MarkParcelAttributeFromPosition.isNoParcelMarked(parcel))
                 result = parcel;
             else
                 result = MarkParcelAttributeFromPosition.getOnlyMarkedParcels(parcel);
         }
-
-        if (workflow.equals("zoneDivision"))
-            ParcelSchema.setParcelCommunityField(iniZoneCommunityName);
+        // special case where zoneDivision will return other than parcel
+        if (workflow.equals(WorkflowType.zoneDivision))
+            ParcelSchema.setParcelCommunityField(ParcelSchema.getParcelCommunityField());
         return result;
     }
 
@@ -452,12 +428,12 @@ public class PMStep {
      * Generate the bound of the parcels that are simulated by the current PMStep. Uses the marked parcels by the {@link #getSimulationParcels(SimpleFeatureCollection)} method.
      *
      * @return A list of the geometries of the simulated parcels
-     * @throws IOException
+     * @throws IOException reading geo files
      */
     public List<Geometry> getBoundsOfZone() throws IOException {
         DataStore ds = CollecMgmt.getDataStore(PARCELFILE);
         List<Geometry> lG = new ArrayList<>();
-        if (workflow.equals("zoneDivision")) {
+        if (workflow.equals(WorkflowType.zoneDivision)) {
             Arrays.stream(getZone(ds.getFeatureSource(ds.getTypeNames()[0]).getFeatures()).toArray(new SimpleFeature[0])).forEach(parcel -> lG.add((Geometry) parcel.getDefaultGeometry()));
         } else {
             Arrays.stream(getSimulationParcels(ds.getFeatureSource(ds.getTypeNames()[0]).getFeatures()).toArray(new SimpleFeature[0]))
@@ -473,9 +449,9 @@ public class PMStep {
     /**
      * Get the zones to simulate for the <i>Zone Division</i> workflow. If a specific zone input is set at the {@link #ZONE} location, it will automatically get and return it.
      *
-     * @param parcel
-     * @return
-     * @throws IOException
+     * @param parcel input parcel plan
+     * @return the zone to be divided
+     * @throws IOException reading zoning geo file
      */
     private SimpleFeatureCollection getZone(SimpleFeatureCollection parcel) throws IOException {
         SimpleFeatureCollection zoneIn;
@@ -518,10 +494,29 @@ public class PMStep {
         return lastOutput;
     }
 
+    /**
+     * It is possible for {@link ZoneDivision} workflow to either work on the integrality of the concerned zone or to keep the parts where parcel doesn't exist and left it as a public space (road in most cases).
+     *
+     * @return Are we keeping already existing road on ZoneDivision processes?
+     */
+    public boolean isKeepExistingRoad() {
+        return keepExistingRoad;
+    }
+
+    /**
+     * It is possible for {@link ZoneDivision} workflow to either work on the integrality of the concerned zone or to keep the parts where parcel doesn't exist and left it as a public space (road in most cases).
+     *
+     * @param keepExistingRoad Do we need to keep already existing road on ZoneDivision processes?
+     */
     public void setKeepExistingRoad(boolean keepExistingRoad) {
         this.keepExistingRoad = keepExistingRoad;
     }
 
+    /**
+     * creates a name for a geo file to be written
+     *
+     * @return every parameter is parsed into the returned string
+     */
     public File makeFileName() {
         return new File(OUTFOLDER, "parcelCuted-" + workflow + "-" + urbanFabricType + "-" + genericZone + "_" + preciseZone + CollecMgmt.getDefaultGISFileType());
     }

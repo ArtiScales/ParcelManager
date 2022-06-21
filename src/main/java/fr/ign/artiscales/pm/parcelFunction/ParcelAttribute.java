@@ -151,10 +151,20 @@ public class ParcelAttribute {
         return sorted.get(sorted.size() - 1).getKey();
     }
 
+    /**
+     * Get the attribute field name for designing a type of community
+     *
+     * @return the attribute field name for designing a type of community
+     */
     public static String getCommunityTypeFieldName() {
         return communityTypeFieldName;
     }
 
+    /**
+     * Change the attribute field name for designing a type of community
+     *
+     * @param armatureCodeName new attribute field name for designing a type of community
+     */
     public static void setCommunityTypeFieldName(String armatureCodeName) {
         ParcelAttribute.communityTypeFieldName = armatureCodeName;
     }

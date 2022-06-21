@@ -1,4 +1,4 @@
 /**
- * Methods to analyse parcel layout characteristics, whether pre-existing or simulated by Parcel Manager
+ * Methods to analyse the general characteristics of a parcel data set
  */
 package fr.ign.artiscales.pm.analysis;

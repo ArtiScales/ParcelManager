@@ -1,5 +1,6 @@
 package fr.ign.artiscales.pm.analysis;
 
+import fr.ign.artiscales.pm.division.DivisionType;
 import fr.ign.artiscales.pm.fields.GeneralFields;
 import fr.ign.artiscales.pm.fields.french.FrenchParcelFields;
 import fr.ign.artiscales.pm.parcelFunction.MarkParcelAttributeFromPosition;
@@ -18,7 +19,6 @@ import org.geotools.data.simple.SimpleFeatureIterator;
 import org.geotools.factory.CommonFactoryFinder;
 import org.geotools.feature.DefaultFeatureCollection;
 import org.geotools.feature.simple.SimpleFeatureBuilder;
-import org.geotools.util.factory.GeoTools;
 import org.locationtech.jts.geom.Geometry;
 import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.filter.FilterFactory2;
@@ -34,8 +34,6 @@ import java.util.HashMap;
  * @author Maxime Colomb
  */
 public class RoadRatioParcels {
-
-    private static boolean overwrite = true;
 
     // public static void main(String[] args) throws IOException {
     // long start = System.currentTimeMillis();
@@ -53,25 +51,28 @@ public class RoadRatioParcels {
     // }
 
     /**
-     * Calculate the ratio between the parcel area and the total area of a zone. It express the quantity of not parcel land, which could be either streets or public spaces.
-     * Calculate zones and then send the whole to the {@link #roadRatioZone(SimpleFeatureCollection, SimpleFeatureCollection, String, File, File)} method.
+     * Calculate the ratio between the parcel area and the total area of a zone. It expresses the quantity of not parcel land, which could be either streets or public spaces.
+     * Calculate zones and then send the whole to the {@link #roadRatioZone(SimpleFeatureCollection, SimpleFeatureCollection, String, File, boolean, File)} method.
+     * If the {@link DivisionType} is a {@link DivisionType#SSoffset}, the patio is not counted in the ratio.
      *
-     * @param initialMarkedParcel {@link SimpleFeatureCollection} of the initial set of parcels which are marked if they had to simulated. Marks could be made with the methods contained in the
+     * @param initialMarkedParcel {@link SimpleFeatureCollection} of the initial set of parcels which are marked if they were simulated. Marks could be made with the methods contained in the
      *                            class {@link fr.ign.artiscales.pm.parcelFunction.MarkParcelAttributeFromPosition}. The field attribute is named <i>SPLIT</i> by default. It is possible to change
      *                            it with the {@link fr.ign.artiscales.pm.parcelFunction.MarkParcelAttributeFromPosition#setMarkFieldName(String)} function.
      * @param cutParcel           A collection of parcels after a Parcel Manager simulation
      * @param folderOutStat       folder to store the results
      * @param roadFile            the road geo file
      * @param legend              name of the zone
+     * @param overwrite           Overwrite the created statistical tab
      * @throws IOException reading geo files and exporting csv
      */
-    public static void roadRatioParcels(SimpleFeatureCollection initialMarkedParcel, SimpleFeatureCollection cutParcel, String legend, File folderOutStat, File roadFile) throws IOException {
+    public static void roadRatioParcels(SimpleFeatureCollection initialMarkedParcel, SimpleFeatureCollection cutParcel, String legend, File folderOutStat, boolean overwrite, File roadFile) throws IOException {
         // We construct zones to analyze the street ratio for each operations.
         DefaultFeatureCollection zone = new DefaultFeatureCollection();
-        FilterFactory2 ff = CommonFactoryFinder.getFilterFactory2(GeoTools.getDefaultHints());
+        FilterFactory2 ff = CommonFactoryFinder.getFilterFactory2();
         Geometry multiGeom;
         if (CollecMgmt.isCollecContainsAttribute(initialMarkedParcel, MarkParcelAttributeFromPosition.getMarkFieldName()))
             multiGeom = Geom.unionSFC(initialMarkedParcel.subCollection(ff.like(ff.property(MarkParcelAttributeFromPosition.getMarkFieldName()), "1")));
+
         else {
             System.out.println("Parcels haven't been previously marked : stop StatParcelStreetRatio");
             return;
@@ -95,7 +96,7 @@ public class RoadRatioParcels {
             }
             zone.add(sfBuilderZone.buildFeature(Attribute.makeUniqueId()));
         }
-        roadRatioZone(zone, cutParcel, legend, folderOutStat, roadFile);
+        roadRatioZone(zone, cutParcel, legend, folderOutStat, overwrite, roadFile);
     }
 
     /**
@@ -105,11 +106,12 @@ public class RoadRatioParcels {
      * @param zone          {@link SimpleFeatureCollection} of initial zones
      * @param cutParcel     {@link SimpleFeatureCollection} of the cuted parcels
      * @param folderOutStat folder to store the results
+     * @param overwrite     Overwrite the created statistical tab
      * @param roadFile      the road geo file
      * @param legend        name of the zone
      * @throws IOException reading geo files and exporting csv
      */
-    public static void roadRatioZone(SimpleFeatureCollection zone, SimpleFeatureCollection cutParcel, String legend, File folderOutStat, File roadFile) throws IOException {
+    public static void roadRatioZone(SimpleFeatureCollection zone, SimpleFeatureCollection cutParcel, String legend, File folderOutStat, boolean overwrite, File roadFile) throws IOException {
         System.out.println("++++++++++Road Ratios++++++++++");
         HashMap<String, String[]> stat = new HashMap<>();
 
@@ -159,8 +161,7 @@ public class RoadRatioParcels {
             problem.printStackTrace();
         }
         dsRoad.dispose();
-        CsvExport.generateCsvFile(stat, folderOutStat, "streetRatioParcelZone", !overwrite, firstLine);
-        overwrite = false;
+        CsvExport.generateCsvFile(stat, folderOutStat, "streetRatioParcelZone", !overwrite, overwrite ? firstLine : null);
         CsvExport.needFLine = true;
     }
 

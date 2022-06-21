@@ -5,6 +5,7 @@ import fr.ign.artiscales.pm.parcelFunction.MarkParcelAttributeFromPosition;
 import fr.ign.artiscales.pm.parcelFunction.ParcelCollection;
 import fr.ign.artiscales.pm.scenario.PMScenario;
 import fr.ign.artiscales.pm.scenario.PMStep;
+import fr.ign.artiscales.pm.workflow.WorkflowType;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.collec.CollecMgmt;
 import fr.ign.artiscales.tools.geometryGeneration.CityGeneration;
 import org.geotools.data.DataStore;
@@ -48,8 +49,7 @@ public class CompareSimulatedWithRealParcels extends UseCase {
         compareSimulatedParcelsWithEvolutionWorkflow(rootFolder, parcelRefFile, parcelCompFile, roadFile, scenarioFile, outFolder);
     }
 
-    public static void compareSimulatedParcelsWithEvolutionWorkflow(File rootFolder, File parcelRefFile, File parcelCompFile, File roadFile,
-                                                                    File scenarioFile, File outFolder) throws IOException {
+    public static void compareSimulatedParcelsWithEvolutionWorkflow(File rootFolder, File parcelRefFile, File parcelCompFile, File roadFile, File scenarioFile, File outFolder) throws IOException {
         // Mark and export the parcels that have changed between the two set of time
         ParcelCollection.sortDifferentParcel(parcelRefFile, parcelCompFile, outFolder);
         // create blocks for parcel densification in case they haven't been generated before
@@ -57,7 +57,7 @@ public class CompareSimulatedWithRealParcels extends UseCase {
         PMScenario.setSaveIntermediateResult(true);
         PMStep.setAllowIsolatedParcel(true);
         PMScenario pm = new PMScenario(scenarioFile);
-        pm.executeStep();
+//        pm.executeStep();
         System.out.println("++++++++++ Done with PMscenario ++++++++++");
         System.out.println();
 
@@ -90,8 +90,8 @@ public class CompareSimulatedWithRealParcels extends UseCase {
         DataStore dsRoad = CollecMgmt.getDataStore(roadFile);
 
         SingleParcelStat.writeStatSingleParcel(
-                MarkParcelAttributeFromPosition.markWorkflowSimulatedParcel(dsSimu.getFeatureSource(dsSimu.getTypeNames()[0]).getFeatures(), "densification")
-                , dsRoad.getFeatureSource(dsRoad.getTypeNames()[0]).getFeatures(), dsReal.getFeatureSource(dsReal.getTypeNames()[0]).getFeatures(), new File(outFolder, "DensifiedParcelStats.csv"));
+                MarkParcelAttributeFromPosition.markWorkflowSimulatedParcel(dsSimu.getFeatureSource(dsSimu.getTypeNames()[0]).getFeatures(), WorkflowType.densification),
+                dsRoad.getFeatureSource(dsRoad.getTypeNames()[0]).getFeatures(), dsReal.getFeatureSource(dsReal.getTypeNames()[0]).getFeatures(), new File(outFolder, "DensifiedParcelStats.csv"));
 
         dsReal.dispose();
         dsSimu.dispose();

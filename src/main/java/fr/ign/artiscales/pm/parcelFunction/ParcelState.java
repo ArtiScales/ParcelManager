@@ -11,7 +11,6 @@ import org.geotools.data.DataStore;
 import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.data.simple.SimpleFeatureIterator;
 import org.geotools.factory.CommonFactoryFinder;
-import org.geotools.util.factory.GeoTools;
 import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.LineString;
@@ -111,7 +110,7 @@ public class ParcelState {
      */
     public static double getParcelFrontSideWidth(Polygon p, SimpleFeatureCollection roads, List<LineString> ext) {
         try {
-            double len = p.buffer(1).intersection(p.getFactory().createMultiLineString(ext.toArray(new LineString[ext.size()]))).getLength();
+            double len = p.buffer(1).intersection(p.getFactory().createMultiLineString(ext.toArray(new LineString[0]))).getLength();
             if (len > 0)
                 return len;
             if (roads != null) {
@@ -148,13 +147,13 @@ public class ParcelState {
      * @param poly           input polygon
      * @param roads          input road Geopacakge (can be null)
      * @param ext            External polygon
-     * @param disabledBuffer A {@link Geometry} that cannot be considered as absence of road -can be null)
+     * @param disabledBuffer A {@link Geometry} that cannot be considered as absence of road. Can be null
      * @return true is the polygon has a road access
      */
     public static boolean isParcelHasRoadAccess(Polygon poly, SimpleFeatureCollection roads, MultiLineString ext, Geometry disabledBuffer) {
-        if (poly.intersects(ext.buffer(1)))
-            return disabledBuffer == null || !poly.intersects(disabledBuffer.buffer(0.5));
-        return roads != null && !roads.isEmpty() && poly.intersects(Geom.unionGeom(getRoadPolygon(roads)));
+        if (poly.isWithinDistance(ext, 1))
+            return disabledBuffer == null || !poly.isWithinDistance(disabledBuffer, 0.5);
+        return roads != null && !roads.isEmpty() && poly.isWithinDistance(Geom.unionGeom(getRoadPolygon(roads)), 1);
     }
 
     /**
@@ -164,7 +163,7 @@ public class ParcelState {
      * @param feat          The parcel (which has to be French)
      * @param predicateFile The table containing urban rules. If null or not set, will return <b>false</b>
      * @return false by default
-     * @throws IOException
+     * @throws IOException reading .csv file
      */
     public static boolean isArt3AllowsIsolatedParcel(SimpleFeature feat, File predicateFile) throws IOException {
         return isArt3AllowsIsolatedParcel((feat.getAttribute("CODE_DEP")) + ((String) feat.getAttribute("CODE_COM")), predicateFile);
@@ -177,7 +176,7 @@ public class ParcelState {
      * @param insee         The community number of the concerned city
      * @param predicateFile The table containing urban rules. If null or not set, will return <b>false</b>
      * @return false by default
-     * @throws IOException
+     * @throws IOException reading predicate
      */
     public static boolean isArt3AllowsIsolatedParcel(String insee, File predicateFile) throws IOException {
         if (!predicateFile.exists())
@@ -202,41 +201,58 @@ public class ParcelState {
     }
 
     /**
-     * This algorithm looks if a parcel is overlapped by a building and returns true if they are.
+     * This method looks if a parcel is overlapped by a building and returns true if they are.
      *
-     * @param batiSFC
-     * @param feature
+     * @param buildingSFC building collection
+     * @param parcel  input parcel
      * @return True if a building is really intersecting the parcel
      */
-    public static boolean isAlreadyBuilt(SimpleFeatureCollection batiSFC, SimpleFeature feature) {
-        return isAlreadyBuilt(batiSFC, feature, 0.0, 0.0);
+    public static boolean isAlreadyBuilt(SimpleFeatureCollection buildingSFC, SimpleFeature parcel) {
+        return isAlreadyBuilt(buildingSFC, parcel, 0.0, 0.0);
     }
-
-    public static boolean isAlreadyBuilt(File buildingFile, SimpleFeature parcel, Geometry emprise) throws IOException {
-        return isAlreadyBuilt(buildingFile, parcel, emprise, 0);
-    }
-
     /**
-     * This algorithm looks if a parcel is overlapped by a building and returns true if they are. overload of the
-     * {@link #isAlreadyBuilt(SimpleFeatureCollection, SimpleFeature, double, double)} to select only a selection of buildings
+     * This method looks if a parcel is overlapped by a building and returns true if they are.
      *
-     * @param buildingFile
-     * @param parcel
-     * @param emprise
-     * @param uncountedBuildingArea
+     * @param buildingFile building collection
+     * @param parcel  input parcel
+     * @param mask polygon with mask which will select every overlapping features
      * @return True if a building is really intersecting the parcel
      * @throws IOException reading building file
      */
-    public static boolean isAlreadyBuilt(File buildingFile, SimpleFeature parcel, Geometry emprise, double uncountedBuildingArea) throws IOException {
+    public static boolean isAlreadyBuilt(File buildingFile, SimpleFeature parcel, Geometry mask) throws IOException {
+        return isAlreadyBuilt(buildingFile, parcel, mask, 0);
+    }
+
+    /**
+     * This algorithm looks if a parcel is overlapped by a building and returns true if they are.
+     * Overload of the {@link #isAlreadyBuilt(SimpleFeatureCollection, SimpleFeature, double, double)} to select only a selection of buildings
+     *
+     * @param buildingFile          geo file containing building
+     * @param parcel                parcel feature
+     * @param mask               geographical bounding representing our zone. Features outside this zone won't be considered. Can be null.
+     * @param uncountedBuildingArea threshold under where a building is not considered
+     * @return True if a building is really intersecting the parcel
+     * @throws IOException reading building file
+     */
+    public static boolean isAlreadyBuilt(File buildingFile, SimpleFeature parcel, Geometry mask, double uncountedBuildingArea) throws IOException {
         DataStore batiDS = CollecMgmt.getDataStore(buildingFile);
-        boolean result = isAlreadyBuilt(CollecTransform.selectIntersection(batiDS.getFeatureSource(batiDS.getTypeNames()[0]).getFeatures(), emprise), parcel,
-                0.0, uncountedBuildingArea);
+        boolean result = isAlreadyBuilt(mask == null ? batiDS.getFeatureSource(batiDS.getTypeNames()[0]).getFeatures() : CollecTransform.selectIntersection(batiDS.getFeatureSource(batiDS.getTypeNames()[0]).getFeatures(), mask),
+                parcel, 0.0, uncountedBuildingArea);
         batiDS.dispose();
         return result;
     }
 
-    public static boolean isAlreadyBuilt(File buildingFile, SimpleFeature parcel, double bufferBati, double uncountedBuildingArea)
-            throws IOException {
+    /**
+     * This algorithm looks if a parcel is overlapped by a building and returns true if they are.
+     *
+     * @param buildingFile          geo file containing building
+     * @param parcel                parcel feature
+     * @param bufferBati            apply a buffer on every building (mostly negative buffers)
+     * @param uncountedBuildingArea threshold under where a building is not considered
+     * @return True if a building is really intersecting the parcel
+     * @throws IOException reading building file
+     */
+    public static boolean isAlreadyBuilt(File buildingFile, SimpleFeature parcel, double bufferBati, double uncountedBuildingArea) throws IOException {
         DataStore batiDS = CollecMgmt.getDataStore(buildingFile);
         boolean result = isAlreadyBuilt(CollecTransform.selectIntersection(batiDS.getFeatureSource(batiDS.getTypeNames()[0]).getFeatures(),
                 ((Geometry) parcel.getDefaultGeometry()).buffer(10)), (Geometry) parcel.getDefaultGeometry(), bufferBati, uncountedBuildingArea);
@@ -245,18 +261,27 @@ public class ParcelState {
     }
 
     /**
-     * This algorithm looks if a parcel is overlapped by a building+a buffer (in most of the cases, buffer is negative to delete small parts of buildings that can slightly overlap
-     * a parcel) and returns true if they are.
+     * This algorithm looks if a parcel is overlapped by a building+a buffer (in most of the cases, buffer is negative to delete small parts of buildings that can slightly overla a parcel) and returns true if they are.
      *
-     * @param buildingSFC
-     * @param parcel
-     * @param bufferBati
+     * @param buildingSFC           building collection
+     * @param parcel                parcel feature
+     * @param bufferBati            apply a buffer on every building (mostly negative buffers)
+     * @param uncountedBuildingArea threshold under where a building is not considered
      * @return True if a building is really intersecting the parcel
      */
     public static boolean isAlreadyBuilt(SimpleFeatureCollection buildingSFC, SimpleFeature parcel, double bufferBati, double uncountedBuildingArea) {
         return isAlreadyBuilt(buildingSFC, (Geometry) parcel.getDefaultGeometry(), bufferBati, uncountedBuildingArea);
     }
 
+    /**
+     * This algorithm looks if a parcel is overlapped by a building+a buffer (in most of the cases, buffer is negative to delete small parts of buildings that can slightly overla a parcel) and returns true if they are.
+     *
+     * @param buildingSFC           building collection
+     * @param parcelGeom            parcel geometry
+     * @param bufferBati            apply a buffer on every building (mostly negative buffers)
+     * @param uncountedBuildingArea threshold under where a building is not considered
+     * @return True if a building is really intersecting the parcel
+     */
     public static boolean isAlreadyBuilt(SimpleFeatureCollection buildingSFC, Geometry parcelGeom, double bufferBati, double uncountedBuildingArea) {
         try (SimpleFeatureIterator iterator = buildingSFC.features()) {
             while (iterator.hasNext()) {
@@ -293,7 +318,7 @@ public class ParcelState {
      * @return The best evaluation of the intersected MUP-City's cells
      */
     public static Double getEvalInParcel(SimpleFeature parcel, SimpleFeatureCollection mupSFC) {
-        FilterFactory2 ff = CommonFactoryFinder.getFilterFactory2(GeoTools.getDefaultHints());
+        FilterFactory2 ff = CommonFactoryFinder.getFilterFactory2();
         SimpleFeatureCollection onlyCells = mupSFC.subCollection(
                 ff.intersects(ff.property(mupSFC.getSchema().getGeometryDescriptor().getLocalName()), ff.literal(parcel.getDefaultGeometry())));
         double bestEval = 0.0;
@@ -317,7 +342,7 @@ public class ParcelState {
      * @return The best evaluation of the MUP-City's cells near the parcel every 5 meters. Return 0 if the cells are 100 meters far from the parcels.
      */
     public static Double getCloseEvalInParcel(SimpleFeature parcel, SimpleFeatureCollection mupSFC) {
-        FilterFactory2 ff = CommonFactoryFinder.getFilterFactory2(GeoTools.getDefaultHints());
+        FilterFactory2 ff = CommonFactoryFinder.getFilterFactory2();
         SimpleFeatureCollection onlyCells = mupSFC.subCollection(ff.intersects(ff.property(mupSFC.getSchema().getGeometryDescriptor().getLocalName()),
                 ff.literal(((Geometry) parcel.getDefaultGeometry()).buffer(100.0))));
         Double bestEval = 0.0;
@@ -345,7 +370,7 @@ public class ParcelState {
     /**
      * Return a single Zone Generic Name that a parcels intersect. If the parcel intersects multiple, we select the one that covers the most area
      *
-     * @param parcelIn input parcel
+     * @param parcelIn   input parcel
      * @param zoningFile geo file containing zoning file
      * @return Zone Generic Name that a parcels intersect
      * @throws IOException reading zoning file
@@ -361,7 +386,7 @@ public class ParcelState {
     /**
      * return a single typology that a parcels intersect if the parcel intersects multiple, we select the one that covers the most area
      *
-     * @param parcelIn input parcel
+     * @param parcelIn      input parcel
      * @param communityFile geo file containing the communities
      * @param typoAttribute the field name of the typo
      * @return the number of most intersected community type

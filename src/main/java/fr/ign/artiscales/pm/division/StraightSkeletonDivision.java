@@ -10,7 +10,6 @@ import fr.ign.artiscales.tools.geoToolsFunctions.vectors.collec.CollecMgmt;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.geom.Lines;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.geom.Points;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.geom.Polygons;
-import fr.ign.artiscales.tools.geometryGeneration.CityGeneration;
 import fr.ign.artiscales.tools.graph.analysis.FindObjectInDirection;
 import fr.ign.artiscales.tools.graph.recursiveGraph.Face;
 import fr.ign.artiscales.tools.graph.recursiveGraph.HalfEdge;
@@ -22,7 +21,6 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
 import org.apache.commons.math3.distribution.NormalDistribution;
 import org.apache.commons.math3.distribution.RealDistribution;
-import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.geotools.data.DataStore;
 import org.geotools.data.simple.SimpleFeatureCollection;
@@ -42,7 +40,6 @@ import org.locationtech.jts.geom.MultiLineString;
 import org.locationtech.jts.geom.Point;
 import org.locationtech.jts.geom.Polygon;
 import org.locationtech.jts.geom.PrecisionModel;
-import org.locationtech.jts.io.ParseException;
 import org.locationtech.jts.linearref.LengthIndexedLine;
 import org.locationtech.jts.operation.linemerge.LineMerger;
 import org.locationtech.jts.operation.overlay.snap.GeometrySnapper;
@@ -81,8 +78,8 @@ import java.util.stream.Stream;
  */
 public class StraightSkeletonDivision extends Division {
 
-    public static final int NONE = 0;
-    public static final int PREVIOUS = 1;
+    private static final int NONE = 0;
+    private static final int PREVIOUS = 1;
 
     //////////////////////////////////////////////////////
 
@@ -97,7 +94,7 @@ public class StraightSkeletonDivision extends Division {
     // public static String ATT_FACE_ID_STRIP = "ID_STRIP";
 
     // public static String ATT_IMPORTANCE = "IMPORTANCE";
-    public static final int NEXT = 2;
+    private static final int NEXT = 2;
     private static final int RIGHT = 1;
     private static final int LEFT = -1;
     private static final int NEITHER = 0;
@@ -131,29 +128,58 @@ public class StraightSkeletonDivision extends Division {
     private Set<Face> facesWithMultipleFrontages;
 
     /**
-     * Create and compute Straight Skeleton algorithm. Version without peripheral road.
+     * Constructor decomposing initial polygon with straight skeleton process until beta-stripes with normal precision and without peripheral road.
      *
-     * @param p
-     * @param roads
-     * @param roadNameAttribute
-     * @param roadImportanceAttribute
-     * @param maxDepth
-     * @param maxDistanceForNearestRoad
-     * @throws StraightSkeletonException
-     * @throws EdgeException
+     * @param p                         initial polygon to divide
+     * @param roads                     road features. Must have mandatory attributes with values.
+     * @param roadNameAttribute         Mandatory attribute setting the name of a street
+     * @param roadImportanceAttribute   Mandatory attribute setting the importance of a street
+     * @param maxDepth                  Maximal distance from the frontage of a parcel to its back boundary. If equals to 0, this algorithm will create a regular straight skeleton division. If different than 0, will create an offset division.
+     * @param maxDistanceForNearestRoad Distance from which the road will be considered as close enough to be considered by the algorithm
+     * @param name                      name of the created zone
+     * @throws StraightSkeletonException if straight skeleton has problems to be generated
+     * @throws EdgeException             if edges have problems (mainly due to precision and not normal order)
      */
     public StraightSkeletonDivision(Polygon p, SimpleFeatureCollection roads, String roadNameAttribute, String roadImportanceAttribute, double maxDepth,
                                     double maxDistanceForNearestRoad, String name) throws StraightSkeletonException, EdgeException {
         this(p, roads, roadNameAttribute, roadImportanceAttribute, maxDepth, maxDistanceForNearestRoad, 2, false, 0, name);
     }
 
+    /**
+     * Constructor decomposing initial polygon with straight skeleton process until beta-stripes with normal precision
+     *
+     * @param p                         initial polygon to divide
+     * @param roads                     road features. Must have mandatory attributes with values.
+     * @param roadNameAttribute         Mandatory attribute setting the name of a street
+     * @param roadImportanceAttribute   Mandatory attribute setting the importance of a street
+     * @param maxDepth                  Maximal distance from the frontage of a parcel to its back boundary. If equals to 0, this algorithm will create a regular straight skeleton division. If different than 0, will create an offset division.
+     * @param maxDistanceForNearestRoad Distance from which the road will be considered as close enough to be considered by the algorithm
+     * @param generatePeripheralRoad    if true, a peripheral road is created around the initial polygon
+     * @param widthRoad                 width of the created peripheral road
+     * @param name                      name of the created zone
+     * @throws StraightSkeletonException if straight skeleton has problems to be generated
+     * @throws EdgeException             if edges have problems (mainly due to precision and not normal order)
+     */
     public StraightSkeletonDivision(Polygon p, SimpleFeatureCollection roads, String roadNameAttribute, String roadImportanceAttribute, double maxDepth,
                                     double maxDistanceForNearestRoad, boolean generatePeripheralRoad, double widthRoad, String name) throws StraightSkeletonException, EdgeException {
         this(p, roads, roadNameAttribute, roadImportanceAttribute, maxDepth, maxDistanceForNearestRoad, 2, generatePeripheralRoad, widthRoad, name);
     }
 
     /**
-     * Constructor decomposing initial polygon until beta-stripes
+     * Constructor decomposing initial polygon with straight skeleton process until beta-stripes.
+     *
+     * @param p                         initial polygon to divide
+     * @param roads                     road features. Must have mandatory attributes with values.
+     * @param roadNameAttribute         Mandatory attribute setting the name of a street
+     * @param roadImportanceAttribute   Mandatory attribute setting the importance of a street
+     * @param maxDepth                  Maximal distance from the frontage of a parcel to its back boundary. If equals to 0, this algorithm will create a regular straight skeleton division. If different than 0, will create an offset division.
+     * @param maxDistanceForNearestRoad Distance from which the road will be considered as close enough to be considered by the algorithm
+     * @param generatePeripheralRoad    if true, a peripheral road is created around the initial polygon
+     * @param widthRoad                 width of the created peripheral road
+     * @param name                      name of the created zone
+     * @param numberOfDigits            which precision are made the topological simplifications.
+     * @throws StraightSkeletonException if straight skeleton has problems to be generated
+     * @throws EdgeException             if edges have problems (mainly due to precision and not normal order)
      */
     public StraightSkeletonDivision(Polygon p, SimpleFeatureCollection roads, String roadNameAttribute, String roadImportanceAttribute, double maxDepth,
                                     double maxDistanceForNearestRoad, int numberOfDigits, boolean generatePeripheralRoad, double widthRoad, String name) throws StraightSkeletonException, EdgeException {
@@ -211,22 +237,22 @@ public class StraightSkeletonDivision extends Division {
         export(betaStrips, new File(FOLDER_PARTICULAR_DEBUG, "beta"));
     }
 
-    public static void main(String[] args) throws IOException, EdgeException, StraightSkeletonException, ParseException {
-        File rootFolder = new File("src/main/resources/TestScenario/");
-        File roadFile = new File(rootFolder, "InputData/road.gpkg");
-        File parcelFile = new File(rootFolder, "InputData/parcel.gpkg");
-        setDEBUG(true);
-        DataStore dsRoad = CollecMgmt.getDataStore(roadFile);
-        DataStore dsParcel = CollecMgmt.getDataStore(parcelFile);
-        SimpleFeatureCollection parcel = MarkParcelAttributeFromPosition.markRandomParcels(MarkParcelAttributeFromPosition.markParcelsConnectedToRoad(dsParcel.getFeatureSource(dsParcel.getTypeNames()[0]).getFeatures(), CityGeneration.createUrbanBlock(dsParcel.getFeatureSource(dsParcel.getTypeNames()[0]).getFeatures()), roadFile), 5, true);
-        double maxDepth = 20, maxDistanceForNearestRoad = 15, minimalArea = 100, minWidth = 20, maxWidth = 50, omega = 0.1, widthRoad = 12;
-        String NAME_ATT_IMPORTANCE = "IMPORTANCE";
-        String NAME_ATT_ROAD = "NOM_VOIE_G";
-        SimpleFeatureCollection result = runTopologicalStraightSkeletonParcelDecomposition(parcel, dsRoad.getFeatureSource(dsRoad.getTypeNames()[0]).getFeatures(), NAME_ATT_ROAD, NAME_ATT_IMPORTANCE, maxDepth, maxDistanceForNearestRoad, minimalArea, minWidth, maxWidth, omega, new MersenneTwister(), widthRoad, "exemple");
-        CollecMgmt.exportSFC(result, new File("/tmp/resultStraightSkeleton.gpkg"));
-        dsParcel.dispose();
-        dsRoad.dispose();
-    }
+//    public static void main(String[] args) throws IOException, EdgeException, StraightSkeletonException, ParseException {
+//        File rootFolder = new File("src/main/resources/TestScenario/");
+//        File roadFile = new File(rootFolder, "InputData/road.gpkg");
+//        File parcelFile = new File(rootFolder, "InputData/parcel.gpkg");
+//        setDEBUG(true);
+//        DataStore dsRoad = CollecMgmt.getDataStore(roadFile);
+//        DataStore dsParcel = CollecMgmt.getDataStore(parcelFile);
+//        SimpleFeatureCollection parcel = MarkParcelAttributeFromPosition.markRandomParcels(MarkParcelAttributeFromPosition.markParcelsConnectedToRoad(dsParcel.getFeatureSource(dsParcel.getTypeNames()[0]).getFeatures(), CityGeneration.createUrbanBlock(dsParcel.getFeatureSource(dsParcel.getTypeNames()[0]).getFeatures()), roadFile), 5, true);
+//        double maxDepth = 20, maxDistanceForNearestRoad = 15, minimalArea = 100, minWidth = 20, maxWidth = 50, omega = 0.1, widthRoad = 12;
+//        String NAME_ATT_IMPORTANCE = "IMPORTANCE";
+//        String NAME_ATT_ROAD = "NOM_VOIE_G";
+//        SimpleFeatureCollection result = runTopologicalStraightSkeletonParcelDecomposition(parcel, dsRoad.getFeatureSource(dsRoad.getTypeNames()[0]).getFeatures(), NAME_ATT_ROAD, NAME_ATT_IMPORTANCE, maxDepth, maxDistanceForNearestRoad, minimalArea, minWidth, maxWidth, omega, new MersenneTwister(), widthRoad, "exemple");
+//        CollecMgmt.exportSFC(result, new File("/tmp/resultStraightSkeleton.gpkg"));
+//        dsParcel.dispose();
+//        dsRoad.dispose();
+//    }
 
     private static boolean isReflex(Node node, HalfEdge previous, HalfEdge next) {
         return isReflex(node.getCoordinate(), previous.getGeometry(), next.getGeometry());
@@ -257,9 +283,6 @@ public class StraightSkeletonDivision extends Division {
 
     /**
      * Order
-     *
-     * @param edges
-     * @return
      */
     private static List<HalfEdge> getOrderedEdgesFromCycle(List<HalfEdge> edges) {
         List<HalfEdge> orderedEdges = new ArrayList<>();
@@ -504,7 +527,7 @@ public class StraightSkeletonDivision extends Division {
                                                                                             String roadNameAttribute, String roadImportanceAttribute, double maxDepth, double maxDistanceForNearestRoad,
                                                                                             double minimalArea, double minWidth, double maxWidth, double omega, RandomGenerator rng, double widthRoad, String name) {
         DefaultFeatureCollection result = new DefaultFeatureCollection();
-        SimpleFeatureBuilder builder = ParcelSchema.addField(feat.getFeatureType(), "SIMULATED");
+        SimpleFeatureBuilder builder = ParcelSchema.addSimulatedField(feat.getFeatureType());
         if (feat.getAttribute(MarkParcelAttributeFromPosition.getMarkFieldName()) == null || !feat.getAttribute(MarkParcelAttributeFromPosition.getMarkFieldName()).equals(1)) {
             Schemas.setFieldsToSFB(builder, feat);
             builder.set("SIMULATED", 0);
@@ -1350,7 +1373,6 @@ public class StraightSkeletonDivision extends Division {
         try {
             support = getOrderedEdges(getSupportingEdges(node, split, internalEdges).collect(Collectors.toList()));
         } catch (EdgeException e1) {
-            // TODO Auto-generated catch block
             e1.printStackTrace();
             return false;
         }
