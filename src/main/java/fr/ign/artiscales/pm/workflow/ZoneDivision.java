@@ -101,15 +101,15 @@ public class ZoneDivision extends Workflow {
         if (genericZone != null && !genericZone.equals(""))
             if (preciseZone == null || preciseZone.equals(""))
                 finalZone = MarkParcelAttributeFromPosition.getOnlyMarkedParcels(MarkParcelAttributeFromPosition.markParcelWithAttribute(
-                        CollecTransform.selectIntersection(inputSFC, Geom.unionSFC(boundingSFC)), GeneralFields.getZoneGenericNameField(), genericZone));
+                        CollecTransform.selectIntersection(inputSFC, Geom.safeUnion(boundingSFC)), GeneralFields.getZoneGenericNameField(), genericZone));
             else
                 finalZone = MarkParcelAttributeFromPosition.getOnlyMarkedParcels(MarkParcelAttributeFromPosition.markParcelWithAttribute(
                         MarkParcelAttributeFromPosition.markParcelWithAttribute(
-                                CollecTransform.selectIntersection(inputSFC, Geom.unionSFC(boundingSFC)), GeneralFields.getZoneGenericNameField(), genericZone),
+                                CollecTransform.selectIntersection(inputSFC, Geom.safeUnion(boundingSFC)), GeneralFields.getZoneGenericNameField(), genericZone),
                         GeneralFields.getZonePreciseNameField(), preciseZone));
         else
             finalZone = MarkParcelAttributeFromPosition
-                    .getOnlyMarkedParcels(MarkParcelAttributeFromPosition.markAllParcel(CollecTransform.selectIntersection(inputSFC, Geom.unionSFC(boundingSFC))));
+                    .getOnlyMarkedParcels(MarkParcelAttributeFromPosition.markAllParcel(CollecTransform.selectIntersection(inputSFC, Geom.safeUnion(boundingSFC))));
         if (finalZone != null && finalZone.isEmpty()) System.out.println("createZoneToCut(): zone is empty");
         return finalZone;
     }
@@ -242,7 +242,7 @@ public class ZoneDivision extends Workflow {
         // parcel geometry name for all
         String geomName = parcels.getSchema().getGeometryDescriptor().getLocalName();
         checkFields(parcels.getSchema());
-        final Geometry geomZone = Geom.unionSFC(initialZone);
+        final Geometry geomZone = Geom.safeUnion(initialZone);
         //setting final schema. If no split field at first, we don't add it in the final collection.
         final SimpleFeatureBuilder finalParcelBuilder = Schemas.isSchemaContainsAttribute(parcels.getSchema(), MarkParcelAttributeFromPosition.getMarkFieldName()) ?
                 new SimpleFeatureBuilder(parcels.getSchema()) : ParcelSchema.getSFBWithoutSplit(parcels.getSchema());
@@ -262,14 +262,14 @@ public class ZoneDivision extends Workflow {
         int numZone = 0;
         DefaultFeatureCollection goOdZone = new DefaultFeatureCollection();
         if (keepExistingRoads) {// select zone that covers parcel rather than the actual zone.
-            Geometry unionParcel = Geom.unionSFC(parcels);
+            Geometry unionParcel = Geom.safeUnion(parcels);
             SimpleFeatureBuilder sfBuilder = ParcelSchema.getSFBMinParcelSplit();
             try (SimpleFeatureIterator zoneIt = initialZone.features()) {
                 while (zoneIt.hasNext()) {
                     numZone++;
                     SimpleFeature zone = zoneIt.next();
                     // avoid most of tricky geometry problems
-                    Geometry intersection = Geom.scaledGeometryReductionIntersection(Arrays.asList(((Geometry) zone.getDefaultGeometry()), unionParcel));
+                    Geometry intersection = Geom.safeIntersection(Arrays.asList(((Geometry) zone.getDefaultGeometry()), unionParcel));
                     if (!intersection.isEmpty()) {
                         List<Polygon> geomsZone = Polygons.getPolygons(intersection);
                         for (Geometry geomPartZone : geomsZone) {
@@ -311,7 +311,7 @@ public class ZoneDivision extends Workflow {
                 .map(x -> (Geometry) x.getDefaultGeometry()).collect(Collectors.toList());
         geomList.addAll(Arrays.stream(goOdZone.toArray(new SimpleFeature[0])).map(x -> (Geometry) x.getDefaultGeometry()).collect(Collectors.toList()));
         List<Polygon> polygons = FeaturePolygonizer.getPolygons(geomList);
-        Geometry geomSelectedZone = Geom.unionSFC(goOdZone);
+        Geometry geomSelectedZone = Geom.safeUnion(goOdZone);
         if (isDEBUG()) {
             Geom.exportGeom(geomSelectedZone, new File(tmpFolder, "geomSelectedZone"));
             Geom.exportGeom(polygons, new File(tmpFolder, "polygons"));

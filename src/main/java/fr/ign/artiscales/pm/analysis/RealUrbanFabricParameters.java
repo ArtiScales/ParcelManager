@@ -259,18 +259,29 @@ public class RealUrbanFabricParameters {
         if (parcelPerZone.isEmpty())
             this.makeSplitParcelBetweenZone();
         // we create a buffer around the zone to get corresponding road segments. The buffer length depends on the type of scale
-        double buffer = switch (scaleZone) {
-            case "genericZone" -> 20;
-            case "preciseZone", "block" -> 10;
-            default -> 42;
-        };
-        Geometry zoneGeom = Geom.unionSFC(zoneCollection).buffer(buffer).buffer(-buffer);
+        double buffer = 42;
+        switch (scaleZone) {
+            case "genericZone":
+                buffer = 20;
+                break;
+            case "preciseZone":
+            case "block":
+                buffer = 10;
+                break;
+        }
+        ;
+//        double buffer = switch (scaleZone) {
+//            case "genericZone" -> 20;
+//            case "preciseZone", "block" -> 10;
+//            default -> 42;
+//        };
+        Geometry zoneGeom = Geom.safeUnion(zoneCollection).buffer(buffer).buffer(-buffer);
         SimpleFeatureCollection roadsSelected = CollecTransform.selectIntersection(road, zoneGeom);
         if (roadsSelected.size() > 1)
             MakeStatisticGraphs.roadGraph(roadsSelected, "Characteristics of the roads from the " + getZoneEnglishName(scaleZone, zoneName),
                     "Type of road", "Total lenght of road", outFolder);
         DataStore parcelDS = CollecMgmt.getDataStore(parcelFile);
-        RoadRatioParcels.roadRatioZone(zoneCollection, CollecTransform.selectIntersection(parcelDS.getFeatureSource(parcelDS.getTypeNames()[0]).getFeatures(), Geom.unionSFC(zoneCollection).buffer(buffer)), zoneName, outFolder, true, roadFile);
+        RoadRatioParcels.roadRatioZone(zoneCollection, CollecTransform.selectIntersection(parcelDS.getFeatureSource(parcelDS.getTypeNames()[0]).getFeatures(), Geom.safeUnion(zoneCollection).buffer(buffer)), zoneName, outFolder, true, roadFile);
         parcelDS.dispose();
     }
 
@@ -305,7 +316,7 @@ public class RealUrbanFabricParameters {
         DefaultFeatureCollection df = new DefaultFeatureCollection();
         Arrays.stream(collection.toArray(new SimpleFeature[0])).forEach(sf -> df.add((SimpleFeature) DataUtilities.duplicate(sf)));
         SimpleFeatureCollection sfc = MarkParcelAttributeFromPosition.getOnlyMarkedParcels(MarkParcelAttributeFromPosition.markBuiltParcel(MarkParcelAttributeFromPosition.resetMarkingField(df),
-                CollecTransform.selectIntersection(buildingDS.getFeatureSource(buildingDS.getTypeNames()[0]).getFeatures(), Geom.unionSFC(df))));
+                CollecTransform.selectIntersection(buildingDS.getFeatureSource(buildingDS.getTypeNames()[0]).getFeatures(), Geom.safeUnion(df))));
         buildingDS.dispose();
         DescriptiveStatistics ds = new DescriptiveStatistics();
         if (sfc != null && sfc.size() > 2) {

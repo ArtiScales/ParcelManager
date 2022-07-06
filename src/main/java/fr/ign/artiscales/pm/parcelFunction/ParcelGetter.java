@@ -70,7 +70,7 @@ public class ParcelGetter {
                             result.add(parcelFeat);
                             // if the intersection is less than 50% of the parcel, we let it to the other
                             // (with the hypothesis that there is only 2 features)
-                        else if (Geom.scaledGeometryReductionIntersection(Arrays.asList(parcelGeom, zoneGeom)).getArea() > parcelGeom.getArea() / 2)
+                        else if (Geom.safeIntersection(Arrays.asList(parcelGeom, zoneGeom)).getArea() > parcelGeom.getArea() / 2)
                             result.add(parcelFeat);
                     }
                 } catch (Exception problem) {
@@ -112,7 +112,7 @@ public class ParcelGetter {
                         Geometry typoGeom = (Geometry) itTypo.next().getDefaultGeometry();
                         // if there's an containing or the intersection is less than 50% of the parcel, we let it to the other
                         // (with the hypothesis that there is only 2 features)
-                        if (typoGeom.contains(parcelGeom) || Geom.scaledGeometryReductionIntersection(Arrays.asList(typoGeom, parcelGeom))
+                        if (typoGeom.contains(parcelGeom) || Geom.safeIntersection(Arrays.asList(typoGeom, parcelGeom))
                                 .getArea() > (parcelGeom.getArea() / 2)) {
                             result.add(parcelFeat);
                             break;

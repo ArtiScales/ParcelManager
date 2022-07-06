@@ -1,10 +1,10 @@
 name := "ParcelManagerPlugin"
 
-version := "1.0"
+version := "1.3-SNAPSHOT"
 
-scalaVersion := "2.13.7"
+scalaVersion := "2.13.8"
 
-val parcelManagerVersion = "1.1-SNAPSHOT"
+val parcelManagerVersion = "1.3-SNAPSHOT"
 
 enablePlugins(SbtOsgi)
 

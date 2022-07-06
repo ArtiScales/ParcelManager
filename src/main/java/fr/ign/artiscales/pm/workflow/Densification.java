@@ -178,7 +178,7 @@ public class Densification extends Workflow {
                             unsortedFlagParcel = new DefaultFeatureCollection();
                             // we add the merged parcels
                             SimpleFeatureBuilder builder = Schemas.getSFBSchemaWithMultiPolygon(toMerge.getSchema());
-                            builder.set(toMerge.getSchema().getGeometryDescriptor().getLocalName(), Geom.unionSFC(toMerge).buffer(0.1).buffer(-0.1));
+                            builder.set(toMerge.getSchema().getGeometryDescriptor().getLocalName(), Geom.safeUnion(toMerge).buffer(0.1).buffer(-0.1));
                             ((DefaultFeatureCollection) unsortedFlagParcel).add(builder.buildFeature(Attribute.makeUniqueId()));
                             // we check if the flag cut parcels have been merged or if they need to be put on the new collection
                             try (SimpleFeatureIterator parcelIt = tmpUnsortedFlagParcel.features()) {

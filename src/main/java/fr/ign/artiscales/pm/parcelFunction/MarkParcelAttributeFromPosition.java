@@ -856,12 +856,19 @@ public class MarkParcelAttributeFromPosition {
     }
 
     private static boolean markWorkflowSimulatedParcelCondition(SimpleFeature feat, WorkflowType workflow) {
-        return switch (workflow) {
-            case densification -> ((new Densification()).isNewSection(feat));
-            case zoneDivision -> ((new ZoneDivision()).isNewSection(feat));
-            case consolidationDivision -> ((new ConsolidationDivision()).isNewSection(feat));
-            default -> throw new IllegalArgumentException("Workflow unknown");
+        switch (workflow) {
+            case densification : return ((new Densification()).isNewSection(feat));
+            case zoneDivision : return ((new ZoneDivision()).isNewSection(feat));
+            case consolidationDivision : return ((new ConsolidationDivision()).isNewSection(feat));
         };
+       throw new IllegalArgumentException("Workflow unknown");
+
+//        return switch (workflow) {
+//            case densification -> ((new Densification()).isNewSection(feat));
+//            case zoneDivision -> ((new ZoneDivision()).isNewSection(feat));
+//            case consolidationDivision -> ((new ConsolidationDivision()).isNewSection(feat));
+//            default -> throw new IllegalArgumentException("Workflow unknown");
+//        };
     }
 
     /**
