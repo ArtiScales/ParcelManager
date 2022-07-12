@@ -229,7 +229,7 @@ public class ParcelCollection {
                     // if the tiny parcel intersects a bigger parcel, we seek the longest side to which parcel could be incorporated
                     HashMap<String, Double> repart = new HashMap<>();
                     Arrays.stream(intersect.toArray(new SimpleFeature[0])).forEach(interParcel -> repart.put(interParcel.getID(),
-                            Geom.scaledGeometryReductionIntersection(Arrays.asList((Geometry) interParcel.getDefaultGeometry(), geom.buffer(1)))
+                            Geom.safeIntersection(Arrays.asList((Geometry) interParcel.getDefaultGeometry(), geom.buffer(1)))
                                     .getArea()));
                     // we sort to place the biggest intersecting parcel in first
                     List<Entry<String, Double>> entryList = new ArrayList<>(repart.entrySet());
@@ -262,7 +262,7 @@ public class ParcelCollection {
                             g = g.buffer(1).buffer(-1);
                     } catch (TopologyException tp) {
                         System.out.println("problem with +" + lG);
-                        g = Geom.scaledGeometryReductionIntersection(lG);
+                        g = Geom.safeIntersection(lG);
                     }
                     build.set(CollecMgmt.getDefaultGeomName(), g);
                     SimpleFeature f = build.buildFeature(idToMerge);

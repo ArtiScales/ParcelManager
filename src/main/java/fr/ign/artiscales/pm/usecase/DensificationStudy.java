@@ -11,7 +11,7 @@ import fr.ign.artiscales.tools.geoToolsFunctions.vectors.collec.CollecMgmt;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.collec.CollecTransform;
 import fr.ign.artiscales.tools.geometryGeneration.CityGeneration;
 import fr.ign.artiscales.tools.io.csv.CsvExport;
-import fr.ign.artiscales.tools.io.csv.CsvOp;
+import fr.ign.artiscales.tools.io.csv.CsvStat;
 import fr.ign.artiscales.tools.parameter.ProfileUrbanFabric;
 import org.geotools.data.DataStore;
 import org.geotools.data.DataUtilities;
@@ -46,7 +46,7 @@ public class DensificationStudy extends UseCase {
         PMScenario pmScen = new PMScenario(new File(rootFile, "scenario.json"));
         pmScen.executeStep();
         for (int i = 1; i <= 4; i++)
-            CsvOp.calculateColumnsBasicStat(new File(outFolder, "densificationStudyResult.csv"), i, true);
+            CsvStat.calculateColumnsBasicStat(new File(outFolder, "densificationStudyResult.csv"), i, true);
         // make a (nice) map out of it
 //        DataStore ds = Geopackages.getDataStore(new File(rootFile, "parcel.gpkg"));
 //        JoinCSVToGeoFile.joinCSVToGeoFile(
@@ -75,7 +75,7 @@ public class DensificationStudy extends UseCase {
         parcels = DataUtilities.collection(parcels);
         SimpleFeatureCollection block = CityGeneration.createUrbanBlock(parcels, true);
         Geometry buffer = CityGeneration.createBufferBorder(parcels);
-        Geometry maskZone = Geom.unionSFC(block);
+        Geometry maskZone = Geom.safeUnion(block);
         // building crop and export
         DataStore buildingDS = CollecMgmt.getDataStore(buildingFile);
         SimpleFeatureCollection building = DataUtilities.collection(CollecTransform.selectIntersection(buildingDS.getFeatureSource(buildingDS.getTypeNames()[0]).getFeatures(), maskZone));

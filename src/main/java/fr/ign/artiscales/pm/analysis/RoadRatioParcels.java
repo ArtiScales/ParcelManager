@@ -71,7 +71,7 @@ public class RoadRatioParcels {
         FilterFactory2 ff = CommonFactoryFinder.getFilterFactory2();
         Geometry multiGeom;
         if (CollecMgmt.isCollecContainsAttribute(initialMarkedParcel, MarkParcelAttributeFromPosition.getMarkFieldName()))
-            multiGeom = Geom.unionSFC(initialMarkedParcel.subCollection(ff.like(ff.property(MarkParcelAttributeFromPosition.getMarkFieldName()), "1")));
+            multiGeom = Geom.safeUnion(initialMarkedParcel.subCollection(ff.like(ff.property(MarkParcelAttributeFromPosition.getMarkFieldName()), "1")));
 
         else {
             System.out.println("Parcels haven't been previously marked : stop StatParcelStreetRatio");

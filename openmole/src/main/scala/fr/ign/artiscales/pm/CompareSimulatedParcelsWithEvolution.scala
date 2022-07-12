@@ -4,6 +4,7 @@ import fr.ign.artiscales.pm.analysis.SingleParcelStat
 import fr.ign.artiscales.pm.usecase.CompareSimulatedWithRealParcelsOM
 import fr.ign.artiscales.pm.workflow.{Workflow, ZoneDivision}
 import fr.ign.artiscales.tools.parameter.ProfileUrbanFabric
+import fr.ign.artiscales.pm.division.DivisionType
 
 import java.io.File
 
@@ -48,7 +49,6 @@ object compSimuParcel {
     val nbParcelDiff = SingleParcelStat.diffNumberOfParcel(parcelSimuled, parcelEvolved)
     val areaParcelDiff = SingleParcelStat.diffAreaAverage(parcelSimuled, parcelEvolved)
     (hausdorfDistance, nbParcelDiff, areaParcelDiff)
-    //   (nbParcelDiff, areaParcelDiff)
   }
 
   def ZoneDivisionSSOM(parcelFile: File,
@@ -68,7 +68,7 @@ object compSimuParcel {
     //             ) : (Int, Double) = {
     val profile = new ProfileUrbanFabric("calibration", minimalArea, maxDepth, maxDistanceForNearestRoad,
       minimalWidthContactRoad, maxWidth, laneWidth, irregularityCoeff)
-    Workflow.PROCESS = "SS"
+    Workflow.PROCESS = DivisionType.SS
     val parcelSimuled = (new ZoneDivision()).zoneDivision(initialZone: File, parcelFile: File, outFolder: File, profile: ProfileUrbanFabric, roadFile: File, buildingFile: File)
 
     //todo Check those return and add other?
@@ -76,7 +76,6 @@ object compSimuParcel {
     val nbParcelDiff = SingleParcelStat.diffNumberOfParcel(parcelSimuled, parcelEvolved)
     val areaParcelDiff = SingleParcelStat.diffAreaAverage(parcelSimuled, parcelEvolved)
     (hausdorfDistance, nbParcelDiff, areaParcelDiff)
-    //   (nbParcelDiff, areaParcelDiff)
   }
 
   def ZoneDivisionSSThenOBBThenSSOM(parcelFile: File,
@@ -102,7 +101,7 @@ object compSimuParcel {
     val profile = new ProfileUrbanFabric("calibration", maximalArea, minimalArea, minimalWidthContactRoad,
       laneWidth, streetWidth, streetLane, blockShape, 0,
       maxDepth, maxDistanceForNearestRoad, maxWidth, approxNumberParcelPerBlock, harmonyCoeff, irregularityCoeff)
-    Workflow.PROCESS = "OBBThenSS"
+    Workflow.PROCESS = DivisionType.OBBThenSS
     val parcelSimuled = (new ZoneDivision()).zoneDivision(initialZone: File, parcelFile: File, outFolder: File, profile: ProfileUrbanFabric, roadFile: File, buildingFile: File)
 
     //todo Check those return and add other?
@@ -110,7 +109,6 @@ object compSimuParcel {
     val nbParcelDiff = SingleParcelStat.diffNumberOfParcel(parcelSimuled, parcelEvolved)
     val areaParcelDiff = SingleParcelStat.diffAreaAverage(parcelSimuled, parcelEvolved)
     (hausdorfDistance, nbParcelDiff, areaParcelDiff)
-    //   (nbParcelDiff, areaParcelDiff)
   }
 
   def ZoneDivisionOBBOM(parcelFile: File,
@@ -131,14 +129,13 @@ object compSimuParcel {
     //             ) : (Int, Double) = {
     val profile = new ProfileUrbanFabric("calibration", maximalArea, minimalArea,
       minimalWidthContactRoad, streetWidth, streetLane, laneWidth, blockShape, harmonyCoeff, irregularityCoeff)
-    Workflow.PROCESS = "OBB"
+    Workflow.PROCESS = DivisionType.OBB
     val parcelSimuled = (new ZoneDivision()).zoneDivision(initialZone: File, parcelFile: File, outFolder: File, profile: ProfileUrbanFabric, roadFile: File, null)
 
     val hausdorfDistance = SingleParcelStat.hausdorffDistance(parcelSimuled, parcelEvolved)
     val nbParcelDiff = SingleParcelStat.diffNumberOfParcel(parcelSimuled, parcelEvolved)
     val areaParcelDiff = SingleParcelStat.diffAreaAverage(parcelSimuled, parcelEvolved)
     (hausdorfDistance, nbParcelDiff, areaParcelDiff)
-    //   (nbParcelDiff, areaParcelDiff)
   }
 }
 

@@ -65,7 +65,7 @@ public class ConsolidationDivision extends Workflow {
     public static DefaultFeatureCollection consolidation(SimpleFeatureCollection parcels, SimpleFeatureCollection parcelToMerge) {
         DefaultFeatureCollection mergedParcels = new DefaultFeatureCollection();
         SimpleFeatureBuilder sfBuilder = ParcelSchema.getSFBMinParcelSplit();
-        Geometry multiGeom = Geom.unionSFC(parcelToMerge);
+        Geometry multiGeom = Geom.safeUnion(parcelToMerge);
         for (int i = 0; i < multiGeom.getNumGeometries(); i++) {
             sfBuilder.add(multiGeom.getGeometryN(i));
             sfBuilder.set(ParcelSchema.getParcelSectionField(), String.valueOf(i));
@@ -153,7 +153,7 @@ public class ConsolidationDivision extends Workflow {
         SimpleFeatureCollection roads;
         if (roadFile != null && roadFile.exists()) {
             DataStore dsRoad = CollecMgmt.getDataStore(roadFile);
-            roads = DataUtilities.collection(CollecTransform.selectIntersection(dsRoad.getFeatureSource(dsRoad.getTypeNames()[0]).getFeatures(), Geom.unionSFC(mergedParcels).buffer(30)));
+            roads = DataUtilities.collection(CollecTransform.selectIntersection(dsRoad.getFeatureSource(dsRoad.getTypeNames()[0]).getFeatures(), Geom.safeUnion(mergedParcels).buffer(30)));
             if (isDEBUG())
                 CollecMgmt.exportSFC(roads, new File(tmpFolder, "roads"));
             dsRoad.dispose();

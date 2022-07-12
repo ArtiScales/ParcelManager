@@ -268,7 +268,7 @@ public class OBBDivision extends Division {
      * @return The splitting of Polygon1 with Polygon2
      */
     static List<Polygon> split(Polygon poly1, Polygon poly2) {
-        Geometry intersection = Geom.scaledGeometryReductionIntersection(Arrays.asList(poly1, poly2));
+        Geometry intersection = Geom.safeIntersection(Arrays.asList(poly1, poly2));
         if (intersection instanceof Polygon)
             return Collections.singletonList((Polygon) intersection);
         List<Polygon> res = new ArrayList<>(intersection.getNumGeometries());
@@ -318,8 +318,8 @@ public class OBBDivision extends Division {
      * @param currentDecompositionLevel  number of iteration to process
      * @return A tree with the polygon decomposition
      */
-    static Tree<Pair<Polygon, Integer>> decompose(Polygon polygon, List<LineString> ext, SimpleFeatureCollection roads, double maximalArea, double minimalWidthContactRoad, double irregularityCoeff, double harmony,
-                                                  double laneWidth, int streetLane, double streetWidth, boolean forceStreetAccess, int decompositionLevelWithLane, int currentDecompositionLevel) {
+    public static Tree<Pair<Polygon, Integer>> decompose(Polygon polygon, List<LineString> ext, SimpleFeatureCollection roads, double maximalArea, double minimalWidthContactRoad, double irregularityCoeff, double harmony,
+                                                         double laneWidth, int streetLane, double streetWidth, boolean forceStreetAccess, int decompositionLevelWithLane, int currentDecompositionLevel) {
         double area = polygon.getArea();
         double frontSideWidth = ParcelState.getParcelFrontSideWidth(polygon, roads, ext);
         if (endCondition(area, frontSideWidth, maximalArea, minimalWidthContactRoad))

@@ -15,7 +15,7 @@ import fr.ign.artiscales.tools.geoToolsFunctions.vectors.collec.CollecMgmt;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.collec.CollecTransform;
 import fr.ign.artiscales.tools.geometryGeneration.CityGeneration;
 
-import fr.ign.artiscales.tools.io.csv.CsvOp;
+import fr.ign.artiscales.tools.io.csv.CsvTransformation;
 import fr.ign.artiscales.tools.parameter.ProfileUrbanFabric;
 import org.geotools.data.DataStore;
 import org.geotools.data.DataUtilities;
@@ -122,7 +122,7 @@ public class CompareSimulatedWithRealParcelsOM {
         for (String[] line : r.readAll()) {
             Workflow.PROCESS = DivisionType.valueOf(process);
             CollecMgmt.exportSFC((new ZoneDivision()).zoneDivision(zoneFile, parcelFile, outFolder, new ProfileUrbanFabric(firstLine, line), roadFile, buildingFile),
-                    new File(outFolder, i++ + CsvOp.makeLine(listId, line)));
+                    new File(outFolder, i++ + CsvTransformation.makeLine(listId, line)));
 
         }
         r.close();

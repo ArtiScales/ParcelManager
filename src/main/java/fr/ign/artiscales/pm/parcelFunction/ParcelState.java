@@ -66,13 +66,19 @@ public class ParcelState {
     public static int countParcelNeighborhood(Geometry parcelGeom, SimpleFeatureCollection parcels) {
         int result = 0;
         try (SimpleFeatureIterator parcelIt = parcels.features()) {
-            while (parcelIt.hasNext())
-                if (Geom.safeIntersect(((Geometry) parcelIt.next().getDefaultGeometry()).buffer(1), parcelGeom))
+            while (parcelIt.hasNext()) {
+                Geometry g = (Geometry) parcelIt.next().getDefaultGeometry();
+                if (Geom.safeIntersect(g.buffer(1), parcelGeom) && !parcelGeom.equals(g))
                     result++;
+            }
         } catch (Exception e) {
             e.printStackTrace();
         }
         return result;
+    }
+
+    public static long countParcelNeighborhood(Geometry parcelGeom, List<? extends Geometry> parcels) {
+        return parcels.stream().filter(g -> Geom.safeIntersect(g.buffer(1), parcelGeom)).filter(g -> !g.equals(parcelGeom)).count();
     }
 
     /**
@@ -204,18 +210,19 @@ public class ParcelState {
      * This method looks if a parcel is overlapped by a building and returns true if they are.
      *
      * @param buildingSFC building collection
-     * @param parcel  input parcel
+     * @param parcel      input parcel
      * @return True if a building is really intersecting the parcel
      */
     public static boolean isAlreadyBuilt(SimpleFeatureCollection buildingSFC, SimpleFeature parcel) {
         return isAlreadyBuilt(buildingSFC, parcel, 0.0, 0.0);
     }
+
     /**
      * This method looks if a parcel is overlapped by a building and returns true if they are.
      *
      * @param buildingFile building collection
-     * @param parcel  input parcel
-     * @param mask polygon with mask which will select every overlapping features
+     * @param parcel       input parcel
+     * @param mask         polygon with mask which will select every overlapping features
      * @return True if a building is really intersecting the parcel
      * @throws IOException reading building file
      */
@@ -229,7 +236,7 @@ public class ParcelState {
      *
      * @param buildingFile          geo file containing building
      * @param parcel                parcel feature
-     * @param mask               geographical bounding representing our zone. Features outside this zone won't be considered. Can be null.
+     * @param mask                  geographical bounding representing our zone. Features outside this zone won't be considered. Can be null.
      * @param uncountedBuildingArea threshold under where a building is not considered
      * @return True if a building is really intersecting the parcel
      * @throws IOException reading building file
