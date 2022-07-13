@@ -35,7 +35,7 @@ public class TestScenario extends UseCase {
         long start = System.currentTimeMillis();
         File rootFolder = new File("src/main/resources/TestScenario/");
         File outFolder = new File(rootFolder, "OutputResults");
-        setDEBUG(false);
+        setDEBUG(true);
         setSAVEINTERMEDIATERESULT(false);
         doTestScenario(outFolder, new File(rootFolder, "InputData"));
         System.out.println("time: " + ((System.currentTimeMillis() - start) / 1000) + " sec");

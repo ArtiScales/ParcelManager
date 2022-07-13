@@ -948,6 +948,10 @@ public class MarkParcelAttributeFromPosition {
         }
     }
 
+    public static SimpleFeatureCollection getOnlySimulatedParcels(SimpleFeatureCollection in){
+        return getOnlyMarkedParcels(markSimulatedParcel(in));
+    }
+
     /**
      * Return a {@link SimpleFeatureCollection} containing only the marked parcels on their <i>markFieldName</i> field.
      *

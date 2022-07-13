@@ -66,7 +66,7 @@ public class OBBThenSS extends Division {
     public static SimpleFeatureCollection applyOBBThenSS(SimpleFeature feat, SimpleFeatureCollection roads, ProfileUrbanFabric profile, List<LineString> block) {
         DefaultFeatureCollection result = new DefaultFeatureCollection();
 //        if (((Geometry) feat.getDefaultGeometry()).getArea() > profile.getMaximalArea()) {
-        SimpleFeatureCollection obbSplit = OBBDivision.splitParcel(feat, roads, profile.getMaximalArea() * profile.getApproxNumberParcelPerBlock(), profile.getMaxWidth(), 0.2, 0.1,
+        SimpleFeatureCollection obbSplit = OBBDivision.splitParcel(feat, roads, profile.getMaximalArea() * profile.getApproxNumberParcelPerBlock(), profile.getMaxWidth(), profile.getHarmonyCoeff(),profile.getIrregularityCoeff(),
                 block, Math.max(profile.getStreetWidth() - 2 * profile.getLaneWidth(), 1), 0, Math.max(profile.getStreetWidth() - 2 * profile.getLaneWidth(), 1), true, 0);
         if (isDEBUG())
             try {

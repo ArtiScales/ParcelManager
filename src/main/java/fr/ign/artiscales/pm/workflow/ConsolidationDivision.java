@@ -233,7 +233,9 @@ public class ConsolidationDivision extends Workflow {
         // merge small parcels
         result = ParcelCollection.mergeTooSmallParcels(result, (int) profile.getMinimalArea(), PROCESS.equals(DivisionType.SS));
 
-        if (isSAVEINTERMEDIATERESULT() && !result.isEmpty()) {
+        if (result.isEmpty())
+            return ParcelCollection.getParcelWithoutSplitField(parcels);
+        if (isSAVEINTERMEDIATERESULT()) {
             CollecMgmt.exportSFC(result, new File(outFolder, "parcelConsolidationOnly"), OVERWRITEGEOPACKAGE);
             OVERWRITEGEOPACKAGE = false;
         }
