@@ -34,7 +34,6 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
-//todo change lenDriveway everywhere
 
 /**
  * Re-implementation of block decomposition into parcels with flag shape. The algorithm is an adaptation from :
@@ -104,7 +103,7 @@ public class FlagDivision extends Division {
      * @throws IOException reading buildingFile
      */
     public static SimpleFeatureCollection doFlagDivision(SimpleFeatureCollection inputCollection, File buildingFile, File roadFile, ProfileUrbanFabric profile, SimpleFeatureCollection block, Geometry exclusionZone) throws IOException {
-        return doFlagDivision(inputCollection, buildingFile, roadFile, profile.getHarmonyCoeff(), profile.getIrregularityCoeff(), profile.getMaximalArea(), profile.getMinimalWidthContactRoad(), profile.getLenDriveway(), block, exclusionZone);
+        return doFlagDivision(inputCollection, buildingFile, roadFile, profile.getHarmonyCoeff(), profile.getIrregularityCoeff(), profile.getMaximalArea(), profile.getMinimalWidthContactRoad(), profile.getDrivewayWidth(), block, exclusionZone);
     }
 
     /**
@@ -312,7 +311,7 @@ public class FlagDivision extends Division {
         // A map to know to which polygon belongs a potential road
         List<Pair<MultiLineString, Polygon>> listMap = new ArrayList<>();
         for (Polygon polyWithRoadAcces : lPolygonWithRoadAcces) {
-            if (!polyWithRoadAcces.intersects(buffer))
+            if (!polyWithRoadAcces.intersects(buffer)) // why that control?
                 continue;
             // We list the segments of the polygon with road access and keep the ones that does not intersect the buffer of new no-road-access polygon and the
             // Then regroup the lines according to their connectivity. We finally add elements to list the correspondence between pears

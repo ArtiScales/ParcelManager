@@ -267,7 +267,7 @@ public class PMStep {
                     parcelCut.addAll((new Densification()).densification(parcelMarkedComm,
                             CityGeneration.createUrbanBlock(parcelMarkedComm), OUTFOLDER, BUILDINGFILE, ROADFILE, profile.getHarmonyCoeff(),
                             profile.getIrregularityCoeff(), profile.getMaximalArea(), profile.getMinimalArea(), profile.getMinimalWidthContactRoad(),
-                            profile.getLenDriveway(), isAllowIsolatedParcel(), CityGeneration.createBufferBorder(parcelMarkedComm)));
+                            profile.getDrivewayWidth(), isAllowIsolatedParcel(), CityGeneration.createBufferBorder(parcelMarkedComm)));
                     break;
                 case consolidationDivision:
                     ConsolidationDivision.PROCESS = parcelProcess;

@@ -35,7 +35,7 @@ public class TestScenario extends UseCase {
         long start = System.currentTimeMillis();
         File rootFolder = new File("src/main/resources/TestScenario/");
         File outFolder = new File(rootFolder, "OutputResults");
-        setDEBUG(true);
+        setDEBUG(false);
         setSAVEINTERMEDIATERESULT(false);
         doTestScenario(outFolder, new File(rootFolder, "InputData"));
         System.out.println("time: " + ((System.currentTimeMillis() - start) / 1000) + " sec");
@@ -55,8 +55,8 @@ public class TestScenario extends UseCase {
         ProfileUrbanFabric profileSmallHouse = ProfileUrbanFabric.convertJSONtoProfile(new File(profileFolder, "smallHouse.json"));
         ProfileUrbanFabric profileMediumCollective = ProfileUrbanFabric.convertJSONtoProfile(new File(profileFolder, "mediumCollective.json"));
         StraightSkeletonDivision.setGeneratePeripheralRoad(true);
-//        for (int i = 0; i <= 0; i++) {
         for (int i = 0; i <= 4; i++) {
+//        for (int i = 3; i <= 3; i++) {
 //          multiple process calculation
             String ext = "offset";
             Workflow.PROCESS = DivisionType.SSoffset;
@@ -130,7 +130,7 @@ public class TestScenario extends UseCase {
                     MarkParcelAttributeFromPosition.markParcelIntersectPreciseZoningType(cutedNormalZone, "U", "UB", zoningFile),
                     CityGeneration.createUrbanBlock(cutedNormalZone, true), outFolder, buildingFile, roadFile, profileSmallHouse.getHarmonyCoeff(),
                     profileSmallHouse.getIrregularityCoeff(), profileSmallHouse.getMaximalArea(), profileSmallHouse.getMinimalArea(),
-                    profileSmallHouse.getLenDriveway(), profileSmallHouse.getLenDriveway(), allowIsolatedParcel);
+                    profileSmallHouse.getDrivewayWidth(), profileSmallHouse.getDrivewayWidth(), allowIsolatedParcel);
             CollecMgmt.exportSFC(parcelDensified, new File(outFolder, "parcelDensification.gpkg"));
 //            List<SimpleFeature> densifiedParcels = Arrays.stream(parcelDensified.toArray(new SimpleFeature[0])).filter(sf -> (new Densification()).isNewSection(sf)).collect(Collectors.toList());
 //            MakeStatisticGraphs.makeAreaGraph(densifiedParcels, statFolder, "Densification - small-sized houses simulation");

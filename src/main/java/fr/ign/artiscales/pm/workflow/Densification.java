@@ -342,7 +342,7 @@ public class Densification extends Workflow {
     public SimpleFeatureCollection densification(SimpleFeatureCollection parcelCollection, SimpleFeatureCollection blockCollection, File outFolder,
                                                  File buildingFile, File roadFile, ProfileUrbanFabric profile, boolean allowIsolatedParcel, Geometry exclusionZone) throws IOException {
         return densification(parcelCollection, blockCollection, outFolder, buildingFile, roadFile, profile.getHarmonyCoeff(), profile.getIrregularityCoeff(),
-                profile.getMaximalArea(), profile.getMinimalArea(), profile.getMinimalWidthContactRoad(), profile.getLenDriveway(),
+                profile.getMaximalArea(), profile.getMinimalArea(), profile.getMinimalWidthContactRoad(), profile.getDrivewayWidth(),
                 allowIsolatedParcel, exclusionZone);
     }
 
@@ -374,7 +374,7 @@ public class Densification extends Workflow {
             CollecMgmt.exportSFC(infParcels, new File(outFolder, "densificationOrNeighborhood-Marked"));
         SimpleFeatureCollection parcelDensified = densification(infParcels,
                 blockCollection, outFolder, buildingFile, roadFile, profile.getHarmonyCoeff(), profile.getIrregularityCoeff(), profile.getMaximalArea(),
-                profile.getMinimalArea(), profile.getMinimalWidthContactRoad(), profile.getLenDriveway(), allowIsolatedParcel, exclusionZone);
+                profile.getMinimalArea(), profile.getMinimalWidthContactRoad(), profile.getDrivewayWidth(), allowIsolatedParcel, exclusionZone);
         if (isDEBUG())
             CollecMgmt.exportSFC(parcelDensified, new File(outFolder, "densificationOrNeighborhood-Dens"));
 

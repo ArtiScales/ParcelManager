@@ -369,7 +369,7 @@ public class ZoneDivision extends Workflow {
                     case FlagDivision:
                         ((DefaultFeatureCollection) splitParcels)
                                 .addAll(FlagDivision.doFlagDivision(zone, roads, buildings, profile.getHarmonyCoeff(), profile.getIrregularityCoeff(),
-                                        profile.getMaximalArea(), profile.getMinimalWidthContactRoad(), profile.getLenDriveway(), extLines, exclusionZone));
+                                        profile.getMaximalArea(), profile.getMinimalWidthContactRoad(), profile.getDrivewayWidth(), extLines, exclusionZone));
                         break;
                     case MS:
                         System.out.println("not implemented yet");

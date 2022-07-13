@@ -198,7 +198,7 @@ public class ConsolidationDivision extends Workflow {
                                     System.out.println("ConsolidationDivision Critic error : cannot use FlagDivision process without building set");
                                     DataStore dsBuilding = CollecMgmt.getDataStore(buildingFile);
                                     freshCutParcel = FlagDivision.doFlagDivision(feat, roads, dsBuilding.getFeatureSource(dsBuilding.getTypeNames()[0]).getFeatures(), profile.getHarmonyCoeff(), profile.getIrregularityCoeff(),
-                                            profile.getMaximalArea(), profile.getMinimalWidthContactRoad(), profile.getLenDriveway(), extLines, exclusionZone);
+                                            profile.getMaximalArea(), profile.getMinimalWidthContactRoad(), profile.getDrivewayWidth(), extLines, exclusionZone);
                                     dsBuilding.dispose();
                                 }
                                 break;
