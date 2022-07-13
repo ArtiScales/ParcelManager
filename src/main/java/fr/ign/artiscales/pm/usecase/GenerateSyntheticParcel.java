@@ -5,6 +5,7 @@ import fr.ign.artiscales.pm.parcel.SyntheticParcel;
 import fr.ign.artiscales.pm.parcelFunction.ParcelState;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.geom.Lines;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.geom.Polygons;
+import fr.ign.artiscales.tools.indicator.Dispertion;
 import org.apache.commons.lang3.tuple.Pair;
 import org.geotools.geometry.jts.WKTReader2;
 import org.locationtech.jts.geom.Geometry;
@@ -20,9 +21,7 @@ import java.util.Random;
 import java.util.stream.Collectors;
 
 public class GenerateSyntheticParcel {
-    public static void main(String[] args) throws ParseException, IOException {
-        generate(15, 0.65, 100, 0.001f, new File("/tmp/result.gpkg"));
-    }
+
 
     /**
      * @param nbOwner               number of owners in the simulation
@@ -59,14 +58,14 @@ public class GenerateSyntheticParcel {
         if (!initializeOwnership(lSP, nbOwner))
             return null;
 
-        double currentGini = gini(lSP.stream().map(sp -> sp.area).collect(Collectors.toList()));
+        double currentGini = Dispertion.gini(lSP.stream().map(sp -> sp.area).collect(Collectors.toList()));
         int tentatives = 0;
         while (Math.abs(currentGini - giniObjective) > tolerence && tentatives < 1000000) {
             List<SyntheticParcel> newLSP = correctOwnership(lSP, nbOwner);
-            if (Math.abs(gini(SyntheticParcel.sumOwnerOwnedArea(newLSP)) - giniObjective) <
-                    Math.abs(gini(SyntheticParcel.sumOwnerOwnedArea(lSP)) - giniObjective)) {
+            if (Math.abs(Dispertion.gini(SyntheticParcel.sumOwnerOwnedArea(newLSP)) - giniObjective) <
+                    Math.abs(Dispertion.gini(SyntheticParcel.sumOwnerOwnedArea(lSP)) - giniObjective)) {
                 lSP = newLSP;
-                currentGini = gini(SyntheticParcel.sumOwnerOwnedArea(lSP));
+                currentGini = Dispertion.gini(SyntheticParcel.sumOwnerOwnedArea(lSP));
             }
             tentatives++;
         }
@@ -80,7 +79,7 @@ public class GenerateSyntheticParcel {
             sp.setIdNeighborhood(lSP);
 
         // not really needed infos
-        System.out.println("final gini for parcels : " + gini(SyntheticParcel.sumOwnerOwnedArea(lSP)));
+        System.out.println("final gini for parcels : " + Dispertion.gini(SyntheticParcel.sumOwnerOwnedArea(lSP)));
         if (exportFile != null)
             try {
                 SyntheticParcel.exportToGPKG(lSP, exportFile);
@@ -116,12 +115,6 @@ public class GenerateSyntheticParcel {
         if (min >= max)
             throw new IllegalArgumentException("max must be greater than min");
         return new Random().nextInt((max - min) + 1) + min;
-    }
-
-    public static double gini(List<Double> values) {
-        double sumOfDifference = values.stream().flatMapToDouble(v1 -> values.stream().mapToDouble(v2 -> Math.abs(v1 - v2))).sum();
-        double mean = values.stream().mapToDouble(v -> v).average().getAsDouble();
-        return sumOfDifference / (2 * values.size() * values.size() * mean);
     }
 
     public static Geometry createInitialZone() {
