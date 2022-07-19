@@ -7,7 +7,7 @@
 	"minimalArea": "174",
 	"minimalWidthContactRoad": "7",
 	"nameBuildingType": "smallHouse",
-	"lenDriveway": "3",
+	"drivewayWidth": "3",
 	"maxDepth":"30",
 	"maxDistanceForNearestRoad":"10",
 	"maxWidth":"20",

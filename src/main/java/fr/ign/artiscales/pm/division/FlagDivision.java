@@ -49,6 +49,7 @@ import java.util.stream.Collectors;
  * @author Mickael Brasebin
  */
 public class FlagDivision extends Division {
+
     /**
      * We remove <i>silver</i> parts that may have a too small area inferior to 25
      */
@@ -59,20 +60,20 @@ public class FlagDivision extends Division {
 //        File rootFolder = new File("src/main/resources/TestScenario/");
 //        setDEBUG(false);
 //        // Input 1/ the input parcels to split
-//        File parcelFile = new File(rootFolder, "InputData/parcel.gpkg");
+//        File parcelFile = new File("/tmp/dad.gpkg");
 //        // Input 2 : the buildings that mustn't intersects the allowed roads (facultatif)
-//        File inputBuildingFile = new File(rootFolder, "InputData/building.gpkg");
+//        File buildingFile = new File(rootFolder, "InputData/building.gpkg");
 //        // Input 4 (facultative) : a road GeoPackage (it can be used to check road access if this is better than characterizing road as an absence of parcel)
-//        File inputRoad = new File(rootFolder, "InputData/road.gpkg");
+//        File roadFile = new File(rootFolder, "InputData/road.gpkg");
 //        ProfileUrbanFabric profile = ProfileUrbanFabric.convertJSONtoProfile(new File(rootFolder, "profileUrbanFabric/mediumHouse.json"));
 //        DefaultFeatureCollection result = new DefaultFeatureCollection();
 //        DataStore ds = CollecMgmt.getDataStore(parcelFile);
-//        SimpleFeatureCollection parcel = MarkParcelAttributeFromPosition.markRandomParcels(ds.getFeatureSource(ds.getTypeNames()[0]).getFeatures(), 15, false);
+//        SimpleFeatureCollection parcel = MarkParcelAttributeFromPosition.markUnBuiltParcel(ds.getFeatureSource(ds.getTypeNames()[0]).getFeatures(), buildingFile);
 //        CollecMgmt.exportSFC(parcel, new File("/tmp/parcelMarked"));
-//        result.addAll(doFlagDivision(parcel, inputBuildingFile, inputRoad, profile, CityGeneration.createUrbanBlock(parcel), null));
+//        result.addAll(doFlagDivision(parcel, buildingFile, roadFile, profile, CityGeneration.createUrbanBlock(parcel), null));
 //
 //        ds.dispose();
-//        CollecMgmt.exportSFC(result, new File(rootFolder, "out.gpkg"));
+//        CollecMgmt.exportSFC(result, new File("/tmp/out.gpkg"));
 //        System.out.println("time : " + (System.currentTimeMillis() - start));
 //    }
 
@@ -141,10 +142,10 @@ public class FlagDivision extends Division {
             while (it.hasNext()) {
                 SimpleFeature feat = it.next();
                 result.addAll(doFlagDivision(feat,
-                        roadFile != null ? DataUtilities.collection(CollecTransform.selectIntersection(roadDS.getFeatureSource(roadDS.getTypeNames()[0]).getFeatures(), ((Geometry) feat.getDefaultGeometry()).buffer(10))) : null,
-                        buildingFile != null ? DataUtilities.collection(CollecTransform.selectIntersection(buildingDS.getFeatureSource(buildingDS.getTypeNames()[0]).getFeatures(), ((Geometry) feat.getDefaultGeometry()).buffer(10))) : null,
-                        harmony, irregularityCoeff, maximalArea, minimalWidthContactRoad, drivewayWidth, CollecTransform.fromPolygonSFCtoListRingLines(block.subCollection(ff.bbox(
-                                ff.property(inputCollection.getSchema().getGeometryDescriptor().getLocalName()), inputCollection.getBounds()))), exclusionZone));
+                        roadFile != null ? DataUtilities.collection(roadDS.getFeatureSource(roadDS.getTypeNames()[0]).getFeatures()) : null,
+                        buildingFile != null ? DataUtilities.collection(buildingDS.getFeatureSource(buildingDS.getTypeNames()[0]).getFeatures()) : null,
+                        harmony, irregularityCoeff, maximalArea, minimalWidthContactRoad, drivewayWidth,
+                        CollecTransform.fromPolygonSFCtoListRingLines(block.subCollection(ff.bbox(ff.property(inputCollection.getSchema().getGeometryDescriptor().getLocalName()), inputCollection.getBounds()))), exclusionZone));
             }
         }
         if (buildingFile != null)
@@ -175,12 +176,14 @@ public class FlagDivision extends Division {
                                                          double maximalArea, double minimalWidthContactRoad, double drivewayWidth, List<LineString> extLines, Geometry exclusionZone) {
         DefaultFeatureCollection result = new DefaultFeatureCollection();
         Polygon p = Polygons.getPolygon((Geometry) sf.getDefaultGeometry());
+        // shrink collections
+        building = CollecTransform.selectIntersection(building, p, 30);
+        road = CollecTransform.selectIntersection(road, p, 30);
+        extLines = (List<LineString>) CollecTransform.selectIntersection(extLines, p, 30);
+        // test end condition
         SimpleFeatureBuilder builder = ParcelSchema.addSimulatedField(sf.getFeatureType());
-        building = CollecTransform.selectIntersection(building, ((Geometry) sf.getDefaultGeometry()).buffer(20));
-        SimpleFeatureCollection r = CollecTransform.selectIntersection(road, ((Geometry) sf.getDefaultGeometry()).buffer(20));
-        // End test condition
         if ((sf.getAttribute(MarkParcelAttributeFromPosition.getMarkFieldName()) != null && !sf.getAttribute(MarkParcelAttributeFromPosition.getMarkFieldName()).equals(1))
-                || endCondition(((Geometry) sf.getDefaultGeometry()).getArea(), frontSideWidth(p, r, extLines), maximalArea, minimalWidthContactRoad)) {
+                || endCondition(p.getArea(), frontSideWidth(p, road, extLines), maximalArea, minimalWidthContactRoad)) {
             Schemas.setFieldsToSFB(builder, sf);
             builder.set("SIMULATED", 0);
             result.add(builder.buildFeature(Attribute.makeUniqueId()));
@@ -189,16 +192,15 @@ public class FlagDivision extends Division {
         if (isDEBUG())
             System.out.println("flagSplit parcel " + sf);
         // Determination of splitting polygon (it is a splitting line in the article)
-        List<Polygon> splittingPolygon = OBBDivision.computeSplittingPolygon(p, extLines, true, harmony, irregularityCoeff, 0.0, 0, 0.0, 0, 0);
         // Split into polygon
-        List<Polygon> splitPolygon = OBBDivision.split(p, splittingPolygon);
+        List<Polygon> splitPolygon = OBBDivision.split(p, OBBDivision.computeSplittingPolygon(p, extLines, true, harmony, irregularityCoeff, 0.0, 0, 0.0, 0, 0));
         // If a parcel has no road access, there is a probability to make a flag split
-        if (splitPolygon.stream().anyMatch(x -> !hasRoadAccess(x, r, extLines, exclusionZone))) {
-            Pair<List<Polygon>, List<Polygon>> polGeneratedParcel = flagParcel(splitPolygon, r, building, extLines, exclusionZone, drivewayWidth);
+        if (hasRoadAccess(splitPolygon, road, extLines, exclusionZone)) {
+            Pair<List<Polygon>, List<Polygon>> polGeneratedParcel = flagParcel(splitPolygon, road, building, extLines, exclusionZone, drivewayWidth);
             // We check if both parcels have road access, if false we abort the decomposition (that may be useless here...)
             for (Polygon pol1 : polGeneratedParcel.getLeft())
                 for (Polygon pol2 : polGeneratedParcel.getRight())
-                    if (!hasRoadAccess(pol2, r, extLines, exclusionZone) || !hasRoadAccess(pol1, r, extLines, exclusionZone)) {
+                    if (!hasRoadAccess(pol2, road, extLines, exclusionZone) || !hasRoadAccess(pol1, road, extLines, exclusionZone)) {
                         Schemas.setFieldsToSFB(builder, sf);
                         builder.set("SIMULATED", 0);
                         result.add(builder.buildFeature(Attribute.makeUniqueId()));
@@ -216,7 +218,7 @@ public class FlagDivision extends Division {
         for (Polygon pol : splitPolygon) {
             Schemas.setFieldsToSFB(builder, sf);
             builder.set(sf.getFeatureType().getGeometryDescriptor().getLocalName(), pol);
-            result.addAll(doFlagDivision(builder.buildFeature(Attribute.makeUniqueId()), r, building, harmony, irregularityCoeff, maximalArea, minimalWidthContactRoad, drivewayWidth, extLines, exclusionZone));
+            result.addAll(doFlagDivision(builder.buildFeature(Attribute.makeUniqueId()), road, building, harmony, irregularityCoeff, maximalArea, minimalWidthContactRoad, drivewayWidth, extLines, exclusionZone));
         }
         return result;
     }
@@ -301,23 +303,25 @@ public class FlagDivision extends Division {
      * @param currentPoly           Polygon to link to the road
      * @param lPolygonWithRoadAcces other polygons surrounding the #currentPoly
      * @return A list of pairs:<ul>
-     * <li> the left part contains </li>
-     * <li> the right part contains </li>
+     * <li> the left part contains the planned road</li>
+     * <li> the right part contains the rest of the polygon</li>
      * </ul>
      */
     private static List<Pair<MultiLineString, Polygon>> generateCandidateForCreatingRoad(Polygon currentPoly, List<Polygon> lPolygonWithRoadAcces, List<LineString> ext, SimpleFeatureCollection roads) {
         // A buffer to get the sides of the polygon with no road access
-        Geometry buffer = currentPoly.buffer(0.1);
+        Geometry curretPolyBuffered = currentPoly.buffer(0.1);
+        Geometry extBuffered = Lines.getListLineStringAsMultiLS(ext, currentPoly.getFactory()).buffer(0.1);
         // A map to know to which polygon belongs a potential road
         List<Pair<MultiLineString, Polygon>> listMap = new ArrayList<>();
         for (Polygon polyWithRoadAcces : lPolygonWithRoadAcces) {
-            if (!polyWithRoadAcces.intersects(buffer)) // why that control?
+            if (!polyWithRoadAcces.intersects(curretPolyBuffered)) // work with the concerned polygon
                 continue;
             // We list the segments of the polygon with road access and keep the ones that does not intersect the buffer of new no-road-access polygon and the
             // Then regroup the lines according to their connectivity. We finally add elements to list the correspondence between pears
             Lines.regroupLineStrings(Lines.getSegments(polyWithRoadAcces.getExteriorRing()).stream()
-                    .filter(x -> (!buffer.contains(x)) && !Lines.getListLineStringAsMultiLS(ext, currentPoly.getFactory()).buffer(0.1).contains(x) && !isRoadPolygonIntersectsLine(roads, x))
-                    .collect(Collectors.toList()), currentPoly.getFactory()).forEach(x -> listMap.add(new ImmutablePair<>(x, polyWithRoadAcces)));
+                            .filter(x -> !curretPolyBuffered.contains(x) && !extBuffered.contains(x) && !isRoadPolygonIntersectsLine(roads, x))
+                            .collect(Collectors.toList()),
+                    currentPoly.getFactory()).forEach(x -> listMap.add(new ImmutablePair<>(x, polyWithRoadAcces)));
         }
         return listMap;
     }
@@ -346,6 +350,10 @@ public class FlagDivision extends Division {
      */
     private static double frontSideWidth(Polygon p, SimpleFeatureCollection roads, List<LineString> ext) {
         return ParcelState.getParcelFrontSideWidth(p, roads, ext);
+    }
+
+    private static boolean hasRoadAccess(List<Polygon> splitPolygon, SimpleFeatureCollection road, List<LineString> extLines, Geometry exclusionZone) {
+        return splitPolygon.stream().anyMatch(x -> !hasRoadAccess(x, road, extLines, exclusionZone));
     }
 
     /**

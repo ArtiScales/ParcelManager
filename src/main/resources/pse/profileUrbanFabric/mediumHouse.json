@@ -1,0 +1,15 @@
+{
+	"streetLane": "5",
+	"blockShape": "3",
+	"streetWidth": "15",
+	"laneWidth": "8",	
+	"maximalArea": "1000",
+	"minimalArea": "300",
+	"minimalWidthContactRoad": "7",
+	"nameBuildingType": "mediumHouse",
+	"lenDriveway": "3",
+	"maxDepth":"40",
+	"maxDistanceForNearestRoad":"15",
+	"maxWidth":"30",
+	"approxNumberParcelPerBlock":"15"
+}

@@ -1,7 +1,7 @@
 {
 	"streetWidth": "12",
 	"laneWidth": "8",
-	"lenDriveway": "3",
+	"drivewayWidth": "3",
 	"streetLane": "8",
 	"blockShape": "4",
 	"maximalArea": "180",

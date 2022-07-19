@@ -7,5 +7,5 @@
 	"minimalArea":"800",
 	"minimalWidthContactRoad": "15",
 	"nameBuildingType":"mediumCollective",
-	"lenDriveway":"12"
+	"drivewayWidth":"12"
 }
