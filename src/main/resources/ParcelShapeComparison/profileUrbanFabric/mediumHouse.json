@@ -7,5 +7,5 @@
 	"minimalArea": "200",
 	"minimalWidthContactRoad":"7",
 	"nameBuildingType": "mediumHouse",
-	"lenDriveway": "3"
+	"drivewayWidth": "3"
 }

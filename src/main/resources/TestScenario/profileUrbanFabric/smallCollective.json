@@ -7,7 +7,7 @@
 	"minimalArea": "400",
 	"minimalWidthContactRoad": "12",
 	"nameBuildingType": "smallCollective",
-	"lenDriveway": "7",
+	"drivewayWidth": "7",
 	"maxDepth":"100",
 	"maxDistanceForNearestRoad":"30",
 	"maxWidth":"80",

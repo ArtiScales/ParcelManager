@@ -7,5 +7,5 @@
 	"minimalArea": "150",
 	"minimalWidthContactRoad": "7",
 	"nameBuildingType": "smallHouse",
-	"lenDriveway": "3"
+	"drivewayWidth": "3"
 }

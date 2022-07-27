@@ -1,0 +1,15 @@
+{
+	"streetLane": "4",
+	"blockShape": "2",
+	"streetWidth": "15",
+	"laneWidth": "9",
+	"maximalArea": "1200",
+	"minimalArea": "400",
+	"minimalWidthContactRoad": "12",
+	"nameBuildingType": "smallCollective",
+	"lenDriveway": "7",
+	"maxDepth":"100",
+	"maxDistanceForNearestRoad":"30",
+	"maxWidth":"80",
+	"approxNumberParcelPerBlock":"7"
+} 

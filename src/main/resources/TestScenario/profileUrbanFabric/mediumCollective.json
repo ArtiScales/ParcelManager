@@ -7,7 +7,7 @@
 	"minimalArea":"2000",
 	"minimalWidthContactRoad": "15",
 	"nameBuildingType":"mediumCollective",
-	"lenDriveway":"12",
+	"drivewayWidth":"12",
 	"maxDepth":"200",
 	"maxDistanceForNearestRoad":"50",
 	"maxWidth":"100",

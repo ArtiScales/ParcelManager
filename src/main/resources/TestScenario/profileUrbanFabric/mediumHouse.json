@@ -7,7 +7,7 @@
 	"minimalArea": "300",
 	"minimalWidthContactRoad": "7",
 	"nameBuildingType": "mediumHouse",
-	"lenDriveway": "3",
+	"drivewayWidth": "3",
 	"maxDepth":"40",
 	"maxDistanceForNearestRoad":"15",
 	"maxWidth":"30",
