@@ -22,6 +22,14 @@ import java.util.stream.Collectors;
 
 public class GenerateSyntheticParcel {
 
+    public static boolean DEBUG = false;
+    private static Random random;
+
+    public static void main(String[] args) {
+        DEBUG = true;
+        generate(12, 0.8, 150, 0.01f, 42, new File("/tmp/p.gpkg"));
+        generate(12, 0.8, 150, 0.01f, 42, new File("/tmp/p2.gpkg"));
+    }
 
     /**
      * @param nbOwner               number of owners in the simulation
@@ -31,32 +39,35 @@ public class GenerateSyntheticParcel {
      * @param exportFile            if not null, write the parcels in a geopackage
      * @return Parcels with attributes
      */
-    public static List<SyntheticParcel> generate(int nbOwner, double giniObjective, int approxNumberOfParcels, float tolerence, File exportFile) {
+    public static List<SyntheticParcel> generate(int nbOwner, double giniObjective, int approxNumberOfParcels, float tolerence, long seed, File exportFile) {
+        random = new Random(seed);
         Geometry iniZone = createInitialZone();
-        List<Polygon> lP = new ArrayList<>();
-        HashMap<Integer, Geometry> regionIDS = new HashMap<>();
-
         assert iniZone != null;
         double maximalArea = iniZone.getArea() / approxNumberOfParcels;
+        HashMap<Integer, Geometry> regionIDS = new HashMap<>();
         int i = 1;
+        List<SyntheticParcel> lSP = new ArrayList<>();
         for (Polygon subRegion : Polygons.getPolygons(iniZone)) {
+            List<Polygon> lP = new ArrayList<>();
             lP.addAll(OBBDivision.decompose(subRegion, Lines.getLineStrings(iniZone), null, maximalArea,
                     0, 0.5, 0.5,
                     0, 0, 0, false, 0, 0
 //                    10, 2, 20, false, 2, 0
+//                    ,seed
             ).stream().map(Pair::getLeft).collect(Collectors.toList()));
             //dummy task to remove initial polygon which is returned by the previous method
             lP.remove(lP.stream().filter(p -> p.getArea() == subRegion.getArea()).findFirst().get());
             regionIDS.put(i++, subRegion);
-        }
+            List<SyntheticParcel> lSPsubregion = new ArrayList<>();
+            for (Polygon p : lP)
+                lSPsubregion.add(new SyntheticParcel(p, p.getArea(), p.distance(iniZone.getCentroid()), ParcelState.countParcelNeighborhood(p, lP), 0,
+                        regionIDS.keySet().stream().filter(regionID -> regionIDS.get(regionID).buffer(1).contains(p)).findFirst().get()));
 
-        List<SyntheticParcel> lSP = new ArrayList<>(lP.size());
-        for (Polygon p : lP)
-            lSP.add(new SyntheticParcel(p, p.getArea(), p.distance(iniZone.getCentroid()), ParcelState.countParcelNeighborhood(p, lP), 0,
-                    regionIDS.keySet().stream().filter(regionID -> regionIDS.get(regionID).buffer(1).contains(p)).findFirst().get()));
-        // initialize parcel ownership : nobody left behind
-        if (!initializeOwnership(lSP, nbOwner))
-            return null;
+            // initialize parcel ownership : everybody must and will have at least a parcel in every subregion
+            if (!initializeOwnership(lSPsubregion, nbOwner))
+                return null;
+            lSP.addAll(lSPsubregion);
+        }
 
         double currentGini = Dispertion.gini(lSP.stream().map(sp -> sp.area).collect(Collectors.toList()));
         int tentatives = 0;
@@ -70,7 +81,8 @@ public class GenerateSyntheticParcel {
             tentatives++;
         }
         if (tentatives == 1000000) {
-            System.out.println("gini unreachable. change parameters. return null");
+            if (DEBUG)
+                System.out.println("gini unreachable. change parameters. return null");
             return null;
         }
 
@@ -79,7 +91,8 @@ public class GenerateSyntheticParcel {
             sp.setIdNeighborhood(lSP);
 
         // not really needed infos
-        System.out.println("final gini for parcels : " + Dispertion.gini(SyntheticParcel.sumOwnerOwnedArea(lSP)));
+        if (DEBUG)
+            System.out.println("final gini for parcels : " + Dispertion.gini(SyntheticParcel.sumOwnerOwnedArea(lSP)));
         if (exportFile != null)
             try {
                 SyntheticParcel.exportToGPKG(lSP, exportFile);
@@ -96,7 +109,7 @@ public class GenerateSyntheticParcel {
                 sp.ownerID = getRandomNumberInRange(1, nbOwner);
             iteration++;
         } while (lSP.stream().map(sp -> sp.ownerID).distinct().count() != nbOwner && iteration < 10000);
-        if (iteration == 10000)
+        if (iteration == 10000 && DEBUG)
             System.out.println("Cannot intiate ownership (too much owner ?). Return null");
         return iteration != 10000;
     }
@@ -114,7 +127,7 @@ public class GenerateSyntheticParcel {
     public static int getRandomNumberInRange(int min, int max) {
         if (min >= max)
             throw new IllegalArgumentException("max must be greater than min");
-        return new Random().nextInt((max - min) + 1) + min;
+        return random.nextInt((max - min) + 1) + min;
     }
 
     public static Geometry createInitialZone() {
