@@ -1,5 +1,6 @@
 package fr.ign.artiscales.pm.usecase;
 
+import fr.ign.artiscales.pm.division.Division;
 import fr.ign.artiscales.pm.division.OBBDivision;
 import fr.ign.artiscales.pm.parcel.SyntheticParcel;
 import fr.ign.artiscales.pm.parcelFunction.ParcelState;
@@ -17,13 +18,11 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Random;
 import java.util.stream.Collectors;
 
 public class GenerateSyntheticParcel {
 
     public static boolean DEBUG = false;
-    private static Random random;
 
     public static void main(String[] args) {
         DEBUG = true;
@@ -40,7 +39,7 @@ public class GenerateSyntheticParcel {
      * @return Parcels with attributes
      */
     public static List<SyntheticParcel> generate(int nbOwner, double giniObjective, int approxNumberOfParcels, float tolerence, long seed, File exportFile) {
-        random = new Random(seed);
+        Division.setSeed(seed);
         Geometry iniZone = createInitialZone();
         assert iniZone != null;
         double maximalArea = iniZone.getArea() / approxNumberOfParcels;
@@ -53,7 +52,6 @@ public class GenerateSyntheticParcel {
                     0, 0.5, 0.5,
                     0, 0, 0, false, 0, 0
 //                    10, 2, 20, false, 2, 0
-//                    ,seed
             ).stream().map(Pair::getLeft).collect(Collectors.toList()));
             //dummy task to remove initial polygon which is returned by the previous method
             lP.remove(lP.stream().filter(p -> p.getArea() == subRegion.getArea()).findFirst().get());
@@ -127,7 +125,7 @@ public class GenerateSyntheticParcel {
     public static int getRandomNumberInRange(int min, int max) {
         if (min >= max)
             throw new IllegalArgumentException("max must be greater than min");
-        return random.nextInt((max - min) + 1) + min;
+        return Division.getRandom().nextInt((max - min) + 1) + min;
     }
 
     public static Geometry createInitialZone() {

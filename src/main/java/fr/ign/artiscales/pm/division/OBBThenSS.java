@@ -80,7 +80,7 @@ public class OBBThenSS extends Division {
             while (it.hasNext())
                 result.addAll(StraightSkeletonDivision.runTopologicalStraightSkeletonParcelDecomposition(it.next(), roads, "NOM_VOIE_G", "IMPORTANCE", 0,
                         profile.getMaxDistanceForNearestRoad(), profile.getMinimalArea(), 12, profile.getMaxWidth(),
-                        (profile.getIrregularityCoeff() == 0) ? 0.1 : profile.getIrregularityCoeff(), new MersenneTwister(1), profile.getLaneWidth(), "finalState"));
+                        (profile.getIrregularityCoeff() == 0) ? 0.1 : profile.getIrregularityCoeff(), profile.getLaneWidth(), "finalState"));
         }
         MarkParcelAttributeFromPosition.setMarkFieldName("SPLIT");
         return result;

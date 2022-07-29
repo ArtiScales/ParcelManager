@@ -5,6 +5,7 @@ import fr.ign.artiscales.pm.division.DivisionType;
 import fr.ign.artiscales.pm.division.StraightSkeletonDivision;
 import fr.ign.artiscales.pm.parcelFunction.ParcelSchema;
 import fr.ign.artiscales.tools.geoToolsFunctions.Schemas;
+import org.apache.commons.math3.random.MersenneTwister;
 import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.feature.simple.SimpleFeatureType;
 
@@ -20,6 +21,7 @@ public abstract class Workflow {
      * If true, overwrite the output saved Geopackages. If false, append the simulated parcels to a potential already existing Geopackage.
      */
     public static boolean OVERWRITEGEOPACKAGE = true;
+    public static MersenneTwister random = new MersenneTwister();
     /**
      * If true, will save a Geopackage containing only the simulated parcels in the temporary folder.
      */
@@ -61,7 +63,14 @@ public abstract class Workflow {
             System.out.println("Parcel collection doesn't contain the needed Section Field.  Set a " + ParcelSchema.getParcelSectionField() + " field or change the default name");
     }
 
+    public static void setSeed(long seed) {
+        random = new MersenneTwister(seed);
+        Division.setSeed(seed);
+    }
+
     public abstract String makeNewSection(String section);
 
     public abstract boolean isNewSection(SimpleFeature feat);
+
+
 }

@@ -232,11 +232,10 @@ public class OBBDivision extends Division {
         Coordinate p1 = keepCoordinateOrder ? coordinates[1] : coordinates[2];
         Coordinate p2 = keepCoordinateOrder ? coordinates[2] : coordinates[3];
         Coordinate p3 = keepCoordinateOrder ? coordinates[3] : coordinates[0];
-        double width = Math.min(dist1, dist2);
-        // The irregularityCoeff value is determined by irregularityCoeff parameters and parcel width (to avoid lines that go out of parcel)
-        double irregularityCoeffTemp = Math.min(width / 3, irregularityCoeff);
-        // X and Y move of the centroid
-        double alpha = 0.5 + (0.5 - Math.random()) * irregularityCoeffTemp;
+//        // The irregularityCoeff value (Math.min(width / 3, irregularityCoeff)) is determined by irregularityCoeff parameters and parcel width (to avoid lines that go out of parcel)
+//        // X and Y move of the centroid
+        double alpha = 0.5 + (0.5 - (getRandom().nextDouble())) * Math.min(Math.min(dist1, dist2) / 3, irregularityCoeff);
+
         if (decompositionLevel < laneLevelDisabled) { // Creation of road
             double roadWidth = laneWidth;
             if (decompositionLevel < streetLevelDisabled) {
