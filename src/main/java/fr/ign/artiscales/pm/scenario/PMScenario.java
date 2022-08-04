@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonToken;
 import fr.ign.artiscales.pm.workflow.Workflow;
+import org.apache.commons.math3.random.MersenneTwister;
 
 import java.io.File;
 import java.io.IOException;
@@ -29,6 +30,7 @@ public class PMScenario {
      * If true, will save all the intermediate results in the temporary folder
      */
     private static boolean DEBUG = false;
+    private static MersenneTwister random = new MersenneTwister();
     boolean keepExistingRoad = true, adaptAreaOfUrbanFabric = false, generatePeripheralRoad = false;
     private File zoningFile, buildingFile, roadFile, polygonIntersection, zone, predicateFile, parcelFile, profileFolder, outFolder;
     private List<PMStep> stepList = new ArrayList<>();
@@ -219,6 +221,10 @@ public class PMScenario {
                 profileFolder);
     }
 
+    public static MersenneTwister getRandom() {
+        return random;
+    }
+
 //    public static void main(String[] args) throws Exception {
 //        PMScenario.setDEBUG(false);
 //        PMScenario.setSaveIntermediateResult(false);
@@ -277,6 +283,11 @@ public class PMScenario {
      */
     public static void setReuseSimulatedParcels(boolean reuseSimulatedParcel) {
         REUSESIMULATEDPARCELS = reuseSimulatedParcel;
+    }
+
+    public static void setSeed(long seed) {
+        random = new MersenneTwister(seed);
+        Workflow.setSeed(seed);
     }
 
     /**

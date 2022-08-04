@@ -49,9 +49,7 @@ object Pse extends App {
 print(profile)
     val parcelSimuled = MarkParcelAttributeFromPosition.getOnlySimulatedParcels(new ConsolidationDivision().consolidationDivision(parcel, roadFile, null, profile))
 
-
-    //todo Check those return and add other?
-    val aspectRatio: Double = SingleParcelStat.meanAspectRatio(parcelSimuled)
+    val aspectRatio: Double = ParcelIndicator.meanAspectRatio(parcelSimuled)
     val nbParcel: Int = parcelSimuled.size()
     val giniAreaParcel: Double = ParcelIndicator.giniArea(parcelSimuled)
     val nbNeighborhood : Double = ParcelIndicator.meanNeighborhood(parcelSimuled)
@@ -81,7 +79,7 @@ print(profile)
     val parcelSimuled = MarkParcelAttributeFromPosition.getOnlySimulatedParcels(new ConsolidationDivision().consolidationDivision(parcel, roadFile, null, profile))
       //    CollecMgmt.exportSFC(parcelSimuled, new File("/tmp/obb.gpkg"))
 
-    val aspectRatio: Double = SingleParcelStat.meanAspectRatio(parcelSimuled)
+    val aspectRatio: Double = ParcelIndicator.meanAspectRatio(parcelSimuled)
     val nbParcel: Int = parcelSimuled.size()
     val giniAreaParcel: Double = ParcelIndicator.giniArea(parcelSimuled)
     val nbNeighborhood : Double = ParcelIndicator.meanNeighborhood(parcelSimuled)

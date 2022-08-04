@@ -21,7 +21,6 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
 import org.apache.commons.math3.distribution.NormalDistribution;
 import org.apache.commons.math3.distribution.RealDistribution;
-import org.apache.commons.math3.random.RandomGenerator;
 import org.geotools.data.DataStore;
 import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.data.simple.SimpleFeatureIterator;
@@ -456,10 +455,10 @@ public class StraightSkeletonDivision extends Division {
         return (int) ca.stream().filter(cb::contains).count();
     }
 
-    public static SimpleFeatureCollection runTopologicalStraightSkeletonParcelDecomposition(SimpleFeatureCollection sfcParcelIn, File roadFile, String NAME_ATT_ROAD, String NAME_ATT_IMPORTANCE, double maxDepth, double maxDistanceForNearestRoad, double minimalArea, double minWidth, double maxWidth, double omega, RandomGenerator rng, double streetWidth, String name) throws IOException {
+    public static SimpleFeatureCollection runTopologicalStraightSkeletonParcelDecomposition(SimpleFeatureCollection sfcParcelIn, File roadFile, String NAME_ATT_ROAD, String NAME_ATT_IMPORTANCE, double maxDepth, double maxDistanceForNearestRoad, double minimalArea, double minWidth, double maxWidth, double omega, double streetWidth, String name) throws IOException {
         DataStore dsRoad = CollecMgmt.getDataStore(roadFile);
         SimpleFeatureCollection p = runTopologicalStraightSkeletonParcelDecomposition(sfcParcelIn, dsRoad.getFeatureSource(dsRoad.getTypeNames()[0]).getFeatures(), NAME_ATT_ROAD, NAME_ATT_IMPORTANCE, maxDepth, maxDistanceForNearestRoad,
-                minimalArea, minWidth, maxWidth, omega, rng, streetWidth, name);
+                minimalArea, minWidth, maxWidth, omega, streetWidth, name);
         dsRoad.dispose();
         return p;
     }
@@ -467,7 +466,7 @@ public class StraightSkeletonDivision extends Division {
     /**
      * Run Straight Skeleton on marked parcels
      */
-    public static SimpleFeatureCollection runTopologicalStraightSkeletonParcelDecomposition(SimpleFeatureCollection sfcParcelIn, SimpleFeatureCollection roads, String NAME_ATT_ROAD, String NAME_ATT_IMPORTANCE, double maxDepth, double maxDistanceForNearestRoad, double minimalArea, double minWidth, double maxWidth, double omega, RandomGenerator rng, double streetWidth, String name) {
+    public static SimpleFeatureCollection runTopologicalStraightSkeletonParcelDecomposition(SimpleFeatureCollection sfcParcelIn, SimpleFeatureCollection roads, String NAME_ATT_ROAD, String NAME_ATT_IMPORTANCE, double maxDepth, double maxDistanceForNearestRoad, double minimalArea, double minWidth, double maxWidth, double omega, double streetWidth, String name) {
         if (!CollecMgmt.isCollecContainsAttribute(sfcParcelIn, MarkParcelAttributeFromPosition.getMarkFieldName()) || MarkParcelAttributeFromPosition.isNoParcelMarked(sfcParcelIn)) {
             if (isDEBUG())
                 System.out.println("runTopologicalStraightSkeletonParcelDecomposition: no parcel marked");
@@ -478,7 +477,7 @@ public class StraightSkeletonDivision extends Division {
         try (SimpleFeatureIterator parcelIt = sfcParcelIn.features()) {
             while (parcelIt.hasNext())
                 result.addAll(runTopologicalStraightSkeletonParcelDecomposition(parcelIt.next(), roads, NAME_ATT_ROAD, NAME_ATT_IMPORTANCE, maxDepth,
-                        maxDistanceForNearestRoad, minimalArea, minWidth, maxWidth, omega, rng, streetWidth, name + i++));
+                        maxDistanceForNearestRoad, minimalArea, minWidth, maxWidth, omega, streetWidth, name + i++));
 
         } catch (Exception problem) {
             problem.printStackTrace();
@@ -546,7 +545,7 @@ public class StraightSkeletonDivision extends Division {
      */
     public static SimpleFeatureCollection runTopologicalStraightSkeletonParcelDecomposition(SimpleFeature feat, SimpleFeatureCollection roads,
                                                                                             String roadNameAttribute, String roadImportanceAttribute, double maxDepth, double maxDistanceForNearestRoad,
-                                                                                            double minimalArea, double minWidth, double maxWidth, double omega, RandomGenerator rng, double widthRoad, String name) {
+                                                                                            double minimalArea, double minWidth, double maxWidth, double omega, double widthRoad, String name) {
         DefaultFeatureCollection result = new DefaultFeatureCollection();
         SimpleFeatureBuilder builder = ParcelSchema.addSimulatedField(feat.getFeatureType());
         if (feat.getAttribute(MarkParcelAttributeFromPosition.getMarkFieldName()) == null || !feat.getAttribute(MarkParcelAttributeFromPosition.getMarkFieldName()).equals(1)) {
@@ -566,7 +565,7 @@ public class StraightSkeletonDivision extends Division {
                         roadNameAttribute, roadImportanceAttribute, maxDepth, generatePeripheralRoad ? maxDistanceForNearestRoad + widthRoad : maxDistanceForNearestRoad, generatePeripheralRoad, widthRoad, name);
                 export(decomposition.straightSkeleton.getGraph(), new File(FOLDER_PARTICULAR_DEBUG, "after_fix"));
                 if (decomposition.betaStrips != null)
-                    globalOutputParcels.addAll(decomposition.createParcels(minWidth, maxWidth, omega, rng));
+                    globalOutputParcels.addAll(decomposition.createParcels(minWidth, maxWidth, omega));
                 else
                     globalOutputParcels.add(decomposition.initialPolygon);
                 log("end with polygon " + feat);
@@ -1182,8 +1181,8 @@ public class StraightSkeletonDivision extends Division {
         return result;
     }
 
-    private List<Polygon> createParcels(double minWidth, double maxWidth, double omega, RandomGenerator rng) {
-        NormalDistribution nd = new NormalDistribution(rng, (minWidth + maxWidth) / 2, Math.sqrt(3 * omega));
+    private List<Polygon> createParcels(double minWidth, double maxWidth, double omega) {
+        NormalDistribution nd = new NormalDistribution(getRandom(), (minWidth + maxWidth) / 2, Math.sqrt(3 * omega));
         List<Polygon> result = new ArrayList<>();
         for (Face face : betaStrips.getFaces())
             result.addAll(slice(minWidth, maxWidth, nd, face));

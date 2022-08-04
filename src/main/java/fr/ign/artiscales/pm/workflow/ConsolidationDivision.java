@@ -15,7 +15,6 @@ import fr.ign.artiscales.tools.geoToolsFunctions.vectors.collec.CollecMgmt;
 import fr.ign.artiscales.tools.geoToolsFunctions.vectors.collec.CollecTransform;
 import fr.ign.artiscales.tools.geometryGeneration.CityGeneration;
 import fr.ign.artiscales.tools.parameter.ProfileUrbanFabric;
-import org.apache.commons.math3.random.MersenneTwister;
 import org.geotools.data.DataStore;
 import org.geotools.data.DataUtilities;
 import org.geotools.data.simple.SimpleFeatureCollection;
@@ -186,7 +185,7 @@ public class ConsolidationDivision extends Workflow {
                                 StraightSkeletonDivision.FOLDER_OUT_DEBUG = tmpFolder;
                                 freshCutParcel = StraightSkeletonDivision.runTopologicalStraightSkeletonParcelDecomposition(feat, roads, "NOM_VOIE_G", "IMPORTANCE", PROCESS.equals(DivisionType.SSoffset) ? profile.getMaxDepth() : 0,
                                         profile.getMaxDistanceForNearestRoad(), profile.getMinimalArea(), profile.getMinimalWidthContactRoad(), profile.getMaxWidth(),
-                                        (profile.getIrregularityCoeff() == 0) ? 0.1 : profile.getIrregularityCoeff(), new MersenneTwister(1), profile.getLaneWidth(), ParcelSchema.getParcelID(feat));
+                                        (profile.getIrregularityCoeff() == 0) ? 0.1 : profile.getIrregularityCoeff(), profile.getLaneWidth(), ParcelSchema.getParcelID(feat));
                                 break;
                             case OBBThenSS:
                                 freshCutParcel = OBBThenSS.applyOBBThenSS(feat,
