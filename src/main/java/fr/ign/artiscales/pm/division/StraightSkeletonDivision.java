@@ -100,7 +100,7 @@ public class StraightSkeletonDivision extends Division {
     private static final int NEITHER = 0;
     public static File FOLDER_OUT_DEBUG = new File("/tmp/skeleton");
     public static File FOLDER_PARTICULAR_DEBUG;
-    private static boolean SAVEINTERMEDIATERESULT = true;
+    private static boolean SAVEINTERMEDIATERESULT;
     private static boolean generatePeripheralRoad;
     //////////////////////////////////////////////////////
     // Input data parameters
@@ -237,11 +237,13 @@ public class StraightSkeletonDivision extends Division {
         export(betaStrips, new File(FOLDER_PARTICULAR_DEBUG, "beta"));
     }
 
-//    public static void main(String[] args) throws IOException, EdgeException, StraightSkeletonException, ParseException {
+
+//        public static void main(String[] args) throws IOException, EdgeException, StraightSkeletonException {
 //        File rootFolder = new File("src/main/resources/TestScenario/");
 //        File roadFile = new File(rootFolder, "InputData/road.gpkg");
 //        File parcelFile = new File(rootFolder, "InputData/parcel.gpkg");
-//        setDEBUG(true);
+//        setDEBUG(false);
+//        Workflow.setSAVEINTERMEDIATERESULT(true);
 //        DataStore dsRoad = CollecMgmt.getDataStore(roadFile);
 //        DataStore dsParcel = CollecMgmt.getDataStore(parcelFile);
 //        SimpleFeatureCollection parcel = MarkParcelAttributeFromPosition.markRandomParcels(MarkParcelAttributeFromPosition.markParcelsConnectedToRoad(dsParcel.getFeatureSource(dsParcel.getTypeNames()[0]).getFeatures(), CityGeneration.createUrbanBlock(dsParcel.getFeatureSource(dsParcel.getTypeNames()[0]).getFeatures()), roadFile), 5, true);
@@ -253,6 +255,24 @@ public class StraightSkeletonDivision extends Division {
 //        dsParcel.dispose();
 //        dsRoad.dispose();
 //    }
+/*
+    public static void main(String[] args) throws ParseException, IOException, EdgeException, StraightSkeletonException {
+        Division.setDEBUG(true);
+        Geometry g = new WKTReader2().read("POLYGON ((929187.1120696196 6690800.977237904, 929185.9599999998 6690800.35, 929184.19 6690799.360000001, 929182.4199999999 6690798.320000001, 929175.81 6690794.34, 929167.24 6690788.97, 929166.66 6690788.58, 929165.73 6690787.97, 929164.82 6690787.339999998, 929163.9100000001 6690786.7, 929163.02 6690786.03, 929160.6199999999 6690784.210000002, 929147.28 6690773.84, 929146.94 6690773.58, 929146.3 6690773.040000001, 929145.6600000001 6690772.51, 929145.04 6690771.950000001, 929144.4199999999 6690771.390000001, 929143.82 6690770.8100000005, 929143.22 6690770.240000001, 929142.64 6690769.650000001, 929142.06 6690769.05, 929141.49 6690768.43, 929141.3699999999 6690768.290000001, 929139.44 6690766.109999999, 929137.55 6690763.91, 929135.69 6690761.660000002, 929133.88 6690759.399999999, 929132.1099999999 6690757.090000001, 929131.97 6690756.86, 929131.52 6690756.110000001, 929130.79 6690754.890000001, 929130.05 6690753.61, 929129.8499999999 6690753.250000001, 929129.67 6690752.879999998, 929129.4799999999 6690752.51, 929129.3 6690752.140000001, 929129.13 6690751.77, 929128.59 6690750.57, 929126.69 6690746.170000002, 929126.6599999999 6690746.080000001, 929126.47 6690745.6400000015, 929126.2899999999 6690745.180000001, 929126.1299999999 6690744.720000001, 929125.9600000001 6690744.239999999, 929125.8 6690743.75, 929125.58 6690743.050000001, 929125.36 6690742.350000001, 929125.17 6690741.64, 929124.98 6690740.919999999, 929124.8 6690740.210000001, 929124.49 6690738.860000001, 929123.63 6690734.84, 929122.8399999999 6690730.800000002, 929122.42 6690728.490000002, 929121.92 6690725.5, 929121.48 6690722.5, 929121.2899999999 6690721.120000002, 929121.12 6690719.5600000005, 929120.97 6690718.000000001, 929120.85 6690716.429999999, 929120.8299999998 6690716.260000002, 929120.79 6690715.389999999, 929120.75 6690714.53, 929120.73 6690713.66, 929120.73 6690712.790000001, 929120.74 6690711.92, 929120.76 6690711.040000001, 929120.8 6690710.15, 929120.8499999999 6690709.410000002, 929120.93 6690708.419999999, 929121.02 6690707.44, 929121.13 6690706.46, 929121.26 6690705.48, 929121.4099999999 6690704.500000001, 929121.5003237547 6690703.952412238, 929031.5269857597 6690802.0507537, 929109.4278067837 6690879.3083141325, 929187.1120696196 6690800.977237904))");
+        File rootFile = new File("/home/mcolomb/Téléchargements/1AU_R+5/Scenario/");
+        DataStore roadDS = CollecMgmt.getDataStore(new File(rootFile, "InputData/road.gpkg"));
+        StraightSkeletonDivision decomposition = new StraightSkeletonDivision((Polygon) g, roadDS.getFeatureSource(roadDS.getTypeNames()[0]).getFeatures(), "NOM_VOIE_G", "IMPORTANCE", 0,
+                10, 2, true, 7, "test");
+        export(decomposition.straightSkeleton.getGraph(), new File(FOLDER_OUT_DEBUG, "after_fix"));
+
+        List<Polygon> globalOutputParcels = new ArrayList<>();
+
+        if (decomposition.betaStrips != null)
+            globalOutputParcels.addAll(decomposition.createParcels(12, 20, 0.1, new MersenneTwister(42)));
+        else
+            globalOutputParcels.add(decomposition.initialPolygon);
+    }
+*/
 
     private static boolean isReflex(Node node, HalfEdge previous, HalfEdge next) {
         return isReflex(node.getCoordinate(), previous.getGeometry(), next.getGeometry());
@@ -282,7 +302,7 @@ public class StraightSkeletonDivision extends Division {
     }
 
     /**
-     * Order
+     * todo move to as-tools
      */
     private static List<HalfEdge> getOrderedEdgesFromCycle(List<HalfEdge> edges) {
         List<HalfEdge> orderedEdges = new ArrayList<>();
@@ -309,6 +329,7 @@ public class StraightSkeletonDivision extends Division {
             System.out.println(text);
     }
 
+    // todo move to as-tools
     private static List<HalfEdge> getOrderedEdges(List<HalfEdge> edges) throws EdgeException {
         log("getOrderedEdges");
         edges.forEach(e -> log(e.getGeometry()));
@@ -449,7 +470,7 @@ public class StraightSkeletonDivision extends Division {
     public static SimpleFeatureCollection runTopologicalStraightSkeletonParcelDecomposition(SimpleFeatureCollection sfcParcelIn, SimpleFeatureCollection roads, String NAME_ATT_ROAD, String NAME_ATT_IMPORTANCE, double maxDepth, double maxDistanceForNearestRoad, double minimalArea, double minWidth, double maxWidth, double omega, RandomGenerator rng, double streetWidth, String name) {
         if (!CollecMgmt.isCollecContainsAttribute(sfcParcelIn, MarkParcelAttributeFromPosition.getMarkFieldName()) || MarkParcelAttributeFromPosition.isNoParcelMarked(sfcParcelIn)) {
             if (isDEBUG())
-                System.out.println("doFlagDivision: no parcel marked");
+                System.out.println("runTopologicalStraightSkeletonParcelDecomposition: no parcel marked");
             return sfcParcelIn;
         }
         DefaultFeatureCollection result = new DefaultFeatureCollection();
@@ -474,7 +495,7 @@ public class StraightSkeletonDivision extends Division {
     public static List<MultiLineString> dividePeripheralRoadInParts(LinearRing lr) {
         List<MultiLineString> ls = new ArrayList<>();
         double maxLength = lr.getLength() / 2;
-        double minLength =  2;
+        double minLength = 2;
         Coordinate[] coordinates = lr.getCoordinates();
         List<LineString> oneRoad = new ArrayList<>();
         double cumulateLength = 0;
@@ -550,8 +571,23 @@ public class StraightSkeletonDivision extends Division {
                     globalOutputParcels.add(decomposition.initialPolygon);
                 log("end with polygon " + feat);
             } catch (Exception e) {
-                log("error with polygon " + feat);
-                e.printStackTrace();
+                log("error with polygon " + feat + ". Try with less precision");
+                try {
+                    if (polygon.getArea() < minimalArea) // if small parcel, we ignore
+                        continue;
+                    log("start with polygon " + feat);
+                    StraightSkeletonDivision decomposition = new StraightSkeletonDivision(polygon, roads,
+                            roadNameAttribute, roadImportanceAttribute, maxDepth, generatePeripheralRoad ? maxDistanceForNearestRoad + widthRoad : maxDistanceForNearestRoad, 1, generatePeripheralRoad, widthRoad, name);
+                    export(decomposition.straightSkeleton.getGraph(), new File(FOLDER_PARTICULAR_DEBUG, "after_fix"));
+                    if (decomposition.betaStrips != null)
+                        globalOutputParcels.addAll(decomposition.createParcels(minWidth, maxWidth, omega, rng));
+                    else
+                        globalOutputParcels.add(decomposition.initialPolygon);
+                    log("end with polygon " + feat);
+                } catch (Exception ee) {
+                    log("fatal error with polygon " + feat);
+                    ee.printStackTrace();
+                }
             }
         }
         TopologicalGraph output = new TopologicalGraph(globalOutputParcels, 0.02);
@@ -639,7 +675,7 @@ public class StraightSkeletonDivision extends Division {
         Face currFace = null;
         facesWithMultipleFrontages = new HashSet<>();
         for (HalfEdge e : orderedExteriorEdges) {
-            if (!roadAttributes.get(e).isPresent())
+            if (roadAttributes.get(e).isEmpty())
                 continue;
             if (currFace == null) { // case for is the first edge
                 currFace = e.getFace();
@@ -711,6 +747,7 @@ public class StraightSkeletonDivision extends Division {
 
     /**
      * Mark the edges whether they are in the exterior of the polygon or not. Also order the nodes in the list
+     * todo move to as-tools
      *
      * @param graph straight skeleton graph
      * @return the graph classed and with attribute EXTERIOR
@@ -718,15 +755,15 @@ public class StraightSkeletonDivision extends Division {
     private List<HalfEdge> getOrderedExteriorEdges(TopologicalGraph graph) {
         // TODO would having to order the exterior edges justify creating the infinite face?
         // FIXME here is a hack to get the exterior edges. This is ugly
-        List<HalfEdge> edges = graph.getEdges().stream().filter(p -> p.getTwin() == null)
+        List<HalfEdge> exteriorEdges = graph.getEdges().stream().filter(p -> p.getTwin() == null)
                 .filter(e -> !this.initialPolygon.buffer(-0.1).contains(e.getGeometry())).collect(Collectors.toList());
         log("getOrderedExteriorEdges");
         log("pre-order");
-        edges.forEach(e -> log(e.getGeometry()));
+        exteriorEdges.forEach(e -> log(e.getGeometry()));
         graph.getEdges().forEach(e -> e.setAttribute("EXTERIOR", "false"));
-        edges.forEach(e -> e.setAttribute("EXTERIOR", "true"));
+        exteriorEdges.forEach(e -> e.setAttribute("EXTERIOR", "true"));
         // straightSkeleton.getGraph().getEdges().iterator().next().getAttributes().forEach(a -> log("attribute " + a));
-        List<HalfEdge> og = getOrderedEdgesFromCycle(edges);
+        List<HalfEdge> og = getOrderedEdgesFromCycle(exteriorEdges);
         log("ordered");
         og.forEach(e -> log(e.getGeometry()));
         return og;

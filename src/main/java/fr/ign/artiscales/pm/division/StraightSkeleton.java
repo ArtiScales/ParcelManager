@@ -41,7 +41,7 @@ import fr.ign.artiscales.tools.graph.recursiveGraph.TopologicalGraph;
  * 
  */
 public class StraightSkeleton {
-  private Polygon inputPolygon;
+  private final Polygon inputPolygon;
 
   public Polygon getInputPolygon() {
     return inputPolygon;
@@ -199,7 +199,7 @@ public class StraightSkeleton {
           }
           coord.add(coord.get(0));
           prev.setNext(first);
-          LinearRing ring = factory.createLinearRing(coord.toArray(new Coordinate[coord.size()]));
+          LinearRing ring = factory.createLinearRing(coord.toArray(new Coordinate[0]));
           if (exterior == null)
             exterior = ring;
           else
@@ -241,7 +241,7 @@ public class StraightSkeleton {
         // else
         // interiors.add(ring);
         // }
-        topoFace.setPolygon(factory.createPolygon(exterior, interiors.toArray(new LinearRing[interiors.size()])));
+        topoFace.setPolygon(factory.createPolygon(exterior, interiors.toArray(new LinearRing[0])));
         graph.getFaces().add(topoFace);
       }
     }
@@ -312,7 +312,7 @@ public class StraightSkeleton {
   }
 
   /**
-   * 
+   *
    * @return extrait les arcs extérieurs du polygone
    */
   public List<HalfEdge> getExteriorEdges() {
@@ -320,7 +320,7 @@ public class StraightSkeleton {
   }
 
   /**
-   * 
+   *
    * @return extrait les arcs générés lors du calcul du squelette droit
    */
   public List<HalfEdge> getInteriorEdges() {
@@ -328,7 +328,7 @@ public class StraightSkeleton {
   }
 
   /**
-   * 
+   *
    * @return extrait les arcs générés ne touchant pas la frontière du polygone
    */
   public List<HalfEdge> getIncludedEdges() {
@@ -342,7 +342,7 @@ public class StraightSkeleton {
       dpl.add(cornerToCoordinate(c));
     }
     dpl.add(dpl.get(0));// close the ring
-    return factory.createLinearRing(dpl.toArray(new Coordinate[dpl.size()]));
+    return factory.createLinearRing(dpl.toArray(new Coordinate[0]));
   }
 
   public static Polygon convertCornerLoops(LoopL<Corner> points, GeometryFactory factory) {
@@ -356,7 +356,7 @@ public class StraightSkeleton {
         interior.add(ring);
       }
     }
-    return factory.createPolygon(exterior, interior.toArray(new LinearRing[interior.size()]));
+    return factory.createPolygon(exterior, interior.toArray(new LinearRing[0]));
   }
 
   public static Polygon shrink(Polygon p, double value) {
