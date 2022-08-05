@@ -337,7 +337,7 @@ public class PMStep {
             CollecMgmt.exportSFC(parcel, new File(OUTFOLDER, "selectedParcels"));
         // parcels have been selected - now is time to mark them
         // parcel marking with a special rule
-        if (selection != null && selection != "" && !workflow.equals(WorkflowType.zoneDivision))
+        if (selection != null && !selection.equals("") && !workflow.equals(WorkflowType.zoneDivision))
             switch (selection.split(",")[0]) {
                 case "parcelSmallerRatio":
                     parcel = MarkParcelAttributeFromPosition.markParcelsInf(parcel, profile.getMaximalArea() * Double.parseDouble(selection.split(",")[1]));

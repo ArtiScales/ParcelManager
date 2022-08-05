@@ -273,6 +273,11 @@ public class StraightSkeletonDivision extends Division {
     }
 */
 
+    private static void log(Object text) {
+        if (isDEBUG())
+            System.out.println(text);
+    }
+
     private static boolean isReflex(Node node, HalfEdge previous, HalfEdge next) {
         return isReflex(node.getCoordinate(), previous.getGeometry(), next.getGeometry());
     }
@@ -323,10 +328,7 @@ public class StraightSkeletonDivision extends Division {
         return orderedEdges;
     }
 
-    private static void log(Object text) {
-        if (isDEBUG())
-            System.out.println(text);
-    }
+
 
     // todo move to as-tools
     private static List<HalfEdge> getOrderedEdges(List<HalfEdge> edges) throws EdgeException {
@@ -339,7 +341,7 @@ public class StraightSkeletonDivision extends Division {
         HalfEdge current = edges.remove(0);
         log("current\n" + current.getGeometry());
         orderedEdges.add(current);
-        Node currentNode = current.getTarget();
+        Node currentNode;
         while (!edges.isEmpty()) {
             currentNode = forward ? current.getTarget() : orderedEdges.get(0).getOrigin();
             current = forward ? TopologicalGraph.next(currentNode, current, edges)
@@ -436,7 +438,7 @@ public class StraightSkeletonDivision extends Division {
             }
         }
         coordinates.add(l.getCoordinateN(0));// has to be a loop / ring
-        return l.getFactory().createLinearRing(coordinates.toArray(new Coordinate[coordinates.size()]));
+        return l.getFactory().createLinearRing(coordinates.toArray(new Coordinate[0]));
     }
 
     private static Polygon snap(Polygon poly, Coordinate c, double tolerance) {
@@ -579,7 +581,7 @@ public class StraightSkeletonDivision extends Division {
                             roadNameAttribute, roadImportanceAttribute, maxDepth, generatePeripheralRoad ? maxDistanceForNearestRoad + widthRoad : maxDistanceForNearestRoad, 1, generatePeripheralRoad, widthRoad, name);
                     export(decomposition.straightSkeleton.getGraph(), new File(FOLDER_PARTICULAR_DEBUG, "after_fix"));
                     if (decomposition.betaStrips != null)
-                        globalOutputParcels.addAll(decomposition.createParcels(minWidth, maxWidth, omega, rng));
+                        globalOutputParcels.addAll(decomposition.createParcels(minWidth, maxWidth, omega));
                     else
                         globalOutputParcels.add(decomposition.initialPolygon);
                     log("end with polygon " + feat);
@@ -713,8 +715,8 @@ public class StraightSkeletonDivision extends Division {
             log("Face with " + entry.getValue().size() + " frontages\n" + entry.getKey().getGeometry());
             if (entry.getValue().size() > 1) { // there are multiple frontages for this face, determine the primary one
                 List<HalfEdge> primaryFrontage = entry.getValue().stream()
-                        .map(f -> new ImmutablePair<>(f, f.stream().map(e -> e.getGeometry().getLength()).reduce((a, b) -> a + b).get()))
-                        .max((a, b) -> Double.compare(a.getRight(), b.getRight())).get().getLeft();
+                        .map(f -> new ImmutablePair<>(f, f.stream().map(e -> e.getGeometry().getLength()).reduce(Double::sum).get()))
+                        .max(Comparator.comparingDouble(ImmutablePair::getRight)).get().getLeft();
                 primary.put(entry.getKey(), primaryFrontage);
                 primaryFrontage.stream().map(HalfEdge::getGeometry).forEach(StraightSkeletonDivision::log);
             } else { // only one frontage. Easy
@@ -996,19 +998,14 @@ public class StraightSkeletonDivision extends Division {
         // List<HalfEdge> edges = graph.getEdges();
         edges.forEach(e -> log(e.getGeometry()));
         final Coordinate origin = o;
-        Optional<ImmutablePair<HalfEdge, Coordinate>> intersections = edges.stream()
+        // .filter(pair->pair.getRight().distance(origin) > tolerance)
+        return edges.stream()
                 .filter(h -> Lines.getRayLineSegmentIntersects(origin, d, h.getGeometry()))
-                .map(h -> new ImmutablePair<>(h, Lines.getRayLineSegmentIntersection(origin, d, h.getGeometry())))
-                // .filter(pair->pair.getRight().distance(origin) > tolerance)
-                .sorted((Pair<HalfEdge, Coordinate> p1, Pair<HalfEdge, Coordinate> p2) -> Double.compare(p1.getRight().distance(origin),
-                        p2.getRight().distance(origin)))
-                .findFirst();
-        return intersections;
+                .map(h -> new ImmutablePair<>(h, Lines.getRayLineSegmentIntersection(origin, d, h.getGeometry()))).min(Comparator.comparingDouble((Pair<HalfEdge, Coordinate> p2) -> p2.getRight().distance(origin)));
     }
 
     private Optional<Coordinate> getIntersection(Coordinate o, Coordinate d, Polygon polygon) {
-        Point p = factory.createPoint(o);
-        log("getIntersection\n" + p + "\n" + d.getX() + "," + d.getY() + "\n" + factory.createPoint(new Coordinate(o.x + d.x, o.y + d.y)));
+        log("getIntersection\n" + factory.createPoint(o) + "\n" + d.getX() + "," + d.getY() + "\n" + factory.createPoint(new Coordinate(o.x + d.x, o.y + d.y)));
         final Coordinate origin = o;
         LineString ring = polygon.getExteriorRing();
         List<LineString> segments = new ArrayList<>();
@@ -1017,10 +1014,8 @@ public class StraightSkeletonDivision extends Division {
             Coordinate c2 = ring.getCoordinateN(index + 1);
             segments.add(factory.createLineString(new Coordinate[]{c1, c2}));
         }
-        Optional<Coordinate> intersection = segments.stream().filter(h -> Lines.getRayLineSegmentIntersects(origin, d, h))
-                .map(h -> Lines.getRayLineSegmentIntersection(origin, d, h))
-                .sorted((p1, p2) -> Double.compare(p1.distance(origin), p2.distance(origin))).findFirst();
-        return intersection;
+        return segments.stream().filter(h -> Lines.getRayLineSegmentIntersects(origin, d, h))
+                .map(h -> Lines.getRayLineSegmentIntersection(origin, d, h)).min(Comparator.comparingDouble(p2 -> p2.distance(origin)));
     }
 
     private List<Coordinate> getPath(List<HalfEdge> graphEdges, Polygon strip, Node node, Coordinate direction) {
@@ -1044,8 +1039,7 @@ public class StraightSkeletonDivision extends Division {
             }
             return Collections.emptyList();
         }
-        edges.sort((HalfEdge h1, HalfEdge h2) -> Double.compare(getAngle(h1.getOrigin().getCoordinate(), h1.getTarget().getCoordinate(), direction),
-                getAngle(h2.getOrigin().getCoordinate(), h2.getTarget().getCoordinate(), direction)));
+        edges.sort(Comparator.comparingDouble((HalfEdge h) -> getAngle(h.getOrigin().getCoordinate(), h.getTarget().getCoordinate(), direction)));
         HalfEdge edge = edges.get(0);
         graphEdges.remove(edge);
         // we don't want to go back
@@ -1074,15 +1068,14 @@ public class StraightSkeletonDivision extends Division {
             edges = straightSkeleton.getGraph().getEdges().stream().filter(h -> h.getAttribute("EXTERIOR").toString().equals("false"))
                     .collect(Collectors.toList());
             Optional<ImmutablePair<HalfEdge, Coordinate>> optionalIntersection = getIntersection(c2, d, straightSkeleton.getGraph(), edges);
-            if (!optionalIntersection.isPresent()) {
+            if (optionalIntersection.isEmpty()) {
                 // try again with exterior edges (but not the one the point is on)
                 edges = straightSkeleton.getGraph().getEdges().stream().filter(
                                 h -> h.getAttribute("EXTERIOR").toString().equals("true") && h.getGeometry().distance(factory.createPoint(c2)) > tolerance)
                         .collect(Collectors.toList());
                 optionalIntersection = getIntersection(c2, d, straightSkeleton.getGraph(), edges);
-                if (!optionalIntersection.isPresent()) {
+                if (optionalIntersection.isEmpty())
                     return null;
-                }
                 return factory.createLineString(new Coordinate[]{c2, optionalIntersection.get().getRight()});
             }
             Pair<HalfEdge, Coordinate> intersection = optionalIntersection.get();
@@ -1108,12 +1101,13 @@ public class StraightSkeletonDivision extends Division {
                 // coordinateList.add(currentNode.getCoordinate());
                 d = getUnitVector(intersectionCoord, currentNode.getCoordinate());
                 // log("NO NODE. CONTINUE TO\n"+currentNode.getGeometry());
-            } else {
-                // log("FOUND NODE\n"+currentNode.getGeometry());
             }
+//            else {
+//                 log("FOUND NODE\n"+currentNode.getGeometry());
+//            }
             // coordinateList.addAll(getPath(betaStrips, strip, currentNode, d));
             coordinateList.addAll(getPath(new ArrayList<>(straightSkeleton.getGraph().getEdges()), strip, currentNode, d));
-            return factory.createLineString(coordinateList.toArray(new Coordinate[coordinateList.size()]));
+            return factory.createLineString(coordinateList.toArray(new Coordinate[0]));
         }
         // List<HalfEdge> edges = betaStrips.getEdges().stream().filter(h -> h.getOrigin() == node && h.getTwin() != null).collect(Collectors.toList());
         // List<HalfEdge> edges = straightSkeleton.getGraph().getEdges().stream().filter(h -> h.getOrigin() == node && h.getTwin() != null).collect(Collectors.toList());
@@ -1129,7 +1123,7 @@ public class StraightSkeletonDivision extends Division {
             Coordinate d = getUnitVector(c1, c2);
             // coordinateList.addAll(getPath(betaStrips, strip, edge.getTarget(), d));
             coordinateList.addAll(getPath(new ArrayList<>(straightSkeleton.getGraph().getEdges()), strip, edge.getTarget(), d));
-            return factory.createLineString(coordinateList.toArray(new Coordinate[coordinateList.size()]));
+            return factory.createLineString(coordinateList.toArray(new Coordinate[0]));
             // log(edges.get(0).getGeometry());
         }
         return null;
@@ -1218,11 +1212,11 @@ public class StraightSkeletonDivision extends Division {
                     .flatMap(e -> Arrays.asList(e.getGeometry().getCoordinates()).subList(1, e.getGeometry().getNumPoints()).stream())
                     .collect(Collectors.toList());
             coordinates.add(0, extEdges.get(0).getOrigin().getCoordinate());
-            LineString psi = factory.createLineString(coordinates.toArray(new Coordinate[coordinates.size()]));
+            LineString psi = factory.createLineString(coordinates.toArray(new Coordinate[0]));
             psiList.add(psi);
         }
         log("PSIlist:");
-        psiList.stream().forEach(p -> log(p));
+        psiList.stream().forEach(StraightSkeletonDivision::log);
         // classify supporting vertices
         for (Node n : alphaStrips.getNodes()) {
             log("node\n" + n.getGeometry());
@@ -1473,7 +1467,7 @@ public class StraightSkeletonDivision extends Division {
         }
         // log(coords.size());
         if (coords.size() > 1) {
-            return Optional.of(factory.createLineString(coords.toArray(new Coordinate[coords.size()])));
+            return Optional.of(factory.createLineString(coords.toArray(new Coordinate[0])));
         }
         return Optional.empty();
     }
@@ -1522,7 +1516,7 @@ public class StraightSkeletonDivision extends Division {
         if (coords.size() < 2) {
             return line;
         }
-        return factory.createLineString(coords.toArray(new Coordinate[coords.size()]));
+        return factory.createLineString(coords.toArray(new Coordinate[0]));
     }
 
     public Pair<Polygon, Polygon> splitPolygon(Polygon poly, LineString line) {
