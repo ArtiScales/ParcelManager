@@ -141,7 +141,7 @@ public class StraightSkeletonDivision extends Division {
      */
     public StraightSkeletonDivision(Polygon p, SimpleFeatureCollection roads, String roadNameAttribute, String roadImportanceAttribute, double maxDepth,
                                     double maxDistanceForNearestRoad, String name) throws StraightSkeletonException, EdgeException {
-        this(p, roads, roadNameAttribute, roadImportanceAttribute, maxDepth, maxDistanceForNearestRoad, 2, false, 0, name);
+        this(p, roads, roadNameAttribute, roadImportanceAttribute, maxDepth, maxDistanceForNearestRoad, 2, 2.0, false, 0, name);
     }
 
     /**
@@ -161,7 +161,7 @@ public class StraightSkeletonDivision extends Division {
      */
     public StraightSkeletonDivision(Polygon p, SimpleFeatureCollection roads, String roadNameAttribute, String roadImportanceAttribute, double maxDepth,
                                     double maxDistanceForNearestRoad, boolean generatePeripheralRoad, double widthRoad, String name) throws StraightSkeletonException, EdgeException {
-        this(p, roads, roadNameAttribute, roadImportanceAttribute, maxDepth, maxDistanceForNearestRoad, 2, generatePeripheralRoad, widthRoad, name);
+        this(p, roads, roadNameAttribute, roadImportanceAttribute, maxDepth, maxDistanceForNearestRoad, 2, 2.0, generatePeripheralRoad, widthRoad, name);
     }
 
     /**
@@ -181,8 +181,8 @@ public class StraightSkeletonDivision extends Division {
      * @throws EdgeException             if edges have problems (mainly due to precision and not normal order)
      */
     public StraightSkeletonDivision(Polygon p, SimpleFeatureCollection roads, String roadNameAttribute, String roadImportanceAttribute, double maxDepth,
-                                    double maxDistanceForNearestRoad, int numberOfDigits, boolean generatePeripheralRoad, double widthRoad, String name) throws StraightSkeletonException, EdgeException {
-        this.tolerance = 2.0 / Math.pow(10, numberOfDigits);
+                                    double maxDistanceForNearestRoad, int numberOfDigits, double toleranceLevel, boolean generatePeripheralRoad, double widthRoad, String name) throws StraightSkeletonException, EdgeException {
+        this.tolerance = toleranceLevel / Math.pow(10, numberOfDigits);
         p = (Polygon) TopologyPreservingSimplifier.simplify(p, 10 * tolerance);
         this.precisionReducer = new GeometryPrecisionReducer(new PrecisionModel(Math.pow(10, numberOfDigits)));
         this.roads = roads;
@@ -237,23 +237,26 @@ public class StraightSkeletonDivision extends Division {
     }
 
 
-//        public static void main(String[] args) throws IOException, EdgeException, StraightSkeletonException {
-//        File rootFolder = new File("src/main/resources/TestScenario/");
-//        File roadFile = new File(rootFolder, "InputData/road.gpkg");
-//        File parcelFile = new File(rootFolder, "InputData/parcel.gpkg");
-//        setDEBUG(false);
-//        Workflow.setSAVEINTERMEDIATERESULT(true);
-//        DataStore dsRoad = CollecMgmt.getDataStore(roadFile);
-//        DataStore dsParcel = CollecMgmt.getDataStore(parcelFile);
+    public static void main(String[] args) throws IOException, EdgeException, StraightSkeletonException {
+        File rootFolder = new File("/tmp/");
+        File roadFile = new File(rootFolder, "/2AU_R+5/Scenario/InputData/road.gpkg");
+        generatePeripheralRoad = true;
+
+        File parcelFile = new File(rootFolder, "/po.gpkg");
+        setDEBUG(true);
+        DataStore dsRoad = CollecMgmt.getDataStore(roadFile);
+        DataStore dsParcel = CollecMgmt.getDataStore(parcelFile);
 //        SimpleFeatureCollection parcel = MarkParcelAttributeFromPosition.markRandomParcels(MarkParcelAttributeFromPosition.markParcelsConnectedToRoad(dsParcel.getFeatureSource(dsParcel.getTypeNames()[0]).getFeatures(), CityGeneration.createUrbanBlock(dsParcel.getFeatureSource(dsParcel.getTypeNames()[0]).getFeatures()), roadFile), 5, true);
-//        double maxDepth = 20, maxDistanceForNearestRoad = 15, minimalArea = 100, minWidth = 20, maxWidth = 50, omega = 0.1, widthRoad = 12;
-//        String NAME_ATT_IMPORTANCE = "IMPORTANCE";
-//        String NAME_ATT_ROAD = "NOM_VOIE_G";
-//        SimpleFeatureCollection result = runTopologicalStraightSkeletonParcelDecomposition(parcel, dsRoad.getFeatureSource(dsRoad.getTypeNames()[0]).getFeatures(), NAME_ATT_ROAD, NAME_ATT_IMPORTANCE, maxDepth, maxDistanceForNearestRoad, minimalArea, minWidth, maxWidth, omega, new MersenneTwister(), widthRoad, "exemple");
-//        CollecMgmt.exportSFC(result, new File("/tmp/resultStraightSkeleton.gpkg"));
-//        dsParcel.dispose();
-//        dsRoad.dispose();
-//    }
+        SimpleFeatureCollection parcel = MarkParcelAttributeFromPosition.markAllParcel(dsParcel.getFeatureSource(dsParcel.getTypeNames()[0]).getFeatures());
+
+        double maxDepth = 30, maxDistanceForNearestRoad = 10, minimalArea = 220, minWidth = 7, maxWidth = 20, omega = 0.1, widthRoad = 7;
+        String NAME_ATT_IMPORTANCE = "IMPORTANCE";
+        String NAME_ATT_ROAD = "NOM_VOIE_G";
+        SimpleFeatureCollection result = runTopologicalStraightSkeletonParcelDecomposition(parcel, dsRoad.getFeatureSource(dsRoad.getTypeNames()[0]).getFeatures(), NAME_ATT_ROAD, NAME_ATT_IMPORTANCE, maxDepth, maxDistanceForNearestRoad, minimalArea, minWidth, maxWidth, omega, widthRoad, "exemple");
+        CollecMgmt.exportSFC(result, new File("/tmp/resultStraightSkeleton.gpkg"));
+        dsParcel.dispose();
+        dsRoad.dispose();
+    }
 /*
     public static void main(String[] args) throws ParseException, IOException, EdgeException, StraightSkeletonException {
         Division.setDEBUG(true);
@@ -327,7 +330,6 @@ public class StraightSkeletonDivision extends Division {
         }
         return orderedEdges;
     }
-
 
 
     // todo move to as-tools
@@ -578,7 +580,7 @@ public class StraightSkeletonDivision extends Division {
                         continue;
                     log("start with polygon " + feat);
                     StraightSkeletonDivision decomposition = new StraightSkeletonDivision(polygon, roads,
-                            roadNameAttribute, roadImportanceAttribute, maxDepth, generatePeripheralRoad ? maxDistanceForNearestRoad + widthRoad : maxDistanceForNearestRoad, 1, generatePeripheralRoad, widthRoad, name);
+                            roadNameAttribute, roadImportanceAttribute, maxDepth, generatePeripheralRoad ? maxDistanceForNearestRoad + widthRoad : maxDistanceForNearestRoad, 1, 3.0, generatePeripheralRoad, widthRoad, name);
                     export(decomposition.straightSkeleton.getGraph(), new File(FOLDER_PARTICULAR_DEBUG, "after_fix"));
                     if (decomposition.betaStrips != null)
                         globalOutputParcels.addAll(decomposition.createParcels(minWidth, maxWidth, omega));
@@ -586,7 +588,7 @@ public class StraightSkeletonDivision extends Division {
                         globalOutputParcels.add(decomposition.initialPolygon);
                     log("end with polygon " + feat);
                 } catch (Exception ee) {
-                    log("fatal error with polygon " + feat);
+                    System.out.println(("fatal error with polygon " + feat));
                     ee.printStackTrace();
                 }
             }
@@ -757,7 +759,9 @@ public class StraightSkeletonDivision extends Division {
         // TODO would having to order the exterior edges justify creating the infinite face?
         // FIXME here is a hack to get the exterior edges. This is ugly
         List<HalfEdge> exteriorEdges = graph.getEdges().stream().filter(p -> p.getTwin() == null)
-                .filter(e -> !this.initialPolygon.buffer(-0.1).contains(e.getGeometry())).collect(Collectors.toList());
+                .filter(e -> this.initialPolygon.getExteriorRing().buffer(0.1).contains(e.getGeometry()))
+//                .filter(e -> !this.initialPolygon.buffer(-0.1).contains(e.getGeometry()))
+                .collect(Collectors.toList());
         log("getOrderedExteriorEdges");
         log("pre-order");
         exteriorEdges.forEach(e -> log(e.getGeometry()));
@@ -1520,7 +1524,7 @@ public class StraightSkeletonDivision extends Division {
     }
 
     public Pair<Polygon, Polygon> splitPolygon(Polygon poly, LineString line) {
-        Polygon snap = (Polygon) GeometrySnapper.snapToSelf(poly, tolerance, true);
+        Polygon snap = Polygons.getPolygon(GeometrySnapper.snapToSelf(poly, tolerance, true));
         if (!snap.isEmpty()) {
             poly = snap;
         }
